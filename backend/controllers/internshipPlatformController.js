@@ -307,6 +307,7 @@ function signatureLine(doc, name, title, x, y, imagePath = null, sizeMultiplier 
       doc.image(imagePath, x + xOffset, y - yOffset, { fit: [boxW, boxH], align: 'center' });
     } catch (err) {
       // Silently ignore if image is missing so the PDF still generates safely
+      console.error(`Signature image load karne me error (${imagePath}):`, err.message);
     }
   }
   doc.moveTo(x, y).lineTo(x + 160, y).stroke('#334155');
