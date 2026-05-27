@@ -10,6 +10,7 @@ const crypto = require('crypto');
 const PDFDocument = require('pdfkit');
 const { Op } = require('sequelize');
 const path = require('path');
+const fs = require('fs');
 const QRCode = require('qrcode');
 const { sequelize } = require('../config/db');
 const { User } = require('../models');
@@ -303,12 +304,16 @@ function pdfFooter(doc) {
 function signatureLine(doc, name, title, x, y, imagePath = null, sizeMultiplier = 1) {
   if (imagePath) {
     try {
-      const boxW = 100 * sizeMultiplier;
-      const boxH = 40 * sizeMultiplier;
-      const xOffset = (160 - boxW) / 2;
-      const yOffset = boxH - 12; // Overlap the line slightly like a real signature
-      
-      doc.image(imagePath, x + xOffset, y - yOffset, { fit: [boxW, boxH], align: 'center' });
+      if (!fs.existsSync(imagePath)) {
+        console.error(`[ERROR] Signature file MISSING on server: ${imagePath}`);
+      } else {
+        const boxW = 100 * sizeMultiplier;
+        const boxH = 40 * sizeMultiplier;
+        const xOffset = (160 - boxW) / 2;
+        const yOffset = boxH - 12; // Overlap the line slightly like a real signature
+        
+        doc.image(imagePath, x + xOffset, y - yOffset, { fit: [boxW, boxH], align: 'center' });
+      }
     } catch (err) {
       // Silently ignore if image is missing so the PDF still generates safely
       console.error(`Signature image load karne me error (${imagePath}):`, err.message);
@@ -434,7 +439,7 @@ const downloadCertificate = asyncHandler(async (req, res) => {
   }
 
   // Signature lines
-  signatureLine(doc, 'Mr.Jayesh Badjugar', 'Program Director', (W / 2) - 260, H - 125, getSignaturePath('director.png'), 1.6);
+  signatureLine(doc, 'Mr.Jayesh Badjugar', 'Program Director', (W / 2) - 260, H - 125, getSignaturePath('Director.png'), 1.6);
   signatureLine(doc, 'Mr.A S Borse', `Founder & CEO, ${COMPANY.name}`, (W / 2) + 100, H - 125, getSignaturePath('ceo.png'), 1.6);
 
   // Footer
@@ -508,7 +513,7 @@ const downloadCompletionLetter = asyncHandler(async (req, res) => {
   doc.moveDown(2.5); // Give a bit more space for the signatures
   const sigY = doc.y;
   const W = doc.page.width;
-  signatureLine(doc, 'Mr.Jayesh Badjugar', 'Program Director', 40, sigY, getSignaturePath('director.png'), 1.0);
+  signatureLine(doc, 'Mr.Jayesh Badjugar', 'Program Director', 40, sigY, getSignaturePath('Director.png'), 1.0);
   signatureLine(doc, 'Mr.A S Borse' , `Founder & CEO, ${COMPANY.name}`, W - 200, sigY, getSignaturePath('ceo.png'), 1.6);
 
   pdfFooter(doc);
@@ -575,7 +580,7 @@ const downloadLOR = asyncHandler(async (req, res) => {
   doc.moveDown(2.5); // Give a bit more space for the signatures
   const sigY = doc.y;
   const W = doc.page.width;
-  signatureLine(doc, 'Mr.Jayesh Badjugar' , 'Program Director', 40, sigY, getSignaturePath('director.png'), 1.6);
+  signatureLine(doc, 'Mr.Jayesh Badjugar' , 'Program Director', 40, sigY, getSignaturePath('Director.png'), 1.6);
   signatureLine(doc, 'Mr.A S Borse' , `Founder & CEO, ${COMPANY.name}`, W - 200, sigY, getSignaturePath('ceo.png'), 1.6);
 
   pdfFooter(doc);
@@ -667,9 +672,7 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
   const sigY = doc.y;
   try {
     doc.image(getSignaturePath('ceo.png'), 40, sigY, { fit: [120, 48] });
-  } catch (err) {
-    console.error('Offer Letter CEO signature error:', err.message);
-  }
+  } catch (err) {}
 
   doc.y = sigY + 50;
   doc.fillColor('#1e293b').fontSize(10).font('Helvetica-Bold').text('A S Borse', 40);
@@ -679,7 +682,7 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
      .text('hr@hiresnix.co.in', 40);
 
   // Official Company Stamp / Symbol
-  const stampX = doc.page.width - 120;
+  const stampX = doc.page.width - 100;
   const stampY = sigY + 25;
   
   doc.save();
