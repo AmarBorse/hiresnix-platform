@@ -26,6 +26,8 @@ router.get('/companies', getAllCompanies);
 router.put('/companies/:id/approve', approveCompany);
 router.get('/jobs/pending', getPendingJobs);
 router.put('/jobs/:id/approve', approveJob);
+router.get('/students', getAllStudents);
+router.get('/applications', getAllApplications);
 router.get('/enquiries', getAllEnquiries);
 router.put('/enquiries/:id/read', markEnquiryRead);
 router.delete('/enquiries/:id', deleteEnquiry);

@@ -38,7 +38,6 @@ app.use('/api/applications', require('./routes/applicationRoutes'));
 app.use('/api/admin',        require('./routes/adminRoutes'));
 app.use('/api/analytics',    require('./routes/analyticsRoutes'));
 app.use('/api/iplatform', require('./routes/internshipPlatformRoutes'));
-app.use('/api/admin/analytics', require('./routes/analyticsRoutes'));
 app.use('/api/internships',  require('./routes/internshipRoutes'));
 app.use('/api/resources',    require('./routes/resourceRoutes'));
 app.use('/api/certificates', require('./routes/certificateRoutes'));

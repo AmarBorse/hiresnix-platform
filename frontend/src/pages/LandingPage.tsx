@@ -2,6 +2,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import axios from 'axios';
 
 const DOMAINS = [
   { icon: '💻', name: 'Web Development', duration: '8 Weeks', seats: 30, tags: ['React', 'Node.js'] },
@@ -47,19 +48,15 @@ function EnquiryForm() {
     e.preventDefault();
     setLoading(true);
     try {
-      const response = await fetch('/api/public/enquiry', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form)
-      });
-      if (response.ok) {
+      // Using axios for better error reporting and consistency
+      const { data } = await axios.post('/api/public/enquiry', form);
+      if (data.success) {
         setSubmitted(true);
-        toast.success("Enquiry sent successfully!");
-      } else {
-        toast.error("Failed to send enquiry");
+        toast.success(data.message || "Enquiry sent successfully!");
       }
-    } catch (err) {
-      toast.error("Network error");
+    } catch (err: any) {
+      const msg = err.response?.data?.message || "Failed to send enquiry. Please try again.";
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
