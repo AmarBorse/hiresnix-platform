@@ -16,7 +16,7 @@ export function StudentCertificates() {
   const rawData: any[] = Array.isArray(result) ? result : (Array.isArray((result as any)?.data) ? (result as any)?.data : ((result as any)?.data?.data || []));
 
   // Map the data to ensure it handles both standard Certificates and nested Internship Enrollments
-  const certs: Certificate[] = rawData.map((item: any) => {
+  const certs = rawData.map((item: any) => {
     if (item.certificate) {
       return {
         id: item.id,
@@ -46,7 +46,7 @@ export function StudentCertificates() {
       ) : (
         <div className="grid sm:grid-cols-2 gap-4">
           {certs.map(cert => (
-            <div key={cert.id} className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border border-blue-100 p-6 relative overflow-hidden">
+            <div key={cert.id} className="bg-linear-to-br from-blue-50 to-indigo-50 rounded-2xl border border-blue-100 p-6 relative overflow-hidden">
               {/* Background decoration */}
               <div className="absolute top-0 right-0 w-32 h-32 opacity-5">
                 <Award size={128} />

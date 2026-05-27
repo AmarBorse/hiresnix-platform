@@ -1,7 +1,8 @@
 // src/pages/admin/AdminEnquiries.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Download, Search, Mail, Phone, MessageSquare, Trash2, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
+import axios from 'axios';
 
 function downloadCSV(data: any[], filename: string) {
   if (!data.length) { toast.error('No enquiries to export'); return; }
@@ -29,13 +30,24 @@ export function AdminEnquiries() {
   const [enquiries, setEnquiries] = useState<any[]>([]);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const load = () => {
+  const load = useCallback(async () => {
+    setLoading(true);
     try {
-      const raw = localStorage.getItem('hiresnix_enquiries') || '[]';
-      setEnquiries(JSON.parse(raw).reverse());
-    } catch { setEnquiries([]); }
-  };
+      const token = localStorage.getItem('token');
+      const { data } = await axios.get('/api/admin/enquiries', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (data.success) {
+        setEnquiries(data.data);
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Failed to load enquiries');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => { load(); }, []);
 
@@ -45,17 +57,28 @@ export function AdminEnquiries() {
       e.message?.toLowerCase().includes(q)) && (!filter || e.interest === filter);
   });
 
-  const handleDelete = (id: string) => {
-    const updated = enquiries.filter(e => e.id !== id);
-    localStorage.setItem('hiresnix_enquiries', JSON.stringify([...updated].reverse()));
-    setEnquiries(updated);
-    toast.success('Enquiry removed');
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('Are you sure?')) return;
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`/api/admin/enquiries/${id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setEnquiries(prev => prev.filter(e => e.id !== id));
+      toast.success('Enquiry removed');
+    } catch {
+      toast.error('Failed to delete');
+    }
   };
 
-  const handleMarkRead = (id: string) => {
-    const updated = enquiries.map(e => e.id === id ? { ...e, read: true } : e);
-    localStorage.setItem('hiresnix_enquiries', JSON.stringify([...updated].reverse()));
-    setEnquiries(updated);
+  const handleMarkRead = async (id: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.put(`/api/admin/enquiries/${id}/read`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setEnquiries(prev => prev.map(e => e.id === id ? { ...e, isRead: true } : e));
+    } catch (err) {}
   };
 
   const handleDownload = () => {
@@ -66,7 +89,7 @@ export function AdminEnquiries() {
     })), `enquiries_${new Date().toISOString().split('T')[0]}.csv`);
   };
 
-  const unread = enquiries.filter(e => !e.read).length;
+  const unread = enquiries.filter(e => !e.isRead).length;
 
   return (
     <div className="space-y-5 max-w-5xl mx-auto">
@@ -80,8 +103,8 @@ export function AdminEnquiries() {
           <p className="text-sm text-gray-500 mt-1">{enquiries.length} total from landing page form</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={load} className="p-2.5 border border-gray-200 rounded-xl text-gray-500 hover:bg-gray-50 transition">
-            <RefreshCw size={15} />
+          <button onClick={load} disabled={loading} className="p-2.5 border border-gray-200 rounded-xl text-gray-500 hover:bg-gray-50 transition disabled:opacity-50">
+            <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
           </button>
           <button onClick={handleDownload}
             className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-bold px-4 py-2.5 rounded-xl transition">
@@ -115,17 +138,17 @@ export function AdminEnquiries() {
       ) : (
         <div className="space-y-3">
           {filtered.map((e: any) => (
-            <div key={e.id} onClick={() => !e.read && handleMarkRead(e.id)}
-              className={`bg-white rounded-2xl border shadow-sm p-5 transition cursor-pointer hover:shadow-md ${!e.read ? 'border-emerald-200 border-l-4 border-l-emerald-500' : 'border-gray-100'}`}>
+            <div key={e.id} onClick={() => !e.isRead && handleMarkRead(e.id)}
+              className={`bg-white rounded-2xl border shadow-sm p-5 transition cursor-pointer hover:shadow-md ${!e.isRead ? 'border-emerald-200 border-l-4 border-l-emerald-500' : 'border-gray-100'}`}>
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0 ${!e.read ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-50 text-gray-500'}`}>
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0 ${!e.isRead ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-50 text-gray-500'}`}>
                     {e.name?.[0]?.toUpperCase()}
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
                       <p className="font-bold text-gray-900">{e.name}</p>
-                      {!e.read && <span className="text-[10px] font-bold bg-emerald-500 text-white px-1.5 py-0.5 rounded-full">NEW</span>}
+                      {!e.isRead && <span className="text-[10px] font-bold bg-emerald-500 text-white px-1.5 py-0.5 rounded-full">NEW</span>}
                       {e.interest && (
                         <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${INTEREST_COLORS[e.interest] || 'bg-gray-100 text-gray-600'}`}>
                           {e.interest}

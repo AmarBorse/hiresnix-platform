@@ -771,26 +771,40 @@ const getMyCertificates = asyncHandler(async (req, res) => {
 // ────────────────────────────────────────────────────────────────────
 
 const verifyCertificate = asyncHandler(async (req, res) => {
-  const certId = req.params.certId.trim();
+  const certId = (req.params.certId || '').trim();
+  if (!certId) {
+    res.status(400); throw new Error('Certificate ID is required');
+  }
   
   let cert = null;
   
   // 1. Try searching by certificateNo
-  try { cert = await InternshipCertificate.findOne({ where: { certificateNo: certId } }); } catch(e) { console.error('[DB ERROR] Missing certificateNo column in DB?', e.message); }
+  try {
+    cert = await InternshipCertificate.findOne({ where: { certificateNo: certId } });
+  } catch(e) {
+    console.error('[DB ERROR] Missing certificateNo column in DB?', e.message);
+  }
   
   // 2. Case-insensitive search on certificateNo (handles lowercase typos safely)
   if (!cert) {
-    try { cert = await InternshipCertificate.findOne({ where: sequelize.where(sequelize.fn('LOWER', sequelize.col('certificateNo')), certId.toLowerCase()) }); } catch(e) {}
+    try {
+      cert = await InternshipCertificate.findOne({
+        where: sequelize.where(
+          sequelize.fn('LOWER', sequelize.col('certificateNo')),
+          certId.toLowerCase()
+        ),
+      });
+    } catch(e) {}
   }
   
-  // 3. Try searching by Primary Key (in case certId is the actual database ID, e.g., 'HRX-...')
-  if (!cert) {
-    try { cert = await InternshipCertificate.findByPk(certId.replace('HRX-', '')); } catch(e) {}
+  // 3. Try searching by primary key only when the provided value is a numeric DB ID
+  if (!cert && /^\d+$/.test(certId)) {
+    try { cert = await InternshipCertificate.findByPk(certId); } catch(e) {}
   }
 
   // 4. Fallback: If frontend generated a dummy CERT-ID based on primary key
-  if (!cert && certId.startsWith('CERT-')) {
-    const internalId = certId.replace('CERT-', '');
+  if (!cert && /^CERT-\d+$/i.test(certId)) {
+    const internalId = certId.replace(/^CERT-/i, '');
     try { cert = await InternshipCertificate.findByPk(internalId); } catch(e) {}
   }
 
@@ -800,6 +814,7 @@ const verifyCertificate = asyncHandler(async (req, res) => {
 
   res.json({
     success: true,
+    valid: cert.isValid,
     data: cert
   });
 });

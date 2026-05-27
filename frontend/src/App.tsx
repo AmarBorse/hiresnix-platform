@@ -1,5 +1,5 @@
 // src/App.tsx
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { useAuthStore } from './store/useAuthStore';
 import { ProtectedRoute } from './components/common/ProtectedRoute';
@@ -39,9 +39,10 @@ import { Role } from './types';
 function AuthRedirect() {
   const { isAuthenticated, user } = useAuthStore();
   if (!isAuthenticated || !user) return <Navigate to="/auth" replace />;
-  if (user.role === 'student') return <Navigate to="/student/dashboard" replace />;
-  if (user.role === 'company') return <Navigate to="/company/dashboard" replace />;
-  if (user.role === 'admin')   return <Navigate to="/admin/dashboard" replace />;
+  const role = user.role as Role;
+  if (role === 'student') return <Navigate to="/student/dashboard" replace />;
+  if (role === 'company') return <Navigate to="/company/dashboard" replace />;
+  if (role === 'admin')   return <Navigate to="/admin/dashboard" replace />;
   return <Navigate to="/auth" replace />;
 }
 

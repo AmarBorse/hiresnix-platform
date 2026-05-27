@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import client from '../api/client';
 import { PageLoader } from '../components/common/LoadingState';
 import { CheckCircle, XCircle, ArrowLeft, Search } from 'lucide-react';
 
 export function VerifyCertificate() {
-  const { id } = useParams<{ id: string }>();
+  const { id } = useParams();
   const navigate = useNavigate();
   const [inputId, setInputId] = useState('');
   const [loading, setLoading] = useState(true);
@@ -16,7 +16,7 @@ export function VerifyCertificate() {
     if (!id) return;
     const verify = async () => {
       try {
-        const res = await client.get(`/admin/verify-certificate/${id}`);
+        const res = await client.get(`/iplatform/verify/${id}`); 
         setCertData(res.data.data);
       } catch (err) {
         setError(true);
@@ -32,7 +32,7 @@ export function VerifyCertificate() {
     return (
       <div className="min-h-screen flex items-center justify-center p-4" style={{ background: '#060910' }}>
         <div className="max-w-md w-full bg-white rounded-3xl overflow-hidden shadow-2xl p-8 relative text-center border border-white/10">
-          <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-blue-500 to-indigo-500" />
+          <div className="absolute top-0 left-0 right-0 h-2 bg-linear-to-r from-blue-500 to-indigo-500" />
           <Link to="/" className="absolute top-6 left-6 text-gray-400 hover:text-gray-600 transition"><ArrowLeft size={20} /></Link>
           <img src="/hiresnix-logo.png" alt="Hiresnix" className="h-10 mx-auto mb-8" />
           <h2 className="text-2xl font-black text-gray-900 mb-2">Verify Certificate</h2>
@@ -54,7 +54,7 @@ export function VerifyCertificate() {
   return (
     <div className="min-h-screen flex items-center justify-center p-4" style={{ background: '#060910' }}>
       <div className="max-w-md w-full bg-white rounded-3xl overflow-hidden shadow-2xl p-8 relative text-center">
-        <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-blue-500 to-indigo-500" />
+        <div className="absolute top-0 left-0 right-0 h-2 bg-linear-to-r from-blue-500 to-indigo-500" />
         
         <Link to="/" className="absolute top-6 left-6 text-gray-400 hover:text-gray-600 transition">
           <ArrowLeft size={20} />

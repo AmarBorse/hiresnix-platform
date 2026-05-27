@@ -29,6 +29,7 @@ if (process.env.NODE_ENV === 'development') app.use(morgan('dev'));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // ── Routes ────────────────────────────────────────────────────────
+app.use('/api/public',       require('./routes/publicRoutes'));
 app.use('/api/auth',         require('./routes/authRoutes'));
 app.use('/api/students',     require('./routes/studentRoutes'));
 app.use('/api/companies',    require('./routes/companyRoutes'));

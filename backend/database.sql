@@ -198,3 +198,17 @@ CREATE TABLE IF NOT EXISTS certificates (
   "createdAt"       TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
   "updatedAt"       TIMESTAMPTZ  NOT NULL DEFAULT NOW()
 );
+
+-- ── ENQUIRIES ─────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS enquiries (
+  id           BIGSERIAL    PRIMARY KEY,
+  name         VARCHAR(100) NOT NULL,
+  email        VARCHAR(150) NOT NULL,
+  phone        VARCHAR(20),
+  interest     VARCHAR(50),
+  message      TEXT         NOT NULL,
+  "isRead"     BOOLEAN      NOT NULL DEFAULT FALSE,
+  "createdAt"  TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+  "updatedAt"  TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_enquiries_read ON enquiries("isRead");

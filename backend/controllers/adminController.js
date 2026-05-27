@@ -3,12 +3,13 @@
  */
 
 const asyncHandler = require('express-async-handler');
-const { User, Student, Company, Job, Application } = require('../models');
+const { User, Student, Company, Job, Application, Enquiry } = require('../models');
+const { sequelize } = require('../config/db');
 const { Op } = require('sequelize');
 
 // GET /api/admin/dashboard
 const getDashboardStats = asyncHandler(async (req, res) => {
-  const [totalStudents, totalCompanies, totalJobs, totalApplications, placedStudents, pendingJobs, pendingCompanies] =
+  const [totalStudents, totalCompanies, totalJobs, totalApplications, placedStudents, pendingJobs, pendingCompanies, unreadEnquiries] =
     await Promise.all([
       Student.count(),
       Company.count(),
@@ -17,6 +18,7 @@ const getDashboardStats = asyncHandler(async (req, res) => {
       Student.count({ where: { placementStatus: 'Placed' } }),
       Job.count({ where: { status: 'Pending' } }),
       Company.count({ where: { isVerified: false } }),
+      Enquiry.count({ where: { isRead: false } })
     ]);
 
   const recentApplications = await Application.findAll({
@@ -31,12 +33,12 @@ const getDashboardStats = asyncHandler(async (req, res) => {
   res.json({
     success: true,
     totalStudents, totalCompanies, totalJobs, totalApplications,
-    placedStudents, pendingJobs, pendingCompanies,
+    placedStudents, pendingJobs, pendingCompanies, unreadEnquiries,
     placementRate: totalStudents > 0 ? ((placedStudents / totalStudents) * 100).toFixed(1) : 0,
     data: {
       stats: {
         totalStudents, totalCompanies, totalJobs, totalApplications,
-        placedStudents, pendingJobs, pendingCompanies,
+        placedStudents, pendingJobs, pendingCompanies, unreadEnquiries,
         placementRate: totalStudents > 0 ? ((placedStudents / totalStudents) * 100).toFixed(1) : 0,
       },
       recentApplications,
@@ -176,6 +178,26 @@ const getAllApplications = asyncHandler(async (req, res) => {
   });
 });
 
+// GET /api/admin/enquiries
+const getAllEnquiries = asyncHandler(async (req, res) => {
+  const enquiries = await Enquiry.findAll({ order: [['createdAt', 'DESC']] });
+  res.json({ success: true, data: enquiries });
+});
+
+// PUT /api/admin/enquiries/:id/read
+const markEnquiryRead = asyncHandler(async (req, res) => {
+  const enquiry = await Enquiry.findByPk(req.params.id);
+  if (enquiry) await enquiry.update({ isRead: true });
+  res.json({ success: true, message: 'Enquiry marked as read' });
+});
+
+// DELETE /api/admin/enquiries/:id
+const deleteEnquiry = asyncHandler(async (req, res) => {
+  const enquiry = await Enquiry.findByPk(req.params.id);
+  if (enquiry) await enquiry.destroy();
+  res.json({ success: true, message: 'Enquiry deleted' });
+});
+
 module.exports = {
   getDashboardStats,
   getAllUsers,
@@ -186,4 +208,7 @@ module.exports = {
   approveJob,
   toggleUserStatus,
   getPendingJobs,
+  getAllEnquiries,
+  markEnquiryRead,
+  deleteEnquiry,
 };

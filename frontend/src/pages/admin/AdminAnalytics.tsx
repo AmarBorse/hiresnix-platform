@@ -4,7 +4,7 @@ import { analyticsApi } from '../../api/analytics';
 import { adminApi } from '../../api/admin';
 import { useFetch } from '../../hooks/useFetch';
 import { PageLoader, ErrorState } from '../../components/common/LoadingState';
-import { TrendingUp, Users, Briefcase, Award } from 'lucide-react';
+import { TrendingUp, Users, Briefcase, Award, MessageSquare } from 'lucide-react';
 
 function MetricCard({ label, value, icon: Icon, color }: { label: string; value: any; icon: any; color: string }) {
   return (
@@ -42,11 +42,12 @@ export function AdminAnalytics() {
       </div>
 
       {/* KPI cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <MetricCard label="Total Students"   value={a.totalStudents}     icon={Users}    color="bg-blue-500" />
         <MetricCard label="Placed Students"  value={a.placedStudents}    icon={TrendingUp} color="bg-green-500" />
         <MetricCard label="Total Jobs"       value={a.totalJobs}         icon={Briefcase} color="bg-violet-500" />
         <MetricCard label="Certificates"     value={a.totalCertificates} icon={Award}    color="bg-amber-500" />
+        <MetricCard label="Unread Enquiries" value={a.unreadEnquiries}   icon={MessageSquare} color="bg-rose-500" />
       </div>
 
       {/* Placement rate bar */}

@@ -1,6 +1,6 @@
 // src/pages/auth/AuthPage.tsx
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router';
+import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { authApi } from '../../api/auth';
 import { useAuthStore } from '../../store/useAuthStore';

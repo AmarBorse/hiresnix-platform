@@ -40,10 +40,9 @@ export function AdminDashboard() {
   const [ipStats, setIpStats] = useState<any>({});
   const [downloadingApps, setDownloadingApps] = useState(false);
   const [downloadingStudents, setDownloadingStudents] = useState(false);
-  const enquiryCount = (() => {
-    try { return JSON.parse(localStorage.getItem('hiresnix_enquiries') || '[]').filter((e: any) => !e.read).length; }
-    catch { return 0; }
-  })();
+
+  const a = (data as any) || {};
+  const enquiryCount = a.unreadEnquiries || 0;
 
   useEffect(() => {
     adminApi.getIPlatformStats().then(r => setIpStats(r.data || {})).catch(() => {});
@@ -82,8 +81,6 @@ export function AdminDashboard() {
 
   if (loading) return <PageLoader />;
   if (error)   return <ErrorState message={error} onRetry={refetch} />;
-
-  const a = (data as any) || {};
 
   const jobStats = [
     { icon: Users,         label: 'Total Students',      value: a.totalStudents,     bg: 'bg-blue-50',    color: 'text-blue-600',   to: '/admin/students' },

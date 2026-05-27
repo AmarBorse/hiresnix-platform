@@ -1,7 +1,7 @@
 // src/pages/LandingPage.tsx
-import { useEffect, useRef, useState as useStateLocal } from 'react';
-import React from 'react';
-import { useNavigate } from 'react-router';
+import React, { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
 const DOMAINS = [
   { icon: '💻', name: 'Web Development', duration: '8 Weeks', seats: 30, tags: ['React', 'Node.js'] },
@@ -35,22 +35,34 @@ const MARQUEE_ITEMS = [
 
 // ── Enquiry Form ─────────────────────────────────────────────────
 function EnquiryForm() {
-  const [form, setForm] = useStateLocal({ name: '', email: '', phone: '', interest: 'Internship', message: '' });
-  const [submitted, setSubmitted] = useStateLocal(false);
-  const [loading, setLoading] = useStateLocal(false);
+  const [form, setForm] = useState({ name: '', email: '', phone: '', interest: 'Internship', message: '' });
+  const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const set = (k: string, v: string) => setForm((p: any) => ({ ...p, [k]: v }));
+  const set = (k: keyof typeof form, v: string) => {
+    setForm(p => ({ ...p, [k]: v }));
+  };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setTimeout(() => {
-      const enquiries = JSON.parse(localStorage.getItem('hiresnix_enquiries') || '[]');
-      enquiries.push({ ...form, id: Date.now().toString(), createdAt: new Date().toISOString(), read: false });
-      localStorage.setItem('hiresnix_enquiries', JSON.stringify(enquiries));
-      setSubmitted(true);
+    try {
+      const response = await fetch('/api/public/enquiry', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form)
+      });
+      if (response.ok) {
+        setSubmitted(true);
+        toast.success("Enquiry sent successfully!");
+      } else {
+        toast.error("Failed to send enquiry");
+      }
+    } catch (err) {
+      toast.error("Network error");
+    } finally {
       setLoading(false);
-    }, 800);
+    }
   };
 
   if (submitted) return (
@@ -137,9 +149,10 @@ export function LandingPage() {
     const observer = new IntersectionObserver(entries => {
       if (entries[0].isIntersecting && !countersAnimated.current) {
         countersAnimated.current = true;
-        el.querySelectorAll('[data-count]').forEach(counter => {
-          const target = parseInt((counter as HTMLElement).dataset.count || '0');
-          const suffix = (counter as HTMLElement).dataset.suffix || '';
+        el.querySelectorAll('[data-count]').forEach(node => {
+          const counter = node as HTMLElement;
+          const target = parseInt(counter.dataset.count || '0');
+          const suffix = counter.dataset.suffix || '';
           let current = 0;
           const step = target / 60;
           const timer = setInterval(() => {
