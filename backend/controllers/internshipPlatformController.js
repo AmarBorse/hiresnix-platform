@@ -9,6 +9,7 @@ const asyncHandler = require('express-async-handler');
 const crypto = require('crypto');
 const PDFDocument = require('pdfkit');
 const { Op } = require('sequelize');
+const path = require('path');
 const QRCode = require('qrcode');
 const { sequelize } = require('../config/db');
 const { User } = require('../models');
@@ -257,6 +258,9 @@ const markComplete = asyncHandler(async (req, res) => {
 // PDF GENERATORS
 // ────────────────────────────────────────────────────────────────────
 
+// Helper function to get exact absolute path for signature images
+const getSignaturePath = (filename) => path.join(__dirname, '..', 'signatures', filename);
+
 const COMPANY = {
   name:    'Hiresnix',
   tagline: 'Empowering Future Professionals',
@@ -430,8 +434,8 @@ const downloadCertificate = asyncHandler(async (req, res) => {
   }
 
   // Signature lines
-  signatureLine(doc, 'Mr.Jayesh Badjugar', 'Program Director', (W / 2) - 260, H - 125, './signatures/director.png', 1.6);
-  signatureLine(doc, 'Mr.A S Borse', `Founder & CEO, ${COMPANY.name}`, (W / 2) + 100, H - 125, './signatures/ceo.png', 1.6);
+  signatureLine(doc, 'Mr.Jayesh Badjugar', 'Program Director', (W / 2) - 260, H - 125, getSignaturePath('director.png'), 1.6);
+  signatureLine(doc, 'Mr.A S Borse', `Founder & CEO, ${COMPANY.name}`, (W / 2) + 100, H - 125, getSignaturePath('ceo.png'), 1.6);
 
   // Footer
   doc.rect(20, H - 60, W - 40, 40).fill('#0f172a');
@@ -504,8 +508,8 @@ const downloadCompletionLetter = asyncHandler(async (req, res) => {
   doc.moveDown(2.5); // Give a bit more space for the signatures
   const sigY = doc.y;
   const W = doc.page.width;
-  signatureLine(doc, 'Mr.Jayesh Badjugar', 'Program Director', 40, sigY, './signatures/director.png', 1.0);
-  signatureLine(doc, 'Mr.A S Borse' , `Founder & CEO, ${COMPANY.name}`, W - 200, sigY, './signatures/ceo.png', 1.6);
+  signatureLine(doc, 'Mr.Jayesh Badjugar', 'Program Director', 40, sigY, getSignaturePath('director.png'), 1.0);
+  signatureLine(doc, 'Mr.A S Borse' , `Founder & CEO, ${COMPANY.name}`, W - 200, sigY, getSignaturePath('ceo.png'), 1.6);
 
   pdfFooter(doc);
   doc.end();
@@ -571,8 +575,8 @@ const downloadLOR = asyncHandler(async (req, res) => {
   doc.moveDown(2.5); // Give a bit more space for the signatures
   const sigY = doc.y;
   const W = doc.page.width;
-  signatureLine(doc, 'Mr.Jayesh Badjugar' , 'Program Director', 40, sigY, './signatures/director.png', 1.6);
-  signatureLine(doc, 'Mr.A S Borse' , `Founder & CEO, ${COMPANY.name}`, W - 200, sigY, './signatures/ceo.png', 1.6);
+  signatureLine(doc, 'Mr.Jayesh Badjugar' , 'Program Director', 40, sigY, getSignaturePath('director.png'), 1.6);
+  signatureLine(doc, 'Mr.A S Borse' , `Founder & CEO, ${COMPANY.name}`, W - 200, sigY, getSignaturePath('ceo.png'), 1.6);
 
   pdfFooter(doc);
   doc.end();
@@ -662,8 +666,10 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
 
   const sigY = doc.y;
   try {
-    doc.image('./signatures/ceo.png', 40, sigY, { fit: [120, 48] });
-  } catch (err) {}
+    doc.image(getSignaturePath('ceo.png'), 40, sigY, { fit: [120, 48] });
+  } catch (err) {
+    console.error('Offer Letter CEO signature error:', err.message);
+  }
 
   doc.y = sigY + 50;
   doc.fillColor('#1e293b').fontSize(10).font('Helvetica-Bold').text('A S Borse', 40);
