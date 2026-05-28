@@ -22,7 +22,14 @@ const app = express();
 
 app.use(helmet());
 app.use(rateLimit({ windowMs: 10 * 60 * 1000, max: 200 }));
-app.use(cors({ origin: process.env.CLIENT_URL || 'http://localhost:3000', credentials: true }));
+app.use(cors({
+  origin: [
+    "http://localhost:5173",
+    "https://hiresnix.co.in",
+    "https://www.hiresnix.co.in"
+  ],
+  credentials: true
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 if (process.env.NODE_ENV === 'development') app.use(morgan('dev'));
