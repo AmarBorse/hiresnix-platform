@@ -22,22 +22,33 @@ const app = express();
 
 const allowedOrigins = [
   'http://localhost:5173',
+  'http://localhost:5174',
   'https://hiresnix.co.in',
   'https://www.hiresnix.co.in',
+  'https://hirenix.co.in',
+  'https://www.hirenix.co.in',
   process.env.CLIENT_URL,
 ].filter(Boolean);
 
-app.use(helmet());
-app.use(rateLimit({ windowMs: 10 * 60 * 1000, max: 200 }));
-app.use(cors({
+const corsOptions = {
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
+    if (
+      !origin ||
+      allowedOrigins.includes(origin) ||
+      origin.endsWith('.vercel.app') ||
+      origin.endsWith('.onrender.com')
+    ) {
       return callback(null, true);
     }
     return callback(new Error('Not allowed by CORS'));
   },
-  credentials: true
-}));
+  credentials: true,
+};
+
+app.use(helmet());
+app.use(rateLimit({ windowMs: 10 * 60 * 1000, max: 200 }));
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 if (process.env.NODE_ENV === 'development') app.use(morgan('dev'));

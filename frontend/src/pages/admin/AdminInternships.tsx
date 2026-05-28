@@ -7,10 +7,15 @@ import { toast } from 'sonner';
 import { PlusCircle, Pencil, Trash2, Loader2, X, Plus, Save } from 'lucide-react';
 import { Internship, InternshipTask } from '../../types';
 
-const EMPTY = {
+type InternshipForm = Pick<
+  Internship,
+  'title' | 'description' | 'domain' | 'duration' | 'difficulty' | 'technologies' | 'tasks' | 'status' | 'maxEnrollments' | 'relatedJobDomains'
+>;
+
+const EMPTY: InternshipForm = {
   title: '', description: '', domain: '', duration: '',
-  difficulty: 'Intermediate' as const, technologies: [] as string[],
-  tasks: [] as InternshipTask[], status: 'Active' as const,
+  difficulty: 'Intermediate', technologies: [] as string[],
+  tasks: [] as InternshipTask[], status: 'Active',
   maxEnrollments: 100, relatedJobDomains: [] as string[],
 };
 

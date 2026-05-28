@@ -1,8 +1,13 @@
 // src/api/client.ts
 import axios from 'axios';
 
+const env = (import.meta as any).env;
+const apiBaseUrl =
+  env.VITE_API_URL ||
+  (env.PROD ? 'https://hirenix-backend.onrender.com/api' : 'http://localhost:5000/api');
+
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
+  baseURL: apiBaseUrl,
   withCredentials: true,
 });
 
