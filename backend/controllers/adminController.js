@@ -3,19 +3,36 @@ const { User, Company } = require('../models');
 
 // PUT /api/admin/companies/:id/verify
 const verifyCompany = asyncHandler(async (req, res) => {
-  const id = req.params.id; // Frontend generally sends the User ID or Company ID
-  
-  const user = await User.findByPk(id);
-  if (!user) {
-    res.status(404);
-    throw new Error('User/Company not found');
+  const id = req.params.id;
+  let company = await Company.findByPk(id, {
+    include: [{ model: User, as: 'user' }],
+  });
+
+  if (!company) {
+    company = await Company.findOne({
+      where: { userId: id },
+      include: [{ model: User, as: 'user' }],
+    });
   }
 
-  // Verify the company by updating the User table flag
-  user.isApproved = true;
-  await user.save();
+  if (!company) {
+    res.status(404);
+    throw new Error('Company not found');
+  }
 
-  res.json({ success: true, message: 'Company verified successfully!' });
+  company.isVerified = true;
+  await company.save();
+
+  if (company.user) {
+    company.user.isApproved = true;
+    await company.user.save();
+  }
+
+  res.json({
+    success: true,
+    message: 'Company verified successfully!',
+    data: company,
+  });
 });
 
 module.exports = { verifyCompany };

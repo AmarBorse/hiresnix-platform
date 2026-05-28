@@ -20,14 +20,22 @@ connectDB();
 
 const app = express();
 
+const allowedOrigins = [
+  'http://localhost:5173',
+  'https://hiresnix.co.in',
+  'https://www.hiresnix.co.in',
+  process.env.CLIENT_URL,
+].filter(Boolean);
+
 app.use(helmet());
 app.use(rateLimit({ windowMs: 10 * 60 * 1000, max: 200 }));
 app.use(cors({
-  origin: [
-    "http://localhost:5173",
-    "https://hiresnix.co.in",
-    "https://www.hiresnix.co.in"
-  ],
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
+      return callback(null, true);
+    }
+    return callback(new Error('Not allowed by CORS'));
+  },
   credentials: true
 }));
 app.use(express.json());
