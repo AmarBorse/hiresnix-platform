@@ -2,9 +2,12 @@
 import axios from 'axios';
 
 const env = (import.meta as any).env;
+const renderApiUrl = 'https://hirenix-backend.onrender.com/api';
+const envApiUrl = env.VITE_API_URL;
 const apiBaseUrl =
-  env.VITE_API_URL ||
-  (env.PROD ? 'https://hirenix-backend.onrender.com/api' : 'http://localhost:5000/api');
+  env.PROD && envApiUrl?.includes('localhost')
+    ? renderApiUrl
+    : envApiUrl || (env.PROD ? renderApiUrl : 'http://localhost:5000/api');
 
 const apiClient = axios.create({
   baseURL: apiBaseUrl,
