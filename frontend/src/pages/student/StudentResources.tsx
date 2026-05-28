@@ -30,7 +30,7 @@ export function StudentResources() {
 
   const fetchResources = async () => {
     try {
-      const res = await client.get('/admin/hub-resources');
+      const res = await client.get('/resources');
       setAllResources(res.data.data || []);
     } catch (err: any) {
       setError(err.message || 'Failed to load resources');

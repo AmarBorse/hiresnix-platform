@@ -49,12 +49,13 @@ app.use('/api/internships',  require('./routes/internshipRoutes'));
 app.use('/api/resources',    require('./routes/resourceRoutes'));
 app.use('/api/certificates', require('./routes/certificateRoutes'));
 
-app.get('/api/health', (req, res) => res.json({ status: 'OK', db: 'Supabase (PostgreSQL)', timestamp: new Date() }));
+app.get('/api/health', (req, res) => res.json({ status: 'OK', db: 'MySQL (Sequelize)', timestamp: new Date() }));
 
 app.use((req, res) => res.status(404).json({ success: false, message: 'Route not found' }));
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(err.statusCode || 500).json({
+  const statusCode = err.statusCode || (res.statusCode === 200 ? 500 : res.statusCode);
+  res.status(statusCode).json({
     success: false,
     message: err.message || 'Internal Server Error',
     ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
