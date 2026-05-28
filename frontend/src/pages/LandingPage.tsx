@@ -2,7 +2,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import axios from 'axios';
+import client from '../api/client';
 
 const DOMAINS = [
   { icon: '💻', name: 'Web Development', duration: '8 Weeks', seats: 30, tags: ['React', 'Node.js'] },
@@ -48,8 +48,8 @@ function EnquiryForm() {
     e.preventDefault();
     setLoading(true);
     try {
-      // Using axios for better error reporting and consistency
-      const { data } = await axios.post('/api/public/enquiry', form);
+      // Using the configured client instance
+      const { data } = await client.post('/public/enquiry', form);
       if (data.success) {
         setSubmitted(true);
         toast.success(data.message || "Enquiry sent successfully!");

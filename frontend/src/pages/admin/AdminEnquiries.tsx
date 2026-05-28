@@ -1,184 +1,91 @@
 // src/pages/admin/AdminEnquiries.tsx
-import React, { useState, useEffect, useCallback } from 'react';
-import { Download, Search, Mail, Phone, MessageSquare, Trash2, RefreshCw } from 'lucide-react';
+import React, { useState } from 'react';
+import { useFetch } from '../../hooks/useFetch';
+import { PageLoader, ErrorState, EmptyState } from '../../components/common/LoadingState';
 import { toast } from 'sonner';
-import axios from 'axios';
-
-function downloadCSV(data: any[], filename: string) {
-  if (!data.length) { toast.error('No enquiries to export'); return; }
-  const keys = Object.keys(data[0]);
-  const csv = [keys.join(','), ...data.map(row => keys.map(k => {
-    const val = row[k] ?? '';
-    return `"${String(val).replace(/"/g, '""')}"`;
-  }).join(','))].join('\n');
-  const blob = new Blob([csv], { type: 'text/csv' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a'); a.href = url; a.download = filename; a.click();
-  URL.revokeObjectURL(url);
-  toast.success('Downloaded!');
-}
-
-const INTEREST_COLORS: Record<string, string> = {
-  'Internship':   'bg-blue-100 text-blue-700',
-  'Job Portal':   'bg-purple-100 text-purple-700',
-  'Both':         'bg-emerald-100 text-emerald-700',
-  'Partnership':  'bg-amber-100 text-amber-700',
-  'Other':        'bg-gray-100 text-gray-600',
-};
+import { CheckCircle, Trash2, Mail, Loader2, Phone } from 'lucide-react';
+import client from '../../api/client';
 
 export function AdminEnquiries() {
-  const [enquiries, setEnquiries] = useState<any[]>([]);
-  const [search, setSearch] = useState('');
-  const [filter, setFilter] = useState('');
-  const [loading, setLoading] = useState(false);
+  const { data: result, loading, error, refetch } = useFetch(
+    () => client.get('/admin/enquiries').then(r => r.data)
+  );
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  const [actioning, setActioning] = useState<number | null>(null);
+
+  // Safely extract data array
+  const enquiries: any[] = Array.isArray(result) ? result : (result as any)?.data || [];
+
+  const handleMarkRead = async (id: number) => {
+    setActioning(id);
     try {
-      const token = localStorage.getItem('token');
-      const { data } = await axios.get('/api/admin/enquiries', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (data.success) {
-        setEnquiries(data.data);
-      }
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Failed to load enquiries');
+      await client.put(`/admin/enquiries/${id}/read`);
+      toast.success('Marked as read');
+      refetch();
+    } catch (e: any) {
+      toast.error(e.response?.data?.message || 'Failed to update');
     } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => { load(); }, []);
-
-  const filtered = enquiries.filter(e => {
-    const q = search.toLowerCase();
-    return (!search || e.name?.toLowerCase().includes(q) || e.email?.toLowerCase().includes(q) ||
-      e.message?.toLowerCase().includes(q)) && (!filter || e.interest === filter);
-  });
-
-  const handleDelete = async (id: string) => {
-    if (!window.confirm('Are you sure?')) return;
-    try {
-      const token = localStorage.getItem('token');
-      await axios.delete(`/api/admin/enquiries/${id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setEnquiries(prev => prev.filter(e => e.id !== id));
-      toast.success('Enquiry removed');
-    } catch {
-      toast.error('Failed to delete');
+      setActioning(null);
     }
   };
 
-  const handleMarkRead = async (id: string) => {
+  const handleDelete = async (id: number) => {
+    if (!window.confirm('Are you sure you want to delete this enquiry?')) return;
+    setActioning(id);
     try {
-      const token = localStorage.getItem('token');
-      await axios.put(`/api/admin/enquiries/${id}/read`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setEnquiries(prev => prev.map(e => e.id === id ? { ...e, isRead: true } : e));
-    } catch (err) {}
+      await client.delete(`/admin/enquiries/${id}`);
+      toast.success('Enquiry deleted');
+      refetch();
+    } catch (e: any) {
+      toast.error(e.response?.data?.message || 'Failed to delete');
+    } finally {
+      setActioning(null);
+    }
   };
 
-  const handleDownload = () => {
-    downloadCSV(filtered.map(e => ({
-      Name: e.name, Email: e.email, Phone: e.phone || '',
-      Interest: e.interest, Message: e.message,
-      ReceivedOn: new Date(e.createdAt).toLocaleString(),
-    })), `enquiries_${new Date().toISOString().split('T')[0]}.csv`);
-  };
-
-  const unread = enquiries.filter(e => !e.isRead).length;
+  if (loading) return <PageLoader />;
+  if (error) return <ErrorState message={error} onRetry={refetch} />;
 
   return (
-    <div className="space-y-5 max-w-5xl mx-auto">
-      {/* Header */}
-      <div className="flex items-start justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-2xl font-black text-gray-900 flex items-center gap-2">
-            Enquiries
-            {unread > 0 && <span className="text-sm font-bold bg-red-500 text-white px-2 py-0.5 rounded-full">{unread} new</span>}
-          </h1>
-          <p className="text-sm text-gray-500 mt-1">{enquiries.length} total from landing page form</p>
-        </div>
-        <div className="flex gap-2">
-          <button onClick={load} disabled={loading} className="p-2.5 border border-gray-200 rounded-xl text-gray-500 hover:bg-gray-50 transition disabled:opacity-50">
-            <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
-          </button>
-          <button onClick={handleDownload}
-            className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-bold px-4 py-2.5 rounded-xl transition">
-            <Download size={15} /> Export CSV
-          </button>
-        </div>
+    <div className="space-y-5 max-w-6xl mx-auto">
+      <div>
+        <h1 className="text-2xl font-black text-gray-900">Platform Enquiries</h1>
+        <p className="text-sm text-gray-500 mt-1">{enquiries.length} total enquiries</p>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input type="text" placeholder="Search name, email, message..."
-            value={search} onChange={e => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500 bg-white" />
-        </div>
-        <select value={filter} onChange={e => setFilter(e.target.value)}
-          className="px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500 bg-white">
-          <option value="">All Interests</option>
-          {Object.keys(INTEREST_COLORS).map(i => <option key={i} value={i}>{i}</option>)}
-        </select>
-      </div>
-
-      {filtered.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm text-center py-20">
-          <MessageSquare size={40} className="mx-auto mb-3 text-gray-200" />
-          <p className="text-gray-400 font-medium">
-            {enquiries.length === 0 ? 'No enquiries yet. They will appear when someone fills the landing page form.' : 'No enquiries match your search.'}
-          </p>
-        </div>
-      ) : (
+      {enquiries.length === 0 ? <EmptyState title="No enquiries yet" description="When users submit the contact form, they will appear here." /> : (
         <div className="space-y-3">
-          {filtered.map((e: any) => (
-            <div key={e.id} onClick={() => !e.isRead && handleMarkRead(e.id)}
-              className={`bg-white rounded-2xl border shadow-sm p-5 transition cursor-pointer hover:shadow-md ${!e.isRead ? 'border-emerald-200 border-l-4 border-l-emerald-500' : 'border-gray-100'}`}>
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0 ${!e.isRead ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-50 text-gray-500'}`}>
-                    {e.name?.[0]?.toUpperCase()}
+          {enquiries.map((enq: any) => (
+            <div key={enq.id} className={`bg-white rounded-2xl border ${enq.isRead ? 'border-gray-100' : 'border-blue-200 shadow-md'} p-5 transition`}>
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className="font-bold text-gray-900 text-lg">{enq.name}</h3>
+                    {!enq.isRead && <span className="bg-blue-100 text-blue-700 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide">New</span>}
+                    <span className="bg-gray-100 text-gray-600 text-xs px-2 py-0.5 rounded-md font-medium">{enq.interest}</span>
                   </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <p className="font-bold text-gray-900">{e.name}</p>
-                      {!e.isRead && <span className="text-[10px] font-bold bg-emerald-500 text-white px-1.5 py-0.5 rounded-full">NEW</span>}
-                      {e.interest && (
-                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${INTEREST_COLORS[e.interest] || 'bg-gray-100 text-gray-600'}`}>
-                          {e.interest}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-3 mt-0.5">
-                      <a href={`mailto:${e.email}`} onClick={ev => ev.stopPropagation()}
-                        className="flex items-center gap-1 text-xs text-blue-500 hover:underline">
-                        <Mail size={11} /> {e.email}
-                      </a>
-                      {e.phone && (
-                        <a href={`tel:${e.phone}`} onClick={ev => ev.stopPropagation()}
-                          className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700">
-                          <Phone size={11} /> {e.phone}
-                        </a>
-                      )}
-                    </div>
+                  <div className="flex items-center gap-4 text-sm text-gray-500 mb-3">
+                    <span className="flex items-center gap-1"><Mail size={14} /> <a href={`mailto:${enq.email}`} className="hover:text-blue-600">{enq.email}</a></span>
+                    {enq.phone && <span className="flex items-center gap-1"><Phone size={14} /> <a href={`tel:${enq.phone}`} className="hover:text-blue-600">{enq.phone}</a></span>}
+                  </div>
+                  <div className="bg-gray-50 rounded-xl p-4 text-sm text-gray-700 whitespace-pre-wrap border border-gray-100">
+                    {enq.message}
+                  </div>
+                  <div className="text-xs text-gray-400 mt-3">
+                    Received on {new Date(enq.createdAt).toLocaleString()}
                   </div>
                 </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <p className="text-xs text-gray-400">{new Date(e.createdAt).toLocaleDateString()}</p>
-                  <button onClick={ev => { ev.stopPropagation(); handleDelete(e.id); }}
-                    className="text-gray-300 hover:text-red-500 transition p-1">
-                    <Trash2 size={14} />
+                
+                <div className="flex flex-col gap-2">
+                  {!enq.isRead && (
+                    <button onClick={() => handleMarkRead(enq.id)} disabled={actioning === enq.id} className="flex items-center justify-center gap-1.5 text-xs font-bold bg-blue-50 hover:bg-blue-100 text-blue-600 px-3 py-2 rounded-lg transition disabled:opacity-50">
+                      {actioning === enq.id ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle size={14} />} Mark Read
+                    </button>
+                  )}
+                  <button onClick={() => handleDelete(enq.id)} disabled={actioning === enq.id} className="flex items-center justify-center gap-1.5 text-xs font-bold text-red-500 hover:bg-red-50 hover:text-red-600 px-3 py-2 rounded-lg transition disabled:opacity-50">
+                    {actioning === enq.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />} Delete
                   </button>
                 </div>
-              </div>
-              <div className="mt-3 ml-13 pl-0">
-                <p className="text-sm text-gray-600 bg-gray-50 rounded-xl p-3">{e.message}</p>
               </div>
             </div>
           ))}

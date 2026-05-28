@@ -1,35 +1,20 @@
 const express = require('express');
 const router = express.Router();
-const { protect, authorize } = require('../middleware/auth');
-const {
-  getDashboardStats,
-  getAllUsers,
-  getAllCompanies,
-  getAllStudents,
-  getAllApplications,
-  approveCompany,
-  approveJob,
-  toggleUserStatus,
-  getPendingJobs,
-  getAllEnquiries,
-  markEnquiryRead,
-  deleteEnquiry
-} = require('../controllers/adminController');
+const { verifyCompany } = require('../controllers/adminController');
+const { getAllEnquiries, markAsRead, deleteEnquiry } = require('../controllers/enquiryController');
+// const { protect, authorize } = require('../middleware/auth');
 
-router.use(protect);
-router.use(authorize('admin'));
+// Admin Auth Middleware (uncomment when ready to secure)
+// router.use(protect, authorize('admin'));
 
-router.get('/analytics', getDashboardStats);
-router.get('/users', getAllUsers);
-router.put('/users/:id/toggle', toggleUserStatus);
-router.get('/companies', getAllCompanies);
-router.put('/companies/:id/approve', approveCompany);
-router.get('/jobs/pending', getPendingJobs);
-router.put('/jobs/:id/approve', approveJob);
-router.get('/students', getAllStudents);
-router.get('/applications', getAllApplications);
+// Company Approval Routes (We add both in case frontend uses either one)
+router.put('/companies/:id/verify', verifyCompany);
+router.put('/companies/:id/verify/', verifyCompany);
+router.put('/companies/:id/approve', verifyCompany);
+
+// Enquiries Routes (for your Admin Dashboard)
 router.get('/enquiries', getAllEnquiries);
-router.put('/enquiries/:id/read', markEnquiryRead);
+router.put('/enquiries/:id/read', markAsRead);
 router.delete('/enquiries/:id', deleteEnquiry);
 
 module.exports = router;
