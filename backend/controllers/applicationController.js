@@ -45,7 +45,7 @@ const getMyApplications = asyncHandler(async (req, res) => {
   const apps = await Application.findAll({
     where: { studentId: student.id },
     include: [{
-      model: Job, as: 'job', attributes: ['title','type','salaryMin','salaryMax','location','applicationDeadline','status'],
+      model: Job, as: 'job', attributes: ['id','title','type','salaryMin','salaryMax','location','applicationDeadline','status'],
       include: [{ model: Company, as: 'company', attributes: ['companyName','logo'] }],
     }],
     order: [['createdAt','DESC']],

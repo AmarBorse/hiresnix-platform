@@ -1,11 +1,11 @@
 // src/pages/student/StudentJobs.tsx
-import React, { useState } from 'react';
-import { MapPin, DollarSign, Briefcase, Search, Filter, Loader2 } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { MapPin, DollarSign, Briefcase, Search, Loader2, CheckCircle } from 'lucide-react';
 import { jobsApi } from '../../api/jobs';
 import { applicationsApi } from '../../api/applications';
 import { useFetch } from '../../hooks/useFetch';
 import { PageLoader, ErrorState, EmptyState } from '../../components/common/LoadingState';
-import { Job } from '../../types';
+import { Application, Job } from '../../types';
 import { toast } from 'sonner';
 
 const DIFFICULTY_COLORS: Record<string, string> = {
@@ -27,10 +27,23 @@ export function StudentJobs() {
     () => jobsApi.getJobs({ search: search || undefined, type: type || undefined, page, limit: 10 }),
     [search, type, page]
   );
+  const { data: applicationsResult, loading: applicationsLoading, error: applicationsError, refetch: refetchApplications } = useFetch(
+    () => applicationsApi.getMyApplications()
+  );
 
   const jobs: Job[] = Array.isArray(result) ? result : (Array.isArray((result as any)?.data) ? (result as any)?.data : ((result as any)?.data?.data || []));
+  const applications: Application[] = Array.isArray(applicationsResult)
+    ? applicationsResult
+    : (Array.isArray((applicationsResult as any)?.data) ? (applicationsResult as any)?.data : ((applicationsResult as any)?.data?.data || []));
   const total: number = (result as any)?.data?.total || (result as any)?.total || 0;
   const totalPages: number = (result as any)?.data?.totalPages || (result as any)?.totalPages || 1;
+  const applicationByJobId = useMemo(() => {
+    return new Map(
+      applications
+        .filter(app => app.job?.id)
+        .map(app => [app.job!.id, app])
+    );
+  }, [applications]);
 
   const handleApply = async (jobId: number) => {
     setApplying(jobId);
@@ -39,6 +52,7 @@ export function StudentJobs() {
       toast.success('Application submitted successfully!');
       setShowCover(null);
       refetch();
+      refetchApplications();
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Failed to apply');
     } finally {
@@ -46,8 +60,8 @@ export function StudentJobs() {
     }
   };
 
-  if (loading) return <PageLoader />;
-  if (error) return <ErrorState message={error} onRetry={refetch} />;
+  if (loading || applicationsLoading) return <PageLoader />;
+  if (error || applicationsError) return <ErrorState message={error || applicationsError || 'Failed to load jobs'} onRetry={() => { refetch(); refetchApplications(); }} />;
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
@@ -86,7 +100,11 @@ export function StudentJobs() {
         <EmptyState title="No jobs found" description="Try adjusting your search filters" />
       ) : (
         <div className="space-y-3">
-          {jobs.map(job => (
+          {jobs.map(job => {
+            const application = applicationByJobId.get(job.id);
+            const hasApplication = !!application;
+
+            return (
             <div key={job.id} className="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md transition">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">
@@ -117,16 +135,23 @@ export function StudentJobs() {
                   <p className="text-xs text-gray-400">
                     Deadline: {new Date(job.applicationDeadline).toLocaleDateString()}
                   </p>
-                  <button
-                    onClick={() => setShowCover(showCover === job.id ? null : job.id)}
-                    className="bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold px-4 py-2 rounded-lg transition"
-                  >
-                    Apply Now
-                  </button>
+                  {hasApplication ? (
+                    <div className="flex items-center gap-1.5 bg-green-50 border border-green-200 text-green-700 text-xs font-bold px-4 py-2 rounded-lg">
+                      <CheckCircle size={13} />
+                      {application.status === 'Withdrawn' ? 'Withdrawn' : 'Applied'}
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setShowCover(showCover === job.id ? null : job.id)}
+                      className="bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold px-4 py-2 rounded-lg transition"
+                    >
+                      Apply Now
+                    </button>
+                  )}
                 </div>
               </div>
 
-              {showCover === job.id && (
+              {!hasApplication && showCover === job.id && (
                 <div className="mt-4 pt-4 border-t border-gray-100 space-y-3">
                   <textarea
                     rows={3}
@@ -151,7 +176,8 @@ export function StudentJobs() {
                 </div>
               )}
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
