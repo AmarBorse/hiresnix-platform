@@ -46,6 +46,7 @@ function EnquiryForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
     setLoading(true);
     try {
       // Using the configured client instance
@@ -53,9 +54,11 @@ function EnquiryForm() {
       if (data.success) {
         setSubmitted(true);
         toast.success(data.message || "Enquiry sent successfully!");
+      } else {
+        toast.error("Failed to send enquiry. Please try again.");
       }
     } catch (err: any) {
-      const msg = err.response?.data?.message || "Failed to send enquiry. Please try again.";
+      const msg = err.response?.data?.message || err.message || "Failed to send enquiry. Please try again.";
       toast.error(msg);
     } finally {
       setLoading(false);
@@ -99,7 +102,7 @@ function EnquiryForm() {
               <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, color: '#6b7a99', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 6 }}>Phone</label>
               <input type="tel" value={form.phone} onChange={e => set('phone', e.target.value)}
                 style={{ width: '100%', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '0.75rem 1rem', color: '#e8edf5', fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box' }}
-                placeholder="9876543210" />
+                placeholder="Mobile Number" />
             </div>
             <div>
               <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, color: '#6b7a99', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 6 }}>I am interested in</label>
@@ -128,6 +131,32 @@ export function LandingPage() {
   const navigate = useNavigate();
   const countersRef = useRef<HTMLDivElement>(null);
   const countersAnimated = useRef(false);
+
+  useEffect(() => {
+    const preventDefault = (event: Event) => event.preventDefault();
+    const preventCopyShortcuts = (event: KeyboardEvent) => {
+      const key = event.key.toLowerCase();
+      if ((event.ctrlKey || event.metaKey) && ['a', 'c', 's', 'u', 'p'].includes(key)) {
+        event.preventDefault();
+      }
+    };
+
+    document.body.classList.add('lp-readonly');
+    document.addEventListener('contextmenu', preventDefault);
+    document.addEventListener('copy', preventDefault);
+    document.addEventListener('cut', preventDefault);
+    document.addEventListener('dragstart', preventDefault);
+    document.addEventListener('keydown', preventCopyShortcuts);
+
+    return () => {
+      document.body.classList.remove('lp-readonly');
+      document.removeEventListener('contextmenu', preventDefault);
+      document.removeEventListener('copy', preventDefault);
+      document.removeEventListener('cut', preventDefault);
+      document.removeEventListener('dragstart', preventDefault);
+      document.removeEventListener('keydown', preventCopyShortcuts);
+    };
+  }, []);
 
   // Scroll reveal
   useEffect(() => {
@@ -169,6 +198,8 @@ export function LandingPage() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap');
         body { margin: 0; background-color: #060910; }
+        .lp-readonly, .lp-readonly * { -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
+        .lp-readonly input, .lp-readonly textarea, .lp-readonly select { -webkit-user-select:auto; user-select:auto; }
         .lp-reveal { opacity: 0; transform: translateY(32px); transition: opacity 0.7s cubic-bezier(.16,1,.3,1), transform 0.7s cubic-bezier(.16,1,.3,1); }
         .lp-reveal.lp-visible { opacity: 1; transform: translateY(0); }
         .lp-d1 { transition-delay: 0.1s; } .lp-d2 { transition-delay: 0.2s; }
@@ -359,7 +390,7 @@ export function LandingPage() {
               <img src="/hiresnix-logo.png" alt="Hiresnix" style={{ height: 70, objectFit: 'contain', marginBottom: '0.5rem', filter: 'drop-shadow(0 0 20px rgba(59,130,246,0.4))' }} />
               <div className="lp-font-m" style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.65rem', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: '1.5rem' }}>Internship Certificate</div>
               <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.82rem', marginBottom: '0.4rem' }}>This is to certify that</div>
-              <div className="lp-font-d" style={{ fontSize: '1.3rem', fontWeight: 800, color: '#fbbf24', marginBottom: '0.3rem' }}>Jayesh Badjugar</div>
+              <div className="lp-font-d" style={{ fontSize: '1.3rem', fontWeight: 800, color: '#fbbf24', marginBottom: '0.3rem' }}>Mitansh Patil</div>
               <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.82rem', marginBottom: '0.3rem' }}>has successfully completed</div>
               <div className="lp-font-d" style={{ fontSize: '1.15rem', fontWeight: 700, color: '#fff', marginBottom: '0.25rem' }}>Certificate of Completion</div>
               <div style={{ height: 1, background: 'linear-gradient(to right,transparent,rgba(245,158,11,0.4),transparent)', margin: '1rem 0' }} />
