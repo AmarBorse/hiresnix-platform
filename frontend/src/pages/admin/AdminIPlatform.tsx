@@ -83,21 +83,41 @@ export function AdminIPlatform() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    try {
-      const [s, a, e, d, r] = await Promise.all([
-        adminApi.getIPlatformStats(),
-        adminApi.getIPlatformApplications(),
-        adminApi.getIPlatformEnrollments(),
-        adminApi.getIPlatformDomains(),
-        adminApi.getIPlatformResources(),
-      ]);
-      setStats(s.data || {});
-      setApplications(a.data || []);
-      setEnrollments(e.data || []);
-      setDomains(d.data || []);
-      setResources(r.data || []);
-    } catch (e) { toast.error('Failed to load data'); }
-    finally { setLoading(false); }
+    const requests = [
+      { key: 'stats', label: 'stats', run: adminApi.getIPlatformStats },
+      { key: 'applications', label: 'applications', run: adminApi.getIPlatformApplications },
+      { key: 'enrollments', label: 'enrollments', run: adminApi.getIPlatformEnrollments },
+      { key: 'domains', label: 'domains', run: adminApi.getIPlatformDomains },
+      { key: 'resources', label: 'resources', run: adminApi.getIPlatformResources },
+    ] as const;
+
+    const results = await Promise.allSettled(requests.map(({ run }) => run()));
+
+    results.forEach((result, index) => {
+      const key = requests[index].key;
+      if (result.status === 'fulfilled') {
+        const data = result.value.data || [];
+        if (key === 'stats') setStats(data || {});
+        if (key === 'applications') setApplications(Array.isArray(data) ? data : []);
+        if (key === 'enrollments') setEnrollments(Array.isArray(data) ? data : []);
+        if (key === 'domains') setDomains(Array.isArray(data) ? data : []);
+        if (key === 'resources') setResources(Array.isArray(data) ? data : []);
+      }
+    });
+
+    const failed = results
+      .map((result, index) => result.status === 'rejected' ? { result, label: requests[index].label } : null)
+      .filter(Boolean) as { result: PromiseRejectedResult; label: string }[];
+
+    if (failed.length > 0) {
+      const details = failed
+        .map(({ result, label }) => `${label}: ${result.reason?.response?.data?.message || result.reason?.message || 'failed'}`)
+        .join('; ');
+      toast.error(`Failed to load ${failed.map(f => f.label).join(', ')}`);
+      console.error('Internship platform load failed:', details, failed.map(f => f.result.reason));
+    }
+
+    setLoading(false);
   }, []);
 
   useEffect(() => { load(); }, [load]);
