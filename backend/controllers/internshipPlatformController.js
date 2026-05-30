@@ -588,12 +588,27 @@ const downloadLOR = asyncHandler(async (req, res) => {
 });
 
 const generateOfferLetter = asyncHandler(async (req, res) => {
-  const { candidateName, role, duration, joiningDate } = req.body;
+  const { applicationId, candidateName, role, duration, joiningDate, offerLetterDate } = req.body;
   const safeCandidateName = String(candidateName || 'Candidate').trim() || 'Candidate';
   const fileCandidateName = safeCandidateName.replace(/[^a-z0-9_-]+/gi, '-').replace(/^-+|-+$/g, '') || 'candidate';
-  
-  // Format a dynamic ID matching the HSN-INT-[YEAR]-[ID] format
-  const offerId = `HSN-INT-${new Date().getFullYear()}-` + crypto.randomBytes(2).toString('hex').toUpperCase();
+
+  let application = null;
+  if (applicationId) {
+    application = await InternshipApplication.findByPk(applicationId);
+  }
+
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const stableOfferDate = application?.offerLetterDate || offerLetterDate || todayIso;
+  const stableJoiningDate = application?.offerJoiningDate || joiningDate || todayIso;
+  const stableOfferId = application?.offerLetterId || `HSN-INT-${new Date(stableOfferDate).getFullYear()}-${crypto.randomBytes(2).toString('hex').toUpperCase()}`;
+
+  if (application && (!application.offerLetterDate || !application.offerJoiningDate || !application.offerLetterId)) {
+    await application.update({
+      offerLetterDate: application.offerLetterDate || stableOfferDate,
+      offerJoiningDate: application.offerJoiningDate || stableJoiningDate,
+      offerLetterId: application.offerLetterId || stableOfferId,
+    });
+  }
 
   const doc = new PDFDocument({ size: 'A4', margin: 0 });
   res.setHeader('Content-Type', 'application/pdf');
@@ -602,16 +617,16 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
 
   pdfHeader(doc, 'INTERNSHIP OFFER LETTER');
 
-  const today = new Date();
-  const dateStr = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
-  
-  const joinDateObj = joiningDate ? new Date(joiningDate) : new Date();
+  const offerDateObj = new Date(stableOfferDate);
+  const dateStr = `${String(offerDateObj.getDate()).padStart(2, '0')}/${String(offerDateObj.getMonth() + 1).padStart(2, '0')}/${offerDateObj.getFullYear()}`;
+
+  const joinDateObj = new Date(stableJoiningDate);
   const joinDateStr = `${String(joinDateObj.getDate()).padStart(2, '0')}/${String(joinDateObj.getMonth() + 1).padStart(2, '0')}/${joinDateObj.getFullYear()}`;
   
   const internshipDuration = duration || 'the stipulated duration';
 
   doc.moveDown(1);
-  doc.fillColor('#475569').fontSize(10).font('Helvetica').text(`Offer Letter ID: ${offerId}`, 40);
+  doc.fillColor('#475569').fontSize(10).font('Helvetica').text(`Offer Letter ID: ${stableOfferId}`, 40);
   doc.moveDown(0.2);
   doc.fillColor('#475569').fontSize(10).font('Helvetica').text(`Date: ${dateStr}`, 40);
   

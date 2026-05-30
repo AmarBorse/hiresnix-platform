@@ -36,6 +36,9 @@ const InternshipApplication = sequelize.define('InternshipApplication', {
   },
   adminNote:    { type: DataTypes.TEXT },
   approvedAt:   { type: DataTypes.DATE },
+  offerLetterId: { type: DataTypes.STRING(50) },
+  offerLetterDate: { type: DataTypes.DATEONLY },
+  offerJoiningDate: { type: DataTypes.DATEONLY },
 }, { tableName: 'ip_applications', timestamps: true });
 
 // ── INTERNSHIP ENROLLMENT (after approval) ─────────────────────────
