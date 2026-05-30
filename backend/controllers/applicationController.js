@@ -53,6 +53,35 @@ const getMyApplications = asyncHandler(async (req, res) => {
   res.json({ success: true, count: apps.length, data: apps });
 });
 
+// GET /api/applications
+const getAllApplications = asyncHandler(async (req, res) => {
+  const { status, limit = 200 } = req.query;
+  const where = {};
+  if (status) where.status = status;
+
+  const apps = await Application.findAll({
+    where,
+    include: [
+      {
+        model: Student,
+        as: 'student',
+        attributes: ['cgpa','skills','department','year','resumeUrl','projects'],
+        include: [{ model: User, as: 'user', attributes: ['name','email'] }],
+      },
+      {
+        model: Job,
+        as: 'job',
+        attributes: ['title','type','salaryMin','salaryMax','location','status'],
+        include: [{ model: Company, as: 'company', attributes: ['companyName','logo'] }],
+      },
+    ],
+    order: [['createdAt','DESC']],
+    limit: Math.min(parseInt(limit, 10) || 200, 1000),
+  });
+
+  res.json({ success: true, count: apps.length, data: apps });
+});
+
 // GET /api/applications/job/:jobId
 const getJobApplicants = asyncHandler(async (req, res) => {
   const { status } = req.query;
@@ -119,4 +148,4 @@ const withdrawApplication = asyncHandler(async (req, res) => {
   res.json({ success: true, data: app });
 });
 
-module.exports = { applyToJob, getMyApplications, getJobApplicants, updateApplicationStatus, withdrawApplication };
+module.exports = { applyToJob, getMyApplications, getAllApplications, getJobApplicants, updateApplicationStatus, withdrawApplication };

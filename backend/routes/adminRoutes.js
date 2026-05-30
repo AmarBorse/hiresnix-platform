@@ -1,8 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const { verifyCompany } = require('../controllers/adminController');
+const { verifyCompany, getAdminAnalytics } = require('../controllers/adminController');
+const { getAllApplications } = require('../controllers/applicationController');
 const { getAllEnquiries, markAsRead, deleteEnquiry } = require('../controllers/enquiryController');
-// const { protect, authorize } = require('../middleware/auth');
+const { protect, authorize } = require('../middleware/auth');
 
 // Admin Auth Middleware (uncomment when ready to secure)
 // router.use(protect, authorize('admin'));
@@ -11,6 +12,10 @@ const { getAllEnquiries, markAsRead, deleteEnquiry } = require('../controllers/e
 router.put('/companies/:id/verify', verifyCompany);
 router.put('/companies/:id/verify/', verifyCompany);
 router.put('/companies/:id/approve', verifyCompany);
+
+// Dashboard and application aliases used by the admin frontend
+router.get('/analytics', protect, authorize('admin'), getAdminAnalytics);
+router.get('/applications', protect, authorize('admin'), getAllApplications);
 
 // Enquiries Routes (for your Admin Dashboard)
 router.get('/enquiries', getAllEnquiries);

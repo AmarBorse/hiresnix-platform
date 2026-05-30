@@ -1,7 +1,6 @@
 // src/pages/admin/AdminApplications.tsx
 import React, { useState } from 'react';
 import { adminApi } from '../../api/admin';
-import client from '../../api/client';
 import { useFetch } from '../../hooks/useFetch';
 import { PageLoader, ErrorState, EmptyState } from '../../components/common/LoadingState';
 import { toast } from 'sonner';
@@ -34,7 +33,7 @@ export function AdminApplications() {
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [updating, setUpdating] = useState<number | null>(null);
 
-  const { data: result, loading, error, refetch } = useFetch(() => client.get('/admin/applications', { params: { limit: 200 } }));
+  const { data: result, loading, error, refetch } = useFetch(() => adminApi.getAllApplications({ limit: 200 }));
   const all: any[] = Array.isArray(result) ? result : (Array.isArray((result as any)?.data) ? (result as any)?.data : ((result as any)?.data?.data || []));
 
   const filtered = all.filter(a => {
