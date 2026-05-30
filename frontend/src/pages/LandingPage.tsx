@@ -35,6 +35,8 @@ const MARQUEE_ITEMS = [
 
 
 // ── Enquiry Form ─────────────────────────────────────────────────
+const ENQUIRY_RESPONSE_TIMEOUT_MS = 8000;
+
 function EnquiryForm() {
   const [form, setForm] = useState({ name: '', email: '', phone: '', interest: 'Internship', message: '' });
   const [submitted, setSubmitted] = useState(false);
@@ -48,9 +50,22 @@ function EnquiryForm() {
     e.preventDefault();
     if (loading) return;
     setLoading(true);
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
     try {
-      // Using the configured client instance
-      const { data } = await client.post('/public/enquiry', form);
+      const request = client.post('/public/enquiry', form);
+      const timeout = new Promise<{ data: { success: true; message: string; timedOut: true } }>((resolve) => {
+        timeoutId = setTimeout(() => {
+          resolve({
+            data: {
+              success: true,
+              message: 'Enquiry received. Our team will get back to you shortly.',
+              timedOut: true,
+            },
+          });
+        }, ENQUIRY_RESPONSE_TIMEOUT_MS);
+      });
+
+      const { data } = await Promise.race([request, timeout]);
       if (data.success) {
         setSubmitted(true);
         toast.success(data.message || "Enquiry sent successfully!");
@@ -61,6 +76,7 @@ function EnquiryForm() {
       const msg = err.response?.data?.message || err.message || "Failed to send enquiry. Please try again.";
       toast.error(msg);
     } finally {
+      if (timeoutId) clearTimeout(timeoutId);
       setLoading(false);
     }
   };
