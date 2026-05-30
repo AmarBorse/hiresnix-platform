@@ -8,6 +8,29 @@ const axios = require('axios');
 const { Student, User, Job, Company } = require('../models');
 const { Op } = require('sequelize');
 
+const departmentAliases = {
+  cse: 'Computer Science',
+  'computer science': 'Computer Science',
+  cs: 'Computer Science',
+  it: 'Information Technology',
+  'information technology': 'Information Technology',
+  ece: 'Electronics',
+  electronics: 'Electronics',
+  mech: 'Mechanical',
+  mechanical: 'Mechanical',
+  civil: 'Civil',
+  mca: 'MCA',
+  mba: 'MBA',
+  other: 'Other',
+};
+
+const normalizeDepartment = value => {
+  if (value === null || value === undefined) return null;
+  const normalized = String(value).trim();
+  if (!normalized) return null;
+  return departmentAliases[normalized.toLowerCase()] || normalized;
+};
+
 // GET /api/students/profile
 const getStudentProfile = asyncHandler(async (req, res) => {
   const student = await Student.findOne({
@@ -27,6 +50,9 @@ const updateStudentProfile = asyncHandler(async (req, res) => {
   ];
   const updates = {};
   allowed.forEach(f => { if (req.body[f] !== undefined) updates[f] = req.body[f]; });
+  if (Object.prototype.hasOwnProperty.call(updates, 'department')) {
+    updates.department = normalizeDepartment(updates.department);
+  }
 
   let student = await Student.findOne({ where: { userId: req.user.id } });
   if (!student) { res.status(404); throw new Error('Profile not found'); }

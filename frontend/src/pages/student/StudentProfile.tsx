@@ -7,6 +7,17 @@ import { toast } from 'sonner';
 import { Upload, Save, X, Plus, Loader2, FileText, CheckCircle } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
 
+const DEPARTMENT_OPTIONS = [
+  'Computer Science',
+  'Information Technology',
+  'Electronics',
+  'Mechanical',
+  'Civil',
+  'MCA',
+  'MBA',
+  'Other',
+];
+
 export function StudentProfile() {
   const { user } = useAuthStore();
   const { data: rawProfile, loading, error, refetch } = useFetch(
@@ -40,7 +51,7 @@ export function StudentProfile() {
     try {
       await studentApi.updateProfile({
         cgpa: form.cgpa ? parseFloat(form.cgpa) : null,
-        department: form.department,
+        department: form.department || null,
         year: form.year ? parseInt(form.year) : null,
         skills: form.skills,
         projects: form.projects,
@@ -158,13 +169,16 @@ export function StudentProfile() {
           </div>
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Department</label>
-            <input
-              type="text"
+            <select
               value={form.department}
               onChange={e => setForm(p => ({ ...p, department: e.target.value }))}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
-              placeholder="e.g. Computer Science"
-            />
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 bg-white"
+            >
+              <option value="">Select department</option>
+              {DEPARTMENT_OPTIONS.map(department => (
+                <option key={department} value={department}>{department}</option>
+              ))}
+            </select>
           </div>
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Year</label>
