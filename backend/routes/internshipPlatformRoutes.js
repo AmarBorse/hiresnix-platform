@@ -30,6 +30,7 @@ r.post('/task-submit',               protect, authorize('student'), ctrl.submitT
 r.put('/enrollments/:id/complete',   protect, authorize('admin'),   ctrl.markComplete);
 
 // ── CERTIFICATES / LETTERS (PDF) ──────────────────────────────────
+r.get('/verify/:certId',             ctrl.verifyCertificate);
 r.get('/my-certificates',            protect, authorize('student'), ctrl.getMyCertificates);
 r.get('/certificate/:enrollId/pdf',  protect, ctrl.downloadCertificate);
 r.get('/completion/:enrollId/pdf',   protect, ctrl.downloadCompletionLetter);

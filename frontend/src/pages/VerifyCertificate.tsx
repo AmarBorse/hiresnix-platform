@@ -15,8 +15,11 @@ export function VerifyCertificate() {
   useEffect(() => {
     if (!id) return;
     const verify = async () => {
+      setLoading(true);
+      setError(false);
+      setCertData(null);
       try {
-        const res = await client.get(`/iplatform/verify/${id}`); 
+        const res = await client.get(`/iplatform/verify/${encodeURIComponent(id.trim())}`);
         setCertData(res.data.data);
       } catch (err) {
         setError(true);
@@ -37,10 +40,10 @@ export function VerifyCertificate() {
           <img src="/hiresnix-logo.png" alt="Hiresnix" className="h-10 mx-auto mb-8" />
           <h2 className="text-2xl font-black text-gray-900 mb-2">Verify Certificate</h2>
           <p className="text-gray-500 text-sm mb-6">Enter the Certificate ID provided by the candidate to verify its authenticity.</p>
-          <form onSubmit={(e) => { e.preventDefault(); if (inputId.trim()) navigate(`/verify/${inputId.trim()}`); }}>
+          <form onSubmit={(e) => { e.preventDefault(); if (inputId.trim()) navigate(`/verify/${encodeURIComponent(inputId.trim())}`); }}>
             <div className="relative mb-4">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-              <input type="text" placeholder="e.g. CERT-12345" value={inputId} onChange={e => setInputId(e.target.value)} className="w-full border border-gray-200 rounded-xl pl-11 pr-4 py-3 text-sm focus:outline-none focus:border-blue-500" />
+              <input type="text" placeholder="e.g. HRX-59E570B0" value={inputId} onChange={e => setInputId(e.target.value)} className="w-full border border-gray-200 rounded-xl pl-11 pr-4 py-3 text-sm focus:outline-none focus:border-blue-500" />
             </div>
             <button type="submit" disabled={!inputId.trim()} className="w-full bg-blue-500 hover:bg-blue-600 disabled:opacity-50 text-white font-bold py-3 rounded-xl transition">Verify Now</button>
           </form>
