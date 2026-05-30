@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { verifyCompany, getAdminAnalytics } = require('../controllers/adminController');
 const { getAllApplications } = require('../controllers/applicationController');
+const { generateOfferLetter } = require('../controllers/internshipPlatformController');
 const { getAllEnquiries, markAsRead, deleteEnquiry } = require('../controllers/enquiryController');
 const { protect, authorize } = require('../middleware/auth');
 
@@ -16,6 +17,7 @@ router.put('/companies/:id/approve', verifyCompany);
 // Dashboard and application aliases used by the admin frontend
 router.get('/analytics', protect, authorize('admin'), getAdminAnalytics);
 router.get('/applications', protect, authorize('admin'), getAllApplications);
+router.post('/generate-offer', protect, authorize('admin'), generateOfferLetter);
 
 // Enquiries Routes (for your Admin Dashboard)
 router.get('/enquiries', getAllEnquiries);

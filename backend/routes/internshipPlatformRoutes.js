@@ -34,6 +34,7 @@ r.get('/my-certificates',            protect, authorize('student'), ctrl.getMyCe
 r.get('/certificate/:enrollId/pdf',  protect, ctrl.downloadCertificate);
 r.get('/completion/:enrollId/pdf',   protect, ctrl.downloadCompletionLetter);
 r.get('/lor/:enrollId/pdf',          protect, ctrl.downloadLOR);
+r.post('/generate-offer',            protect, authorize('admin'), ctrl.generateOfferLetter);
 
 // ── ADMIN ─────────────────────────────────────────────────────────
 r.get('/stats',                      protect, authorize('admin'), ctrl.getStats);

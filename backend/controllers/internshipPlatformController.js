@@ -589,13 +589,15 @@ const downloadLOR = asyncHandler(async (req, res) => {
 
 const generateOfferLetter = asyncHandler(async (req, res) => {
   const { candidateName, role, duration, joiningDate } = req.body;
+  const safeCandidateName = String(candidateName || 'Candidate').trim() || 'Candidate';
+  const fileCandidateName = safeCandidateName.replace(/[^a-z0-9_-]+/gi, '-').replace(/^-+|-+$/g, '') || 'candidate';
   
   // Format a dynamic ID matching the HSN-INT-[YEAR]-[ID] format
   const offerId = `HSN-INT-${new Date().getFullYear()}-` + crypto.randomBytes(2).toString('hex').toUpperCase();
 
   const doc = new PDFDocument({ size: 'A4', margin: 0 });
   res.setHeader('Content-Type', 'application/pdf');
-  res.setHeader('Content-Disposition', `attachment; filename="offer-letter-${candidateName}.pdf"`);
+  res.setHeader('Content-Disposition', `attachment; filename="offer-letter-${fileCandidateName}.pdf"`);
   doc.pipe(res);
 
   pdfHeader(doc, 'INTERNSHIP OFFER LETTER');
@@ -615,13 +617,13 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
   
   doc.moveDown(1);
   doc.fillColor('#1e293b').fontSize(10).font('Helvetica').text('To,', 40);
-  doc.font('Helvetica-Bold').text(candidateName, 40);
+  doc.font('Helvetica-Bold').text(safeCandidateName, 40);
 
   doc.moveDown(0.8);
   doc.font('Helvetica-Bold').text(`Subject: Internship Offer Letter – ${role || 'Intern'} – Hiresnix`, 40);
 
   doc.moveDown(0.8);
-  doc.font('Helvetica').text(`Dear ${candidateName},`, 40);
+  doc.font('Helvetica').text(`Dear ${safeCandidateName},`, 40);
 
   doc.moveDown(0.4);
   doc.font('Helvetica-Bold').text('Congratulations!', 40);
