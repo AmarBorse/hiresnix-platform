@@ -22,7 +22,7 @@ const getSupabaseConfig = () => ({
 const sendStudentVerificationEmail = async (user) => {
   const { url, serviceRoleKey } = getSupabaseConfig();
   if (!url || !serviceRoleKey) {
-    throw new Error('Student email verification is not configured');
+    throw new Error('Student verification email is not configured. Add SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in Render.');
   }
 
   const emailRedirectTo = buildStudentEmailRedirectTo(user.emailVerificationToken);

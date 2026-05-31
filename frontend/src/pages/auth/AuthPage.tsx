@@ -25,6 +25,9 @@ export function AuthPage() {
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotSent, setForgotSent] = useState(false);
   const [verificationMessage, setVerificationMessage] = useState(routeState?.message || '');
+  const [showResendVerification, setShowResendVerification] = useState(
+    routeState?.message === 'Please verify your email before logging in.'
+  );
 
   const [loginForm, setLoginForm]     = useState({ email: '', password: '' });
   const [loginErrors, setLoginErrors] = useState({ email: '', password: '' });
@@ -51,6 +54,7 @@ export function AuthPage() {
         if (!mounted) return;
         setTab('login');
         setVerificationMessage(res.message || 'Email verified successfully. You can now log in.');
+        setShowResendVerification(false);
         toast.success(res.message || 'Email verified successfully. You can now log in.');
         navigate('/auth', { replace: true });
       })
@@ -58,6 +62,7 @@ export function AuthPage() {
         if (!mounted) return;
         const message = err.response?.data?.message || 'Unable to verify email. Please request a new verification email.';
         setVerificationMessage(message);
+        setShowResendVerification(true);
         toast.error(message);
         navigate('/auth', { replace: true });
       })
@@ -101,7 +106,12 @@ export function AuthPage() {
       toast.success(`Welcome back, ${res.user.name}!`);
       navigate(roleRedirect[res.user.role as Role]);
     } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Invalid credentials');
+      const message = err.response?.data?.message || 'Invalid credentials';
+      if (message === 'Please verify your email before logging in.') {
+        setVerificationMessage(message);
+        setShowResendVerification(true);
+      }
+      toast.error(message);
     } finally { setLoading(false); }
   };
 
@@ -146,6 +156,7 @@ export function AuthPage() {
       if (registerRole === 'student' && res.requiresVerification) {
         const message = res.message || 'Verification email sent. Please check your inbox before logging in.';
         setVerificationMessage(message);
+        setShowResendVerification(true);
         setLoginForm(p => ({ ...p, email: cleanEmail, password: '' }));
         setTab('login');
         toast.success(message);
@@ -173,6 +184,7 @@ export function AuthPage() {
       const res = await authApi.resendStudentVerification(email);
       const message = res.message || 'Verification email sent. Please check your inbox before logging in.';
       setVerificationMessage(message);
+      setShowResendVerification(true);
       toast.success(message);
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Unable to resend verification email');
@@ -317,10 +329,12 @@ export function AuthPage() {
                   className="w-full bg-blue-500 hover:bg-blue-600 disabled:opacity-60 text-white font-bold py-2.5 rounded-xl text-sm transition flex items-center justify-center gap-2">
                   {loading && <Loader2 size={14} className="animate-spin" />} Sign In
                 </button>
-                <button type="button" onClick={handleResendVerification} disabled={resendLoading || loading}
-                  className="w-full border border-white/10 hover:border-blue-400/60 disabled:opacity-60 text-blue-300 font-semibold py-2.5 rounded-xl text-sm transition flex items-center justify-center gap-2">
-                  {resendLoading && <Loader2 size={14} className="animate-spin" />} Resend Verification Email
-                </button>
+                {showResendVerification && (
+                  <button type="button" onClick={handleResendVerification} disabled={resendLoading || loading}
+                    className="w-full border border-white/10 hover:border-blue-400/60 disabled:opacity-60 text-blue-300 font-semibold py-2.5 rounded-xl text-sm transition flex items-center justify-center gap-2">
+                    {resendLoading && <Loader2 size={14} className="animate-spin" />} Resend Verification Email
+                  </button>
+                )}
                 <p className="text-center text-xs text-gray-600">
                   Don't have an account?{' '}
                   <button type="button" onClick={() => setTab('register')} className="text-blue-400 hover:text-blue-300 font-semibold transition-colors">Register here</button>
