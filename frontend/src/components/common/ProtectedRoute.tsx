@@ -16,6 +16,16 @@ export function ProtectedRoute({ children, allowedRoles }: Props) {
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
+  if (user.role === 'student' && user.emailVerified === false) {
+    return (
+      <Navigate
+        to="/auth"
+        state={{ from: location, message: 'Please verify your email before logging in.' }}
+        replace
+      />
+    );
+  }
+
   if (!allowedRoles.includes(user.role)) {
     // Redirect to the correct dashboard
     const redirectMap: Record<Role, string> = {
