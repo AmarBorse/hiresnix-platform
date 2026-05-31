@@ -1,61 +1,76 @@
 const crypto = require('crypto');
+const nodemailer = require('nodemailer');
 
-const DEFAULT_FRONTEND_URL = 'https://hiresnix.co.in';
+const DEFAULT_FRONTEND_URL = 'https://www.hiresnix.co.in';
 const STUDENT_VERIFY_MESSAGE = 'Verification email sent. Please check your inbox before logging in.';
 
 const getFrontendUrl = () =>
-  (process.env.CLIENT_URL || process.env.FRONTEND_URL || DEFAULT_FRONTEND_URL).replace(/\/$/, '');
+  (process.env.CLIENT_URL || process.env.FRONTEND_URL || process.env.VITE_FRONTEND_URL || DEFAULT_FRONTEND_URL).replace(/\/$/, '');
 
 const createVerificationToken = () => crypto.randomBytes(32).toString('hex');
 
-const buildStudentEmailRedirectTo = (token) => {
+const buildStudentVerificationUrl = (token) => {
   const url = new URL('/auth', getFrontendUrl());
   url.searchParams.set('studentEmailVerificationToken', token);
   return url.toString();
 };
 
-const getSupabaseConfig = () => ({
-  url: (process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '').replace(/\/$/, ''),
-  serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY || '',
-});
+function createMailTransporter() {
+  if (process.env.SMTP_HOST) {
+    return nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: Number(process.env.SMTP_PORT || 587),
+      secure: process.env.SMTP_SECURE === 'true',
+      auth: {
+        user: process.env.SMTP_USER || process.env.EMAIL_USER,
+        pass: process.env.SMTP_PASS || process.env.EMAIL_PASS,
+      },
+    });
+  }
+
+  if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+    return nodemailer.createTransport({
+      service: process.env.EMAIL_SERVICE || 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
+  }
+
+  return null;
+}
 
 const sendStudentVerificationEmail = async (user) => {
-  const { url, serviceRoleKey } = getSupabaseConfig();
-  if (!url || !serviceRoleKey) {
-    throw new Error('Student verification email is not configured. Add SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in Render.');
+  const transporter = createMailTransporter();
+  if (!transporter) {
+    throw new Error('Student verification email is not configured. Set EMAIL_USER and EMAIL_PASS, or SMTP_HOST credentials.');
   }
 
-  const emailRedirectTo = buildStudentEmailRedirectTo(user.emailVerificationToken);
-  const inviteUrl = `${url}/auth/v1/invite?redirect_to=${encodeURIComponent(emailRedirectTo)}`;
+  const verificationUrl = buildStudentVerificationUrl(user.emailVerificationToken);
 
-  // Supabase email confirmation is a global Auth setting, so we do not enable it.
-  // Instead, only student registrations trigger this Supabase Auth email.
-  const response = await fetch(inviteUrl, {
-    method: 'POST',
-    headers: {
-      apikey: serviceRoleKey,
-      Authorization: `Bearer ${serviceRoleKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      email: user.email,
-      data: {
-        app_user_id: String(user.id),
-        app_role: 'student',
-      },
-    }),
+  // Do not use Supabase Auth invite links here: the app uses its own JWT auth,
+  // and Supabase invite callbacks can redirect to the project Site URL instead.
+  await transporter.sendMail({
+    from: process.env.EMAIL_FROM || `"Hiresnix" <${process.env.EMAIL_USER || process.env.SMTP_USER}>`,
+    to: user.email,
+    subject: 'Verify your Hiresnix student account',
+    html: `
+      <div style="font-family:Arial,sans-serif;line-height:1.6;color:#0f172a">
+        <h2>Verify your student account</h2>
+        <p>Hello ${user.name || 'there'},</p>
+        <p>Click the button below to verify your Hiresnix student account before logging in.</p>
+        <p>
+          <a href="${verificationUrl}" style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;padding:10px 16px;border-radius:8px;font-weight:700">
+            Verify email
+          </a>
+        </p>
+        <p>If the button does not work, open this link:</p>
+        <p><a href="${verificationUrl}">${verificationUrl}</a></p>
+        <p>If you did not create a Hiresnix student account, you can ignore this email.</p>
+      </div>
+    `,
   });
-
-  if (!response.ok) {
-    let message = 'Unable to send verification email';
-    try {
-      const body = await response.json();
-      message = body.msg || body.message || body.error_description || message;
-    } catch {
-      message = response.statusText || message;
-    }
-    throw new Error(message);
-  }
 };
 
 module.exports = {
