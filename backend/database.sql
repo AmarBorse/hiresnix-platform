@@ -19,6 +19,9 @@ CREATE TABLE IF NOT EXISTS users (
   role         VARCHAR(20)  NOT NULL DEFAULT 'student' CHECK (role IN ('student','company','admin')),
   "isActive"   BOOLEAN      NOT NULL DEFAULT TRUE,
   "isApproved" BOOLEAN      NOT NULL DEFAULT FALSE,
+  "emailVerified" BOOLEAN   NOT NULL DEFAULT TRUE,
+  "emailVerificationToken" VARCHAR(128),
+  "emailVerificationSentAt" TIMESTAMPTZ,
   "createdAt"  TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
   "updatedAt"  TIMESTAMPTZ  NOT NULL DEFAULT NOW()
 );

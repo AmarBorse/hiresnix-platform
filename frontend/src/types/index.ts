@@ -8,6 +8,7 @@ export interface AuthUser {
   email: string;
   role: Role;
   isApproved: boolean;
+  emailVerified?: boolean;
 }
 
 export interface StudentProfile {

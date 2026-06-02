@@ -5,6 +5,7 @@
 const jwt = require('jsonwebtoken');
 const asyncHandler = require('express-async-handler');
 const { User } = require('../models');
+const { STUDENT_UNVERIFIED_MESSAGE } = require('../utils/studentEmailVerification');
 
 const protect = asyncHandler(async (req, res, next) => {
   let token;
@@ -31,6 +32,10 @@ const authorize = (...roles) => (req, res, next) => {
   if (!roles.includes(req.user.role)) {
     res.status(403);
     throw new Error(`Role '${req.user.role}' is not authorized for this action`);
+  }
+  if (req.user.role === 'student' && roles.includes('student') && req.user.emailVerified === false) {
+    res.status(403);
+    throw new Error(STUDENT_UNVERIFIED_MESSAGE);
   }
   next();
 };

@@ -26,4 +26,14 @@ export const authApi = {
     const res = await client.put('/auth/updatepassword', data);
     return res.data;
   },
+
+  verifyStudentEmail: async (token: string): Promise<{ success: boolean; message: string; user?: AuthUser }> => {
+    const res = await client.post('/auth/verify-student-email', { token });
+    return res.data;
+  },
+
+  resendStudentVerification: async (email: string): Promise<{ success: boolean; message: string }> => {
+    const res = await client.post('/auth/resend-student-verification', { email });
+    return res.data;
+  },
 };

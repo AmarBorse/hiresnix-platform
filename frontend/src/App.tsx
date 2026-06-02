@@ -40,6 +40,9 @@ function AuthRedirect() {
   const { isAuthenticated, user } = useAuthStore();
   if (!isAuthenticated || !user) return <Navigate to="/auth" replace />;
   const role = user.role as Role;
+  if (role === 'student' && user.emailVerified === false) {
+    return <Navigate to="/auth" state={{ message: 'Please verify your email before accessing your account.' }} replace />;
+  }
   if (role === 'student') return <Navigate to="/student/dashboard" replace />;
   if (role === 'company') return <Navigate to="/company/dashboard" replace />;
   if (role === 'admin')   return <Navigate to="/admin/dashboard" replace />;
@@ -64,7 +67,14 @@ export default function App() {
         <Route path="/verify/:id" element={<VerifyCertificate />} />
 
         {/* Auth */}
-        <Route path="/auth" element={isAuthenticated && user ? <AuthRedirect /> : <AuthPage />} />
+        <Route
+          path="/auth"
+          element={
+            isAuthenticated && user && !(user.role === 'student' && user.emailVerified === false)
+              ? <AuthRedirect />
+              : <AuthPage />
+          }
+        />
 
         {/* Student */}
         <Route path="/student" element={<ProtectedRoute allowedRoles={['student']}><StudentLayout /></ProtectedRoute>}>
