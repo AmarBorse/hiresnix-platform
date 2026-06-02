@@ -25,9 +25,7 @@ apiClient.interceptors.request.use((config) => {
 apiClient.interceptors.response.use(
   (res) => res,
   (err) => {
-    const requestUrl = err.config?.url || '';
-    const isAuthRequest = requestUrl.startsWith('/auth/login') || requestUrl.startsWith('/auth/register');
-    if (err.response?.status === 401 && !isAuthRequest) {
+    if (err.response?.status === 401) {
       localStorage.removeItem('hirenix_token');
       localStorage.removeItem('hirenix_user');
       window.location.href = '/auth';

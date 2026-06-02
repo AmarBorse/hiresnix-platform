@@ -42,18 +42,6 @@ const User = sequelize.define('User', {
     type:         DataTypes.BOOLEAN,
     defaultValue: false,
   },
-  emailVerified: {
-    type:         DataTypes.BOOLEAN,
-    defaultValue: true,
-  },
-  emailVerificationToken: {
-    type:      DataTypes.STRING(128),
-    allowNull: true,
-  },
-  emailVerificationSentAt: {
-    type:      DataTypes.DATE,
-    allowNull: true,
-  },
 }, {
   tableName:  'users',
   timestamps: true,
@@ -69,7 +57,7 @@ const User = sequelize.define('User', {
 
 User.prototype.getSignedJwtToken = function () {
   return jwt.sign(
-    { id: this.id, role: this.role, emailVerified: this.emailVerified },
+    { id: this.id, role: this.role },
     process.env.JWT_SECRET,
     { expiresIn: process.env.JWT_EXPIRE }
   );

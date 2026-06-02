@@ -1,6 +1,6 @@
 // src/pages/auth/AuthPage.tsx
-import React, { useEffect, useState } from 'react';
-import { useNavigate, Link, useLocation } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { authApi } from '../../api/auth';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -12,22 +12,14 @@ type RegisterRole = 'student' | 'company';
 
 export function AuthPage() {
   const navigate = useNavigate();
-  const location = useLocation();
-  const routeState = location.state as { message?: string } | null;
   const { setAuth } = useAuthStore();
   const [tab, setTab] = useState<Tab>('login');
   const [loading, setLoading] = useState(false);
-  const [verificationLoading, setVerificationLoading] = useState(false);
-  const [resendLoading, setResendLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
   const [registerRole, setRegisterRole] = useState<RegisterRole>('student');
   const [showForgot, setShowForgot] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotSent, setForgotSent] = useState(false);
-  const [verificationMessage, setVerificationMessage] = useState(routeState?.message || '');
-  const [showResendVerification, setShowResendVerification] = useState(
-    routeState?.message === 'Please verify your email before logging in.'
-  );
 
   const [loginForm, setLoginForm]     = useState({ email: '', password: '' });
   const [loginErrors, setLoginErrors] = useState({ email: '', password: '' });
@@ -41,37 +33,6 @@ export function AuthPage() {
     company: '/company/dashboard',
     admin:   '/admin/dashboard',
   };
-
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const token = params.get('studentEmailVerificationToken');
-    if (!token) return;
-
-    let mounted = true;
-    setVerificationLoading(true);
-    authApi.verifyStudentEmail(token)
-      .then((res) => {
-        if (!mounted) return;
-        setTab('login');
-        setVerificationMessage(res.message || 'Email verified successfully. You can now log in.');
-        setShowResendVerification(false);
-        toast.success(res.message || 'Email verified successfully. You can now log in.');
-        navigate('/auth', { replace: true });
-      })
-      .catch((err) => {
-        if (!mounted) return;
-        const message = err.response?.data?.message || 'Unable to verify email. Please request a new verification email.';
-        setVerificationMessage(message);
-        setShowResendVerification(true);
-        toast.error(message);
-        navigate('/auth', { replace: true });
-      })
-      .finally(() => {
-        if (mounted) setVerificationLoading(false);
-      });
-
-    return () => { mounted = false; };
-  }, [location.search, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -101,17 +62,11 @@ export function AuthPage() {
         ...loginForm,
         email: cleanEmail
       });
-      if (!res.user || !res.token) throw new Error('Invalid login response');
       setAuth(res.user, res.token);
       toast.success(`Welcome back, ${res.user.name}!`);
       navigate(roleRedirect[res.user.role as Role]);
     } catch (err: any) {
-      const message = err.response?.data?.message || 'Invalid credentials';
-      if (message === 'Please verify your email before logging in.') {
-        setVerificationMessage(message);
-        setShowResendVerification(true);
-      }
-      toast.error(message);
+      toast.error(err.response?.data?.message || 'Invalid credentials');
     } finally { setLoading(false); }
   };
 
@@ -153,16 +108,6 @@ export function AuthPage() {
       };
 
       const res = await authApi.register(payload);
-      if (registerRole === 'student' && res.requiresVerification) {
-        const message = res.message || 'Verification email sent. Please check your inbox before logging in.';
-        setVerificationMessage(message);
-        setShowResendVerification(true);
-        setLoginForm(p => ({ ...p, email: cleanEmail, password: '' }));
-        setTab('login');
-        toast.success(message);
-        return;
-      }
-      if (!res.user || !res.token) throw new Error('Invalid registration response');
       setAuth(res.user, res.token);
       toast.success(`Account created! Welcome, ${res.user.name}!`);
       navigate(roleRedirect[res.user.role as Role]);
@@ -172,30 +117,15 @@ export function AuthPage() {
     } finally { setLoading(false); }
   };
 
-  const handleResendVerification = async () => {
-    const email = loginForm.email.trim() || registerForm.email.trim();
-    if (!email) {
-      setLoginErrors(p => ({ ...p, email: 'Email is required to resend verification' }));
-      return;
-    }
-
-    setResendLoading(true);
-    try {
-      const res = await authApi.resendStudentVerification(email);
-      const message = res.message || 'Verification email sent. Please check your inbox before logging in.';
-      setVerificationMessage(message);
-      setShowResendVerification(true);
-      toast.success(message);
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Unable to resend verification email');
-    } finally { setResendLoading(false); }
-  };
-
   const handleForgot = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
-      await authApi.forgotPassword(forgotEmail);
+      await fetch('/api/iplatform/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: forgotEmail }),
+      });
       setForgotSent(true);
       toast.success('Reset link sent! Check your email.');
     } catch {
@@ -276,18 +206,6 @@ export function AuthPage() {
           </div>
 
           <div style={{ padding: '1.5rem' }}>
-            {verificationMessage && (
-              <div className="mb-4 rounded-xl border border-blue-500/30 bg-blue-500/10 px-4 py-3 text-sm text-blue-100">
-                {verificationMessage}
-              </div>
-            )}
-
-            {verificationLoading && (
-              <div className="mb-4 flex items-center gap-2 text-sm text-gray-300">
-                <Loader2 size={14} className="animate-spin" /> Verifying your email...
-              </div>
-            )}
-
             {/* ── LOGIN ── */}
             {tab === 'login' && (
               <form onSubmit={handleLogin} noValidate className="space-y-4">
@@ -325,16 +243,10 @@ export function AuthPage() {
                     Forgot password?
                   </button>
                 </div>
-                <button type="submit" disabled={loading || verificationLoading}
+                <button type="submit" disabled={loading}
                   className="w-full bg-blue-500 hover:bg-blue-600 disabled:opacity-60 text-white font-bold py-2.5 rounded-xl text-sm transition flex items-center justify-center gap-2">
                   {loading && <Loader2 size={14} className="animate-spin" />} Sign In
                 </button>
-                {showResendVerification && (
-                  <button type="button" onClick={handleResendVerification} disabled={resendLoading || loading}
-                    className="w-full border border-white/10 hover:border-blue-400/60 disabled:opacity-60 text-blue-300 font-semibold py-2.5 rounded-xl text-sm transition flex items-center justify-center gap-2">
-                    {resendLoading && <Loader2 size={14} className="animate-spin" />} Resend Verification Email
-                  </button>
-                )}
                 <p className="text-center text-xs text-gray-600">
                   Don't have an account?{' '}
                   <button type="button" onClick={() => setTab('register')} className="text-blue-400 hover:text-blue-300 font-semibold transition-colors">Register here</button>

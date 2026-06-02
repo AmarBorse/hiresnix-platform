@@ -20,13 +20,8 @@ const protect = asyncHandler(async (req, res, next) => {
     });
     if (!req.user)         { res.status(401); throw new Error('User not found'); }
     if (!req.user.isActive){ res.status(401); throw new Error('Account has been deactivated'); }
-    if (req.user.role === 'student' && !req.user.emailVerified) {
-      res.status(401);
-      throw new Error('Please verify your email before logging in.');
-    }
     next();
   } catch (err) {
-    if (res.statusCode && res.statusCode !== 200) throw err;
     res.status(401);
     throw new Error('Token invalid or expired');
   }

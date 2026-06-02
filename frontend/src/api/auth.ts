@@ -4,7 +4,7 @@ import { AuthUser } from '../types';
 
 interface LoginPayload { email: string; password: string; }
 interface RegisterPayload { name: string; email: string; password: string; role: 'student' | 'company'; companyName?: string; industry?: string; }
-interface AuthResponse { success: boolean; token?: string; user?: AuthUser; requiresVerification?: boolean; message?: string; }
+interface AuthResponse { success: boolean; token: string; user: AuthUser; }
 
 export const authApi = {
   login: async (data: LoginPayload): Promise<AuthResponse> => {
@@ -24,26 +24,6 @@ export const authApi = {
 
   updatePassword: async (data: { currentPassword: string; newPassword: string }) => {
     const res = await client.put('/auth/updatepassword', data);
-    return res.data;
-  },
-
-  forgotPassword: async (email: string) => {
-    const res = await client.post('/iplatform/forgot-password', { email });
-    return res.data;
-  },
-
-  resetPassword: async (data: { token: string; newPassword: string }) => {
-    const res = await client.post('/iplatform/reset-password', data);
-    return res.data;
-  },
-
-  verifyStudentEmail: async (token: string) => {
-    const res = await client.post('/auth/verify-student-email', { token });
-    return res.data;
-  },
-
-  resendStudentVerification: async (email: string) => {
-    const res = await client.post('/auth/resend-student-verification', { email });
     return res.data;
   },
 };
