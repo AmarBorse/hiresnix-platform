@@ -7,6 +7,7 @@
 
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/db');
+const { DOMAIN_OPTIONS } = require('../utils/domains');
 
 const Student = sequelize.define('Student', {
   id: { type: DataTypes.BIGINT, autoIncrement: true, primaryKey: true },
@@ -24,6 +25,10 @@ const Student = sequelize.define('Student', {
   },
   cgpa: {
     type: DataTypes.DECIMAL(4, 2), validate: { min: 0, max: 10 }, allowNull: true,
+  },
+  domain: {
+    type: DataTypes.STRING(100), allowNull: true,
+    validate: { isIn: [DOMAIN_OPTIONS] },
   },
   skills:                { type: DataTypes.JSONB, defaultValue: [] },
   resumeFilename:        { type: DataTypes.STRING(255), allowNull: true },

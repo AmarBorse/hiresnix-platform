@@ -4,6 +4,7 @@ import client from '../../api/client';
 import { PageLoader, ErrorState, EmptyState } from '../../components/common/LoadingState';
 import { Resource } from '../../types';
 import { Video, FileText, ExternalLink, Search } from 'lucide-react';
+import { studentApi } from '../../api/student';
 
 const TYPE_ICONS: Record<string, any> = {
   Video: Video,
@@ -21,8 +22,8 @@ const TYPE_COLORS: Record<string, string> = {
 
 export function StudentResources() {
   const [search, setSearch] = useState('');
-  const [domain, setDomain] = useState('');
   const [type, setType] = useState('');
+  const [studentDomain, setStudentDomain] = useState('');
 
   const [allResources, setAllResources] = useState<Resource[]>([]);
   const [loading, setLoading] = useState(true);
@@ -30,8 +31,14 @@ export function StudentResources() {
 
   const fetchResources = async () => {
     try {
-      const res = await client.get('/resources');
-      setAllResources(res.data.data || []);
+      setLoading(true);
+      const [profileRes, resourcesRes] = await Promise.all([
+        studentApi.getProfile(),
+        client.get('/resources'),
+      ]);
+      const profile = profileRes?.data?.data || profileRes?.data || {};
+      setStudentDomain(profile.domain || '');
+      setAllResources(resourcesRes.data.data || []);
     } catch (err: any) {
       setError(err.message || 'Failed to load resources');
     } finally { setLoading(false); }
@@ -41,7 +48,7 @@ export function StudentResources() {
 
   let resources = allResources;
   if (search) resources = resources.filter(r => r.title.toLowerCase().includes(search.toLowerCase()));
-  if (domain) resources = resources.filter(r => r.domain?.toLowerCase().includes(domain.toLowerCase()));
+  if (studentDomain) resources = resources.filter(r => r.domain === studentDomain);
   if (type) resources = resources.filter(r => r.type === type);
 
   // Group by domain
@@ -59,7 +66,9 @@ export function StudentResources() {
     <div className="space-y-6 max-w-5xl mx-auto">
       <div>
         <h1 className="text-2xl font-black text-gray-900">Resource Hub</h1>
-        <p className="text-sm text-gray-500 mt-1">Curated learning materials to boost your career</p>
+        <p className="text-sm text-gray-500 mt-1">
+          {studentDomain ? `Curated learning materials for ${studentDomain}` : 'Select your learning domain in your profile to view resources'}
+        </p>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3">
@@ -72,12 +81,6 @@ export function StudentResources() {
             className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-500 bg-white"
           />
         </div>
-        <input
-          type="text" placeholder="Filter by domain..."
-          value={domain}
-          onChange={e => setDomain(e.target.value)}
-          className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-blue-500 bg-white sm:w-44"
-        />
         <select
           value={type}
           onChange={e => setType(e.target.value)}
@@ -92,7 +95,10 @@ export function StudentResources() {
       </div>
 
       {resources.length === 0 ? (
-        <EmptyState title="No resources found" description="Try adjusting your filters" />
+        <EmptyState
+          title="Learning resources for your domain will be available soon."
+          description={studentDomain ? undefined : 'Choose a domain in your profile to unlock matching resources.'}
+        />
       ) : Object.entries(grouped).map(([domainName, items]) => (
         <div key={domainName}>
           <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wider mb-3 flex items-center gap-2">

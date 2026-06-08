@@ -6,6 +6,7 @@
 
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/db');
+const { DOMAIN_OPTIONS } = require('../utils/domains');
 
 const Resource = sequelize.define('Resource', {
   id:       { type: DataTypes.BIGINT, autoIncrement: true, primaryKey: true },
@@ -15,7 +16,10 @@ const Resource = sequelize.define('Resource', {
     validate: { isIn: [['Video','Note','Article','PDF']] },
   },
   link:        { type: DataTypes.STRING(500) },
-  domain:      { type: DataTypes.STRING(100) },
+  domain: {
+    type: DataTypes.STRING(100), allowNull: true,
+    validate: { isIn: [DOMAIN_OPTIONS] },
+  },
   category:    { type: DataTypes.STRING(100) },
   badge:       { type: DataTypes.STRING(50) },
   isPublic:    { type: DataTypes.BOOLEAN, defaultValue: true },

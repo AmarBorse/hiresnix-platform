@@ -7,6 +7,7 @@ const path = require('path');
 const axios = require('axios');
 const { Student, User, Job, Company } = require('../models');
 const { Op } = require('sequelize');
+const { normalizeDomain, isValidDomain } = require('../utils/domains');
 
 const departmentAliases = {
   cse: 'Computer Science',
@@ -44,7 +45,7 @@ const getStudentProfile = asyncHandler(async (req, res) => {
 // PUT /api/students/profile
 const updateStudentProfile = asyncHandler(async (req, res) => {
   const allowed = [
-    'rollNumber','department','year','cgpa','skills',
+    'rollNumber','department','domain','year','cgpa','skills',
     'projects','certifications','education',
     'linkedin','github','portfolio',
   ];
@@ -53,6 +54,13 @@ const updateStudentProfile = asyncHandler(async (req, res) => {
   if (Object.prototype.hasOwnProperty.call(updates, 'department')) {
     updates.department = normalizeDepartment(updates.department);
   }
+  if (Object.prototype.hasOwnProperty.call(updates, 'domain')) {
+    updates.domain = normalizeDomain(updates.domain);
+    if (updates.domain && !isValidDomain(updates.domain)) {
+      res.status(400);
+      throw new Error('Please select a valid domain');
+    }
+  }
 
   let student = await Student.findOne({ where: { userId: req.user.id } });
   if (!student) { res.status(404); throw new Error('Profile not found'); }
@@ -60,7 +68,7 @@ const updateStudentProfile = asyncHandler(async (req, res) => {
   await student.update(updates);
 
   // Check profile completeness
-  const complete = student.department && student.year && student.cgpa && student.skills?.length > 0;
+  const complete = student.department && student.domain && student.year && student.cgpa && student.skills?.length > 0;
   await student.update({ isProfileComplete: !!complete });
 
   await student.reload({ include: [{ model: User, as: 'user', attributes: ['name','email'] }] });

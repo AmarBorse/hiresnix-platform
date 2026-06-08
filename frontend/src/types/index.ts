@@ -15,6 +15,7 @@ export interface StudentProfile {
   id: number;
   userId: number;
   cgpa: number | null;
+  domain: string | null;
   skills: string[];
   department: string | null;
   year: number | null;

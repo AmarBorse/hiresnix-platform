@@ -6,6 +6,7 @@ import { PageLoader, ErrorState } from '../../components/common/LoadingState';
 import { toast } from 'sonner';
 import { Upload, Save, X, Plus, Loader2, FileText, CheckCircle } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
+import { DOMAIN_OPTIONS } from '../../lib/domains';
 
 const DEPARTMENT_OPTIONS = [
   'Computer Science',
@@ -27,7 +28,7 @@ export function StudentProfile() {
   const p = (rawProfile as any)?.data?.data || (rawProfile as any)?.data || rawProfile || {};
 
   const [form, setForm] = useState({
-    cgpa: '', department: '', year: '', skills: [] as string[], projects: [] as string[],
+    cgpa: '', department: '', domain: '', year: '', skills: [] as string[], projects: [] as string[],
   });
   const [newSkill, setNewSkill] = useState('');
   const [saving, setSaving] = useState(false);
@@ -39,6 +40,7 @@ export function StudentProfile() {
       setForm({
         cgpa: p.cgpa?.toString() || '',
         department: p.department || '',
+        domain: p.domain || '',
         year: p.year?.toString() || '',
         skills: p.skills || [],
         projects: p.projects || [],
@@ -52,6 +54,7 @@ export function StudentProfile() {
       await studentApi.updateProfile({
         cgpa: form.cgpa ? parseFloat(form.cgpa) : null,
         department: form.department || null,
+        domain: form.domain || null,
         year: form.year ? parseInt(form.year) : null,
         skills: form.skills,
         projects: form.projects,
@@ -156,7 +159,7 @@ export function StudentProfile() {
       {/* Academic Info */}
       <div className="bg-white rounded-xl border border-gray-200 p-5">
         <h3 className="font-bold text-gray-900 mb-4">Academic Information</h3>
-        <div className="grid sm:grid-cols-3 gap-4">
+        <div className="grid sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">CGPA</label>
             <input
@@ -189,6 +192,19 @@ export function StudentProfile() {
             >
               <option value="">Select year</option>
               {[1,2,3,4].map(y => <option key={y} value={y}>Year {y}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Learning Domain</label>
+            <select
+              value={form.domain}
+              onChange={e => setForm(p => ({ ...p, domain: e.target.value }))}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 bg-white"
+            >
+              <option value="">Select domain</option>
+              {DOMAIN_OPTIONS.map(domain => (
+                <option key={domain} value={domain}>{domain}</option>
+              ))}
             </select>
           </div>
         </div>
