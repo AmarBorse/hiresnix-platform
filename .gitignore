@@ -22,3 +22,8 @@ Thumbs.db
 # Project specific
 backend/uploads/resumes/*
 !backend/uploads/resumes/.gitkeep
+
+backend/.env
+frontend/.env
+.env
+.env.local
