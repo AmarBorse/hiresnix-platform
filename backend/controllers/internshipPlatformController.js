@@ -807,7 +807,7 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
     doc.rect(26, 26, doc.page.width - 52, doc.page.height - 52).lineWidth(0.35).stroke('#cbd5e1');
     doc.rect(20, pageBottom, doc.page.width - 40, 18).fill('#0f172a');
     doc.fillColor('#94a3b8').fontSize(7).font('Helvetica')
-      .text(`Hiresnix Internship Program | Page ${pageNo}`, 0, pageBottom + 5, { align: 'center' });
+      .text(`Hiresnix Internship Program `, 0, pageBottom + 5, { align: 'center' });
   };
 
   const drawSimpleHeader = (title, withTagline = false) => {
@@ -918,6 +918,7 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
   bulletList([
     'Internship Completion Certificate',
     'Letter of Recommendation (subject to company evaluation)',
+    'Training Certificate',
   ]);
   doc.y += 12;
 
@@ -929,7 +930,7 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
     'Follow company communication and work guidelines',
   ]);
 
-  doc.moveDown(0.55);
+  doc.moveDown(0.60);
   sectionTitle('Internship Guidelines');
   bulletList([
     'Maintain regular communication with mentors',
@@ -938,7 +939,7 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
     'Respect project confidentiality and company resources',
   ]);
 
-  doc.moveDown(0.55);
+  doc.moveDown(0.60);
   sectionTitle('Acceptance');
   paragraph('Please confirm your acceptance of this offer by replying to this email/message.');
 
