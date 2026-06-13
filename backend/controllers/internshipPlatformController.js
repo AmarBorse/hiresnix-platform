@@ -130,7 +130,7 @@ const updateApplicationStatus = asyncHandler(async (req, res) => {
         domainId: application.domainId,
         studentName: application.studentName,
         email: application.email,
-        startDate: new Date(),
+        startDate: application.offerJoiningDate || new Date(),
         status: 'Active',
       });
       await application.domain.increment('filledSeats');
@@ -328,20 +328,38 @@ function getDomainDurationMonths(domainName) {
   return DOMAIN_DURATION_MONTHS[normalized] || null;
 }
 
-let offerEndDateColumnReady = false;
-async function ensureOfferEndDateColumn() {
-  if (offerEndDateColumnReady) return;
+let offerDateColumnsReady = false;
+async function ensureOfferDateColumns() {
+  if (offerDateColumnsReady) return;
   try {
     const columns = await sequelize.getQueryInterface().describeTable('ip_applications');
+    if (!columns.offerLetterId) {
+      await sequelize.getQueryInterface().addColumn('ip_applications', 'offerLetterId', {
+        type: DataTypes.STRING(50),
+        allowNull: true,
+      });
+    }
+    if (!columns.offerLetterDate) {
+      await sequelize.getQueryInterface().addColumn('ip_applications', 'offerLetterDate', {
+        type: DataTypes.DATEONLY,
+        allowNull: true,
+      });
+    }
+    if (!columns.offerJoiningDate) {
+      await sequelize.getQueryInterface().addColumn('ip_applications', 'offerJoiningDate', {
+        type: DataTypes.DATEONLY,
+        allowNull: true,
+      });
+    }
     if (!columns.offerEndDate) {
       await sequelize.getQueryInterface().addColumn('ip_applications', 'offerEndDate', {
         type: DataTypes.DATEONLY,
         allowNull: true,
       });
     }
-    offerEndDateColumnReady = true;
+    offerDateColumnsReady = true;
   } catch (err) {
-    console.error('Unable to ensure offerEndDate column:', err.message);
+    console.error('Unable to ensure offer date columns:', err.message);
     throw err;
   }
 }
@@ -359,6 +377,39 @@ function calculateDurationLabel(startDate, endDate) {
   const days = Math.max(0, Math.round((endDate - anchor) / (24 * 60 * 60 * 1000)));
   const roundedMonths = Math.max(1, months + (days >= 15 ? 1 : 0));
   return `${roundedMonths} Month${roundedMonths === 1 ? '' : 's'}`;
+}
+
+function durationMonthsFromLabel(value) {
+  if (!value) return null;
+  const label = String(value).trim();
+  const monthMatch = label.match(/(\d+)\s*months?/i);
+  if (monthMatch) return Number(monthMatch[1]);
+  const weekMatch = label.match(/(\d+)\s*weeks?/i);
+  if (weekMatch) return Math.max(1, Math.round(Number(weekMatch[1]) / 4));
+  return null;
+}
+
+function cleanInternDomain(value) {
+  return String(value || 'Technology')
+    .replace(/\bintern(ship)?\b/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim() || 'Technology';
+}
+
+function drawOfferSeal(doc, x, y) {
+  doc.save();
+  doc.lineWidth(1.5).strokeColor(COMPANY.colors.accent).strokeOpacity(0.85);
+  doc.circle(x, y, 40).stroke();
+  doc.circle(x, y, 36).stroke();
+  doc.lineWidth(0.5);
+  doc.circle(x, y, 26).stroke();
+
+  doc.fillColor(COMPANY.colors.accent).fillOpacity(0.85);
+  doc.fontSize(10).font('Helvetica-Bold')
+    .text('HIRESNIX', x - 40, y - 10, { width: 80, align: 'center' });
+  doc.fontSize(7).font('Helvetica')
+    .text('COMPANY SEAL', x - 40, y + 4, { width: 80, align: 'center' });
+  doc.restore();
 }
 
 function pdfHeader(doc, title) {
@@ -678,7 +729,7 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
   const safeCandidateName = String(candidateName || 'Candidate').trim() || 'Candidate';
   const fileCandidateName = safeCandidateName.replace(/[^a-z0-9_-]+/gi, '-').replace(/^-+|-+$/g, '') || 'candidate';
 
-  await ensureOfferEndDateColumn();
+  await ensureOfferDateColumns();
 
   let application = null;
   if (applicationId) {
@@ -695,7 +746,12 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
     throw new Error('Joining Date is required');
   }
   const stableOfferId = application?.offerLetterId || `HSN-INT-${new Date(stableOfferDate).getFullYear()}-${crypto.randomBytes(2).toString('hex').toUpperCase()}`;
+  const offerDateObj = parseDateOnly(stableOfferDate);
   const startDateObj = parseDateOnly(stableJoiningDate);
+  if (!offerDateObj) {
+    res.status(400);
+    throw new Error('Offer Letter Date is invalid');
+  }
   if (!startDateObj) {
     res.status(400);
     throw new Error('Joining Date is invalid');
@@ -710,22 +766,27 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
     res.status(400);
     throw new Error('End Date cannot be before Joining Date');
   }
-  const domainName = application?.domain?.name || role || '';
+  const domainName = cleanInternDomain(application?.domain?.name || role || 'Technology');
   const mappedMonths = getDomainDurationMonths(domainName);
-  const endDateObj = manualEndDateObj || (mappedMonths ? addMonths(startDateObj, mappedMonths) : null);
+  const durationMonths = mappedMonths || durationMonthsFromLabel(duration || application?.domain?.duration);
+  const endDateObj = manualEndDateObj || (durationMonths ? addMonths(startDateObj, durationMonths) : null);
+  if (!endDateObj) {
+    res.status(400);
+    throw new Error('End Date is required when domain duration cannot be determined');
+  }
   const internshipDuration = manualEndDateObj
     ? calculateDurationLabel(startDateObj, endDateObj)
-    : (mappedMonths ? `${mappedMonths} Month${mappedMonths === 1 ? '' : 's'}` : (duration || 'the stipulated duration'));
+    : (durationMonths ? `${durationMonths} Month${durationMonths === 1 ? '' : 's'}` : (duration || 'the stipulated duration'));
   const joinDateStr = formatDateOnly(startDateObj);
-  const endDateStr = endDateObj ? formatDateOnly(endDateObj) : '';
+  const endDateStr = formatDateOnly(endDateObj);
 
   if (application && (!application.offerLetterDate || !application.offerJoiningDate || !application.offerLetterId || !application.offerEndDate)) {
     const offerUpdate = {
       offerLetterDate: application.offerLetterDate || stableOfferDate,
       offerJoiningDate: application.offerJoiningDate || stableJoiningDate,
       offerLetterId: application.offerLetterId || stableOfferId,
+      offerEndDate: application.offerEndDate || toIsoDateOnly(endDateObj),
     };
-    if (!application.offerEndDate && endDateObj) offerUpdate.offerEndDate = toIsoDateOnly(endDateObj);
     await application.update(offerUpdate);
   }
 
@@ -734,14 +795,160 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
   res.setHeader('Content-Disposition', `attachment; filename="offer-letter-${fileCandidateName}.pdf"`);
   doc.pipe(res);
 
+  const dateStr = formatDateOnly(stableOfferDate);
+  const bullet = String.fromCharCode(8226);
+  const left = 40;
+  const bodyWidth = 515;
+
+  const drawSimpleHeader = (title, withTagline = false) => {
+    doc.fillColor('#0f172a').fontSize(26).font('Helvetica-Bold')
+      .text('HIRESNIX', 0, 42, { align: 'center' });
+    if (withTagline) {
+      doc.fillColor('#475569').fontSize(11).font('Helvetica')
+        .text('Empowering Future Professionals', 0, 72, { align: 'center' });
+    }
+    doc.fillColor('#0f172a').fontSize(16).font('Helvetica-Bold')
+      .text(title, 0, withTagline ? 118 : 92, { align: 'center' });
+    doc.y = withTagline ? 160 : 130;
+  };
+
+  const paragraph = (text, options = {}) => {
+    doc.fillColor('#334155').fontSize(options.size || 10).font(options.bold ? 'Helvetica-Bold' : 'Helvetica')
+      .text(text, left, doc.y, { width: bodyWidth, align: options.align || 'justify', lineGap: options.lineGap ?? 2 });
+  };
+
+  const bulletList = (items) => {
+    items.forEach(item => {
+      doc.fillColor('#334155').fontSize(10).font('Helvetica')
+        .text(`${bullet} ${item}`, left + 20, doc.y, { width: bodyWidth - 20, lineGap: 1 });
+    });
+  };
+
+  doc.rect(20, 20, doc.page.width - 40, doc.page.height - 40).lineWidth(1.5).stroke(COMPANY.colors.accent);
+  drawSimpleHeader('INTERNSHIP OFFER LETTER', true);
+
+  doc.fillColor('#475569').fontSize(10).font('Helvetica')
+    .text(`Offer Letter ID: ${stableOfferId}`, left, doc.y);
+  doc.moveDown(0.25);
+  doc.text(`Date: ${dateStr}`, left, doc.y);
+
+  doc.moveDown(1);
+  doc.fillColor('#1e293b').fontSize(10).font('Helvetica').text('To,', left);
+  doc.font('Helvetica-Bold').text(safeCandidateName, left);
+
+  doc.moveDown(0.8);
+  doc.font('Helvetica-Bold')
+    .text(`Subject: Internship Offer Letter - ${domainName} Intern - Hiresnix`, left, doc.y, { width: bodyWidth });
+
+  doc.moveDown(0.8);
+  doc.font('Helvetica').text(`Dear ${safeCandidateName},`, left);
+  doc.moveDown(0.45);
+  doc.font('Helvetica-Bold').text('Congratulations!', left);
+  doc.moveDown(0.45);
+  paragraph(`We are pleased to offer you the position of ${domainName} Intern at Hiresnix.`);
+
+  doc.moveDown(0.55);
+  paragraph('Your internship details are as follows:', { align: 'left' });
+  doc.moveDown(0.55);
+  doc.fillColor('#0f172a').fontSize(11).font('Helvetica-Bold').text('INTERNSHIP DETAILS', left);
+  doc.moveDown(0.35);
+  doc.fillColor('#334155').fontSize(10).font('Helvetica')
+    .text(`Start Date: ${joinDateStr}`, left, doc.y)
+    .text(`End Date: ${endDateStr}`, left, doc.y)
+    .text(`Duration: ${internshipDuration}`, left, doc.y)
+    .text('Mode of Internship: Remote', left, doc.y);
+
+  doc.moveDown(0.75);
+  paragraph('Hiresnix is committed to helping students and early professionals gain practical industry experience through project-based learning, mentorship, and skill development.');
+
+  doc.moveDown(0.65);
+  paragraph('During the internship, you will have the opportunity to:', { align: 'left' });
+  doc.moveDown(0.25);
+  bulletList([
+    'Work on real-world projects',
+    'Gain hands-on industry experience',
+    'Learn through practical assignments',
+    'Receive mentorship and guidance',
+    'Build professional and technical skills',
+    'Enhance problem-solving and communication abilities',
+  ]);
+
+  doc.moveDown(0.65);
+  paragraph('Outstanding interns may be considered for future opportunities based on company requirements and performance evaluation.');
+  doc.moveDown(0.65);
+  paragraph('We look forward to supporting your professional growth and learning journey through Hiresnix.');
+
+  doc.addPage({ size: 'A4', margin: 0 });
+  doc.rect(20, 20, doc.page.width - 40, doc.page.height - 40).lineWidth(1.5).stroke(COMPANY.colors.accent);
+  drawSimpleHeader('INTERNSHIP TERMS & ACKNOWLEDGEMENT');
+
+  paragraph('Upon successful completion of the internship and satisfactory performance evaluation, interns may be eligible to receive:');
+  doc.moveDown(0.3);
+  bulletList([
+    'Internship Completion Certificate',
+    'Letter of Recommendation (subject to company evaluation)',
+  ]);
+
+  doc.moveDown(0.9);
+  doc.fillColor('#0f172a').fontSize(11).font('Helvetica-Bold').text('Intern Responsibilities', left);
+  doc.moveDown(0.35);
+  bulletList([
+    'Maintain professional conduct throughout the internship',
+    'Complete assigned tasks within agreed timelines',
+    'Participate actively in assigned projects',
+    'Follow company communication and work guidelines',
+  ]);
+
+  doc.moveDown(0.9);
+  doc.fillColor('#0f172a').fontSize(11).font('Helvetica-Bold').text('Internship Guidelines', left);
+  doc.moveDown(0.35);
+  bulletList([
+    'Maintain regular communication with mentors',
+    'Submit assigned work within specified timelines',
+    'Follow ethical and professional work practices',
+    'Respect project confidentiality and company resources',
+  ]);
+
+  doc.moveDown(0.9);
+  doc.fillColor('#0f172a').fontSize(11).font('Helvetica-Bold').text('Acceptance', left);
+  doc.moveDown(0.35);
+  paragraph('Please confirm your acceptance of this offer by replying to this email/message.');
+
+  doc.moveDown(0.9);
+  paragraph('For verification or queries:', { align: 'left' });
+  doc.moveDown(0.2);
+  doc.fillColor('#334155').fontSize(10).font('Helvetica-Bold').text('hr@hiresnix.co.in', left);
+
+  doc.moveDown(1.15);
+  doc.fillColor('#1e293b').fontSize(10).font('Helvetica-Bold').text('Regards,', left);
+
+  const sigY = doc.y + 10;
+  try {
+    doc.image(getSignaturePath('ceo.png'), left, sigY, { fit: [120, 48] });
+  } catch (err) {}
+  doc.fillColor('#1e293b').fontSize(10).font('Helvetica-Bold').text('A S Borse', left, sigY + 52);
+  doc.fillColor('#334155').fontSize(9).font('Helvetica')
+    .text('Founder', left, sigY + 67)
+    .text('Hiresnix', left, sigY + 80);
+
+  drawOfferSeal(doc, doc.page.width - 105, sigY + 35);
+
+  doc.fillColor('#334155').fontSize(9).font('Helvetica')
+    .text('support@hiresnix.co.in', left, doc.page.height - 105)
+    .text('www.hiresnix.co.in', left, doc.page.height - 91)
+    .text('Pune, Maharashtra, India', left, doc.page.height - 77);
+
+  doc.end();
+  return;
+
   pdfHeader(doc, 'INTERNSHIP OFFER LETTER');
 
-  const dateStr = formatDateOnly(stableOfferDate);
+  const legacyDateStr = formatDateOnly(stableOfferDate);
 
   doc.moveDown(1);
   doc.fillColor('#475569').fontSize(10).font('Helvetica').text(`Offer Letter ID: ${stableOfferId}`, 40);
   doc.moveDown(0.2);
-  doc.fillColor('#475569').fontSize(10).font('Helvetica').text(`Date: ${dateStr}`, 40);
+  doc.fillColor('#475569').fontSize(10).font('Helvetica').text(`Date: ${legacyDateStr}`, 40);
   
   doc.moveDown(1);
   doc.fillColor('#1e293b').fontSize(10).font('Helvetica').text('To,', 40);
@@ -821,20 +1028,20 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
   doc.fillColor('#1e293b').font('Helvetica-Bold').text('Regards,', 40, doc.y);
   doc.moveDown(0.5);
 
-  const sigY = Math.min(doc.y, doc.page.height - 180);
+  const legacySigY = Math.min(doc.y, doc.page.height - 180);
   try {
-    doc.image(getSignaturePath('ceo.png'), 40, sigY, { fit: [120, 48] });
+    doc.image(getSignaturePath('ceo.png'), 40, legacySigY, { fit: [120, 48] });
   } catch (err) {}
 
-  doc.fillColor('#1e293b').fontSize(10).font('Helvetica-Bold').text('A S Borse', 40, sigY + 50);
+  doc.fillColor('#1e293b').fontSize(10).font('Helvetica-Bold').text('A S Borse', 40, legacySigY + 50);
   doc.fillColor('#64748b').fontSize(9).font('Helvetica')
-     .text('Founder', 40, sigY + 65)
-     .text('Hiresnix', 40, sigY + 78)
-     .text('hr@hiresnix.co.in', 40, sigY + 91);
+     .text('Founder', 40, legacySigY + 65)
+     .text('Hiresnix', 40, legacySigY + 78)
+     .text('hr@hiresnix.co.in', 40, legacySigY + 91);
 
   // Official Company Stamp / Symbol
   const stampX = doc.page.width - 100;
-  const stampY = sigY + 25;
+  const stampY = legacySigY + 25;
   
   doc.save();
   doc.lineWidth(1.5).strokeColor(COMPANY.colors.accent).strokeOpacity(0.8);

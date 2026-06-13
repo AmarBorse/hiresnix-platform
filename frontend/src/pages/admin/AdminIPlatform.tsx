@@ -310,8 +310,7 @@ export function AdminIPlatform() {
                             offerLetterDate: app.offerLetterDate || todayInputValue(),
                             joiningDate: app.offerJoiningDate || '',
                             endDate: app.offerEndDate || '',
-                            endDateLocked: Boolean(app.offerEndDate),
-                            datesLocked: Boolean(app.offerLetterDate || app.offerJoiningDate),
+                            datesLocked: Boolean(app.offerLetterDate || app.offerJoiningDate || app.offerEndDate),
                           })} className="flex items-center gap-1 text-xs font-bold bg-blue-500 hover:bg-blue-600 text-white px-3 py-1.5 rounded-lg transition">
                           <FileText size={11} /> Offer Letter
                         </button>
@@ -682,9 +681,9 @@ export function AdminIPlatform() {
               </div>
               <div>
                 <label className="block text-xs font-semibold text-gray-500 mb-1">End Date <span className="font-normal text-gray-400">(optional)</span></label>
-                <input type="date" disabled={offerModal.endDateLocked} className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
+                <input type="date" disabled={offerModal.datesLocked} className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
                   value={offerModal.endDate || ''} onChange={e => setOfferModal({ ...offerModal, endDate: e.target.value })} />
-                {offerModal.endDateLocked && <p className="text-[11px] text-gray-400 mt-1">End Date is locked because this offer letter was already generated.</p>}
+                {offerModal.datesLocked && <p className="text-[11px] text-gray-400 mt-1">End Date is locked because this offer letter was already generated.</p>}
               </div>
               <div>
                 <label className="block text-xs font-semibold text-gray-500 mb-1">Offer Letter Date</label>
