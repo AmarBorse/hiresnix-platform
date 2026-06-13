@@ -800,6 +800,10 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
   const left = 40;
   const bodyWidth = 515;
   const pageBottom = doc.page.height - 44;
+  const sectionBarWidth = 4;
+  const sectionBarHeight = 14;
+  const sectionTitleGap = 12;
+  const sectionContentGap = 8;
 
   const drawOfferFrame = (pageNo) => {
     doc.rect(0, 0, doc.page.width, doc.page.height).fill('#ffffff');
@@ -807,7 +811,7 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
     doc.rect(26, 26, doc.page.width - 52, doc.page.height - 52).lineWidth(0.35).stroke('#cbd5e1');
     doc.rect(20, pageBottom, doc.page.width - 40, 18).fill('#0f172a');
     doc.fillColor('#94a3b8').fontSize(7).font('Helvetica')
-      .text(`Hiresnix Internship Program `, 0, pageBottom + 5, { align: 'center' });
+      .text(`Hiresnix Internship Program`, 0, pageBottom + 5, { align: 'center' });
   };
 
   const drawSimpleHeader = (title, withTagline = false) => {
@@ -825,12 +829,13 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
   };
 
   const sectionTitle = (title) => {
-    doc.moveDown(0.35);
-    const titleY = doc.y;
-    doc.rect(left, titleY + 2, 4, 14).fill(COMPANY.colors.accent);
+    const titleY = doc.y + 7;
+    doc.rect(left, titleY + 2, sectionBarWidth, sectionBarHeight).fill(COMPANY.colors.accent);
     doc.fillColor('#0f172a').fontSize(11).font('Helvetica-Bold')
-      .text(title, left + 12, titleY, { width: bodyWidth - 12 });
-    doc.moveDown(0.35);
+      .text(title, left + sectionBarWidth + sectionTitleGap, titleY, {
+        width: bodyWidth - sectionBarWidth - sectionTitleGap,
+      });
+    doc.y = titleY + sectionBarHeight + sectionContentGap;
   };
 
   const paragraph = (text, options = {}) => {
@@ -930,7 +935,7 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
     'Follow company communication and work guidelines',
   ]);
 
-  doc.moveDown(0.60);
+  doc.moveDown(0.55);
   sectionTitle('Internship Guidelines');
   bulletList([
     'Maintain regular communication with mentors',
@@ -939,7 +944,7 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
     'Respect project confidentiality and company resources',
   ]);
 
-  doc.moveDown(0.60);
+  doc.moveDown(0.55);
   sectionTitle('Acceptance');
   paragraph('Please confirm your acceptance of this offer by replying to this email/message.');
 
