@@ -8,7 +8,7 @@
 const asyncHandler = require('express-async-handler');
 const crypto = require('crypto');
 const PDFDocument = require('pdfkit');
-const { Op } = require('sequelize');
+const { Op, DataTypes } = require('sequelize');
 const path = require('path');
 const fs = require('fs');
 const QRCode = require('qrcode');
@@ -326,6 +326,24 @@ function normalizeDomainName(value) {
 function getDomainDurationMonths(domainName) {
   const normalized = normalizeDomainName(domainName);
   return DOMAIN_DURATION_MONTHS[normalized] || null;
+}
+
+let offerEndDateColumnReady = false;
+async function ensureOfferEndDateColumn() {
+  if (offerEndDateColumnReady) return;
+  try {
+    const columns = await sequelize.getQueryInterface().describeTable('ip_applications');
+    if (!columns.offerEndDate) {
+      await sequelize.getQueryInterface().addColumn('ip_applications', 'offerEndDate', {
+        type: DataTypes.DATEONLY,
+        allowNull: true,
+      });
+    }
+    offerEndDateColumnReady = true;
+  } catch (err) {
+    console.error('Unable to ensure offerEndDate column:', err.message);
+    throw err;
+  }
 }
 
 function calculateDurationLabel(startDate, endDate) {
@@ -660,6 +678,8 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
   const safeCandidateName = String(candidateName || 'Candidate').trim() || 'Candidate';
   const fileCandidateName = safeCandidateName.replace(/[^a-z0-9_-]+/gi, '-').replace(/^-+|-+$/g, '') || 'candidate';
 
+  await ensureOfferEndDateColumn();
+
   let application = null;
   if (applicationId) {
     application = await InternshipApplication.findByPk(applicationId, {
@@ -801,17 +821,16 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
   doc.fillColor('#1e293b').font('Helvetica-Bold').text('Regards,', 40, doc.y);
   doc.moveDown(0.5);
 
-  const sigY = doc.y;
+  const sigY = Math.min(doc.y, doc.page.height - 180);
   try {
     doc.image(getSignaturePath('ceo.png'), 40, sigY, { fit: [120, 48] });
   } catch (err) {}
 
-  doc.y = sigY + 50;
-  doc.fillColor('#1e293b').fontSize(10).font('Helvetica-Bold').text('A S Borse', 40);
+  doc.fillColor('#1e293b').fontSize(10).font('Helvetica-Bold').text('A S Borse', 40, sigY + 50);
   doc.fillColor('#64748b').fontSize(9).font('Helvetica')
-     .text('Founder', 40)
-     .text('Hiresnix', 40)
-     .text('hr@hiresnix.co.in', 40);
+     .text('Founder', 40, sigY + 65)
+     .text('Hiresnix', 40, sigY + 78)
+     .text('hr@hiresnix.co.in', 40, sigY + 91);
 
   // Official Company Stamp / Symbol
   const stampX = doc.page.width - 100;
