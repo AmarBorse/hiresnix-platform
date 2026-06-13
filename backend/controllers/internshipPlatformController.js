@@ -820,7 +820,7 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
         .text('Empowering Future Professionals', left, 72);
     }
     doc.fillColor('#93c5fd').fontSize(14).font('Helvetica-Bold')
-      .text(title, left, 56, { align: 'right', width: bodyWidth });
+      .text(title, left, 66, { align: 'right', width: bodyWidth });
     doc.y = 136;
   };
 
