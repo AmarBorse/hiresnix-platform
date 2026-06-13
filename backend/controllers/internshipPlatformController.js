@@ -824,32 +824,14 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
     doc.y = 136;
   };
 
- const sectionTitle = (title) => {
-  doc.moveDown(0.25);
-
-  const titleY = doc.y;
-
-  // Premium gold accent bar
-  doc.rect(left, titleY + 1, 5, 22)
-     .fill(COMPANY.colors.accent);
-
-  // Section heading
-  doc.fillColor('#0f172a')
-     .fontSize(11)
-     .font('Helvetica-Bold')
-     .text(
-       title,
-       left + 18,
-       titleY + 2,
-       {
-         width: bodyWidth - 18,
-         align: 'left'
-       }
-     );
-
-  // Consistent spacing after heading
-  doc.y = titleY + 24;
-};
+  const sectionTitle = (title) => {
+    doc.moveDown(0.35);
+    const titleY = doc.y;
+    doc.rect(left, titleY + 2, 4, 14).fill(COMPANY.colors.accent);
+    doc.fillColor('#0f172a').fontSize(11).font('Helvetica-Bold')
+      .text(title, left + 12, titleY, { width: bodyWidth - 12 });
+    doc.moveDown(0.35);
+  };
 
   const paragraph = (text, options = {}) => {
     doc.fillColor('#334155').fontSize(options.size || 10).font(options.bold ? 'Helvetica-Bold' : 'Helvetica')
