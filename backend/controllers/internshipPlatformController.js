@@ -922,21 +922,23 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
   doc.moveDown(1.15);
   doc.fillColor('#1e293b').fontSize(10).font('Helvetica-Bold').text('Regards,', left);
 
-  const sigY = doc.y + 10;
+  const sigY = doc.y + 8;
+  const signatureTextY = sigY + 44;
   try {
     doc.image(getSignaturePath('ceo.png'), left, sigY, { fit: [120, 48] });
   } catch (err) {}
-  doc.fillColor('#1e293b').fontSize(10).font('Helvetica-Bold').text('A S Borse', left, sigY + 52);
+  doc.fillColor('#1e293b').fontSize(10).font('Helvetica-Bold')
+    .text('A S Borse', left, signatureTextY, { lineGap: 0 });
   doc.fillColor('#334155').fontSize(9).font('Helvetica')
-    .text('Founder', left, sigY + 67)
-    .text('Hiresnix', left, sigY + 80);
+    .text('Founder', left, signatureTextY + 12, { lineGap: 0 })
+    .text('Hiresnix', left, signatureTextY + 24, { lineGap: 0 });
 
-  drawOfferSeal(doc, doc.page.width - 105, sigY + 35);
+  drawOfferSeal(doc, doc.page.width - 105, sigY + 34);
 
   doc.fillColor('#334155').fontSize(9).font('Helvetica')
-    .text('support@hiresnix.co.in', left, doc.page.height - 105)
-    .text('www.hiresnix.co.in', left, doc.page.height - 91)
-    .text('Pune, Maharashtra, India', left, doc.page.height - 77);
+    .text('support@hiresnix.co.in', left, signatureTextY + 42, { lineGap: 0 })
+    .text('www.hiresnix.co.in', left, signatureTextY + 54, { lineGap: 0 })
+    .text('Pune, Maharashtra, India', left, signatureTextY + 66, { lineGap: 0 });
 
   doc.end();
   return;
