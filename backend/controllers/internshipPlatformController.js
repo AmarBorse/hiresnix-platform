@@ -800,10 +800,6 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
   const left = 40;
   const bodyWidth = 515;
   const pageBottom = doc.page.height - 44;
-  const sectionBarWidth = 4;
-  const sectionBarHeight = 14;
-  const sectionTitleGap = 12;
-  const sectionContentGap = 8;
 
   const drawOfferFrame = (pageNo) => {
     doc.rect(0, 0, doc.page.width, doc.page.height).fill('#ffffff');
@@ -829,13 +825,12 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
   };
 
   const sectionTitle = (title) => {
-    const titleY = doc.y + 7;
-    doc.rect(left, titleY + 2, sectionBarWidth, sectionBarHeight).fill(COMPANY.colors.accent);
+    doc.moveDown(0.35);
+    const titleY = doc.y;
+    doc.rect(left, titleY + 2, 4, 14).fill(COMPANY.colors.accent);
     doc.fillColor('#0f172a').fontSize(11).font('Helvetica-Bold')
-      .text(title, left + sectionBarWidth + sectionTitleGap, titleY, {
-        width: bodyWidth - sectionBarWidth - sectionTitleGap,
-      });
-    doc.y = titleY + sectionBarHeight + sectionContentGap;
+      .text(title, left + 12, titleY, { width: bodyWidth - 12 });
+    doc.moveDown(0.35);
   };
 
   const paragraph = (text, options = {}) => {
