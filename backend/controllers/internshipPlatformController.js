@@ -820,7 +820,7 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
         .text('Empowering Future Professionals', left, 72);
     }
     doc.fillColor('#93c5fd').fontSize(14).font('Helvetica-Bold')
-      .text(title, left, 66, { align: 'right', width: bodyWidth });
+      .text(title, left, 56, { align: 'right', width: bodyWidth });
     doc.y = 136;
   };
 
@@ -922,6 +922,7 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
   ]);
   doc.y += 12;
 
+  doc.moveDown(0.8);
   sectionTitle('Intern Responsibilities');
   bulletList([
     'Maintain professional conduct throughout the internship',
@@ -930,7 +931,7 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
     'Follow company communication and work guidelines',
   ]);
 
-  doc.moveDown(0.55);
+  doc.moveDown(0.8);
   sectionTitle('Internship Guidelines');
   bulletList([
     'Maintain regular communication with mentors',
@@ -939,7 +940,7 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
     'Respect project confidentiality and company resources',
   ]);
 
-  doc.moveDown(0.55);
+  doc.moveDown(0.8);
   sectionTitle('Acceptance');
   paragraph('Please confirm your acceptance of this offer by replying to this email/message.');
 
