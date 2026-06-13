@@ -301,6 +301,12 @@ function formatDateOnly(value) {
   return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
 }
 
+function toIsoDateOnly(value) {
+  const date = value instanceof Date ? value : parseDateOnly(value);
+  if (!date) return null;
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
 function addMonths(date, months) {
   const next = new Date(date);
   const day = next.getDate();
@@ -333,10 +339,8 @@ function calculateDurationLabel(startDate, endDate) {
   }
 
   const days = Math.max(0, Math.round((endDate - anchor) / (24 * 60 * 60 * 1000)));
-  const parts = [];
-  if (months > 0) parts.push(`${months} Month${months === 1 ? '' : 's'}`);
-  if (days > 0) parts.push(`${days} Day${days === 1 ? '' : 's'}`);
-  return parts.length ? parts.join(' ') : '1 Day';
+  const roundedMonths = Math.max(1, months + (days >= 15 ? 1 : 0));
+  return `${roundedMonths} Month${roundedMonths === 1 ? '' : 's'}`;
 }
 
 function pdfHeader(doc, title) {
@@ -676,7 +680,12 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
     res.status(400);
     throw new Error('Joining Date is invalid');
   }
-  const manualEndDateObj = parseDateOnly(endDate);
+  const stableEndDate = application?.offerEndDate || endDate;
+  const manualEndDateObj = parseDateOnly(stableEndDate);
+  if (stableEndDate && !manualEndDateObj) {
+    res.status(400);
+    throw new Error('End Date is invalid');
+  }
   if (manualEndDateObj && manualEndDateObj < startDateObj) {
     res.status(400);
     throw new Error('End Date cannot be before Joining Date');
@@ -690,12 +699,14 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
   const joinDateStr = formatDateOnly(startDateObj);
   const endDateStr = endDateObj ? formatDateOnly(endDateObj) : '';
 
-  if (application && (!application.offerLetterDate || !application.offerJoiningDate || !application.offerLetterId)) {
-    await application.update({
+  if (application && (!application.offerLetterDate || !application.offerJoiningDate || !application.offerLetterId || !application.offerEndDate)) {
+    const offerUpdate = {
       offerLetterDate: application.offerLetterDate || stableOfferDate,
       offerJoiningDate: application.offerJoiningDate || stableJoiningDate,
       offerLetterId: application.offerLetterId || stableOfferId,
-    });
+    };
+    if (!application.offerEndDate && endDateObj) offerUpdate.offerEndDate = toIsoDateOnly(endDateObj);
+    await application.update(offerUpdate);
   }
 
   const doc = new PDFDocument({ size: 'A4', margin: 0 });
@@ -727,21 +738,25 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
 
   doc.moveDown(0.4);
   doc.fillColor('#334155').font('Helvetica').text(
-    `We are pleased to offer you the position of ${role || 'Intern'} at Hiresnix. Your internship will be conducted remotely for a duration of ${internshipDuration}, starting from ${joinDateStr}${endDateStr ? ` and ending on ${endDateStr}` : ''}.`,
+    `We are pleased to offer you the position of ${role || 'Intern'} at Hiresnix.`,
     40, doc.y, { width: 515, align: 'justify' }
   );
 
   doc.moveDown(0.4);
-  doc.fillColor('#1e293b').font('Helvetica-Bold').text('Internship Details:', 40, doc.y);
+  doc.text('Your internship will be conducted remotely and is scheduled as follows:', 40, doc.y, { width: 515, align: 'justify' });
+
+  doc.moveDown(0.4);
+  doc.fillColor('#1e293b').font('Helvetica-Bold').text('Internship Details', 40, doc.y);
   doc.moveDown(0.2);
   doc.fillColor('#334155').font('Helvetica')
     .text(`Start Date: ${joinDateStr}`, 60, doc.y)
     .text(`End Date: ${endDateStr || 'To be confirmed'}`, 60, doc.y)
-    .text(`Internship Duration: ${internshipDuration}`, 60, doc.y);
+    .text(`Internship Duration: ${internshipDuration}`, 60, doc.y)
+    .text('Internship Mode: Remote', 60, doc.y);
 
   doc.moveDown(0.4);
   doc.text(
-    `This internship is designed with a practical learning-focused approach, where candidates will work on industry-oriented tasks, real-world projects, and skill development activities to strengthen their technical and professional capabilities.`,
+    `This internship is designed to provide practical industry exposure, project-based learning, mentorship, and skill development opportunities.`,
     40, doc.y, { width: 515, align: 'justify' }
   );
 
@@ -753,24 +768,34 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
 
   doc.moveDown(0.4);
   doc.text(
-    `Candidates demonstrating strong performance, professionalism, consistency, and project contribution may also be considered for future opportunities, recommendations, or performance-based benefits as per company evaluation criteria.`,
+    `Candidates demonstrating strong performance, professionalism, consistency, and meaningful project contribution may be considered for future opportunities and recommendations based on company evaluation criteria.`,
     40, doc.y, { width: 515, align: 'justify' }
   );
 
   doc.moveDown(0.4);
-  doc.text('Upon successful completion of the internship, you will receive:', 40, doc.y);
+  doc.text('Upon successful completion of the internship and satisfactory performance evaluation, you may receive:', 40, doc.y);
   doc.moveDown(0.2);
   ['Internship Completion Certificate', 'Letter of Recommendation (LOR)', 'Training Certificate', 'Skill Assessment Report (if applicable)']
     .forEach(item => doc.text(`•  ${item}`, 60, doc.y));
 
   doc.moveDown(0.4);
-  doc.text(`Interns are expected to maintain professionalism, complete assigned tasks on time, and actively participate throughout the internship period.`, 40, doc.y, { width: 515, align: 'justify' });
+  doc.text('Interns are expected to:', 40, doc.y);
+  doc.moveDown(0.2);
+  ['Maintain professionalism', 'Complete assigned tasks on time', 'Participate actively throughout the internship', 'Follow company guidelines and policies']
+    .forEach(item => doc.text(`${String.fromCharCode(8226)}  ${item}`, 60, doc.y));
 
   doc.moveDown(0.4);
-  doc.text(`We look forward to supporting your growth and helping you build practical industry experience through Hiresnix.`, 40, doc.y, { width: 515, align: 'justify' });
+  doc.fillColor('#1e293b').font('Helvetica-Bold').text('Stipend', 40, doc.y);
+  doc.moveDown(0.2);
+  doc.fillColor('#334155').font('Helvetica').text(
+    `This is an unpaid internship focused on practical learning, industry exposure, and skill development.`,
+    40, doc.y, { width: 515, align: 'justify' }
+  );
 
   doc.moveDown(0.4);
-  doc.text(`Please confirm your acceptance of this offer by replying to this email/message.`, 40, doc.y, { width: 515, align: 'justify' });
+  doc.fillColor('#1e293b').font('Helvetica-Bold').text('Acceptance', 40, doc.y);
+  doc.moveDown(0.2);
+  doc.fillColor('#334155').font('Helvetica').text(`Please confirm your acceptance of this offer by replying to this email/message.`, 40, doc.y, { width: 515, align: 'justify' });
 
   doc.moveDown(0.8);
   doc.fillColor('#1e293b').font('Helvetica-Bold').text('Regards,', 40, doc.y);
