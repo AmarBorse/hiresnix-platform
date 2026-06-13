@@ -820,15 +820,16 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
         .text('Empowering Future Professionals', left, 72);
     }
     doc.fillColor('#93c5fd').fontSize(14).font('Helvetica-Bold')
-      .text(title, 0, 56, { align: 'right', width: doc.page.width - 40 });
+      .text(title, left, 56, { align: 'right', width: bodyWidth });
     doc.y = 136;
   };
 
   const sectionTitle = (title) => {
     doc.moveDown(0.35);
-    doc.rect(left, doc.y + 2, 4, 14).fill(COMPANY.colors.accent);
+    const titleY = doc.y;
+    doc.rect(left, titleY + 2, 4, 14).fill(COMPANY.colors.accent);
     doc.fillColor('#0f172a').fontSize(11).font('Helvetica-Bold')
-      .text(title, left + 12, doc.y, { width: bodyWidth - 12 });
+      .text(title, left + 12, titleY, { width: bodyWidth - 12 });
     doc.moveDown(0.35);
   };
 
@@ -854,10 +855,11 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
   drawOfferFrame(1);
   drawSimpleHeader('INTERNSHIP OFFER LETTER', true);
 
-  doc.roundedRect(left, doc.y, bodyWidth, 42, 4).fill('#f8fafc').stroke('#e2e8f0');
-  detailRow('Offer Letter ID', stableOfferId, left + 14, doc.y + 9, 250);
-  detailRow('Date', dateStr, left + 330, doc.y + 9, 160);
-  doc.y += 58;
+  const offerMetaY = doc.y;
+  doc.roundedRect(left, offerMetaY, bodyWidth, 42, 4).fill('#f8fafc').stroke('#e2e8f0');
+  detailRow('Offer Letter ID', stableOfferId, left + 14, offerMetaY + 9, 250);
+  detailRow('Date', dateStr, left + 330, offerMetaY + 9, 160);
+  doc.y = offerMetaY + 58;
 
   doc.fillColor('#1e293b').fontSize(10).font('Helvetica').text('To,', left);
   doc.font('Helvetica-Bold').text(safeCandidateName, left);
@@ -877,12 +879,14 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
   paragraph('Your internship details are as follows:', { align: 'left' });
   sectionTitle('INTERNSHIP DETAILS');
   const detailY = doc.y;
-  doc.roundedRect(left, detailY, bodyWidth, 72, 5).fill('#f8fafc').stroke('#e2e8f0');
-  detailRow('Start Date', joinDateStr, left + 14, detailY + 12, 120);
-  detailRow('End Date', endDateStr, left + 145, detailY + 12, 120);
-  detailRow('Duration', internshipDuration, left + 276, detailY + 12, 100);
-  detailRow('Mode of Internship', 'Remote', left + 390, detailY + 12, 110);
-  doc.y = detailY + 90;
+  doc.roundedRect(left, detailY, bodyWidth, 74, 5).fill('#f8fafc').stroke('#e2e8f0');
+  doc.moveTo(left + 257, detailY + 12).lineTo(left + 257, detailY + 62).lineWidth(0.4).stroke('#cbd5e1');
+  doc.moveTo(left + 14, detailY + 37).lineTo(left + bodyWidth - 14, detailY + 37).lineWidth(0.4).stroke('#cbd5e1');
+  detailRow('Start Date', joinDateStr, left + 14, detailY + 10, 210);
+  detailRow('End Date', endDateStr, left + 276, detailY + 10, 210);
+  detailRow('Duration', internshipDuration, left + 14, detailY + 45, 210);
+  detailRow('Mode of Internship', 'Remote', left + 276, detailY + 45, 210);
+  doc.y = detailY + 92;
 
   paragraph('Hiresnix is committed to helping students and early professionals gain practical industry experience through project-based learning, mentorship, and skill development.');
 
@@ -943,12 +947,11 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
   doc.moveDown(0.2);
   doc.fillColor('#334155').fontSize(10).font('Helvetica-Bold').text('hr@hiresnix.co.in', left);
 
-  doc.moveDown(0.9);
-  doc.moveTo(left, doc.y).lineTo(left + 210, doc.y).lineWidth(0.8).stroke('#cbd5e1');
-  doc.moveDown(0.55);
-  doc.fillColor('#1e293b').fontSize(10).font('Helvetica-Bold').text('Regards,', left);
+  const signBlockY = 610;
+  doc.moveTo(left, signBlockY).lineTo(left + bodyWidth, signBlockY).lineWidth(0.8).stroke('#cbd5e1');
+  doc.fillColor('#1e293b').fontSize(10).font('Helvetica-Bold').text('Regards,', left, signBlockY + 14);
 
-  const sigY = doc.y + 8;
+  const sigY = signBlockY + 32;
   const signatureTextY = sigY + 44;
   try {
     doc.image(getSignaturePath('ceo.png'), left, sigY, { fit: [120, 48] });
@@ -959,7 +962,7 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
     .text('Founder', left, signatureTextY + 12, { lineGap: 0 })
     .text('Hiresnix', left, signatureTextY + 24, { lineGap: 0 });
 
-  drawOfferSeal(doc, doc.page.width - 105, sigY + 34);
+  drawOfferSeal(doc, left + bodyWidth - 54, sigY + 34);
 
   doc.fillColor('#334155').fontSize(9).font('Helvetica')
     .text('support@hiresnix.co.in', left, signatureTextY + 42, { lineGap: 0 })
