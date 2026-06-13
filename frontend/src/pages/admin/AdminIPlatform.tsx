@@ -309,6 +309,7 @@ export function AdminIPlatform() {
                             salary: 'Unpaid Internship',
                             offerLetterDate: app.offerLetterDate || todayInputValue(),
                             joiningDate: app.offerJoiningDate || '',
+                            endDate: '',
                             datesLocked: Boolean(app.offerLetterDate || app.offerJoiningDate),
                           })} className="flex items-center gap-1 text-xs font-bold bg-blue-500 hover:bg-blue-600 text-white px-3 py-1.5 rounded-lg transition">
                           <FileText size={11} /> Offer Letter
@@ -677,6 +678,11 @@ export function AdminIPlatform() {
                   <input required type="date" disabled={offerModal.datesLocked} className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
                     value={offerModal.joiningDate} onChange={e => setOfferModal({ ...offerModal, joiningDate: e.target.value })} />
                 </div>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1">End Date <span className="font-normal text-gray-400">(optional)</span></label>
+                <input type="date" className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+                  value={offerModal.endDate || ''} onChange={e => setOfferModal({ ...offerModal, endDate: e.target.value })} />
               </div>
               <div>
                 <label className="block text-xs font-semibold text-gray-500 mb-1">Offer Letter Date</label>

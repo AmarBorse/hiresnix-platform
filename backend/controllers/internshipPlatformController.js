@@ -276,6 +276,69 @@ const COMPANY = {
   }
 };
 
+const DOMAIN_DURATION_MONTHS = {
+  'ui/ux design': 1,
+  'frontend development': 2,
+  'backend development': 2,
+  'full stack development': 3,
+  'python development': 2,
+  'data science': 3,
+  'digital marketing': 1,
+  'qa testing': 1,
+};
+
+function parseDateOnly(value) {
+  if (!value) return null;
+  const match = String(value).slice(0, 10).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (match) return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function formatDateOnly(value) {
+  const date = value instanceof Date ? value : parseDateOnly(value);
+  if (!date) return '';
+  return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
+}
+
+function addMonths(date, months) {
+  const next = new Date(date);
+  const day = next.getDate();
+  next.setMonth(next.getMonth() + months);
+  if (next.getDate() !== day) next.setDate(0);
+  return next;
+}
+
+function normalizeDomainName(value) {
+  return String(value || '')
+    .replace(/\bintern(ship)?\b/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
+}
+
+function getDomainDurationMonths(domainName) {
+  const normalized = normalizeDomainName(domainName);
+  return DOMAIN_DURATION_MONTHS[normalized] || null;
+}
+
+function calculateDurationLabel(startDate, endDate) {
+  if (!startDate || !endDate) return 'the stipulated duration';
+
+  let months = (endDate.getFullYear() - startDate.getFullYear()) * 12 + (endDate.getMonth() - startDate.getMonth());
+  let anchor = addMonths(startDate, months);
+  if (anchor > endDate) {
+    months -= 1;
+    anchor = addMonths(startDate, months);
+  }
+
+  const days = Math.max(0, Math.round((endDate - anchor) / (24 * 60 * 60 * 1000)));
+  const parts = [];
+  if (months > 0) parts.push(`${months} Month${months === 1 ? '' : 's'}`);
+  if (days > 0) parts.push(`${days} Day${days === 1 ? '' : 's'}`);
+  return parts.length ? parts.join(' ') : '1 Day';
+}
+
 function pdfHeader(doc, title) {
   // Background stripe
   doc.rect(0, 0, doc.page.width, 120).fill('#0f172a');
@@ -589,19 +652,43 @@ const downloadLOR = asyncHandler(async (req, res) => {
 });
 
 const generateOfferLetter = asyncHandler(async (req, res) => {
-  const { applicationId, candidateName, role, duration, joiningDate, offerLetterDate } = req.body;
+  const { applicationId, candidateName, role, duration, joiningDate, endDate, offerLetterDate } = req.body;
   const safeCandidateName = String(candidateName || 'Candidate').trim() || 'Candidate';
   const fileCandidateName = safeCandidateName.replace(/[^a-z0-9_-]+/gi, '-').replace(/^-+|-+$/g, '') || 'candidate';
 
   let application = null;
   if (applicationId) {
-    application = await InternshipApplication.findByPk(applicationId);
+    application = await InternshipApplication.findByPk(applicationId, {
+      include: [{ model: Domain, as: 'domain' }],
+    });
   }
 
   const todayIso = new Date().toISOString().slice(0, 10);
   const stableOfferDate = application?.offerLetterDate || offerLetterDate || todayIso;
-  const stableJoiningDate = application?.offerJoiningDate || joiningDate || todayIso;
+  const stableJoiningDate = application?.offerJoiningDate || joiningDate;
+  if (!stableJoiningDate) {
+    res.status(400);
+    throw new Error('Joining Date is required');
+  }
   const stableOfferId = application?.offerLetterId || `HSN-INT-${new Date(stableOfferDate).getFullYear()}-${crypto.randomBytes(2).toString('hex').toUpperCase()}`;
+  const startDateObj = parseDateOnly(stableJoiningDate);
+  if (!startDateObj) {
+    res.status(400);
+    throw new Error('Joining Date is invalid');
+  }
+  const manualEndDateObj = parseDateOnly(endDate);
+  if (manualEndDateObj && manualEndDateObj < startDateObj) {
+    res.status(400);
+    throw new Error('End Date cannot be before Joining Date');
+  }
+  const domainName = application?.domain?.name || role || '';
+  const mappedMonths = getDomainDurationMonths(domainName);
+  const endDateObj = manualEndDateObj || (mappedMonths ? addMonths(startDateObj, mappedMonths) : null);
+  const internshipDuration = manualEndDateObj
+    ? calculateDurationLabel(startDateObj, endDateObj)
+    : (mappedMonths ? `${mappedMonths} Month${mappedMonths === 1 ? '' : 's'}` : (duration || 'the stipulated duration'));
+  const joinDateStr = formatDateOnly(startDateObj);
+  const endDateStr = endDateObj ? formatDateOnly(endDateObj) : '';
 
   if (application && (!application.offerLetterDate || !application.offerJoiningDate || !application.offerLetterId)) {
     await application.update({
@@ -618,13 +705,7 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
 
   pdfHeader(doc, 'INTERNSHIP OFFER LETTER');
 
-  const offerDateObj = new Date(stableOfferDate);
-  const dateStr = `${String(offerDateObj.getDate()).padStart(2, '0')}/${String(offerDateObj.getMonth() + 1).padStart(2, '0')}/${offerDateObj.getFullYear()}`;
-
-  const joinDateObj = new Date(stableJoiningDate);
-  const joinDateStr = `${String(joinDateObj.getDate()).padStart(2, '0')}/${String(joinDateObj.getMonth() + 1).padStart(2, '0')}/${joinDateObj.getFullYear()}`;
-  
-  const internshipDuration = duration || 'the stipulated duration';
+  const dateStr = formatDateOnly(stableOfferDate);
 
   doc.moveDown(1);
   doc.fillColor('#475569').fontSize(10).font('Helvetica').text(`Offer Letter ID: ${stableOfferId}`, 40);
@@ -646,9 +727,17 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
 
   doc.moveDown(0.4);
   doc.fillColor('#334155').font('Helvetica').text(
-    `We are pleased to offer you the position of ${role || 'Intern'} at Hiresnix. Your internship will be conducted remotely for a duration of ${internshipDuration}, starting from ${joinDateStr}.`,
+    `We are pleased to offer you the position of ${role || 'Intern'} at Hiresnix. Your internship will be conducted remotely for a duration of ${internshipDuration}, starting from ${joinDateStr}${endDateStr ? ` and ending on ${endDateStr}` : ''}.`,
     40, doc.y, { width: 515, align: 'justify' }
   );
+
+  doc.moveDown(0.4);
+  doc.fillColor('#1e293b').font('Helvetica-Bold').text('Internship Details:', 40, doc.y);
+  doc.moveDown(0.2);
+  doc.fillColor('#334155').font('Helvetica')
+    .text(`Start Date: ${joinDateStr}`, 60, doc.y)
+    .text(`End Date: ${endDateStr || 'To be confirmed'}`, 60, doc.y)
+    .text(`Internship Duration: ${internshipDuration}`, 60, doc.y);
 
   doc.moveDown(0.4);
   doc.text(
