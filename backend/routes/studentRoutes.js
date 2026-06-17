@@ -3,7 +3,14 @@ const multer  = require('multer');
 const path    = require('path');
 const fs      = require('fs');
 const r       = express.Router();
-const { getStudentProfile, updateStudentProfile, uploadResume, getJobRecommendations, getAllStudents } = require('../controllers/studentController');
+const {
+  getStudentProfile,
+  updateStudentProfile,
+  uploadResume,
+  getJobRecommendations,
+  getAllStudents,
+  deleteStudent,
+} = require('../controllers/studentController');
 const { protect, authorize } = require('../middleware/auth');
 
 // Ensure the uploads directory exists to prevent crashes
@@ -27,6 +34,7 @@ const upload = multer({
 });
 
 r.get('/',                protect, authorize('admin'),   getAllStudents);
+r.delete('/:id',          protect, authorize('admin'),   deleteStudent);
 r.get('/profile',         protect, authorize('student'), getStudentProfile);
 r.put('/profile',         protect, authorize('student'), updateStudentProfile);
 r.put('/resume',          protect, authorize('student'), upload.single('resume'), uploadResume);

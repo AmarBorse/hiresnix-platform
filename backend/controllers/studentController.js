@@ -5,9 +5,16 @@
 const asyncHandler = require('express-async-handler');
 const path = require('path');
 const axios = require('axios');
-const { Student, User, Job, Company } = require('../models');
+const { Student, User, Job, Company, Application, Enrollment, Certificate } = require('../models');
 const { Op } = require('sequelize');
+const { sequelize } = require('../config/db');
 const { normalizeDomain, isValidDomain } = require('../utils/domains');
+const {
+  Domain,
+  InternshipApplication,
+  InternshipEnrollment,
+  InternshipCertificate,
+} = require('../models/internshipPlatform');
 
 const departmentAliases = {
   cse: 'Computer Science',
@@ -152,4 +159,55 @@ const getAllStudents = asyncHandler(async (req, res) => {
   res.json({ success: true, total: count, data: rows });
 });
 
-module.exports = { getStudentProfile, updateStudentProfile, uploadResume, getJobRecommendations, getAllStudents };
+// DELETE /api/students/:id  (admin only)
+const deleteStudent = asyncHandler(async (req, res) => {
+  const student = await Student.findByPk(req.params.id, {
+    include: [{ model: User, as: 'user', attributes: ['id', 'name', 'email', 'role'] }],
+  });
+
+  if (!student) {
+    res.status(404);
+    throw new Error('Student not found');
+  }
+
+  const userId = student.userId;
+
+  await sequelize.transaction(async (transaction) => {
+    const platformEnrollments = await InternshipEnrollment.findAll({
+      where: { userId },
+      include: [{ model: Domain, as: 'domain' }],
+      transaction,
+    });
+
+    for (const enrollment of platformEnrollments) {
+      await InternshipCertificate.destroy({ where: { enrollmentId: enrollment.id }, transaction });
+      if (enrollment.domain && enrollment.status !== 'Dropped') {
+        await enrollment.domain.decrement('filledSeats', { by: 1, transaction });
+      }
+    }
+
+    await InternshipEnrollment.destroy({ where: { userId }, transaction });
+    await InternshipApplication.destroy({ where: { userId }, transaction });
+    await Certificate.destroy({ where: { studentId: student.id }, transaction });
+    await Enrollment.destroy({ where: { studentId: student.id }, transaction });
+    await Application.destroy({
+      where: {
+        [Op.or]: [{ studentId: student.id }, { appliedById: userId }],
+      },
+      transaction,
+    });
+    await student.destroy({ transaction });
+    await User.destroy({ where: { id: userId, role: 'student' }, transaction });
+  });
+
+  res.json({ success: true, message: 'Student deleted successfully' });
+});
+
+module.exports = {
+  getStudentProfile,
+  updateStudentProfile,
+  uploadResume,
+  getJobRecommendations,
+  getAllStudents,
+  deleteStudent,
+};
