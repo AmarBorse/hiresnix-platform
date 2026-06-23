@@ -449,6 +449,27 @@ function drawOfferSeal(doc, x, y) {
   doc.restore();
 }
 
+function drawOfferSealMark(doc, x, y) {
+  doc.save();
+  doc.lineWidth(1.5).strokeColor(COMPANY.colors.accent).strokeOpacity(0.85);
+  doc.circle(x, y, 40).stroke();
+  doc.circle(x, y, 36).stroke();
+  doc.lineWidth(0.5);
+  doc.circle(x, y, 26).stroke();
+  doc.restore();
+}
+
+function getOfferSealPath() {
+  const candidates = [
+    path.join(__dirname, '../signatures/seal.png'),
+    path.join(__dirname, '../signatures/company-seal.png'),
+    path.join(__dirname, '../signatures/CompanySeal.png'),
+    path.join(__dirname, '../assets/seal.png'),
+    path.join(__dirname, '../assets/company-seal.png'),
+  ];
+  return candidates.find(filePath => fs.existsSync(filePath)) || null;
+}
+
 function pdfHeader(doc, title) {
   // Background stripe
   doc.rect(0, 0, doc.page.width, 120).fill('#0f172a');
@@ -804,6 +825,7 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
   }
   const domainName = cleanInternDomain(application?.domain?.name || role || 'Technology');
   const roleName = cleanInternDomain(role || application?.domain?.name || 'Internship');
+  const positionName = `${roleName} Intern`;
   const offerYear = offerDateObj.getFullYear();
   const stableOfferId = application?.offerLetterId || buildOfferLetterId(roleName, offerYear, application?.id || applicationId);
   const mappedMonths = getDomainDurationMonths(domainName);
@@ -847,6 +869,7 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
   const text = '#1e293b';
   const verifyUrl = 'https://hiresnix.co.in/verify-offer';
   const logoPath = path.join(__dirname, '../../frontend/dist/hiresnix-logo.png');
+  const sealPath = getOfferSealPath();
   const stipendValue = String(stipend || salary || '').trim();
   const monthlyStipend = stipendValue && !/^unpaid/i.test(stipendValue)
     ? (/^\d/.test(stipendValue) ? `₹${stipendValue}` : stipendValue)
@@ -914,15 +937,15 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
   };
 
   const detailTable = (rows, x, y, width) => {
-    const rowH = 24;
+    const rowH = 22;
     const labelW = 148;
     card(x, y, width, rows.length * rowH, '#ffffff');
     rows.forEach(([label, value], index) => {
       const rowY = y + index * rowH;
       if (index > 0) doc.moveTo(x, rowY).lineTo(x + width, rowY).lineWidth(0.35).stroke('#e2e8f0');
       doc.rect(x, rowY, labelW, rowH).fill(index % 2 === 0 ? '#f8fafc' : '#ffffff');
-      doc.fillColor(muted).fontSize(7.5).font('Helvetica-Bold').text(label, x + 10, rowY + 8, { width: labelW - 18 });
-      doc.fillColor(text).fontSize(8.7).font('Helvetica').text(String(value || '-'), x + labelW + 10, rowY + 7, { width: width - labelW - 20 });
+      doc.fillColor(muted).fontSize(7.2).font('Helvetica-Bold').text(label, x + 10, rowY + 7, { width: labelW - 18 });
+      doc.fillColor(text).fontSize(8.2).font('Helvetica').text(String(value || '-'), x + labelW + 10, rowY + 6, { width: width - labelW - 20, height: rowH - 8 });
     });
   };
 
@@ -933,21 +956,21 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
   doc.y += 66;
 
   infoCard('Candidate Name', safeCandidateName, left, doc.y, 250);
-  infoCard('Position', roleName, left + 265, doc.y, 250);
-  doc.y += 66;
+  infoCard('Position', positionName, left + 265, doc.y, 250);
+  doc.y += 58;
 
   doc.fillColor(blue).fontSize(11).font('Helvetica-Bold')
-    .text(`Subject: Offer of Internship – ${roleName}`, left, doc.y, { width: bodyWidth });
-  doc.y += 24;
+    .text(`Subject: Offer of Internship – ${positionName}`, left, doc.y, { width: bodyWidth });
+  doc.y += 20;
 
   doc.fillColor(text).fontSize(9.5).font('Helvetica').text(`Dear ${safeCandidateName},`, left, doc.y);
-  doc.y += 18;
-  paragraph(`Congratulations! We are pleased to offer you the position of ${roleName} at Hiresnix.`);
-  doc.y += 14;
+  doc.y += 15;
+  paragraph(`Congratulations! We are pleased to offer you the position of ${positionName} at Hiresnix.`);
+  doc.y += 10;
 
   sectionHeading('Internship Details');
   detailTable([
-    ['Position', roleName],
+    ['Position', positionName],
     ['Department', domainName],
     ['Start Date', joinDateStr],
     ['End Date', endDateStr],
@@ -957,11 +980,11 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
     ['Reporting Manager', 'Project Mentor / Team Lead'],
     ['Stipend', stipendText],
   ], left, doc.y, bodyWidth);
-  doc.y += 232;
+  doc.y += 212;
 
   const lowerY = doc.y;
-  card(left, lowerY, 318, 128, '#ffffff');
-  doc.y = lowerY + 14;
+  card(left, lowerY, 318, 116, '#ffffff');
+  doc.y = lowerY + 12;
   sectionHeading('What You Will Do', left + 14, 290);
   list([
     'Work on real-world projects',
@@ -971,15 +994,15 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
     'Build technical and professional skills',
   ], left + 14, 290, 8.8);
 
-  card(left + 334, lowerY, 181, 128, softGold);
-  doc.image(qrBuffer, left + 388, lowerY + 16, { fit: [72, 72] });
+  card(left + 334, lowerY, 181, 116, softGold);
+  doc.image(qrBuffer, left + 389, lowerY + 12, { fit: [70, 70] });
   doc.fillColor(navy).fontSize(8).font('Helvetica-Bold')
-    .text('Verification', left + 348, lowerY + 88, { width: 153, align: 'center' });
+    .text('Verification', left + 348, lowerY + 82, { width: 153, align: 'center' });
   doc.fillColor(text).fontSize(7.2).font('Helvetica')
-    .text('Scan the QR code to verify the authenticity of this offer letter.', left + 348, lowerY + 101, { width: 153, align: 'center', lineGap: 1 });
+    .text('Scan the QR code to verify the authenticity of this offer letter.', left + 348, lowerY + 94, { width: 153, align: 'center', lineGap: 1 });
   doc.fillColor(blue).fontSize(6.5).font('Helvetica')
-    .text(verifyUrl, left + 348, lowerY + 119, { width: 153, align: 'center' });
-  doc.y = lowerY + 144;
+    .text(verifyUrl, left + 348, lowerY + 109, { width: 153, align: 'center' });
+  doc.y = lowerY + 130;
 
   paragraph('We are excited to welcome you to Hiresnix and look forward to supporting your professional growth through structured mentorship, practical assignments, and meaningful project exposure.');
 
@@ -989,8 +1012,8 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
   const colGap = 16;
   const colW = (bodyWidth - colGap) / 2;
   const topY = doc.y;
-  card(left, topY, colW, 178, '#ffffff');
-  doc.y = topY + 14;
+  card(left, topY, colW, 168, '#ffffff');
+  doc.y = topY + 12;
   sectionHeading('Terms & Conditions', left + 14, colW - 28);
   list([
     'This internship is purely for educational and skill development purposes.',
@@ -1001,11 +1024,11 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
     'Interns must comply with company policies and professional standards.',
   ], left + 14, colW - 28, 8.15);
 
-  card(left + colW + colGap, topY, colW, 178, '#ffffff');
-  doc.y = topY + 14;
+  card(left + colW + colGap, topY, colW, 168, '#ffffff');
+  doc.y = topY + 12;
   sectionHeading('Confidentiality', left + colW + colGap + 14, colW - 28);
   paragraph('During and after the internship, the intern shall maintain confidentiality of all proprietary information, documents, data, projects, and resources belonging to Hiresnix.', left + colW + colGap + 14, colW - 28, 8.8);
-  doc.y += 18;
+  doc.y += 12;
   sectionHeading('Responsibilities of the Intern', left + colW + colGap + 14, colW - 28);
   list([
     'Maintain regular and professional communication.',
@@ -1015,9 +1038,9 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
     'Respect project confidentiality.',
   ], left + colW + colGap + 14, colW - 28, 8.15);
 
-  const midY = topY + 198;
-  card(left, midY, bodyWidth, 76, softGold);
-  doc.y = midY + 14;
+  const midY = topY + 184;
+  card(left, midY, bodyWidth, 70, softGold);
+  doc.y = midY + 12;
   sectionHeading('On Successful Completion', left + 14, bodyWidth - 28);
   list([
     'Internship Completion Certificate',
@@ -1025,26 +1048,34 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
     'Training Certificate',
   ], left + 14, bodyWidth - 28, 8.8);
 
-  const acceptY = midY + 96;
-  card(left, acceptY, 315, 138, '#ffffff');
-  doc.y = acceptY + 14;
+  const acceptY = midY + 86;
+  card(left, acceptY, 315, 128, '#ffffff');
+  doc.y = acceptY + 12;
   sectionHeading('Acceptance', left + 14, 287);
   doc.fillColor(text).fontSize(9).font('Helvetica')
     .text('Name: ________________________________', left + 14, doc.y, { width: 287 });
-  doc.y += 21;
+  doc.y += 19;
   doc.text('Signature: ___________________________', left + 14, doc.y, { width: 287 });
-  doc.y += 21;
+  doc.y += 19;
   doc.text('Date: _________________________________', left + 14, doc.y, { width: 287 });
-  doc.y += 18;
+  doc.y += 15;
   doc.fillColor(text).fontSize(8.3).font('Helvetica-Oblique')
     .text('"I hereby accept the internship offer and agree to abide by all terms and conditions mentioned in this letter."', left + 14, doc.y, { width: 287, lineGap: 1.5 });
 
-  card(left + 331, acceptY, 184, 138, '#ffffff');
-  doc.fillColor(muted).fontSize(7).font('Helvetica-Bold')
-    .text('COMPANY SEAL', left + 345, acceptY + 14, { width: 156, align: 'center' });
-  drawOfferSeal(doc, left + 423, acceptY + 75);
+  card(left + 331, acceptY, 184, 128, '#ffffff');
+  if (sealPath) {
+    try {
+      doc.image(sealPath, left + 377, acceptY + 20, { fit: [92, 92] });
+    } catch (err) {
+      drawOfferSealMark(doc, left + 423, acceptY + 70);
+    }
+  } else {
+    doc.fillColor(muted).fontSize(7).font('Helvetica-Bold')
+      .text('COMPANY SEAL', left + 345, acceptY + 12, { width: 156, align: 'center' });
+    drawOfferSeal(doc, left + 423, acceptY + 70);
+  }
 
-  const signY = acceptY + 162;
+  const signY = acceptY + 148;
   doc.fillColor(text).fontSize(9).font('Helvetica-Bold').text('For Hiresnix,', left, signY);
   try {
     doc.image(getSignaturePath('ceo.png'), left, signY + 16, { fit: [108, 42] });
