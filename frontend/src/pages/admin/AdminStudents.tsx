@@ -4,7 +4,7 @@ import { adminApi } from '../../api/admin';
 import { useFetch } from '../../hooks/useFetch';
 import { PageLoader, ErrorState, EmptyState } from '../../components/common/LoadingState';
 import { toast } from 'sonner';
-import { Search, CheckCircle, Clock, Download, Filter } from 'lucide-react';
+import { Search, CheckCircle, Clock, Download, Trash2, Loader2 } from 'lucide-react';
 
 function downloadCSV(data: any[], filename: string) {
   if (!data.length) { toast.error('No data to export'); return; }
@@ -26,6 +26,7 @@ export function AdminStudents() {
   const [search, setSearch] = useState('');
   const [deptFilter, setDeptFilter] = useState('');
   const [placementFilter, setPlacementFilter] = useState('');
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   const { data: result, loading, error, refetch } = useFetch(
     () => adminApi.getAllStudents({ page, limit: 50 }), [page]
@@ -61,6 +62,25 @@ export function AdminStudents() {
       ProfileComplete: s.isProfileComplete ? 'Yes' : 'No',
     }));
     downloadCSV(rows, `students_${deptFilter || 'all'}_${new Date().toISOString().split('T')[0]}.csv`);
+  };
+
+  const handleDelete = async (student: any) => {
+    const name = student.user?.name || 'this student';
+    const confirmed = window.confirm(
+      `Permanently delete ${name}? Their account, applications, enrollments, and certificates will be removed. This cannot be undone.`
+    );
+    if (!confirmed) return;
+
+    setDeletingId(student.id);
+    try {
+      await adminApi.deleteStudent(student.id);
+      toast.success(`${name} deleted successfully`);
+      await refetch();
+    } catch (e: any) {
+      toast.error(e.response?.data?.message || 'Failed to delete student');
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   const departments = [...new Set(students.map(s => s.department).filter(Boolean))];
@@ -124,7 +144,7 @@ export function AdminStudents() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-100 bg-gray-50">
-                  {['Student','Dept / Year','CGPA','Skills','Placement','Resume'].map(h => (
+                  {['Student','Dept / Year','CGPA','Skills','Placement','Resume','Action'].map(h => (
                     <th key={h} className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">{h}</th>
                   ))}
                 </tr>
@@ -181,6 +201,17 @@ export function AdminStudents() {
                           View CV
                         </a>
                       ) : <span className="text-xs text-gray-300">—</span>}
+                    </td>
+                    <td className="px-4 py-3">
+                      <button
+                        onClick={() => handleDelete(s)}
+                        disabled={deletingId === s.id}
+                        className="inline-flex items-center gap-1.5 text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 disabled:opacity-50 px-2.5 py-1.5 rounded-lg transition">
+                        {deletingId === s.id
+                          ? <Loader2 size={12} className="animate-spin" />
+                          : <Trash2 size={12} />}
+                        Delete
+                      </button>
                     </td>
                   </tr>
                 ))}

@@ -10,6 +10,10 @@ export const adminApi = {
     const res = await client.get('/students', { params });
     return res.data;
   },
+  deleteStudent: async (id: number) => {
+    const res = await client.delete(`/students/${id}`);
+    return res.data;
+  },
   getAllCompanies: async (params?: any) => {
     const res = await client.get('/companies', { params });
     return res.data;
@@ -61,10 +65,6 @@ export const adminApi = {
   },
   markEnrollmentComplete: async (id: number, data: any) => {
     const res = await client.put(`/iplatform/enrollments/${id}/complete`, data);
-    return res.data;
-  },
-  deleteIPlatformEnrollment: async (id: number) => {
-    const res = await client.delete(`/iplatform/enrollments/${id}`);
     return res.data;
   },
   getIPlatformDomains: async () => {

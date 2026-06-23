@@ -155,25 +155,6 @@ export function AdminIPlatform() {
     finally { setActionId(null); }
   };
 
-  const handleDeleteEnrollment = async (enrollment: any) => {
-    const confirmed = window.confirm(
-      `Remove ${enrollment.studentName} from the internship platform? Their enrollment and certificate will be deleted. This cannot be undone.`
-    );
-    if (!confirmed) return;
-
-    setActionId(`delete-${enrollment.id}`);
-    try {
-      await adminApi.deleteIPlatformEnrollment(enrollment.id);
-      toast.success(`${enrollment.studentName} removed from the internship platform`);
-      if (expandedId === enrollment.id) setExpandedId(null);
-      await load();
-    } catch (e: any) {
-      toast.error(e.response?.data?.message || 'Failed to remove student');
-    } finally {
-      setActionId(null);
-    }
-  };
-
   // ── Create domain ─────────────────────────────────────────────
   const handleCreateDomain = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -420,15 +401,6 @@ export function AdminIPlatform() {
                           <CheckCircle size={12} /> Cert issued
                         </span>
                       )}
-                      <button
-                        onClick={() => handleDeleteEnrollment(e)}
-                        disabled={actionId === `delete-${e.id}`}
-                        className="flex items-center gap-1 text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 disabled:opacity-50 px-3 py-1.5 rounded-lg transition">
-                        {actionId === `delete-${e.id}`
-                          ? <Loader2 size={11} className="animate-spin" />
-                          : <Trash2 size={11} />}
-                        Delete Student
-                      </button>
                     </div>
                   </div>
 
