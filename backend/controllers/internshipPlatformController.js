@@ -902,9 +902,9 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
     doc.fillColor('#cbd5e1').fontSize(8).font('Helvetica')
       .text('Hiresnix Internship Program', left + 210, 64, { width: 305, align: 'right' });
     doc.fillColor('#94a3b8').fontSize(8).font('Helvetica')
-      .text(`${COMPANY.email}  |  ${COMPANY.website}  |  Pune, Maharashtra, India`, left, doc.page.height - 38, { width: bodyWidth, align: 'center' });
+      .text(`${COMPANY.email}  |  ${COMPANY.website}  |  Pune, Maharashtra, India`, left, { width: bodyWidth, align: 'center' });
     doc.fillColor(gold).fontSize(8).font('Helvetica-Bold')
-      .text(`Page ${pageNo} of 2`, doc.page.width - 104, doc.page.height - 38, { width: 64, align: 'right' });
+      .text(`Page ${pageNo} of 2`, doc.page.width - 104, { width: 64, align: 'right' });
     doc.y = 120;
   };
 
@@ -928,18 +928,32 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
   };
 
   const paragraph = (content, x = left, width = bodyWidth, size = 9.5) => {
-    const textY = doc.y;
-    doc.fillColor(text).fontSize(size).font('Helvetica')
-      .text(content, x, textY, { width, align: 'justify', lineGap: 1, height: 44, ellipsis: true });
+  doc.fillColor(text)
+    .fontSize(size)
+    .font('Helvetica');
+
+  doc.text(content, x, doc.y, {
+    width,
+    align: 'justify',
+    lineGap: 1
+  });
+
+  doc.moveDown(0.4);
   };
 
-  const list = (items, x = left, width = bodyWidth, size = 9.2, itemHeight = 13) => {
-    items.forEach(item => {
-      const itemY = doc.y;
-      doc.fillColor(text).fontSize(size).font('Helvetica')
-        .text(`${bullet} ${item}`, x + 12, itemY, { width: width - 12, height: itemHeight - 1, lineGap: 0.5, ellipsis: true });
-      doc.y = itemY + itemHeight;
+  const list = (items, x = left, width = bodyWidth, size = 9.2) => {
+  doc.fillColor(text)
+    .fontSize(size)
+    .font('Helvetica');
+
+  items.forEach(item => {
+    doc.text(`${bullet} ${item}`, x + 12, doc.y, {
+      width: width - 12,
+      lineGap: 1
     });
+  });
+
+  doc.moveDown(0.2);
   };
 
   const detailTable = (rows, x, y, width) => {
@@ -991,7 +1005,7 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
   console.log("After table Y:", doc.y);
   doc.y += 160;
 
-  const lowerY = doc.y;
+  const lowerY = 470;
   card(left, lowerY, 318, 90, '#ffffff');
   doc.y = lowerY + 12;
   sectionHeading('What You Will Do', left + 14, 290);
@@ -1003,15 +1017,15 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
     'Build technical and professional skills',
   ], left + 14, 290, 8.8);
 
-  card(left + 334, lowerY, 181, 90, softGold);
+  /*card(left + 334, lowerY, 181, 90, softGold);
   doc.image(qrBuffer, left + 397, lowerY + 8, { fit: [55, 55] });
   doc.fillColor(navy).fontSize(8).font('Helvetica-Bold')
     .text('Verification', left + 348, lowerY + 82, { width: 153, align: 'center' });
   doc.fillColor(text).fontSize(7.2).font('Helvetica')
     .text('Scan the QR code to verify the authenticity of this offer letter.', left + 348, lowerY + 94, { width: 153, align: 'center', lineGap: 1 });
   doc.fillColor(blue).fontSize(6.5).font('Helvetica')
-    .text(verifyUrl, left + 348, lowerY + 109, { width: 153, align: 'center' });
-  doc.y = lowerY + 130;
+    .text(verifyUrl, left + 348, lowerY + 109, { width: 153, align: 'center' });*/
+  doc.y = lowerY + 80;
 
   paragraph('We are excited to welcome you to Hiresnix and look forward to supporting your professional growth through structured mentorship, practical assignments, and meaningful project exposure.');
   console.log("Before Page 2 Y:", doc.y);
