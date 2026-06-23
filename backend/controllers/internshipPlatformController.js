@@ -97,17 +97,27 @@ const getMyApplication = asyncHandler(async (req, res) => {
 });
 
 const getAllApplications = asyncHandler(async (req, res) => {
-  const { status, page = 1, limit = 20 } = req.query;
+  const { status, page = 1, limit } = req.query;
   const where = {};
   if (status) where.status = status;
 
-  const { count, rows } = await InternshipApplication.findAndCountAll({
+  const query = {
     where,
     include: [{ model: Domain, as: 'domain' }],
     order: [['createdAt', 'DESC']],
-    limit: parseInt(limit),
-    offset: (parseInt(page) - 1) * parseInt(limit),
-  });
+  };
+
+  // The admin screen currently renders one complete list. Only paginate when a
+  // caller explicitly supplies a limit; the previous implicit limit of 20 made
+  // the list disagree with the total returned by the stats endpoint.
+  if (limit !== undefined) {
+    const parsedLimit = Math.max(1, parseInt(limit, 10) || 20);
+    const parsedPage = Math.max(1, parseInt(page, 10) || 1);
+    query.limit = parsedLimit;
+    query.offset = (parsedPage - 1) * parsedLimit;
+  }
+
+  const { count, rows } = await InternshipApplication.findAndCountAll(query);
   res.json({ success: true, total: count, data: rows });
 });
 

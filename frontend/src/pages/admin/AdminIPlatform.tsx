@@ -67,6 +67,7 @@ export function AdminIPlatform() {
   const [tab, setTab] = useState<Tab>('applications');
   const [stats, setStats] = useState<any>({});
   const [applications, setApplications] = useState<any[]>([]);
+  const [applicationTotal, setApplicationTotal] = useState(0);
   const [enrollments, setEnrollments] = useState<any[]>([]);
   const [domains, setDomains] = useState<any[]>([]);
   const [resources, setResources] = useState<any[]>([]);
@@ -98,7 +99,10 @@ export function AdminIPlatform() {
       if (result.status === 'fulfilled') {
         const data = result.value.data || [];
         if (key === 'stats') setStats(data || {});
-        if (key === 'applications') setApplications(Array.isArray(data) ? data : []);
+        if (key === 'applications') {
+          setApplications(Array.isArray(data) ? data : []);
+          setApplicationTotal(Number(result.value.total) || (Array.isArray(data) ? data.length : 0));
+        }
         if (key === 'enrollments') setEnrollments(Array.isArray(data) ? data : []);
         if (key === 'domains') setDomains(Array.isArray(data) ? data : []);
         if (key === 'resources') setResources(Array.isArray(data) ? data : []);
@@ -251,7 +255,7 @@ export function AdminIPlatform() {
       {!loading && tab === 'applications' && (
         <div className="bg-white rounded-b-xl rounded-tr-xl shadow-sm overflow-hidden">
           <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100">
-            <p className="text-sm font-semibold text-gray-700">{applications.length} total applications</p>
+            <p className="text-sm font-semibold text-gray-700">{applicationTotal} total applications</p>
             <button onClick={downloadApplicationsCSV}
               className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg transition">
               <Download size={13} /> Export CSV
