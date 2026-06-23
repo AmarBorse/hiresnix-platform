@@ -144,7 +144,7 @@ export function AdminStudents() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-100 bg-gray-50">
-                  {['Student','Dept / Year','CGPA','Skills','Placement','Resume','Action'].map(h => (
+                  {['Student','Dept / Year','CGPA','Skills','Placement','Resume'].map(h => (
                     <th key={h} className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">{h}</th>
                   ))}
                 </tr>
@@ -161,6 +161,15 @@ export function AdminStudents() {
                           <p className="font-semibold text-gray-900 text-xs">{s.user?.name}</p>
                           <p className="text-gray-400 text-[11px]">{s.user?.email}</p>
                           {s.rollNumber && <p className="text-[11px] text-gray-400">{s.rollNumber}</p>}
+                          <button
+                            onClick={() => handleDelete(s)}
+                            disabled={deletingId === s.id}
+                            className="mt-1.5 inline-flex items-center gap-1 text-[11px] font-bold text-red-600 bg-red-50 hover:bg-red-100 disabled:opacity-50 px-2 py-1 rounded-md transition">
+                            {deletingId === s.id
+                              ? <Loader2 size={11} className="animate-spin" />
+                              : <Trash2 size={11} />}
+                            Delete Student
+                          </button>
                         </div>
                       </div>
                     </td>
@@ -201,17 +210,6 @@ export function AdminStudents() {
                           View CV
                         </a>
                       ) : <span className="text-xs text-gray-300">—</span>}
-                    </td>
-                    <td className="px-4 py-3">
-                      <button
-                        onClick={() => handleDelete(s)}
-                        disabled={deletingId === s.id}
-                        className="inline-flex items-center gap-1.5 text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 disabled:opacity-50 px-2.5 py-1.5 rounded-lg transition">
-                        {deletingId === s.id
-                          ? <Loader2 size={12} className="animate-spin" />
-                          : <Trash2 size={12} />}
-                        Delete
-                      </button>
                     </td>
                   </tr>
                 ))}
