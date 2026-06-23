@@ -909,10 +909,10 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
   };
 
   const sectionHeading = (title, x = left, width = bodyWidth) => {
-    doc.fillColor(navy).fontSize(10).font('Helvetica-Bold').text(title, x, doc.y, { width });
-    doc.moveDown(0.25);
-    doc.rect(x, doc.y, 34, 2).fill(gold);
-    doc.y += 8;
+    const headingY = doc.y;
+    doc.fillColor(navy).fontSize(9.5).font('Helvetica-Bold').text(title, x, headingY, { width, height: 12, ellipsis: true });
+    doc.rect(x, headingY + 15, 34, 2).fill(gold);
+    doc.y = headingY + 22;
   };
 
   const card = (x, y, width, height, fill = '#ffffff') => {
@@ -920,19 +920,25 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
   };
 
   const infoCard = (label, value, x, y, width) => {
-    card(x, y, width, 48, '#f8fafc');
-    doc.fillColor(muted).fontSize(7).font('Helvetica-Bold').text(label.toUpperCase(), x + 12, y + 10, { width: width - 24 });
-    doc.fillColor(navy).fontSize(10).font('Helvetica-Bold').text(String(value || '-'), x + 12, y + 24, { width: width - 24 });
+    card(x, y, width, 42, '#f8fafc');
+    doc.fillColor(muted).fontSize(6.8).font('Helvetica-Bold')
+      .text(label.toUpperCase(), x + 12, y + 8, { width: width - 24, height: 9, ellipsis: true });
+    doc.fillColor(navy).fontSize(9.2).font('Helvetica-Bold')
+      .text(String(value || '-'), x + 12, y + 21, { width: width - 24, height: 14, ellipsis: true });
   };
 
   const paragraph = (content, x = left, width = bodyWidth, size = 9.5) => {
-    doc.fillColor(text).fontSize(size).font('Helvetica').text(content, x, doc.y, { width, align: 'justify', lineGap: 2 });
+    const textY = doc.y;
+    doc.fillColor(text).fontSize(size).font('Helvetica')
+      .text(content, x, textY, { width, align: 'justify', lineGap: 1, height: 44, ellipsis: true });
   };
 
-  const list = (items, x = left, width = bodyWidth, size = 9.2) => {
+  const list = (items, x = left, width = bodyWidth, size = 9.2, itemHeight = 13) => {
     items.forEach(item => {
+      const itemY = doc.y;
       doc.fillColor(text).fontSize(size).font('Helvetica')
-        .text(`${bullet} ${item}`, x + 12, doc.y, { width: width - 12, lineGap: 1.5 });
+        .text(`${bullet} ${item}`, x + 12, itemY, { width: width - 12, height: itemHeight - 1, lineGap: 0.5, ellipsis: true });
+      doc.y = itemY + itemHeight;
     });
   };
 
@@ -944,8 +950,10 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
       const rowY = y + index * rowH;
       if (index > 0) doc.moveTo(x, rowY).lineTo(x + width, rowY).lineWidth(0.35).stroke('#e2e8f0');
       doc.rect(x, rowY, labelW, rowH).fill(index % 2 === 0 ? '#f8fafc' : '#ffffff');
-      doc.fillColor(muted).fontSize(7.2).font('Helvetica-Bold').text(label, x + 10, rowY + 7, { width: labelW - 18 });
-      doc.fillColor(text).fontSize(8.2).font('Helvetica').text(String(value || '-'), x + labelW + 10, rowY + 6, { width: width - labelW - 20, height: rowH - 8 });
+      doc.fillColor(muted).fontSize(7.2).font('Helvetica-Bold')
+        .text(label, x + 10, rowY + 7, { width: labelW - 18, height: 9, ellipsis: true });
+      doc.fillColor(text).fontSize(8.1).font('Helvetica')
+        .text(String(value || '-'), x + labelW + 10, rowY + 6, { width: width - labelW - 20, height: rowH - 8, ellipsis: true });
     });
   };
 
@@ -953,11 +961,11 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
 
   infoCard('Offer Letter ID', stableOfferId, left, doc.y, 250);
   infoCard('Date', dateStr, left + 265, doc.y, 250);
-  doc.y += 66;
+  doc.y += 52;
 
   infoCard('Candidate Name', safeCandidateName, left, doc.y, 250);
   infoCard('Position', positionName, left + 265, doc.y, 250);
-  doc.y += 58;
+  doc.y += 50;
 
   doc.fillColor(blue).fontSize(11).font('Helvetica-Bold')
     .text(`Subject: Offer of Internship – ${positionName}`, left, doc.y, { width: bodyWidth });
@@ -1012,7 +1020,7 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
   const colGap = 16;
   const colW = (bodyWidth - colGap) / 2;
   const topY = doc.y;
-  card(left, topY, colW, 168, '#ffffff');
+  card(left, topY, colW, 178, '#ffffff');
   doc.y = topY + 12;
   sectionHeading('Terms & Conditions', left + 14, colW - 28);
   list([
@@ -1022,9 +1030,9 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
     'Either party may terminate the internship with 7 days written notice.',
     "The intern's performance and conduct will be evaluated periodically.",
     'Interns must comply with company policies and professional standards.',
-  ], left + 14, colW - 28, 8.15);
+  ], left + 14, colW - 28, 7.4, 21);
 
-  card(left + colW + colGap, topY, colW, 168, '#ffffff');
+  card(left + colW + colGap, topY, colW, 178, '#ffffff');
   doc.y = topY + 12;
   sectionHeading('Confidentiality', left + colW + colGap + 14, colW - 28);
   paragraph('During and after the internship, the intern shall maintain confidentiality of all proprietary information, documents, data, projects, and resources belonging to Hiresnix.', left + colW + colGap + 14, colW - 28, 8.8);
@@ -1038,7 +1046,7 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
     'Respect project confidentiality.',
   ], left + colW + colGap + 14, colW - 28, 8.15);
 
-  const midY = topY + 184;
+  const midY = topY + 190;
   card(left, midY, bodyWidth, 70, softGold);
   doc.y = midY + 12;
   sectionHeading('On Successful Completion', left + 14, bodyWidth - 28);
