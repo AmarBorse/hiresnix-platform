@@ -988,10 +988,11 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
     ['Reporting Manager', 'Project Mentor / Team Lead'],
     ['Stipend', stipendText],
   ], left, doc.y, bodyWidth);
-  doc.y += 212;
+  console.log("After table Y:", doc.y);
+  doc.y += 160;
 
   const lowerY = doc.y;
-  card(left, lowerY, 318, 116, '#ffffff');
+  card(left, lowerY, 318, 90, '#ffffff');
   doc.y = lowerY + 12;
   sectionHeading('What You Will Do', left + 14, 290);
   list([
@@ -1002,8 +1003,8 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
     'Build technical and professional skills',
   ], left + 14, 290, 8.8);
 
-  card(left + 334, lowerY, 181, 116, softGold);
-  doc.image(qrBuffer, left + 389, lowerY + 12, { fit: [70, 70] });
+  card(left + 334, lowerY, 181, 90, softGold);
+  doc.image(qrBuffer, left + 397, lowerY + 8, { fit: [55, 55] });
   doc.fillColor(navy).fontSize(8).font('Helvetica-Bold')
     .text('Verification', left + 348, lowerY + 82, { width: 153, align: 'center' });
   doc.fillColor(text).fontSize(7.2).font('Helvetica')
@@ -1013,7 +1014,7 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
   doc.y = lowerY + 130;
 
   paragraph('We are excited to welcome you to Hiresnix and look forward to supporting your professional growth through structured mentorship, practical assignments, and meaningful project exposure.');
-
+  console.log("Before Page 2 Y:", doc.y);
   doc.addPage({ size: 'A4', margin: 0 });
   drawPageShell('Terms & Acceptance', 2);
 
