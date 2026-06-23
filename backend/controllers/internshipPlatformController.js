@@ -725,7 +725,7 @@ const downloadLOR = asyncHandler(async (req, res) => {
 });
 
 const generateOfferLetter = asyncHandler(async (req, res) => {
-  const { applicationId, candidateName, role, duration, joiningDate, endDate, offerLetterDate } = req.body;
+  const { applicationId, candidateName, role, duration, joiningDate, endDate, offerLetterDate, salary, stipend } = req.body;
   const safeCandidateName = String(candidateName || 'Candidate').trim() || 'Candidate';
   const fileCandidateName = safeCandidateName.replace(/[^a-z0-9_-]+/gi, '-').replace(/^-+|-+$/g, '') || 'candidate';
 
@@ -779,6 +779,10 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
     : (durationMonths ? `${durationMonths} Month${durationMonths === 1 ? '' : 's'}` : (duration || 'the stipulated duration'));
   const joinDateStr = formatDateOnly(startDateObj);
   const endDateStr = formatDateOnly(endDateObj);
+  const stipendValue = String(stipend || salary || '').trim();
+  const stipendText = stipendValue && !/^unpaid/i.test(stipendValue)
+    ? `${stipendValue} per month, payable on or before the 5th day of each month`
+    : 'Unpaid Internship';
 
   if (application && (!application.offerLetterDate || !application.offerJoiningDate || !application.offerLetterId || !application.offerEndDate)) {
     const offerUpdate = {
@@ -848,8 +852,8 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
   const detailRow = (label, value, x, y, width) => {
     doc.fillColor('#64748b').fontSize(7).font('Helvetica-Bold')
       .text(label.toUpperCase(), x, y, { width });
-    doc.fillColor('#0f172a').fontSize(10).font('Helvetica-Bold')
-      .text(value, x, y + 11, { width });
+    doc.fillColor('#0f172a').fontSize(8.5).font('Helvetica-Bold')
+      .text(value, x, y + 10, { width, height: 24 });
   };
 
   drawOfferFrame(1);
@@ -879,14 +883,33 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
   paragraph('Your internship details are as follows:', { align: 'left' });
   sectionTitle('INTERNSHIP DETAILS');
   const detailY = doc.y;
-  doc.roundedRect(left, detailY, bodyWidth, 74, 5).fill('#f8fafc').stroke('#e2e8f0');
-  doc.moveTo(left + 257, detailY + 12).lineTo(left + 257, detailY + 62).lineWidth(0.4).stroke('#cbd5e1');
-  doc.moveTo(left + 14, detailY + 37).lineTo(left + bodyWidth - 14, detailY + 37).lineWidth(0.4).stroke('#cbd5e1');
-  detailRow('Start Date', joinDateStr, left + 14, detailY + 10, 210);
-  detailRow('End Date', endDateStr, left + 276, detailY + 10, 210);
-  detailRow('Duration', internshipDuration, left + 14, detailY + 45, 210);
-  detailRow('Mode of Internship', 'Remote', left + 276, detailY + 45, 210);
-  doc.y = detailY + 92;
+  const cellW = (bodyWidth - 28) / 3;
+  const cellH = 38;
+  doc.roundedRect(left, detailY, bodyWidth, 118, 5).fill('#f8fafc').stroke('#e2e8f0');
+  [1, 2].forEach(index => {
+    const x = left + 14 + (cellW * index);
+    doc.moveTo(x, detailY + 10).lineTo(x, detailY + 108).lineWidth(0.35).stroke('#cbd5e1');
+  });
+  [1, 2].forEach(index => {
+    const y = detailY + (cellH * index);
+    doc.moveTo(left + 14, y).lineTo(left + bodyWidth - 14, y).lineWidth(0.35).stroke('#cbd5e1');
+  });
+  [
+    ['Position', `${domainName} Intern`],
+    ['Department', domainName],
+    ['Start Date', joinDateStr],
+    ['End Date', endDateStr],
+    ['Duration', internshipDuration],
+    ['Mode of Internship', 'Remote'],
+    ['Working Hours', 'Flexible (15-20 hours per week)'],
+    ['Reporting Manager', 'Project Mentor / Team Lead'],
+    ['Stipend', stipendText],
+  ].forEach(([label, value], index) => {
+    const col = index % 3;
+    const row = Math.floor(index / 3);
+    detailRow(label, value, left + 14 + (cellW * col) + 8, detailY + 8 + (cellH * row), cellW - 18);
+  });
+  doc.y = detailY + 134;
 
   paragraph('Hiresnix is committed to helping students and early professionals gain practical industry experience through project-based learning, mentorship, and skill development.');
 
@@ -940,16 +963,31 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
     'Respect project confidentiality and company resources',
   ]);
 
-  doc.moveDown(0.8);
-  sectionTitle('Acceptance');
-  paragraph('Please confirm your acceptance of this offer by replying to this email/message.');
+  doc.moveDown(0.55);
+  sectionTitle('CONFIDENTIALITY');
+  paragraph('During and after the internship, the intern shall maintain confidentiality of all proprietary information, documents, data, projects, and resources belonging to Hiresnix.', { size: 9, lineGap: 1 });
 
-  doc.moveDown(0.65);
+  doc.moveDown(0.5);
+  const acceptanceY = doc.y;
+  doc.roundedRect(left, acceptanceY, bodyWidth, 94, 5).fill('#f8fafc').stroke('#e2e8f0');
+  doc.fillColor('#0f172a').fontSize(11).font('Helvetica-Bold')
+    .text('Acceptance', left + 14, acceptanceY + 12, { width: bodyWidth - 28 });
+  doc.fillColor('#334155').fontSize(9).font('Helvetica')
+    .text('Name: __________________', left + 14, acceptanceY + 31, { width: 160 })
+    .text('Signature: ______________', left + 190, acceptanceY + 31, { width: 170 })
+    .text('Date: __________________', left + 370, acceptanceY + 31, { width: 135 });
+  doc.fillColor('#64748b').fontSize(8).font('Helvetica-Bold')
+    .text('Declaration:', left + 14, acceptanceY + 56, { width: 120 });
+  doc.fillColor('#334155').fontSize(8.5).font('Helvetica')
+    .text('I hereby accept this internship offer and agree to abide by all terms and conditions mentioned in this letter.', left + 14, acceptanceY + 70, { width: bodyWidth - 28, lineGap: 1 });
+  doc.y = acceptanceY + 106;
+
+  doc.moveDown(0.35);
   paragraph('For verification or queries:', { align: 'left' });
   doc.moveDown(0.2);
   doc.fillColor('#334155').fontSize(10).font('Helvetica-Bold').text('hr@hiresnix.co.in', left);
 
-  const signBlockY = 610;
+  const signBlockY = 650;
   doc.moveTo(left, signBlockY).lineTo(left + bodyWidth, signBlockY).lineWidth(0.8).stroke('#cbd5e1');
   doc.fillColor('#1e293b').fontSize(10).font('Helvetica-Bold').text('Regards,', left, signBlockY + 14);
 
@@ -961,7 +999,7 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
   doc.fillColor('#1e293b').fontSize(10).font('Helvetica-Bold')
     .text('A S Borse', left, signatureTextY, { lineGap: 0 });
   doc.fillColor('#334155').fontSize(9).font('Helvetica')
-    .text('Founder', left, signatureTextY + 12, { lineGap: 0 })
+    .text('Founder & CEO', left, signatureTextY + 12, { lineGap: 0 })
     .text('Hiresnix', left, signatureTextY + 24, { lineGap: 0 });
 
   drawOfferSeal(doc, left + bodyWidth - 54, sigY + 34);
