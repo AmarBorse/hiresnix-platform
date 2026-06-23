@@ -1188,6 +1188,36 @@ const getAllEnrollments = asyncHandler(async (req, res) => {
   res.json({ success: true, data: enrollments });
 });
 
+const deleteEnrollment = asyncHandler(async (req, res) => {
+  await sequelize.transaction(async (transaction) => {
+    const enrollment = await InternshipEnrollment.findByPk(req.params.id, { transaction });
+    if (!enrollment) { res.status(404); throw new Error('Enrollment not found'); }
+
+    await InternshipCertificate.destroy({
+      where: { enrollmentId: enrollment.id },
+      transaction,
+    });
+
+    await InternshipApplication.update({
+      status: 'Rejected',
+      approvedAt: null,
+      adminNote: 'Enrollment removed by admin',
+    }, {
+      where: { id: enrollment.applicationId },
+      transaction,
+    });
+
+    await enrollment.destroy({ transaction });
+
+    const domain = await Domain.findByPk(enrollment.domainId, { transaction });
+    if (domain && domain.filledSeats > 0) {
+      await domain.update({ filledSeats: domain.filledSeats - 1 }, { transaction });
+    }
+  });
+
+  res.json({ success: true, message: 'Student removed from internship platform' });
+});
+
 const getMyCertificates = asyncHandler(async (req, res) => {
   const enrollments = await InternshipEnrollment.findAll({
     where: { userId: req.user.id, status: 'Completed' },
@@ -1366,7 +1396,7 @@ module.exports = {
   getMyProgress, submitTask, markComplete,
   getMyCertificates, downloadCertificate, downloadCompletionLetter, downloadLOR,
   generateOfferLetter,
-  getStats, getEnrolledStudents, getAllEnrollments,
+  getStats, getEnrolledStudents, getAllEnrollments, deleteEnrollment,
   verifyCertificate,
   forgotPassword, resetPassword,
 };

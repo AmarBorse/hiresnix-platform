@@ -41,6 +41,7 @@ r.post('/generate-offer',            protect, authorize('admin'), ctrl.generateO
 r.get('/stats',                      protect, authorize('admin'), ctrl.getStats);
 r.get('/enrolled-students',          protect, authorize('admin'), ctrl.getEnrolledStudents);
 r.get('/all-enrollments',            protect, authorize('admin'), ctrl.getAllEnrollments);
+r.delete('/enrollments/:id',         protect, authorize('admin'), ctrl.deleteEnrollment);
 
 // ── PASSWORD RESET ────────────────────────────────────────────────
 r.post('/forgot-password',           ctrl.forgotPassword);
