@@ -1025,6 +1025,7 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
   doc.moveDown(0.3);
   bulletList([
     'Internship Completion Certificate',
+    'Internship Completion Letter',
     'Letter of Recommendation (subject to company evaluation)',
   ]);
   doc.y += 12;
