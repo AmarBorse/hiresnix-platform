@@ -411,6 +411,7 @@ function drawOfferSeal(doc, x, y) {
   const sealDarkBlue = '#1e3a8a';
   const legalText = 'SR PATIL INFRASTRUCTURE PRIVATE LIMITED';
   const cinText = 'U42909MH2024PTC429260';
+  const sealRadius = 45;
   const drawCircularText = (text, radius, startAngle, endAngle, fontSize) => {
     const chars = text.split('');
     const step = chars.length > 1 ? (endAngle - startAngle) / (chars.length - 1) : 0;
@@ -427,20 +428,34 @@ function drawOfferSeal(doc, x, y) {
       doc.restore();
     });
   };
+  const drawStampStar = (starX, starY, radius) => {
+    doc.save();
+    doc.fillColor(sealDarkBlue).fillOpacity(0.82);
+    for (let point = 0; point < 10; point += 1) {
+      const angle = (-90 + (point * 36)) * (Math.PI / 180);
+      const pointRadius = point % 2 === 0 ? radius : radius * 0.42;
+      const pointX = starX + Math.cos(angle) * pointRadius;
+      const pointY = starY + Math.sin(angle) * pointRadius;
+      if (point === 0) doc.moveTo(pointX, pointY);
+      else doc.lineTo(pointX, pointY);
+    }
+    doc.closePath().fill();
+    doc.restore();
+  };
 
   doc.save();
   doc.lineWidth(1.5).strokeColor(sealDarkBlue).strokeOpacity(0.86);
-  doc.circle(x, y, 40).stroke();
+  doc.circle(x, y, sealRadius).stroke();
   doc.lineWidth(1).strokeColor(sealBlue).strokeOpacity(0.74);
-  doc.circle(x, y, 36).stroke();
+  doc.circle(x, y, 40.5).stroke();
   doc.lineWidth(0.55).strokeColor(sealDarkBlue).strokeOpacity(0.58);
-  doc.circle(x, y, 26).stroke();
+  doc.circle(x, y, 29).stroke();
 
   doc.lineWidth(0.3).strokeColor(sealBlue).strokeOpacity(0.2);
-  for (let index = 0; index < 24; index += 1) {
-    const angle = (Math.PI * 2 * index) / 24;
-    const inner = 28 + (index % 4);
-    const outer = 38 - (index % 3);
+  for (let index = 0; index < 28; index += 1) {
+    const angle = (Math.PI * 2 * index) / 28;
+    const inner = 31 + (index % 4);
+    const outer = 43 - (index % 3);
     doc.moveTo(x + Math.cos(angle) * inner, y + Math.sin(angle) * inner)
       .lineTo(x + Math.cos(angle) * outer, y + Math.sin(angle) * outer)
       .stroke();
@@ -448,26 +463,25 @@ function drawOfferSeal(doc, x, y) {
 
   doc.lineWidth(0.45).strokeColor(sealDarkBlue).strokeOpacity(0.18);
   for (let index = 0; index < 9; index += 1) {
-    const yOffset = -22 + (index * 5);
-    doc.moveTo(x - 21 + (index % 2), y + yOffset)
-      .lineTo(x + 21 - (index % 3), y + yOffset + 0.7)
+    const yOffset = -24 + (index * 5.4);
+    doc.moveTo(x - 24 + (index % 2), y + yOffset)
+      .lineTo(x + 24 - (index % 3), y + yOffset + 0.7)
       .stroke();
   }
 
-  drawCircularText(legalText, 32.3, 206, 334, 3.35);
+  drawCircularText(legalText, 36.5, 204, 336, 3.7);
 
   doc.fillColor(sealDarkBlue).fillOpacity(0.9);
-  doc.fontSize(11).font('Helvetica-Bold')
-    .text('HIRESNIX', x - 39, y - 9, { width: 78, align: 'center' });
-  doc.fontSize(4.6).font('Helvetica-Bold')
-    .text('CIN:', x - 39, y + 6, { width: 78, align: 'center' });
-  doc.fontSize(4.4).font('Helvetica')
-    .text(cinText, x - 39, y + 12, { width: 78, align: 'center' });
-  doc.fontSize(5.6).font('Helvetica-Bold')
-    .text('PUNE', x - 39, y + 25, { width: 78, align: 'center' });
-  doc.fontSize(6.8).font('Helvetica-Bold')
-    .text('\u2605', x - 34, y - 2, { width: 10, align: 'center' })
-    .text('\u2605', x + 24, y - 2, { width: 10, align: 'center' });
+  doc.fontSize(12.2).font('Helvetica-Bold')
+    .text('HIRESNIX', x - 42, y - 10, { width: 84, align: 'center' });
+  doc.fontSize(5).font('Helvetica-Bold')
+    .text('CIN:', x - 42, y + 7, { width: 84, align: 'center' });
+  doc.fontSize(4.7).font('Helvetica')
+    .text(cinText, x - 42, y + 14, { width: 84, align: 'center' });
+  doc.fontSize(6.2).font('Helvetica-Bold')
+    .text('PUNE', x - 42, y + 29, { width: 84, align: 'center' });
+  drawStampStar(x - 31, y, 3.2);
+  drawStampStar(x + 31, y, 3.2);
   doc.restore();
 }
 
@@ -1046,30 +1060,30 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
   doc.moveDown(0.2);
   doc.fillColor('#334155').fontSize(10).font('Helvetica-Bold').text(verificationEmail, left);
 
-  const signBlockY = 650;
+  const signBlockY = 625;
   doc.moveTo(left, signBlockY).lineTo(left + bodyWidth, signBlockY).lineWidth(0.8).stroke('#cbd5e1');
   doc.fillColor('#1e293b').fontSize(10).font('Helvetica-Bold').text('Regards,', left, signBlockY + 14);
 
   const sigY = signBlockY + 32;
-  const founderTextY = sigY + 39;
+  const founderTextY = sigY + 34;
   try {
     doc.image(getSignaturePath('ceo.png'), left, sigY, { fit: [120, 48] });
   } catch (err) {}
-  doc.fillColor('#1e293b').fontSize(10).font('Helvetica-Bold')
+  doc.fillColor('#1e293b').fontSize(11).font('Helvetica-Bold')
     .text('A S Borse', left, founderTextY, { lineGap: 0 });
-  doc.fillColor('#334155').fontSize(7.4).font('Helvetica')
-    .text('Founder & CEO \u2013 Hiresnix', left, founderTextY + 10, { width: 250, lineGap: 0 })
-    .text('For', left, founderTextY + 20, { width: 250, lineGap: 0 })
-    .text(legalEntity, left, founderTextY + 28, { width: 250, lineGap: 0 })
-    .text('CIN:', left, founderTextY + 38, { width: 250, lineGap: 0 })
-    .text(cin, left, founderTextY + 46, { width: 250, lineGap: 0 });
+  doc.fillColor('#334155').fontSize(8.8).font('Helvetica')
+    .text('Founder & CEO \u2013 Hiresnix', left, founderTextY + 12, { width: 265, lineGap: 0 })
+    .text('For', left, founderTextY + 26, { width: 265, lineGap: 0 })
+    .text(legalEntity, left, founderTextY + 36, { width: 265, lineGap: 0 })
+    .text('CIN:', left, founderTextY + 49, { width: 265, lineGap: 0 })
+    .text(cin, left, founderTextY + 59, { width: 265, lineGap: 0 });
 
-  drawOfferSeal(doc, left + bodyWidth - 54, sigY + 34);
+  drawOfferSeal(doc, left + bodyWidth - 54, 716);
 
-  doc.fillColor('#334155').fontSize(7.4).font('Helvetica')
-    .text('support@hiresnix.co.in', left, founderTextY + 57, { width: 250, lineGap: 0 })
-    .text('www.hiresnix.co.in', left, founderTextY + 65, { width: 250, lineGap: 0 })
-    .text('Pune, Maharashtra, India', left, founderTextY + 73, { width: 250, lineGap: 0 });
+  doc.fillColor('#334155').fontSize(8.8).font('Helvetica')
+    .text('support@hiresnix.co.in', left, founderTextY + 72, { width: 265, lineGap: 0 })
+    .text('www.hiresnix.co.in', left, founderTextY + 82, { width: 265, lineGap: 0 })
+    .text('Pune, Maharashtra, India', left, founderTextY + 92, { width: 265, lineGap: 0 });
 
   doc.end();
   return;
