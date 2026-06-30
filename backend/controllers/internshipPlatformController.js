@@ -407,18 +407,33 @@ function cleanInternDomain(value) {
 }
 
 function drawOfferSeal(doc, x, y) {
+  const sealBlue = '#1d4ed8';
+  const sealDarkBlue = '#1e3a8a';
   doc.save();
-  doc.lineWidth(1.5).strokeColor(COMPANY.colors.accent).strokeOpacity(0.85);
+  doc.lineWidth(1.7).strokeColor(sealDarkBlue).strokeOpacity(0.86);
   doc.circle(x, y, 40).stroke();
+  doc.lineWidth(1.1).strokeColor(sealBlue).strokeOpacity(0.72);
   doc.circle(x, y, 36).stroke();
-  doc.lineWidth(0.5);
+  doc.lineWidth(0.6).strokeColor(sealDarkBlue).strokeOpacity(0.62);
   doc.circle(x, y, 26).stroke();
 
-  doc.fillColor(COMPANY.colors.accent).fillOpacity(0.85);
-  doc.fontSize(10).font('Helvetica-Bold')
-    .text('HIRESNIX', x - 40, y - 10, { width: 80, align: 'center' });
-  doc.fontSize(7).font('Helvetica')
-    .text('COMPANY SEAL', x - 40, y + 4, { width: 80, align: 'center' });
+  doc.lineWidth(0.35).strokeColor(sealBlue).strokeOpacity(0.22);
+  for (let index = 0; index < 18; index += 1) {
+    const angle = (Math.PI * 2 * index) / 18;
+    const inner = 29 + (index % 3);
+    const outer = 37 - (index % 2);
+    doc.moveTo(x + Math.cos(angle) * inner, y + Math.sin(angle) * inner)
+      .lineTo(x + Math.cos(angle) * outer, y + Math.sin(angle) * outer)
+      .stroke();
+  }
+
+  doc.fillColor(sealDarkBlue).fillOpacity(0.9);
+  doc.fontSize(9.5).font('Helvetica-Bold')
+    .text('HIRESNIX', x - 39, y - 13, { width: 78, align: 'center' });
+  doc.fontSize(6.4).font('Helvetica-Bold')
+    .text('OFFICIAL COMPANY STAMP', x - 39, y + 2, { width: 78, align: 'center' });
+  doc.fontSize(5.2).font('Helvetica')
+    .text('PUNE MAHARASHTRA', x - 39, y + 13, { width: 78, align: 'center' });
   doc.restore();
 }
 
@@ -882,13 +897,10 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
   drawSimpleHeader('INTERNSHIP OFFER LETTER', true);
 
   const offerMetaY = doc.y;
-  doc.roundedRect(left, offerMetaY, bodyWidth, 74, cardRadius).fill(cardFill).stroke(cardBorder);
-  detailRow('Offer Letter ID', stableOfferId, left + cardPadding, offerMetaY + 9, 150);
-  detailRow('Date', dateStr, left + 178, offerMetaY + 9, 100);
-  detailRow('Legal Entity', legalEntity, left + 300, offerMetaY + 9, 190);
-  detailRow('CIN', cin, left + cardPadding, offerMetaY + 41, 180);
-  detailRow('Verification Email', verificationEmail, left + 300, offerMetaY + 41, 190);
-  doc.y = offerMetaY + 90;
+  doc.roundedRect(left, offerMetaY, bodyWidth, 42, cardRadius).fill(cardFill).stroke(cardBorder);
+  detailRow('Offer Letter ID', stableOfferId, left + cardPadding, offerMetaY + 9, 250);
+  detailRow('Date', dateStr, left + 330, offerMetaY + 9, 160);
+  doc.y = offerMetaY + 58;
 
   doc.fillColor('#1e293b').fontSize(10).font('Helvetica').text('To,', left);
   doc.font('Helvetica-Bold').text(safeCandidateName, left);
@@ -926,9 +938,9 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
     ['End Date', endDateStr],
     ['Duration', internshipDuration],
     ['Mode of Internship', 'Remote'],
-    ['Working Hours', 'Flexible (15-20 hours per week)'],
-    ['Reporting Manager', 'Project Mentor / Team Lead'],
-    ['Stipend', stipendText],
+    ['Working Hours', 'Flexible (Maximum 20 Hours per Week)'],
+    ['Reporting Manager', 'Assigned Mentor / Project Lead'],
+    ['Compensation', 'Unpaid (Learning & Project-Based Internship)'],
   ].forEach(([label, value], index) => {
     const col = index % 3;
     const row = Math.floor(index / 3);
@@ -966,7 +978,6 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
   bulletList([
     'Internship Completion Certificate',
     'Letter of Recommendation (subject to company evaluation)',
-    'Training Certificate',
   ]);
   doc.y += 12;
 
@@ -990,22 +1001,11 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
 
   doc.moveDown(0.55);
   sectionTitle('CONFIDENTIALITY');
-  paragraph('During and after the internship, the intern shall maintain confidentiality of all proprietary information, documents, data, projects, and resources belonging to Hiresnix.', { size: 9, lineGap: 1 });
+  paragraph('The intern shall maintain the confidentiality of all company information, project materials, intellectual property, and confidential business information accessed during the internship.', { size: 9, lineGap: 1 });
 
   doc.moveDown(0.5);
-  const acceptanceY = doc.y;
-  doc.roundedRect(left, acceptanceY, bodyWidth, 94, cardRadius).fill(cardFill).stroke(cardBorder);
-  doc.fillColor('#0f172a').fontSize(11).font('Helvetica-Bold')
-    .text('Acceptance', left + cardPadding, acceptanceY + 12, { width: bodyWidth - (cardPadding * 2), lineGap: 1 });
-  doc.fillColor('#334155').fontSize(9).font('Helvetica')
-    .text('Name: __________________', left + cardPadding, acceptanceY + 31, { width: 160 })
-    .text('Signature: ______________', left + 190, acceptanceY + 31, { width: 170 })
-    .text('Date: __________________', left + 370, acceptanceY + 31, { width: 135 });
-  doc.fillColor('#64748b').fontSize(8).font('Helvetica-Bold')
-    .text('Declaration:', left + cardPadding, acceptanceY + 56, { width: 120 });
-  doc.fillColor('#334155').fontSize(8.5).font('Helvetica')
-    .text('I hereby accept this internship offer and agree to abide by all terms and conditions mentioned in this letter.', left + cardPadding, acceptanceY + 70, { width: bodyWidth - (cardPadding * 2), lineGap: 1 });
-  doc.y = acceptanceY + 106;
+  sectionTitle('Acceptance');
+  paragraph('Please confirm your acceptance of this internship offer by replying to the official email or communication shared by Hiresnix.', { align: 'left' });
 
   doc.moveDown(0.35);
   paragraph('For verification or queries:', { align: 'left' });
@@ -1017,22 +1017,25 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
   doc.fillColor('#1e293b').fontSize(10).font('Helvetica-Bold').text('Regards,', left, signBlockY + 14);
 
   const sigY = signBlockY + 32;
-  const signatureTextY = sigY + 44;
+  const founderTextY = sigY + 39;
   try {
     doc.image(getSignaturePath('ceo.png'), left, sigY, { fit: [120, 48] });
   } catch (err) {}
   doc.fillColor('#1e293b').fontSize(10).font('Helvetica-Bold')
-    .text('A S Borse', left, signatureTextY, { lineGap: 0 });
-  doc.fillColor('#334155').fontSize(9).font('Helvetica')
-    .text('Founder & CEO \u2013 Hiresnix', left, signatureTextY + 12, { lineGap: 0 })
-    .text(`For ${legalEntity}`, left, signatureTextY + 24, { lineGap: 0 });
+    .text('A S Borse', left, founderTextY, { lineGap: 0 });
+  doc.fillColor('#334155').fontSize(8.2).font('Helvetica')
+    .text('Founder & CEO \u2013 Hiresnix', left, founderTextY + 10, { lineGap: 0 })
+    .text('For', left, founderTextY + 18, { lineGap: 0 })
+    .text(legalEntity, left, founderTextY + 26, { width: 250, lineGap: 0 })
+    .text('CIN:', left, founderTextY + 34, { lineGap: 0 })
+    .text(cin, left, founderTextY + 42, { lineGap: 0 });
 
   drawOfferSeal(doc, left + bodyWidth - 54, sigY + 34);
 
-  doc.fillColor('#334155').fontSize(9).font('Helvetica')
-    .text('support@hiresnix.co.in', left, signatureTextY + 42, { lineGap: 0 })
-    .text('www.hiresnix.co.in', left, signatureTextY + 54, { lineGap: 0 })
-    .text('Pune, Maharashtra, India', left, signatureTextY + 66, { lineGap: 0 });
+  doc.fillColor('#334155').fontSize(8.2).font('Helvetica')
+    .text('support@hiresnix.co.in', left, founderTextY + 52, { lineGap: 0 })
+    .text('www.hiresnix.co.in', left, founderTextY + 61, { lineGap: 0 })
+    .text('Pune, Maharashtra, India', left, founderTextY + 70, { lineGap: 0 });
 
   doc.end();
   return;
@@ -1098,7 +1101,7 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
   doc.moveDown(0.4);
   doc.text('Upon successful completion of the internship and satisfactory performance evaluation, you may receive:', 40, doc.y);
   doc.moveDown(0.2);
-  ['Internship Completion Certificate', 'Letter of Recommendation (LOR)', 'Training Certificate', 'Skill Assessment Report (if applicable)']
+  ['Internship Completion Certificate', 'Letter of Recommendation (LOR)', 'Skill Assessment Report (if applicable)']
     .forEach(item => doc.text(`•  ${item}`, 60, doc.y));
 
   doc.moveDown(0.4);
