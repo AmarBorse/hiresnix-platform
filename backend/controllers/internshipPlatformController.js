@@ -12,7 +12,6 @@ const { Op, DataTypes } = require('sequelize');
 const path = require('path');
 const fs = require('fs');
 const QRCode = require('qrcode');
-const nodemailer = require('nodemailer');
 const { sequelize } = require('../config/db');
 const { User } = require('../models');
 const {

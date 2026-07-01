@@ -9,6 +9,7 @@ const { Student, User, Job, Company, Application, Enrollment, Certificate } = re
 const { Op } = require('sequelize');
 const { sequelize } = require('../config/db');
 const { normalizeDomain, isValidDomain } = require('../utils/domains');
+const { updateUserPassword } = require('../utils/passwords');
 const {
   Domain,
   InternshipApplication,
@@ -203,6 +204,27 @@ const deleteStudent = asyncHandler(async (req, res) => {
   res.json({ success: true, message: 'Student deleted successfully' });
 });
 
+// PUT /api/students/:id/reset-password  (admin only)
+const resetStudentPassword = asyncHandler(async (req, res) => {
+  const { newPassword } = req.body;
+  if (!newPassword || String(newPassword).length < 8) {
+    res.status(400);
+    throw new Error('Password must be at least 8 characters');
+  }
+
+  const student = await Student.findByPk(req.params.id, {
+    include: [{ model: User, as: 'user' }],
+  });
+
+  if (!student || !student.user || student.user.role !== 'student') {
+    res.status(404);
+    throw new Error('Student not found');
+  }
+
+  await updateUserPassword(student.user, newPassword);
+  res.json({ success: true, message: 'Password has been reset successfully.' });
+});
+
 module.exports = {
   getStudentProfile,
   updateStudentProfile,
@@ -210,4 +232,5 @@ module.exports = {
   getJobRecommendations,
   getAllStudents,
   deleteStudent,
+  resetStudentPassword,
 };

@@ -10,6 +10,7 @@ const {
   getJobRecommendations,
   getAllStudents,
   deleteStudent,
+  resetStudentPassword,
 } = require('../controllers/studentController');
 const { protect, authorize } = require('../middleware/auth');
 
@@ -34,6 +35,7 @@ const upload = multer({
 });
 
 r.get('/',                protect, authorize('admin'),   getAllStudents);
+r.put('/:id/reset-password', protect, authorize('admin'), resetStudentPassword);
 r.delete('/:id',          protect, authorize('admin'),   deleteStudent);
 r.get('/profile',         protect, authorize('student'), getStudentProfile);
 r.put('/profile',         protect, authorize('student'), updateStudentProfile);

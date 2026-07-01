@@ -5,6 +5,7 @@
 const asyncHandler = require('express-async-handler');
 const { User, Student, Company } = require('../models');
 const { sequelize } = require('../config/db');
+const { updateUserPassword } = require('../utils/passwords');
 
 const sendToken = (user, code, res) => {
   const token = user.getSignedJwtToken();
@@ -79,12 +80,15 @@ const getMe = asyncHandler(async (req, res) => {
 // PUT /api/auth/updatepassword
 const updatePassword = asyncHandler(async (req, res) => {
   const { currentPassword, newPassword } = req.body;
+  if (!newPassword || newPassword.length < 8) {
+    res.status(400);
+    throw new Error('Password must be at least 8 characters');
+  }
   const user = await User.findByPk(req.user.id);
   if (!(await user.matchPassword(currentPassword))) {
     res.status(401); throw new Error('Current password is incorrect');
   }
-  user.password = newPassword;
-  await user.save();
+  await updateUserPassword(user, newPassword);
   sendToken(user, 200, res);
 });
 
