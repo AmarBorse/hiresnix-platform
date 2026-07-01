@@ -20,8 +20,6 @@ export function AuthPage() {
   const [showPass, setShowPass] = useState(false);
   const [registerRole, setRegisterRole] = useState<RegisterRole>('student');
   const [showForgot, setShowForgot] = useState(false);
-  const [forgotEmail, setForgotEmail] = useState('');
-  const [forgotSent, setForgotSent] = useState(false);
 
   const [loginForm, setLoginForm]     = useState({ email: '', password: '' });
   const [loginErrors, setLoginErrors] = useState({ email: '', password: '' });
@@ -119,22 +117,6 @@ export function AuthPage() {
     } finally { setLoading(false); }
   };
 
-  const handleForgot = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      await fetch('/api/iplatform/forgot-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: forgotEmail }),
-      });
-      setForgotSent(true);
-      toast.success('Reset link sent! Check your email.');
-    } catch {
-      toast.error('Something went wrong');
-    } finally { setLoading(false); }
-  };
-
   // ── FORGOT PASSWORD SCREEN ──
   if (showForgot) return (
     <div className="min-h-screen flex items-center justify-center px-4" style={{ background: 'linear-gradient(135deg,#060910,#0f172a,#060910)' }}>
@@ -145,34 +127,20 @@ export function AuthPage() {
           <img src="/hiresnix-logo.png" alt="Hiresnix" style={{ height: 90, objectFit: 'contain', margin: '0 auto 1rem', filter: 'drop-shadow(0 0 20px rgba(59,130,246,0.5))' }} />
         </div>
         <div style={{ background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(20px)', borderRadius: 16, border: '1px solid rgba(255,255,255,0.1)', overflow: 'hidden' }}>
-          <div style={{ padding: '1.5rem 1.5rem 0' }}>
-            <button onClick={() => { setShowForgot(false); setForgotSent(false); }} className="flex items-center gap-1 text-gray-400 hover:text-white text-sm mb-4 transition-colors">
+          <div style={{ padding: '1.5rem' }}>
+            <button onClick={() => setShowForgot(false)} className="flex items-center gap-1 text-gray-400 hover:text-white text-sm mb-4 transition-colors">
               <ArrowLeft size={14} /> Back to Login
             </button>
-            <h2 className="text-white font-bold text-xl mb-1">Forgot Password?</h2>
-            <p className="text-gray-400 text-sm mb-5">Enter your email — we'll send a reset link</p>
+            <h2 className="text-white font-bold text-xl mb-3">Forgot Password?</h2>
+            <p className="text-gray-300 text-sm leading-6 mb-5">Forgot your password? Please contact the Hiresnix Team to reset your password.</p>
+            <button
+              type="button"
+              onClick={() => setShowForgot(false)}
+              className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2.5 rounded-lg text-sm transition"
+            >
+              Back to Login
+            </button>
           </div>
-          {forgotSent ? (
-            <div style={{ padding: '1.5rem', textAlign: 'center' }}>
-              <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>📬</div>
-              <p className="text-white font-semibold mb-1">Reset link sent!</p>
-              <p className="text-gray-400 text-sm mb-4">Check your email for the password reset link.</p>
-              <button onClick={() => { setShowForgot(false); setForgotSent(false); }} className="text-blue-400 hover:text-blue-300 text-sm">Back to Login</button>
-            </div>
-          ) : (
-            <form onSubmit={handleForgot} style={{ padding: '0 1.5rem 1.5rem' }} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Email Address</label>
-                <input type="email" required value={forgotEmail} onChange={e => setForgotEmail(e.target.value)}
-                  className="w-full border border-white/10 rounded-lg px-4 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-blue-500 transition"
-                  style={{ background: 'rgba(255,255,255,0.08)' }} placeholder="you@example.com" />
-              </div>
-              <button type="submit" disabled={loading}
-                className="w-full bg-blue-500 hover:bg-blue-600 disabled:opacity-60 text-white font-bold py-2.5 rounded-lg text-sm transition flex items-center justify-center gap-2">
-                {loading && <Loader2 size={14} className="animate-spin" />} Send Reset Link
-              </button>
-            </form>
-          )}
         </div>
       </div>
     </div>

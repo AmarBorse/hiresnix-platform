@@ -2,7 +2,7 @@
  * controllers/internshipPlatformController.js
  *
  * Install extra deps:
- *   npm install pdfkit nodemailer crypto
+ *   npm install pdfkit qrcode
  */
 
 const asyncHandler = require('express-async-handler');
@@ -1324,107 +1324,6 @@ const verifyCertificate = asyncHandler(async (req, res) => {
   });
 });
 
-// ────────────────────────────────────────────────────────────────────
-// PASSWORD RESET
-// ────────────────────────────────────────────────────────────────────
-
-const resetTokens = new Map(); // In production use Redis or DB
-
-const getFrontendUrl = () => (
-  process.env.FRONTEND_URL ||
-  process.env.CLIENT_URL ||
-  process.env.VITE_FRONTEND_URL ||
-  'https://www.hiresnix.co.in'
-).replace(/\/$/, '');
-
-function createMailTransporter() {
-  if (process.env.SMTP_HOST) {
-    return nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: Number(process.env.SMTP_PORT || 587),
-      secure: process.env.SMTP_SECURE === 'true',
-      auth: {
-        user: process.env.SMTP_USER || process.env.EMAIL_USER,
-        pass: process.env.SMTP_PASS || process.env.EMAIL_PASS,
-      },
-    });
-  }
-
-  if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
-    return nodemailer.createTransport({
-      service: process.env.EMAIL_SERVICE || 'gmail',
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-    });
-  }
-
-  return null;
-}
-
-const forgotPassword = asyncHandler(async (req, res) => {
-  const { email } = req.body;
-  if (!email) {
-    res.status(400);
-    throw new Error('Email is required');
-  }
-
-  const user = await User.findOne({ where: { email } });
-  if (!user) {
-    return res.json({ success: true, message: 'If email exists, reset link sent.' });
-  }
-
-  const token = crypto.randomBytes(32).toString('hex');
-  resetTokens.set(token, { userId: user.id, expires: Date.now() + 15 * 60 * 1000 });
-
-  const clientUrl = (process.env.RESET_PASSWORD_URL || getFrontendUrl()).replace(/\/$/, '');
-  const resetUrl = `${clientUrl}/reset-password?token=${token}`;
-  const transporter = createMailTransporter();
-
-  if (!transporter) {
-    console.error('Password reset email is not configured. Set EMAIL_USER and EMAIL_PASS, or SMTP_HOST credentials.');
-    res.status(500);
-    throw new Error('Password reset email is not configured');
-  }
-
-  await transporter.sendMail({
-    from: process.env.EMAIL_FROM || `"Hiresnix" <${process.env.EMAIL_USER || process.env.SMTP_USER}>`,
-    to: user.email,
-    subject: 'Reset your Hiresnix password',
-    html: `
-      <div style="font-family:Arial,sans-serif;line-height:1.6;color:#0f172a">
-        <h2>Password reset request</h2>
-        <p>Hello ${user.name || 'there'},</p>
-        <p>Click the button below to reset your Hiresnix password. This link expires in 15 minutes.</p>
-        <p>
-          <a href="${resetUrl}" style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;padding:10px 16px;border-radius:8px;font-weight:700">
-            Reset password
-          </a>
-        </p>
-        <p>If the button does not work, open this link:</p>
-        <p><a href="${resetUrl}">${resetUrl}</a></p>
-        <p>If you did not request this, you can ignore this email.</p>
-      </div>
-    `,
-  });
-
-  res.json({ success: true, message: 'Reset link sent to your email.', devToken: process.env.NODE_ENV === 'development' ? token : undefined });
-});
-
-const resetPassword = asyncHandler(async (req, res) => {
-  const { token, newPassword } = req.body;
-  const record = resetTokens.get(token);
-  if (!record || Date.now() > record.expires) {
-    res.status(400); throw new Error('Invalid or expired reset token');
-  }
-  const user = await User.findByPk(record.userId);
-  user.password = newPassword; // bcrypt hook will hash it
-  await user.save();
-  resetTokens.delete(token);
-  res.json({ success: true, message: 'Password reset successful. Please login.' });
-});
-
 module.exports = {
   getDomains, createDomain, deleteDomain,
   applyInternship, getMyApplication, getAllApplications, updateApplicationStatus,
@@ -1434,5 +1333,4 @@ module.exports = {
   generateOfferLetter,
   getStats, getEnrolledStudents, getAllEnrollments,
   verifyCertificate,
-  forgotPassword, resetPassword,
 };

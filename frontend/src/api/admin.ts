@@ -14,6 +14,10 @@ export const adminApi = {
     const res = await client.delete(`/students/${id}`);
     return res.data;
   },
+  resetStudentPassword: async (id: number, data: { newPassword: string }) => {
+    const res = await client.put(`/students/${id}/reset-password`, data);
+    return res.data;
+  },
   getAllCompanies: async (params?: any) => {
     const res = await client.get('/companies', { params });
     return res.data;

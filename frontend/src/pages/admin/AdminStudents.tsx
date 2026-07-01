@@ -4,7 +4,7 @@ import { adminApi } from '../../api/admin';
 import { useFetch } from '../../hooks/useFetch';
 import { PageLoader, ErrorState, EmptyState } from '../../components/common/LoadingState';
 import { toast } from 'sonner';
-import { Search, CheckCircle, Clock, Download, Trash2, Loader2 } from 'lucide-react';
+import { Search, CheckCircle, Clock, Download, Trash2, Loader2, KeyRound, X } from 'lucide-react';
 
 function downloadCSV(data: any[], filename: string) {
   if (!data.length) { toast.error('No data to export'); return; }
@@ -27,6 +27,9 @@ export function AdminStudents() {
   const [deptFilter, setDeptFilter] = useState('');
   const [placementFilter, setPlacementFilter] = useState('');
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [resetModal, setResetModal] = useState<any | null>(null);
+  const [resetForm, setResetForm] = useState({ newPassword: '', confirmPassword: '' });
+  const [resetting, setResetting] = useState(false);
 
   const { data: result, loading, error, refetch } = useFetch(
     () => adminApi.getAllStudents({ page, limit: 50 }), [page]
@@ -80,6 +83,37 @@ export function AdminStudents() {
       toast.error(e.response?.data?.message || 'Failed to delete student');
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  const openResetModal = (student: any) => {
+    setResetModal(student);
+    setResetForm({ newPassword: '', confirmPassword: '' });
+  };
+
+  const resetErrors = {
+    newPassword: resetForm.newPassword && resetForm.newPassword.length < 8 ? 'Password must be at least 8 characters' : '',
+    confirmPassword: resetForm.confirmPassword && resetForm.confirmPassword !== resetForm.newPassword ? 'Passwords do not match' : '',
+  };
+  const canSubmitReset =
+    resetForm.newPassword.length >= 8 &&
+    resetForm.confirmPassword === resetForm.newPassword &&
+    !resetting;
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resetModal || !canSubmitReset) return;
+
+    setResetting(true);
+    try {
+      const res = await adminApi.resetStudentPassword(resetModal.id, { newPassword: resetForm.newPassword });
+      toast.success(res.message || 'Password has been reset successfully.');
+      setResetModal(null);
+      setResetForm({ newPassword: '', confirmPassword: '' });
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Failed to reset password');
+    } finally {
+      setResetting(false);
     }
   };
 
@@ -162,6 +196,12 @@ export function AdminStudents() {
                           <p className="text-gray-400 text-[11px]">{s.user?.email}</p>
                           {s.rollNumber && <p className="text-[11px] text-gray-400">{s.rollNumber}</p>}
                           <button
+                            onClick={() => openResetModal(s)}
+                            className="mt-1.5 mr-1.5 inline-flex items-center gap-1 text-[11px] font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded-md transition">
+                            <KeyRound size={11} />
+                            Reset Password
+                          </button>
+                          <button
                             onClick={() => handleDelete(s)}
                             disabled={deletingId === s.id}
                             className="mt-1.5 inline-flex items-center gap-1 text-[11px] font-bold text-red-600 bg-red-50 hover:bg-red-100 disabled:opacity-50 px-2 py-1 rounded-md transition">
@@ -215,6 +255,74 @@ export function AdminStudents() {
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {resetModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+          <div className="w-full max-w-md rounded-xl border border-gray-700 bg-slate-900 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
+              <div>
+                <h2 className="text-lg font-black text-white">Reset Password</h2>
+                <p className="text-xs text-slate-400">Admin-only password update</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setResetModal(null)}
+                className="rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-white"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <form onSubmit={handleResetPassword} className="space-y-4 p-5">
+              <div>
+                <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-400">Student Name</label>
+                <input
+                  value={resetModal.user?.name || ''}
+                  readOnly
+                  className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-200 outline-none"
+                />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-400">Student Email</label>
+                <input
+                  value={resetModal.user?.email || ''}
+                  readOnly
+                  className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-200 outline-none"
+                />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-400">New Password</label>
+                <input
+                  type="password"
+                  value={resetForm.newPassword}
+                  onChange={e => setResetForm(p => ({ ...p, newPassword: e.target.value }))}
+                  className={`w-full rounded-lg border ${resetErrors.newPassword ? 'border-red-500' : 'border-white/10'} bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-blue-500`}
+                  placeholder="Minimum 8 characters"
+                />
+                {resetErrors.newPassword && <p className="mt-1 text-xs text-red-400">{resetErrors.newPassword}</p>}
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-400">Confirm New Password</label>
+                <input
+                  type="password"
+                  value={resetForm.confirmPassword}
+                  onChange={e => setResetForm(p => ({ ...p, confirmPassword: e.target.value }))}
+                  className={`w-full rounded-lg border ${resetErrors.confirmPassword ? 'border-red-500' : 'border-white/10'} bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-blue-500`}
+                  placeholder="Re-enter new password"
+                />
+                {resetErrors.confirmPassword && <p className="mt-1 text-xs text-red-400">{resetErrors.confirmPassword}</p>}
+              </div>
+              <button
+                type="submit"
+                disabled={!canSubmitReset}
+                className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-500 py-2.5 text-sm font-bold text-white transition hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {resetting ? <Loader2 size={14} className="animate-spin" /> : <KeyRound size={14} />}
+                Reset Password
+              </button>
+            </form>
           </div>
         </div>
       )}

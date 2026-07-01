@@ -42,8 +42,4 @@ r.get('/stats',                      protect, authorize('admin'), ctrl.getStats)
 r.get('/enrolled-students',          protect, authorize('admin'), ctrl.getEnrolledStudents);
 r.get('/all-enrollments',            protect, authorize('admin'), ctrl.getAllEnrollments);
 
-// ── PASSWORD RESET ────────────────────────────────────────────────
-r.post('/forgot-password',           ctrl.forgotPassword);
-r.post('/reset-password',            ctrl.resetPassword);
-
 module.exports = r;

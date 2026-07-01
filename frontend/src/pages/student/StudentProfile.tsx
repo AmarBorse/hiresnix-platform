@@ -1,10 +1,11 @@
 // src/pages/student/StudentProfile.tsx
 import React, { useState, useEffect } from 'react';
 import { studentApi } from '../../api/student';
+import { authApi } from '../../api/auth';
 import { useFetch } from '../../hooks/useFetch';
 import { PageLoader, ErrorState } from '../../components/common/LoadingState';
 import { toast } from 'sonner';
-import { Upload, Save, X, Plus, Loader2, FileText, CheckCircle } from 'lucide-react';
+import { Upload, Save, X, Plus, Loader2, FileText, CheckCircle, Lock } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
 import { DOMAIN_OPTIONS } from '../../lib/domains';
 
@@ -34,6 +35,8 @@ export function StudentProfile() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [resumeFile, setResumeFile] = useState<File | null>(null);
+  const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  const [changingPassword, setChangingPassword] = useState(false);
 
   useEffect(() => {
     if (p && Object.keys(p).length > 0) {
@@ -87,6 +90,36 @@ export function StudentProfile() {
     if (newSkill.trim() && !form.skills.includes(newSkill.trim())) {
       setForm(p => ({ ...p, skills: [...p.skills, newSkill.trim()] }));
       setNewSkill('');
+    }
+  };
+
+  const passwordErrors = {
+    currentPassword: passwordForm.currentPassword ? '' : 'Current password is required',
+    newPassword: passwordForm.newPassword && passwordForm.newPassword.length < 8 ? 'Password must be at least 8 characters' : '',
+    confirmPassword: passwordForm.confirmPassword && passwordForm.confirmPassword !== passwordForm.newPassword ? 'Passwords do not match' : '',
+  };
+  const canChangePassword =
+    !!passwordForm.currentPassword &&
+    passwordForm.newPassword.length >= 8 &&
+    passwordForm.confirmPassword === passwordForm.newPassword &&
+    !changingPassword;
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!canChangePassword) return;
+
+    setChangingPassword(true);
+    try {
+      await authApi.updatePassword({
+        currentPassword: passwordForm.currentPassword,
+        newPassword: passwordForm.newPassword,
+      });
+      toast.success('Password changed successfully');
+      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Failed to change password');
+    } finally {
+      setChangingPassword(false);
     }
   };
 
@@ -235,6 +268,55 @@ export function StudentProfile() {
             <Plus size={13} /> Add
           </button>
         </div>
+      </div>
+
+      {/* Change Password */}
+      <div className="bg-white rounded-xl border border-gray-200 p-5">
+        <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2"><Lock size={16} /> Change Password</h3>
+        <form onSubmit={handleChangePassword} className="grid gap-4">
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Current Password</label>
+            <input
+              type="password"
+              value={passwordForm.currentPassword}
+              onChange={e => setPasswordForm(p => ({ ...p, currentPassword: e.target.value }))}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+              placeholder="Enter current password"
+            />
+          </div>
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">New Password</label>
+              <input
+                type="password"
+                value={passwordForm.newPassword}
+                onChange={e => setPasswordForm(p => ({ ...p, newPassword: e.target.value }))}
+                className={`w-full border ${passwordErrors.newPassword ? 'border-red-400' : 'border-gray-200'} rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500`}
+                placeholder="Minimum 8 characters"
+              />
+              {passwordErrors.newPassword && <p className="text-red-500 text-xs mt-1">{passwordErrors.newPassword}</p>}
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Confirm New Password</label>
+              <input
+                type="password"
+                value={passwordForm.confirmPassword}
+                onChange={e => setPasswordForm(p => ({ ...p, confirmPassword: e.target.value }))}
+                className={`w-full border ${passwordErrors.confirmPassword ? 'border-red-400' : 'border-gray-200'} rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500`}
+                placeholder="Re-enter new password"
+              />
+              {passwordErrors.confirmPassword && <p className="text-red-500 text-xs mt-1">{passwordErrors.confirmPassword}</p>}
+            </div>
+          </div>
+          <button
+            type="submit"
+            disabled={!canChangePassword}
+            className="flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white font-bold px-5 py-2.5 rounded-xl transition sm:w-fit"
+          >
+            {changingPassword ? <Loader2 size={15} className="animate-spin" /> : <Lock size={15} />}
+            Change Password
+          </button>
+        </form>
       </div>
 
       <button
