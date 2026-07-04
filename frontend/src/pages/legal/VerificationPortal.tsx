@@ -19,7 +19,7 @@ const configs: Record<VerificationType, { label: string; idLabel: string; path: 
     idLabel: 'Offer Letter ID',
     path: '/verification/offer-letter',
     icon: FileText,
-    placeholder: 'e.g. HSN-INT-2026-AB12',
+    placeholder: 'e.g. HSH-INT-2026-AB12',
   },
   'recommendation-letter': {
     label: 'Letter of Recommendation Verification',

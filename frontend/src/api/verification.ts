@@ -17,9 +17,36 @@ const endpoints: Record<VerificationType, string> = {
   'recommendation-letter': '/iplatform/verify-recommendation',
 };
 
+const getLookupIds = (type: VerificationType, id: string) => {
+  const trimmed = id.trim();
+  if (type !== 'offer-letter') return [trimmed];
+
+  const upper = trimmed.toUpperCase();
+  return Array.from(new Set([
+    trimmed,
+    upper,
+    upper.replace(/^HSH-INT-/i, 'HSN-INT-'),
+    upper.replace(/^HSN-INT-/i, 'HSH-INT-'),
+  ]));
+};
+
 export const verificationApi = {
   verify: async (type: VerificationType, id: string): Promise<VerificationRecord> => {
-    const res = await client.get(`${endpoints[type]}/${encodeURIComponent(id.trim())}`);
+    const lookupIds = getLookupIds(type, id);
+    let res;
+    let lastError;
+
+    for (const lookupId of lookupIds) {
+      try {
+        res = await client.get(`${endpoints[type]}/${encodeURIComponent(lookupId)}`);
+        break;
+      } catch (error) {
+        lastError = error;
+      }
+    }
+
+    if (!res) throw lastError;
+
     const data = res.data?.data || {};
 
     return {

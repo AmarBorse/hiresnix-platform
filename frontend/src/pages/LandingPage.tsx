@@ -567,7 +567,7 @@ export function LandingPage() {
           </div>
         </div>
         <div style={{ borderTop: '1px solid rgba(255,255,255,0.07)', paddingTop: '1.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', maxWidth: 1100, margin: '0 auto' }}>
-          <p style={{ color: '#6b7a99', fontSize: '0.8rem', lineHeight: 1.7 }}>© 2026 <span style={{ color: '#60a5fa' }}>Hiresnix</span>. A Brand Operated by SR PATIL INFRASTRUCTURE PRIVATE LIMITED. CIN: U42909MH2024PTC429260. All Rights Reserved.</p>
+          <p style={{ color: '#6b7a99', fontSize: '0.8rem', lineHeight: 1.7 }}>© 2020 <span style={{ color: '#60a5fa' }}>Hiresnix</span>. A Brand Operated by SR PATIL INFRASTRUCTURE PRIVATE LIMITED. CIN: U42909MH2024PTC429260. All Rights Reserved.</p>
           <p className="lp-font-m" style={{ fontSize: '0.72rem', color: '#6b7a99' }}>v1.0.0</p>
         </div>
       </footer>

@@ -19,7 +19,7 @@ export function LegalLayout({ children }: { children: React.ReactNode }) {
       <main>{children}</main>
       <footer className="border-t border-white/10 bg-[#060910] px-5 py-8">
         <div className="mx-auto max-w-6xl text-sm text-slate-500">
-          <p className="font-semibold text-slate-300">© 2026 Hiresnix</p>
+          <p className="font-semibold text-slate-300">© 2020 Hiresnix</p>
           <p className="mt-2">A Brand Operated by {COMPANY.legalName}</p>
           <p>CIN: {COMPANY.cin}</p>
           <p>All Rights Reserved.</p>

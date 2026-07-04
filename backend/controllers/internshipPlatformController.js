@@ -817,7 +817,7 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
     res.status(400);
     throw new Error('Joining Date is required');
   }
-  const stableOfferId = application?.offerLetterId || `HSN-INT-${new Date(stableOfferDate).getFullYear()}-${crypto.randomBytes(2).toString('hex').toUpperCase()}`;
+  const stableOfferId = application?.offerLetterId || `HSH-INT-${new Date(stableOfferDate).getFullYear()}-${crypto.randomBytes(2).toString('hex').toUpperCase()}`;
   const offerDateObj = parseDateOnly(stableOfferDate);
   const startDateObj = parseDateOnly(stableJoiningDate);
   if (!offerDateObj) {
@@ -1330,8 +1330,16 @@ const verifyOfferLetter = asyncHandler(async (req, res) => {
     res.status(400); throw new Error('Offer Letter ID is required');
   }
 
+  const normalizedOfferId = offerId.toUpperCase();
+  const offerIdVariants = Array.from(new Set([
+    offerId,
+    normalizedOfferId,
+    normalizedOfferId.replace(/^HSN-INT-/i, 'HSH-INT-'),
+    normalizedOfferId.replace(/^HSH-INT-/i, 'HSN-INT-'),
+  ]));
+
   let application = await InternshipApplication.findOne({
-    where: { offerLetterId: offerId },
+    where: { offerLetterId: { [Op.in]: offerIdVariants } },
     include: [{ model: Domain, as: 'domain' }],
   });
 
@@ -1339,7 +1347,7 @@ const verifyOfferLetter = asyncHandler(async (req, res) => {
     application = await InternshipApplication.findOne({
       where: sequelize.where(
         sequelize.fn('LOWER', sequelize.col('offerLetterId')),
-        offerId.toLowerCase()
+        normalizedOfferId.toLowerCase()
       ),
       include: [{ model: Domain, as: 'domain' }],
     });
