@@ -169,7 +169,7 @@ function IPlatformPanel() {
       </div>
 
       <p className="mt-3 text-xs text-gray-600">
-        Please mention your <strong>Full Name</strong> and <strong>Registered Email Address</strong> while sending your documents.
+        Please mention your <strong>Full Name</strong> and <strong>Registered Email Address</strong> while sending your documents after Profile Verification You will receive your Offer Letter From Hiresnix Team.
       </p>
     </div>
 
