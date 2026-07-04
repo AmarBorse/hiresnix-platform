@@ -643,7 +643,7 @@ const downloadCertificate = asyncHandler(async (req, res) => {
     const verifyUrl = `${getFrontendUrl()}/verify/${encodeURIComponent(certId)}`;
     const qrBuffer = await QRCode.toBuffer(verifyUrl, { errorCorrectionLevel: 'H', margin: 1 });
     const qrSize = 74;
-    const qrX = W - qrSize/2;
+    const qrX = W - 74;
     const qrY = H - 168;
     doc.roundedRect(qrX - 9, qrY - 9, qrSize + 18, qrSize + 34, 6)
       .fillAndStroke('#ffffff', '#d4af37');
