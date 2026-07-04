@@ -131,10 +131,67 @@ function IPlatformPanel() {
         <div className="flex items-center gap-3 mb-3">
           <div style={{ fontSize: '2rem' }}>{app.status === 'Approved' ? '✅' : app.status === 'Rejected' ? '❌' : '⏳'}</div>
           <div>
-            <h3 className="font-bold text-gray-900 text-lg">{
-              app.status === 'Approved' ? "You're Enrolled!" :
-              app.status === 'Rejected' ? 'Application Rejected' : 'Application Under Review'
-            }</h3>
+            <h3 className="font-bold text-gray-900 text-lg">
+  {app.status === "Approved"
+    ? "You're Enrolled!"
+    : app.status === "Rejected"
+    ? "Application Rejected"
+    : "Application Under Review"}
+</h3>
+
+<p className="text-gray-600 text-sm">
+  {app.domain?.name} Internship
+</p>
+
+{/* Show only while application is under review */}
+{app.status !== "Approved" && app.status !== "Rejected" && (
+  <>
+    {/* Profile Verification */}
+    <div className="mt-5 rounded-lg border border-blue-200 bg-blue-50 p-4">
+      <h4 className="font-semibold text-blue-900 mb-2">
+        📋 Profile Verification
+      </h4>
+
+      <p className="text-sm text-gray-700">
+        Please send the following on <strong>WhatsApp</strong> or <strong>Email</strong>:
+      </p>
+
+      <ul className="mt-2 list-disc ml-5 text-sm text-gray-700 space-y-1">
+        <li>Updated Resume (PDF)</li>
+        <li>LinkedIn Profile URL</li>
+        <li>GitHub Profile URL (if available)</li>
+        <li>Brief Introduction (Skills, Projects & Career Interests)</li>
+      </ul>
+
+      <div className="mt-3 text-sm text-gray-800">
+        <p><strong>📱 WhatsApp:</strong> +91 95291 20977</p>
+        <p><strong>📧 Email:</strong> hr@hiresnix.co.in</p>
+      </div>
+
+      <p className="mt-3 text-xs text-gray-600">
+        Please mention your <strong>Full Name</strong> and <strong>Registered Email Address</strong> while sending your documents.
+      </p>
+    </div>
+
+    {/* Internship Benefits */}
+    <div className="mt-4 rounded-lg border border-green-200 bg-green-50 p-4">
+      <h4 className="font-semibold text-green-900 mb-2">
+        🚀 Internship Benefits
+      </h4>
+
+      <ul className="text-sm text-gray-700 space-y-1">
+        <li>✅ 3 Industry-Level Projects</li>
+        <li>✅ Professional Portfolio Building</li>
+        <li>✅ Internship Dashboard Access</li>
+        <li>✅ Daily Work Log Tracking</li>
+        <li>✅ Internship Completion Certificate (Eligibility Based)</li>
+        <li>✅ Internship Completion Letter (Eligibility Based)</li>
+        <li>✅ Performance-Based Letter of Recommendation</li>
+        <li>✅ Job Assistance After Successful Completion</li>
+      </ul>
+    </div>
+  </>
+)}
             <p className="text-gray-600 text-sm">{app.domain?.name} Internship</p>
           </div>
           <span className={`ml-auto text-xs font-semibold px-3 py-1 rounded-full ${
