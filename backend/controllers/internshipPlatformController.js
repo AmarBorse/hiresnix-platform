@@ -1324,6 +1324,78 @@ const verifyCertificate = asyncHandler(async (req, res) => {
   });
 });
 
+const verifyOfferLetter = asyncHandler(async (req, res) => {
+  const offerId = (req.params.offerId || '').trim();
+  if (!offerId) {
+    res.status(400); throw new Error('Offer Letter ID is required');
+  }
+
+  let application = await InternshipApplication.findOne({
+    where: { offerLetterId: offerId },
+    include: [{ model: Domain, as: 'domain' }],
+  });
+
+  if (!application) {
+    application = await InternshipApplication.findOne({
+      where: sequelize.where(
+        sequelize.fn('LOWER', sequelize.col('offerLetterId')),
+        offerId.toLowerCase()
+      ),
+      include: [{ model: Domain, as: 'domain' }],
+    });
+  }
+
+  if (!application || !application.offerLetterId) {
+    res.status(404); throw new Error('Offer letter not found or invalid');
+  }
+
+  res.json({
+    success: true,
+    valid: true,
+    data: {
+      documentType: 'Offer Letter',
+      documentId: application.offerLetterId,
+      offerLetterId: application.offerLetterId,
+      studentName: application.studentName,
+      issueDate: application.offerLetterDate || application.updatedAt || application.createdAt,
+      internshipDomain: application.domain?.name || 'Internship Program',
+    },
+  });
+});
+
+const verifyRecommendationLetter = asyncHandler(async (req, res) => {
+  const recommendationId = (req.params.recommendationId || '').trim();
+  if (!recommendationId) {
+    res.status(400); throw new Error('Recommendation Letter ID is required');
+  }
+
+  const enrollmentId = recommendationId.replace(/^(LOR|REC|RL)-/i, '');
+  if (!/^\d+$/.test(enrollmentId)) {
+    res.status(404); throw new Error('Recommendation letter not found or invalid');
+  }
+
+  const enrollment = await InternshipEnrollment.findOne({
+    where: { id: enrollmentId, status: 'Completed' },
+    include: [{ model: Domain, as: 'domain' }],
+  });
+
+  if (!enrollment) {
+    res.status(404); throw new Error('Recommendation letter not found or invalid');
+  }
+
+  res.json({
+    success: true,
+    valid: true,
+    data: {
+      documentType: 'Letter of Recommendation',
+      documentId: `LOR-${enrollment.id}`,
+      studentName: enrollment.studentName,
+      issueDate: enrollment.completedAt || enrollment.updatedAt || enrollment.createdAt,
+      internshipDomain: enrollment.domain?.name || 'Internship Program',
+    },
+  });
+});
+
 module.exports = {
   getDomains, createDomain, deleteDomain,
   applyInternship, getMyApplication, getAllApplications, updateApplicationStatus,
@@ -1332,5 +1404,5 @@ module.exports = {
   getMyCertificates, downloadCertificate, downloadCompletionLetter, downloadLOR,
   generateOfferLetter,
   getStats, getEnrolledStudents, getAllEnrollments,
-  verifyCertificate,
+  verifyCertificate, verifyOfferLetter, verifyRecommendationLetter,
 };

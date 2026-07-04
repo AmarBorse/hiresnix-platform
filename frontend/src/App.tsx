@@ -33,7 +33,11 @@ import { AdminAnalytics }    from './pages/admin/AdminAnalytics';
 import { AdminSettings }     from './pages/admin/AdminSettings';
 import { AdminIPlatform }    from './pages/admin/AdminIPlatform';
 import { AdminEnquiries }    from './pages/admin/AdminEnquiries';
-import { VerifyCertificate } from './pages/VerifyCertificate';
+import { AboutUs } from './pages/legal/AboutUs';
+import { CompanyInformation } from './pages/legal/CompanyInformation';
+import { ContactUs } from './pages/legal/ContactUs';
+import { Disclaimer, InternshipPolicy, PrivacyPolicy, RefundPolicy, TermsAndConditions } from './pages/legal/policyPages';
+import { VerificationPortal } from './pages/legal/VerificationPortal';
 import { Role } from './types';
 
 function AuthRedirect() {
@@ -62,9 +66,20 @@ export default function App() {
             : <LandingPage />
         } />
 
-        {/* Public Certificate Verification */}
-        <Route path="/verify" element={<VerifyCertificate />} />
-        <Route path="/verify/:id" element={<VerifyCertificate />} />
+        {/* Public Company, Legal, and Verification Pages */}
+        <Route path="/about-us" element={<AboutUs />} />
+        <Route path="/company-information" element={<CompanyInformation />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
+        <Route path="/disclaimer" element={<Disclaimer />} />
+        <Route path="/refund-policy" element={<RefundPolicy />} />
+        <Route path="/internship-policy" element={<InternshipPolicy />} />
+        <Route path="/contact-us" element={<ContactUs />} />
+        <Route path="/verification" element={<VerificationPortal />} />
+        <Route path="/verification/:type" element={<VerificationPortal />} />
+        <Route path="/verification/:type/:id" element={<VerificationPortal />} />
+        <Route path="/verify" element={<VerificationPortal defaultType="certificate" />} />
+        <Route path="/verify/:id" element={<VerificationPortal defaultType="certificate" />} />
 
         {/* Auth */}
         <Route

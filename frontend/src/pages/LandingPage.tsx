@@ -530,7 +530,7 @@ export function LandingPage() {
 
       {/* ── FOOTER ── */}
       <footer style={{ background: '#060910', borderTop: '1px solid rgba(255,255,255,0.07)', padding: '3.5rem 5% 2rem' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: '2.5rem', marginBottom: '2.5rem', maxWidth: 1100, margin: '0 auto 2.5rem' }} className="lp-grid-1">
+        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr', gap: '2.5rem', marginBottom: '2.5rem', maxWidth: 1100, margin: '0 auto 2.5rem' }} className="lp-grid-1">
           <div>
             <img src="/hiresnix-logo.png" alt="Hiresnix" style={{ height: 56, objectFit: 'contain', marginBottom: '0.85rem', filter: 'drop-shadow(0 0 12px rgba(59,130,246,0.4))' }} />
             <p style={{ color: '#6b7a99', fontSize: '0.85rem', lineHeight: 1.7, marginBottom: '1.25rem' }}>Elevating talent. Empowering futures. Connecting students with real internship training and startup jobs across India.</p>
@@ -545,9 +545,29 @@ export function LandingPage() {
               </ul>
             </div>
           ))}
+          <div>
+            <h4 className="lp-font-d" style={{ fontWeight: 700, fontSize: '0.88rem', marginBottom: '1.1rem' }}>Company</h4>
+            <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
+              {[
+                ['About Us', '/about-us'],
+                ['Company Information', '/company-information'],
+                ['Contact Us', '/contact-us'],
+                ['Verification', '/verification'],
+                ['Privacy Policy', '/privacy-policy'],
+                ['Terms', '/terms-and-conditions'],
+                ['Disclaimer', '/disclaimer'],
+                ['Refund Policy', '/refund-policy'],
+                ['Internship Policy', '/internship-policy'],
+              ].map(([label, href]) => (
+                <li key={href}>
+                  <a href={href} style={{ color: '#6b7a99', textDecoration: 'none', fontSize: '0.83rem', transition: 'color 0.2s' }} onMouseEnter={e => (e.currentTarget.style.color = '#e8edf5')} onMouseLeave={e => (e.currentTarget.style.color = '#6b7a99')}>{label}</a>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
         <div style={{ borderTop: '1px solid rgba(255,255,255,0.07)', paddingTop: '1.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', maxWidth: 1100, margin: '0 auto' }}>
-          <p style={{ color: '#6b7a99', fontSize: '0.8rem' }}>© 2026 <span style={{ color: '#60a5fa' }}>Hiresnix</span>. All rights reserved. Made with ❤️ in Pune, India.</p>
+          <p style={{ color: '#6b7a99', fontSize: '0.8rem', lineHeight: 1.7 }}>© 2026 <span style={{ color: '#60a5fa' }}>Hiresnix</span>. A Brand Operated by SR PATIL INFRASTRUCTURE PRIVATE LIMITED. CIN: U42909MH2024PTC429260. All Rights Reserved.</p>
           <p className="lp-font-m" style={{ fontSize: '0.72rem', color: '#6b7a99' }}>v1.0.0</p>
         </div>
       </footer>

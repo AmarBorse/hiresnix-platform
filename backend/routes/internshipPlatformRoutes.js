@@ -31,6 +31,8 @@ r.put('/enrollments/:id/complete',   protect, authorize('admin'),   ctrl.markCom
 
 // ── CERTIFICATES / LETTERS (PDF) ──────────────────────────────────
 r.get('/verify/:certId',             ctrl.verifyCertificate);
+r.get('/verify-offer/:offerId',      ctrl.verifyOfferLetter);
+r.get('/verify-recommendation/:recommendationId', ctrl.verifyRecommendationLetter);
 r.get('/my-certificates',            protect, authorize('student'), ctrl.getMyCertificates);
 r.get('/certificate/:enrollId/pdf',  protect, ctrl.downloadCertificate);
 r.get('/completion/:enrollId/pdf',   protect, ctrl.downloadCompletionLetter);
