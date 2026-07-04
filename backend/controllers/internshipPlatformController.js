@@ -285,6 +285,10 @@ const COMPANY = {
   }
 };
 
+const DEFAULT_FRONTEND_URL = 'https://hiresnix.co.in';
+const getFrontendUrl = () =>
+  (process.env.CLIENT_URL || process.env.FRONTEND_URL || process.env.VITE_FRONTEND_URL || DEFAULT_FRONTEND_URL).replace(/\/$/, '');
+
 const DOMAIN_DURATION_MONTHS = {
   'ui/ux design': 1,
   'frontend development': 2,
@@ -635,14 +639,19 @@ const downloadCertificate = asyncHandler(async (req, res) => {
 
   // QR Code for Verification
   try {
-    const verifyUrl = `${getFrontendUrl()}/verify/${cert?.certificateNo || `CERT-${enrollment.id}`}`;
+    const certId = cert?.certificateNo || `CERT-${enrollment.id}`;
+    const verifyUrl = `${getFrontendUrl()}/verify/${encodeURIComponent(certId)}`;
     const qrBuffer = await QRCode.toBuffer(verifyUrl, { errorCorrectionLevel: 'H', margin: 1 });
-    const qrSize = 65;
-    const qrX = (W / 2) - (qrSize / 2);
-    const qrY = H - 145;
+    const qrSize = 74;
+    const qrX = W - 145;
+    const qrY = H - 168;
+    doc.roundedRect(qrX - 9, qrY - 9, qrSize + 18, qrSize + 34, 6)
+      .fillAndStroke('#ffffff', '#d4af37');
     doc.image(qrBuffer, qrX, qrY, { width: qrSize });
-    doc.fillColor('#94a3b8').fontSize(7).font('Helvetica')
+    doc.fillColor('#1e293b').fontSize(7).font('Helvetica-Bold')
        .text('Scan to Verify', qrX, qrY + qrSize + 4, { width: qrSize, align: 'center' });
+    doc.fillColor('#64748b').fontSize(5.5).font('Helvetica')
+       .text(certId, qrX - 4, qrY + qrSize + 15, { width: qrSize + 8, align: 'center' });
   } catch (err) {
     console.error('Failed to generate QR Code:', err.message);
   }
