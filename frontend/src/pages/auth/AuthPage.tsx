@@ -5,11 +5,10 @@ import { toast } from 'sonner';
 import { authApi } from '../../api/auth';
 import { useAuthStore } from '../../store/useAuthStore';
 import { Role } from '../../types';
-import { Eye, EyeOff, Loader2, ArrowLeft, Building2 } from 'lucide-react';
-import { institutionService } from '../../modules/institution/services/institutionService';
+import { Eye, EyeOff, Loader2, ArrowLeft } from 'lucide-react';
 
 type Tab = 'login' | 'register';
-type RegisterRole = 'student' | 'company' | 'institution';
+type RegisterRole = 'student' | 'company';
 
 export function AuthPage() {
   const navigate = useNavigate();
@@ -25,9 +24,9 @@ export function AuthPage() {
   const [loginForm, setLoginForm]     = useState({ email: '', password: '' });
   const [loginErrors, setLoginErrors] = useState({ email: '', password: '' });
   const [registerForm, setRegisterForm] = useState({
-    name: '', email: '', password: '', companyName: '', industry: '', instituteName: '', instituteCity: '', institutePhone: '', instituteWebsite: '',
+    name: '', email: '', password: '', companyName: '', industry: '',
   });
-  const [registerErrors, setRegisterErrors] = useState({ name: '', email: '', password: '', companyName: '', instituteName: '', instituteCity: '' });
+  const [registerErrors, setRegisterErrors] = useState({ name: '', email: '', password: '', companyName: '' });
 
   const roleRedirect: Record<Role, string> = {
     student: '/student/dashboard',
@@ -76,7 +75,7 @@ export function AuthPage() {
 
     // ── Form Validation ──
     let hasError = false;
-    const errors = { name: '', email: '', password: '', companyName: '', instituteName: '', instituteCity: '' };
+    const errors = { name: '', email: '', password: '', companyName: '' };
 
     const cleanEmail = registerForm.email.trim();
 
@@ -92,29 +91,11 @@ export function AuthPage() {
     if (registerRole === 'company' && !registerForm.companyName) {
       errors.companyName = 'Company name is required'; hasError = true;
     }
-    if (registerRole === 'institution' && !registerForm.instituteName) {
-      errors.instituteName = 'Institution name is required'; hasError = true;
-    }
-    if (registerRole === 'institution' && !registerForm.instituteCity) {
-      errors.instituteCity = 'City is required'; hasError = true;
-    }
     setRegisterErrors(errors);
     if (hasError) return;
 
     setLoading(true);
     try {
-      if (registerRole === 'institution') {
-        await institutionService.submitInstituteRegistration({
-          adminName: registerForm.name,
-          email: cleanEmail,
-          instituteName: registerForm.instituteName,
-          city: registerForm.instituteCity,
-        });
-        toast.success('Institution registration request submitted for Super Admin review.');
-        navigate('/auth', { state: { message: 'Institution registration submitted. Please wait for Super Admin approval.' } });
-        return;
-      }
-
       const payload = {
         name: registerForm.name,
         email: cleanEmail,
@@ -249,11 +230,11 @@ export function AuthPage() {
                 {/* Role switcher */}
                 <div>
                   <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">I am a</label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {(['student', 'company', 'institution'] as RegisterRole[]).map(r => (
+                  <div className="grid grid-cols-2 gap-2">
+                    {(['student', 'company'] as RegisterRole[]).map(r => (
                       <button key={r} type="button" onClick={() => setRegisterRole(r)}
                         style={{ padding: '0.6rem 0.4rem', borderRadius: 10, fontSize: '0.78rem', fontWeight: 700, border: '1px solid', cursor: 'pointer', transition: 'all 0.2s', textTransform: 'capitalize', background: registerRole === r ? '#3b82f6' : 'transparent', borderColor: registerRole === r ? '#3b82f6' : 'rgba(255,255,255,0.1)', color: registerRole === r ? '#fff' : '#6b7a99' }}>
-                        {r === 'student' ? 'Student' : r === 'company' ? 'Company' : 'Institution'}
+                        {r === 'student' ? 'Student' : 'Company'}
                       </button>
                     ))}
                   </div>
@@ -333,60 +314,10 @@ export function AuthPage() {
                   </>
                 )}
 
-                {registerRole === 'institution' && (
-                  <>
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Institution Name</label>
-                      <input type="text" required value={registerForm.instituteName}
-                        onChange={e => {
-                          setRegisterForm(p => ({ ...p, instituteName: e.target.value }));
-                          if (registerErrors.instituteName) setRegisterErrors(p => ({ ...p, instituteName: '' }));
-                        }}
-                        style={{ background: 'rgba(255,255,255,0.07)' }}
-                        className={`w-full border ${registerErrors.instituteName ? 'border-red-500' : 'border-white/10'} rounded-xl px-4 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-blue-500 transition`}
-                        placeholder="Your institution name" />
-                      {registerErrors.instituteName && <p className="text-red-400 text-xs mt-1.5">{registerErrors.instituteName}</p>}
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">City</label>
-                        <input type="text" required value={registerForm.instituteCity}
-                          onChange={e => {
-                            setRegisterForm(p => ({ ...p, instituteCity: e.target.value }));
-                            if (registerErrors.instituteCity) setRegisterErrors(p => ({ ...p, instituteCity: '' }));
-                          }}
-                          style={{ background: 'rgba(255,255,255,0.07)' }}
-                          className={`w-full border ${registerErrors.instituteCity ? 'border-red-500' : 'border-white/10'} rounded-xl px-4 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-blue-500 transition`}
-                          placeholder="City" />
-                        {registerErrors.instituteCity && <p className="text-red-400 text-xs mt-1.5">{registerErrors.instituteCity}</p>}
-                      </div>
-                      <div>
-                        <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Phone</label>
-                        <input type="tel" value={registerForm.institutePhone}
-                          onChange={e => setRegisterForm(p => ({ ...p, institutePhone: e.target.value }))}
-                          style={{ background: 'rgba(255,255,255,0.07)' }}
-                          className="w-full border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-blue-500 transition"
-                          placeholder="Contact number" />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Website</label>
-                      <input type="url" value={registerForm.instituteWebsite}
-                        onChange={e => setRegisterForm(p => ({ ...p, instituteWebsite: e.target.value }))}
-                        style={{ background: 'rgba(255,255,255,0.07)' }}
-                        className="w-full border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-blue-500 transition"
-                        placeholder="https://institution.edu" />
-                    </div>
-                    <div className="rounded-xl border border-amber-400/20 bg-amber-400/10 p-3 text-xs leading-5 text-amber-100">
-                      Institution registration creates a pending request for Super Admin approval. APIs are not implemented yet.
-                    </div>
-                  </>
-                )}
-
                 <button type="submit" disabled={loading}
                   className="w-full bg-blue-500 hover:bg-blue-600 disabled:opacity-60 text-white font-bold py-2.5 rounded-xl text-sm transition flex items-center justify-center gap-2 mt-1">
                   {loading && <Loader2 size={14} className="animate-spin" />}
-                  {registerRole === 'company' ? 'Register Company' : registerRole === 'institution' ? <><Building2 size={14} /> Submit Institution Request</> : 'Create Account'}
+                  {registerRole === 'company' ? 'Register Company' : 'Create Account'}
                 </button>
 
                 <p className="text-center text-xs text-gray-600">

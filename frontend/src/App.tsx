@@ -33,7 +33,6 @@ import { AdminAnalytics }    from './pages/admin/AdminAnalytics';
 import { AdminSettings }     from './pages/admin/AdminSettings';
 import { AdminIPlatform }    from './pages/admin/AdminIPlatform';
 import { AdminEnquiries }    from './pages/admin/AdminEnquiries';
-import { AdminInstitutions } from './pages/admin/AdminInstitutions';
 import { AboutUs } from './pages/legal/AboutUs';
 import { CompanyInformation } from './pages/legal/CompanyInformation';
 import { ContactUs } from './pages/legal/ContactUs';
@@ -122,7 +121,6 @@ export default function App() {
           <Route path="dashboard"    element={<AdminDashboard />} />
           <Route path="iplatform"    element={<AdminIPlatform />} />
           <Route path="students"     element={<AdminStudents />} />
-          <Route path="institutions" element={<AdminInstitutions />} />
           <Route path="companies"    element={<AdminCompanies />} />
           <Route path="jobs"         element={<AdminJobs />} />
           <Route path="applications" element={<AdminApplications />} />
