@@ -6,6 +6,7 @@ import { ProtectedRoute } from './components/common/ProtectedRoute';
 import { StudentLayout }  from './components/layout/StudentLayout';
 import { CompanyLayout }  from './components/layout/CompanyLayout';
 import { AdminLayout }    from './components/layout/AdminLayout';
+import { InstituteLayout } from './components/layout/InstituteLayout';
 import { LandingPage }         from './pages/LandingPage';
 import { AuthPage }            from './pages/auth/AuthPage';
 import { StudentDashboard }    from './pages/student/StudentDashboard';
@@ -34,6 +35,13 @@ import { AdminSettings }     from './pages/admin/AdminSettings';
 import { AdminIPlatform }    from './pages/admin/AdminIPlatform';
 import { AdminEnquiries }    from './pages/admin/AdminEnquiries';
 import { AdminInstitutions } from './pages/admin/AdminInstitutions';
+import { InstituteDashboard }   from './pages/institute/InstituteDashboard';
+import { InstituteStudents }    from './pages/institute/InstituteStudents';
+import { InstituteBatches }     from './pages/institute/InstituteBatches';
+import { InstituteCourses }     from './pages/institute/InstituteCourses';
+import { InstituteAssessments } from './pages/institute/InstituteAssessments';
+import { InstituteAssignments } from './pages/institute/InstituteAssignments';
+import { InstituteCertificates } from './pages/institute/InstituteCertificates';
 import { AboutUs } from './pages/legal/AboutUs';
 import { CompanyInformation } from './pages/legal/CompanyInformation';
 import { ContactUs } from './pages/legal/ContactUs';
@@ -51,6 +59,7 @@ function AuthRedirect() {
   if (role === 'student') return <Navigate to="/student/dashboard" replace />;
   if (role === 'company') return <Navigate to="/company/dashboard" replace />;
   if (role === 'admin')   return <Navigate to="/admin/dashboard" replace />;
+  if (role === 'institution') return <Navigate to="/institute/dashboard" replace />;
   return <Navigate to="/auth" replace />;
 }
 
@@ -132,6 +141,18 @@ export default function App() {
           <Route path="enquiries"    element={<AdminEnquiries />} />
           <Route path="analytics"    element={<AdminAnalytics />} />
           <Route path="settings"     element={<AdminSettings />} />
+        </Route>
+
+        {/* Institute */}
+        <Route path="/institute" element={<ProtectedRoute allowedRoles={['institution']}><InstituteLayout /></ProtectedRoute>}>
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard"    element={<InstituteDashboard />} />
+          <Route path="students"     element={<InstituteStudents />} />
+          <Route path="batches"      element={<InstituteBatches />} />
+          <Route path="courses"      element={<InstituteCourses />} />
+          <Route path="assessments"  element={<InstituteAssessments />} />
+          <Route path="assignments"  element={<InstituteAssignments />} />
+          <Route path="certificates" element={<InstituteCertificates />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

@@ -3,7 +3,7 @@
  */
 
 const asyncHandler = require('express-async-handler');
-const { User, Student, Company } = require('../models');
+const { User, Student, Company, InstitutionRequest } = require('../models');
 const { sequelize } = require('../config/db');
 const { updateUserPassword } = require('../utils/passwords');
 
@@ -74,6 +74,7 @@ const getMe = asyncHandler(async (req, res) => {
   let profile = null;
   if (user.role === 'student') profile = await Student.findOne({ where: { userId: user.id } });
   if (user.role === 'company') profile = await Company.findOne({ where: { userId: user.id } });
+  if (user.role === 'institution') profile = await InstitutionRequest.findOne({ where: { userId: user.id } });
   res.json({ success: true, data: { user, profile } });
 });
 

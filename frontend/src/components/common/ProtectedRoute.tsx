@@ -22,6 +22,7 @@ export function ProtectedRoute({ children, allowedRoles }: Props) {
       student: '/student/dashboard',
       company: '/company/dashboard',
       admin: '/admin/dashboard',
+      institution: '/institute/dashboard',
     };
     return <Navigate to={redirectMap[user.role]} replace />;
   }

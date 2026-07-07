@@ -34,6 +34,8 @@ export interface InstituteRequest {
   phone?: string | null;
   website?: string | null;
   reviewNote?: string | null;
+  /** Present only in the API response right after an approval that provisioned a new login. */
+  tempPassword?: string | null;
 }
 
 export interface StudentRecord {
