@@ -11,9 +11,18 @@ import {
   Users,
   XCircle,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { CertificatePreview, MetricCard, ProgressBar, SectionPanel } from '../../modules/institution/components/InstitutionCards';
 import { institutionService } from '../../modules/institution/services/institutionService';
 import type { InstituteRequest, InstitutionWorkspace } from '../../modules/institution/types';
@@ -34,11 +43,20 @@ function StatusBadge({ status }: { status: InstituteRequest['status'] }) {
   );
 }
 
+const emptyAddForm = { instituteName: '', adminName: '', email: '', city: '', phone: '', website: '' };
+
 export function AdminInstitutions() {
   const [workspace, setWorkspace] = useState<InstitutionWorkspace | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [viewing, setViewing] = useState<InstituteRequest | null>(null);
+  const [addOpen, setAddOpen] = useState(false);
+  const [addForm, setAddForm] = useState(emptyAddForm);
+  const [submitting, setSubmitting] = useState(false);
+
+  const loadWorkspace = () => institutionService.getWorkspace().then(setWorkspace);
 
   useEffect(() => {
-    institutionService.getWorkspace().then(setWorkspace);
+    loadWorkspace();
   }, []);
 
   const requestCounts = useMemo(() => {
@@ -49,6 +67,80 @@ export function AdminInstitutions() {
       rejected: institutes.filter((item) => item.status === 'rejected').length,
     };
   }, [workspace]);
+
+  const metrics = useMemo(() => {
+    if (!workspace) return [];
+    return workspace.metrics.map((metric) =>
+      metric.label === 'Approved Institutes'
+        ? { ...metric, value: String(requestCounts.approved), trend: `${requestCounts.pending} pending review` }
+        : metric,
+    );
+  }, [workspace, requestCounts]);
+
+  async function handleDecision(institute: InstituteRequest, status: 'approved' | 'rejected') {
+    if (institute.requestId == null) {
+      toast.error('This record has no database id and cannot be updated.');
+      return;
+    }
+    setBusyId(institute.id);
+    try {
+      await institutionService.updateInstituteStatus(institute.requestId, status);
+      toast.success(`${institute.name} ${status}.`);
+      await loadWorkspace();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || `Could not ${status === 'approved' ? 'approve' : 'reject'} institute.`);
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function handleAddInstitute() {
+    if (!addForm.instituteName || !addForm.adminName || !addForm.email || !addForm.city) {
+      toast.error('Institute name, admin name, email and city are required.');
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await institutionService.submitInstituteRegistration({
+        adminName: addForm.adminName,
+        email: addForm.email.trim().toLowerCase(),
+        instituteName: addForm.instituteName,
+        city: addForm.city,
+        phone: addForm.phone || undefined,
+        website: addForm.website || undefined,
+      });
+      toast.success('Institute added and queued as pending review.');
+      setAddOpen(false);
+      setAddForm(emptyAddForm);
+      await loadWorkspace();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Could not add institute.');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  function handleExport() {
+    const institutes = workspace?.institutes || [];
+    if (!institutes.length) {
+      toast.error('No institutions to export.');
+      return;
+    }
+    const headers = ['ID', 'Name', 'City', 'Contact', 'Status', 'Submitted', 'Students'];
+    const rows = institutes.map((i) =>
+      [i.id, i.name, i.city, i.contact, i.status, i.submittedOn, i.students]
+        .map((v) => `"${String(v ?? '').replace(/"/g, '""')}"`)
+        .join(','),
+    );
+    const csv = [headers.join(','), ...rows].join('\n');
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `institutions-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+    toast.success(`Exported ${institutes.length} institutions.`);
+  }
 
   if (!workspace) {
     return (
@@ -73,14 +165,14 @@ export function AdminInstitutions() {
             </p>
           </div>
           <div className="flex gap-2">
-            <Button size="sm" variant="secondary"><FileDown size={14} /> Export</Button>
-            <Button size="sm"><ShieldCheck size={14} /> Settings</Button>
+            <Button size="sm" variant="secondary" onClick={handleExport}><FileDown size={14} /> Export</Button>
+            <Button size="sm" onClick={() => setAddOpen(true)}><ShieldCheck size={14} /> Add Institute</Button>
           </div>
         </div>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {workspace.metrics.map((metric) => <MetricCard key={metric.label} metric={metric} />)}
+        {metrics.map((metric) => <MetricCard key={metric.label} metric={metric} />)}
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
@@ -98,7 +190,10 @@ export function AdminInstitutions() {
         </div>
       </div>
 
-      <SectionPanel title="Institution Registration Requests" action={<Button size="sm"><Building2 size={14} /> Add Institute</Button>}>
+      <SectionPanel
+        title="Institution Registration Requests"
+        action={<Button size="sm" onClick={() => setAddOpen(true)}><Building2 size={14} /> Add Institute</Button>}
+      >
         <div className="overflow-x-auto">
           <table className="w-full min-w-[780px] text-left text-sm">
             <thead>
@@ -112,6 +207,13 @@ export function AdminInstitutions() {
               </tr>
             </thead>
             <tbody>
+              {workspace.institutes.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="py-8 text-center text-sm font-semibold text-slate-400">
+                    No registration requests yet.
+                  </td>
+                </tr>
+              )}
               {workspace.institutes.map((institute) => (
                 <tr key={institute.id} className="border-b border-slate-100 last:border-0">
                   <td className="py-3 pr-3">
@@ -125,11 +227,15 @@ export function AdminInstitutions() {
                   <td className="py-3 pr-3">
                     {institute.status === 'pending' ? (
                       <div className="flex gap-2">
-                        <Button size="xs"><CheckCircle2 size={12} /> Approve</Button>
-                        <Button size="xs" variant="outline"><XCircle size={12} /> Reject</Button>
+                        <Button size="xs" disabled={busyId === institute.id} onClick={() => handleDecision(institute, 'approved')}>
+                          <CheckCircle2 size={12} /> Approve
+                        </Button>
+                        <Button size="xs" variant="outline" disabled={busyId === institute.id} onClick={() => handleDecision(institute, 'rejected')}>
+                          <XCircle size={12} /> Reject
+                        </Button>
                       </div>
                     ) : (
-                      <Button size="xs" variant="outline">View</Button>
+                      <Button size="xs" variant="outline" onClick={() => setViewing(institute)}>View</Button>
                     )}
                   </td>
                 </tr>
@@ -192,6 +298,73 @@ export function AdminInstitutions() {
           })}
         </div>
       </SectionPanel>
+
+      {/* View institute dialog */}
+      <Dialog open={!!viewing} onOpenChange={(open) => !open && setViewing(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{viewing?.name}</DialogTitle>
+            <DialogDescription>Institution registration details</DialogDescription>
+          </DialogHeader>
+          {viewing && (
+            <div className="space-y-2 text-sm">
+              <DetailRow label="Reference" value={viewing.id} />
+              <DetailRow label="Status" value={viewing.status} />
+              <DetailRow label="City" value={viewing.city} />
+              <DetailRow label="Contact email" value={viewing.contact} />
+              {viewing.adminName && <DetailRow label="Admin" value={viewing.adminName} />}
+              {viewing.phone && <DetailRow label="Phone" value={viewing.phone} />}
+              {viewing.website && <DetailRow label="Website" value={viewing.website} />}
+              <DetailRow label="Submitted" value={viewing.submittedOn} />
+              <DetailRow label="Students" value={String(viewing.students)} />
+              {viewing.reviewNote && <DetailRow label="Review note" value={viewing.reviewNote} />}
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setViewing(null)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add institute dialog */}
+      <Dialog open={addOpen} onOpenChange={(open) => { setAddOpen(open); if (!open) setAddForm(emptyAddForm); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Institute</DialogTitle>
+            <DialogDescription>Create a new institution registration request.</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-3">
+            <Field label="Institute name *" value={addForm.instituteName} onChange={(v) => setAddForm((f) => ({ ...f, instituteName: v }))} />
+            <Field label="Admin name *" value={addForm.adminName} onChange={(v) => setAddForm((f) => ({ ...f, adminName: v }))} />
+            <Field label="Email *" type="email" value={addForm.email} onChange={(v) => setAddForm((f) => ({ ...f, email: v }))} />
+            <Field label="City *" value={addForm.city} onChange={(v) => setAddForm((f) => ({ ...f, city: v }))} />
+            <Field label="Phone" value={addForm.phone} onChange={(v) => setAddForm((f) => ({ ...f, phone: v }))} />
+            <Field label="Website" value={addForm.website} onChange={(v) => setAddForm((f) => ({ ...f, website: v }))} />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddOpen(false)}>Cancel</Button>
+            <Button onClick={handleAddInstitute} disabled={submitting}>{submitting ? 'Saving…' : 'Add Institute'}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
+  );
+}
+
+function DetailRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex justify-between gap-4 border-b border-slate-100 pb-1">
+      <span className="font-semibold text-slate-500">{label}</span>
+      <span className="text-right font-semibold text-slate-900 capitalize">{value}</span>
+    </div>
+  );
+}
+
+function Field({ label, value, onChange, type = 'text' }: { label: string; value: string; onChange: (v: string) => void; type?: string }) {
+  return (
+    <label className="block">
+      <span className="mb-1 block text-xs font-black uppercase tracking-[0.12em] text-slate-500">{label}</span>
+      <Input type={type} value={value} onChange={(e) => onChange(e.target.value)} />
+    </label>
   );
 }

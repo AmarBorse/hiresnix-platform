@@ -22,12 +22,18 @@ export interface InstitutionMetric {
 
 export interface InstituteRequest {
   id: string;
+  /** Raw numeric primary key from the database, used for approve/reject actions */
+  requestId?: number;
   name: string;
   city: string;
   contact: string;
   status: InstituteStatus;
   submittedOn: string;
   students: number;
+  adminName?: string;
+  phone?: string | null;
+  website?: string | null;
+  reviewNote?: string | null;
 }
 
 export interface StudentRecord {

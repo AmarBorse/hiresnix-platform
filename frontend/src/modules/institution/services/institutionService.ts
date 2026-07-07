@@ -1,48 +1,64 @@
 import { institutionWorkspace } from '../data/mockInstitutionData';
-import type { InstituteRequest, StudentRecord } from '../types';
-
-const wait = (ms = 120) => new Promise((resolve) => window.setTimeout(resolve, ms));
-const institutionRequestsKey = 'hiresnix:institution-registration-requests';
+import { institutionsApi } from '../../../api/institutions';
+import type { InstituteRequest, InstitutionWorkspace, StudentRecord } from '../types';
 
 interface InstituteRegistrationInput {
   adminName: string;
   email: string;
   instituteName: string;
   city: string;
+  phone?: string;
+  website?: string;
 }
 
-function readStoredInstituteRequests(): InstituteRequest[] {
-  try {
-    const stored = window.localStorage.getItem(institutionRequestsKey);
-    return stored ? JSON.parse(stored) : [];
-  } catch {
-    return [];
-  }
+/** Map a backend institution-request DTO into the frontend InstituteRequest shape. */
+function mapRequest(row: any): InstituteRequest {
+  return {
+    id: row.id != null ? `INS-${String(row.id).padStart(4, '0')}` : String(row.name),
+    requestId: typeof row.id === 'number' ? row.id : Number(row.id),
+    name: row.instituteName || row.name,
+    city: row.city || '—',
+    contact: row.contact || row.email || '—',
+    status: (row.status || 'pending') as InstituteRequest['status'],
+    submittedOn: (row.submittedOn || row.createdAt || '').slice(0, 10),
+    students: Number(row.students ?? 0),
+    adminName: row.adminName,
+    phone: row.phone ?? null,
+    website: row.website ?? null,
+    reviewNote: row.reviewNote ?? null,
+  };
 }
 
 export const institutionService = {
-  async getWorkspace() {
-    await wait();
-    return {
-      ...institutionWorkspace,
-      institutes: [...readStoredInstituteRequests(), ...institutionWorkspace.institutes],
-    };
+  /**
+   * Load the admin institution workspace. Registration requests come from the
+   * live Supabase-backed API; the remaining sections still use placeholder data.
+   */
+  async getWorkspace(): Promise<InstitutionWorkspace> {
+    try {
+      const res = await institutionsApi.getRequests();
+      const rows = Array.isArray(res?.data) ? res.data : [];
+      return { ...institutionWorkspace, institutes: rows.map(mapRequest) };
+    } catch {
+      // API unavailable (offline / not authorised) — fall back to placeholder rows.
+      return institutionWorkspace;
+    }
   },
 
-  async submitInstituteRegistration(input: InstituteRegistrationInput) {
-    await wait();
-    const request: InstituteRequest = {
-      id: `INS-${Date.now().toString().slice(-6)}`,
-      name: input.instituteName,
+  async submitInstituteRegistration(input: InstituteRegistrationInput): Promise<InstituteRequest> {
+    const res = await institutionsApi.register(input);
+    return mapRequest(res?.data ?? {
+      id: undefined,
+      instituteName: input.instituteName,
       city: input.city,
-      contact: input.email,
+      email: input.email,
       status: 'pending',
-      submittedOn: new Date().toISOString().slice(0, 10),
-      students: 0,
-    };
-    const requests = [request, ...readStoredInstituteRequests()];
-    window.localStorage.setItem(institutionRequestsKey, JSON.stringify(requests));
-    return request;
+    });
+  },
+
+  async updateInstituteStatus(requestId: number, status: 'approved' | 'rejected', reviewNote?: string) {
+    const res = await institutionsApi.updateStatus(requestId, status, reviewNote);
+    return mapRequest(res?.data);
   },
 
   generateCareerId(sequence: number, year = new Date().getFullYear()) {

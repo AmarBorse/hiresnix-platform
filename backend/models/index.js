@@ -12,6 +12,7 @@ const Enrollment  = require('./Enrollment');
 const Resource    = require('./Resource');
 const Certificate = require('./Certificate');
 const Enquiry     = require('./Enquiry');
+const InstitutionRequest = require('./InstitutionRequest');
 
 // ── Associations ──────────────────────────────────────────────────
 
@@ -59,5 +60,5 @@ Certificate.belongsTo(Enrollment, { foreignKey: 'enrollmentId', as: 'enrollment'
 
 // Resource — no FK associations (standalone admin-managed)
 
-module.exports = { User, Student, Company, Job, Application, Internship, Enrollment, Resource, Certificate, Enquiry };
+module.exports = { User, Student, Company, Job, Application, Internship, Enrollment, Resource, Certificate, Enquiry, InstitutionRequest };
 require('./internshipPlatform');
