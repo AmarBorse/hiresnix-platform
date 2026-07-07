@@ -15,6 +15,7 @@ const NAV = [
   { to: '/admin/applications', icon: FileText,        label: 'Applications',  badge: null },
   { to: '/admin/internships',  icon: BookOpen,        label: 'Programs',      badge: null },
   { to: '/admin/students',     icon: Users,           label: 'Students',      badge: null },
+  { to: '/admin/institutions',  icon: Building2,       label: 'Institutions',  badge: 'NEW' },
   { to: '/admin/companies',    icon: Building2,       label: 'Companies',     badge: null },
   { to: '/admin/resources',    icon: BookOpen,        label: 'Resources',     badge: null },
   { to: '/admin/certificates', icon: Award,           label: 'Certificates',  badge: null },
