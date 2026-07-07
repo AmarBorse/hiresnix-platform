@@ -33,7 +33,6 @@ export function AuthPage() {
     student: '/student/dashboard',
     company: '/company/dashboard',
     admin:   '/admin/dashboard',
-    institution: '/institute/dashboard',
   };
 
   const handleLogin = async (e: React.FormEvent) => {

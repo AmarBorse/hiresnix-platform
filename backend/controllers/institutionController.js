@@ -1,9 +1,8 @@
 const asyncHandler = require('express-async-handler');
-const crypto = require('crypto');
-const { InstitutionRequest, User } = require('../models');
+const { InstitutionRequest } = require('../models');
 const { sequelize } = require('../config/db');
 
-const toDto = (request, extra = {}) => ({
+const toDto = (request) => ({
   id: request.id,
   name: request.instituteName,
   instituteName: request.instituteName,
@@ -17,13 +16,7 @@ const toDto = (request, extra = {}) => ({
   submittedOn: request.createdAt,
   reviewedAt: request.reviewedAt,
   reviewNote: request.reviewNote,
-  hasLoginAccount: !!request.userId,
-  ...extra,
 });
-
-function generateTempPassword() {
-  return crypto.randomBytes(9).toString('base64url'); // 12-char, URL-safe
-}
 
 const submitInstitutionRequest = asyncHandler(async (req, res) => {
   const { adminName, email, instituteName, city, phone, website } = req.body;
@@ -86,36 +79,9 @@ const updateInstitutionRequestStatus = asyncHandler(async (req, res) => {
   request.reviewNote = reviewNote || null;
   request.reviewedById = req.user?.id || null;
   request.reviewedAt = new Date();
-
-  let tempPassword = null;
-
-  if (status === 'approved' && !request.userId) {
-    const cleanEmail = request.email.trim().toLowerCase();
-    let account = await User.findOne({
-      where: sequelize.where(sequelize.fn('LOWER', sequelize.col('email')), cleanEmail),
-    });
-
-    if (account) {
-      if (account.role !== 'institution') {
-        res.status(400);
-        throw new Error(`Email ${cleanEmail} already belongs to a ${account.role} account and cannot be reused for an institution login`);
-      }
-    } else {
-      tempPassword = generateTempPassword();
-      account = await User.create({
-        name: request.adminName,
-        email: cleanEmail,
-        password: tempPassword,
-        role: 'institution',
-      });
-    }
-
-    request.userId = account.id;
-  }
-
   await request.save();
 
-  res.json({ success: true, data: toDto(request, tempPassword ? { tempPassword } : {}) });
+  res.json({ success: true, data: toDto(request) });
 });
 
 module.exports = {

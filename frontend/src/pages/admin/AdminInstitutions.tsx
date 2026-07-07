@@ -49,7 +49,6 @@ export function AdminInstitutions() {
   const [workspace, setWorkspace] = useState<InstitutionWorkspace | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [viewing, setViewing] = useState<InstituteRequest | null>(null);
-  const [credentials, setCredentials] = useState<{ name: string; email: string; password: string } | null>(null);
   const [addOpen, setAddOpen] = useState(false);
   const [addForm, setAddForm] = useState(emptyAddForm);
   const [submitting, setSubmitting] = useState(false);
@@ -85,11 +84,8 @@ export function AdminInstitutions() {
     }
     setBusyId(institute.id);
     try {
-      const updated = await institutionService.updateInstituteStatus(institute.requestId, status);
+      await institutionService.updateInstituteStatus(institute.requestId, status);
       toast.success(`${institute.name} ${status}.`);
-      if (updated.tempPassword) {
-        setCredentials({ name: institute.name, email: institute.contact, password: updated.tempPassword });
-      }
       await loadWorkspace();
     } catch (err: any) {
       toast.error(err?.response?.data?.message || `Could not ${status === 'approved' ? 'approve' : 'reject'} institute.`);
@@ -348,36 +344,6 @@ export function AdminInstitutions() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setAddOpen(false)}>Cancel</Button>
             <Button onClick={handleAddInstitute} disabled={submitting}>{submitting ? 'Saving…' : 'Add Institute'}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Institute login credentials, shown once right after approval */}
-      <Dialog open={!!credentials} onOpenChange={(open) => !open && setCredentials(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Institute login created</DialogTitle>
-            <DialogDescription>
-              Share these credentials with {credentials?.name}. This password is shown only once — it is not stored anywhere retrievable.
-            </DialogDescription>
-          </DialogHeader>
-          {credentials && (
-            <div className="space-y-2 text-sm">
-              <DetailRow label="Email" value={credentials.email} />
-              <DetailRow label="Temporary password" value={credentials.password} />
-            </div>
-          )}
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                navigator.clipboard.writeText(`Email: ${credentials?.email}\nPassword: ${credentials?.password}`);
-                toast.success('Copied to clipboard.');
-              }}
-            >
-              Copy
-            </Button>
-            <Button onClick={() => setCredentials(null)}>Done</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

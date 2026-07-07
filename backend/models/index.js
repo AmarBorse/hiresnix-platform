@@ -13,12 +13,6 @@ const Resource    = require('./Resource');
 const Certificate = require('./Certificate');
 const Enquiry     = require('./Enquiry');
 const InstitutionRequest = require('./InstitutionRequest');
-const InstituteCourse = require('./InstituteCourse');
-const InstituteBatch = require('./InstituteBatch');
-const InstituteStudent = require('./InstituteStudent');
-const InstituteAssessment = require('./InstituteAssessment');
-const InstituteAssignment = require('./InstituteAssignment');
-const InstituteCertificate = require('./InstituteCertificate');
 
 // ── Associations ──────────────────────────────────────────────────
 
@@ -66,41 +60,5 @@ Certificate.belongsTo(Enrollment, { foreignKey: 'enrollmentId', as: 'enrollment'
 
 // Resource — no FK associations (standalone admin-managed)
 
-// User ↔ InstitutionRequest (institute login account)
-User.hasOne(InstitutionRequest, { foreignKey: 'userId', as: 'institutionProfile' });
-InstitutionRequest.belongsTo(User, { foreignKey: 'userId', as: 'user' });
-
-// Institution workspace (tenant-scoped academic data)
-InstitutionRequest.hasMany(InstituteCourse,     { foreignKey: 'institutionId', as: 'instituteCourses', onDelete: 'CASCADE' });
-InstituteCourse.belongsTo(InstitutionRequest,   { foreignKey: 'institutionId', as: 'institution' });
-
-InstitutionRequest.hasMany(InstituteBatch,      { foreignKey: 'institutionId', as: 'instituteBatches', onDelete: 'CASCADE' });
-InstituteBatch.belongsTo(InstitutionRequest,    { foreignKey: 'institutionId', as: 'institution' });
-InstituteCourse.hasMany(InstituteBatch,         { foreignKey: 'courseId', as: 'batches' });
-InstituteBatch.belongsTo(InstituteCourse,       { foreignKey: 'courseId', as: 'course' });
-
-InstitutionRequest.hasMany(InstituteStudent,    { foreignKey: 'institutionId', as: 'instituteStudents', onDelete: 'CASCADE' });
-InstituteStudent.belongsTo(InstitutionRequest,  { foreignKey: 'institutionId', as: 'institution' });
-InstituteBatch.hasMany(InstituteStudent,        { foreignKey: 'batchId', as: 'students' });
-InstituteStudent.belongsTo(InstituteBatch,      { foreignKey: 'batchId', as: 'batch' });
-
-InstitutionRequest.hasMany(InstituteAssessment, { foreignKey: 'institutionId', as: 'instituteAssessments', onDelete: 'CASCADE' });
-InstituteAssessment.belongsTo(InstitutionRequest, { foreignKey: 'institutionId', as: 'institution' });
-InstituteCourse.hasMany(InstituteAssessment,    { foreignKey: 'courseId', as: 'assessments' });
-InstituteAssessment.belongsTo(InstituteCourse,  { foreignKey: 'courseId', as: 'course' });
-
-InstitutionRequest.hasMany(InstituteAssignment, { foreignKey: 'institutionId', as: 'instituteAssignments', onDelete: 'CASCADE' });
-InstituteAssignment.belongsTo(InstitutionRequest, { foreignKey: 'institutionId', as: 'institution' });
-InstituteCourse.hasMany(InstituteAssignment,    { foreignKey: 'courseId', as: 'assignments' });
-InstituteAssignment.belongsTo(InstituteCourse,  { foreignKey: 'courseId', as: 'course' });
-
-InstitutionRequest.hasMany(InstituteCertificate, { foreignKey: 'institutionId', as: 'instituteCertificates', onDelete: 'CASCADE' });
-InstituteCertificate.belongsTo(InstitutionRequest, { foreignKey: 'institutionId', as: 'institution' });
-InstituteStudent.hasMany(InstituteCertificate,  { foreignKey: 'studentId', as: 'certificates', onDelete: 'CASCADE' });
-InstituteCertificate.belongsTo(InstituteStudent, { foreignKey: 'studentId', as: 'student' });
-
-module.exports = {
-  User, Student, Company, Job, Application, Internship, Enrollment, Resource, Certificate, Enquiry,
-  InstitutionRequest, InstituteCourse, InstituteBatch, InstituteStudent, InstituteAssessment, InstituteAssignment, InstituteCertificate,
-};
+module.exports = { User, Student, Company, Job, Application, Internship, Enrollment, Resource, Certificate, Enquiry, InstitutionRequest };
 require('./internshipPlatform');

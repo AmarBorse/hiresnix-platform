@@ -31,13 +31,6 @@ const InstitutionRequest = sequelize.define('InstitutionRequest', {
   },
   reviewedAt: { type: DataTypes.DATE, allowNull: true },
   reviewNote: { type: DataTypes.TEXT, allowNull: true },
-  /** Login account for this institution, provisioned automatically on approval. */
-  userId: {
-    type: DataTypes.BIGINT,
-    allowNull: true,
-    unique: true,
-    references: { model: 'users', key: 'id' },
-  },
 }, {
   tableName: 'institution_requests',
   timestamps: true,

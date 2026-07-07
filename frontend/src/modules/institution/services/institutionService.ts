@@ -26,7 +26,6 @@ function mapRequest(row: any): InstituteRequest {
     phone: row.phone ?? null,
     website: row.website ?? null,
     reviewNote: row.reviewNote ?? null,
-    tempPassword: row.tempPassword ?? null,
   };
 }
 
