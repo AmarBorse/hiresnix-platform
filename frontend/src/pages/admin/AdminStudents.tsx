@@ -186,161 +186,92 @@ export function AdminStudents() {
       </div>
 
       {filtered.length === 0 ? <EmptyState title="No students found" description="Try adjusting filters" /> : (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-100 bg-gray-50">
-                  {['Student','Dept / Year','CGPA','Skills','Placement','Resume'].map(h => (
-                    <th key={h} className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">{h}</th>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filtered.map((s: any) => (
+            <div key={s.id} className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm hover:shadow-md transition">
+              {/* Header */}
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 font-bold text-sm flex-shrink-0">
+                  {s.user?.name?.[0]?.toUpperCase() || '?'}
+                </div>
+                <div className="min-w-0">
+                  <p className="font-semibold text-gray-900 text-sm truncate">{s.user?.name}</p>
+                  <p className="text-gray-400 text-xs truncate">{s.user?.email}</p>
+                </div>
+              </div>
+
+              {/* Info */}
+              <div className="space-y-1.5 text-xs mb-3">
+                {s.rollNumber && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Roll No</span>
+                    <span className="font-medium text-gray-700">{s.rollNumber}</span>
+                  </div>
+                )}
+                {s.department && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Department</span>
+                    <span className="font-medium text-gray-700">{s.department}{s.year ? ` · Year ${s.year}` : ''}</span>
+                  </div>
+                )}
+                {s.cgpa && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">CGPA</span>
+                    <span className={`font-bold ${+s.cgpa >= 8 ? 'text-emerald-600' : +s.cgpa >= 6 ? 'text-yellow-600' : 'text-red-500'}`}>{s.cgpa}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Skills */}
+              {(s.skills || []).length > 0 && (
+                <div className="flex flex-wrap gap-1 mb-3">
+                  {(s.skills || []).slice(0, 3).map((sk: string) => (
+                    <span key={sk} className="text-[10px] bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded-full">{sk}</span>
                   ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {filtered.map((s: any) => (
-                  <tr key={s.id} className="hover:bg-gray-50 transition">
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 font-bold text-xs flex-shrink-0">
-                          {s.user?.name?.[0]?.toUpperCase() || '?'}
-                        </div>
-                        <div>
-                          <p className="font-semibold text-gray-900 text-xs">{s.user?.name}</p>
-                          <p className="text-gray-400 text-[11px]">{s.user?.email}</p>
-                          {s.rollNumber && <p className="text-[11px] text-gray-400">{s.rollNumber}</p>}
-                          <button
-                            onClick={() => openResetModal(s)}
-                            className="mt-1.5 mr-1.5 inline-flex items-center gap-1 text-[11px] font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded-md transition">
-                            <KeyRound size={11} />
-                            Reset Password
-                          </button>
-                          <button
-                            onClick={() => handleDelete(s)}
-                            disabled={deletingId === s.id}
-                            className="mt-1.5 inline-flex items-center gap-1 text-[11px] font-bold text-red-600 bg-red-50 hover:bg-red-100 disabled:opacity-50 px-2 py-1 rounded-md transition">
-                            {deletingId === s.id
-                              ? <Loader2 size={11} className="animate-spin" />
-                              : <Trash2 size={11} />}
-                            Delete Student
-                          </button>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <p className="text-xs font-medium text-gray-700">{s.department || '—'}</p>
-                      <p className="text-[11px] text-gray-400">{s.year ? `Year ${s.year}` : '—'}</p>
-                    </td>
-                    <td className="px-4 py-3">
-                      {s.cgpa ? (
-                        <span className={`text-sm font-black ${+s.cgpa >= 8 ? 'text-emerald-600' : +s.cgpa >= 6 ? 'text-yellow-600' : 'text-red-500'}`}>
-                          {s.cgpa}
-                        </span>
-                      ) : <span className="text-gray-400 text-xs">—</span>}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex flex-wrap gap-1">
-                        {(s.skills || []).slice(0, 3).map((sk: string) => (
-                          <span key={sk} className="text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded-full">{sk}</span>
-                        ))}
-                        {(s.skills || []).length > 3 && <span className="text-[10px] text-gray-400">+{s.skills.length - 3}</span>}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      {s.placementStatus === 'Placed' ? (
-                        <div>
-                          <span className="flex items-center gap-1 text-xs font-bold text-green-600"><CheckCircle size={11} /> Placed</span>
-                          {s.placedCompany && <p className="text-[11px] text-gray-500 mt-0.5">{s.placedCompany}</p>}
-                          {s.placedSalary && <p className="text-[11px] text-emerald-600 font-semibold">₹{(s.placedSalary/100000).toFixed(1)} LPA</p>}
-                        </div>
-                      ) : (
-                        <span className="flex items-center gap-1 text-xs text-gray-400"><Clock size={11} /> {s.placementStatus}</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3">
-                      {s.resumeUrl ? (
-                        <a href={`http://localhost:5000${s.resumeUrl}`} target="_blank" rel="noreferrer"
-                          className="text-xs text-blue-500 hover:text-blue-700 bg-blue-50 px-2 py-1 rounded-lg hover:bg-blue-100 transition">
-                          View CV
-                        </a>
-                      ) : <span className="text-xs text-gray-300">—</span>}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+                  {(s.skills || []).length > 3 && <span className="text-[10px] text-gray-400">+{s.skills.length - 3}</span>}
+                </div>
+              )}
 
-      {resetModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
-          <div className="w-full max-w-md rounded-xl border border-gray-700 bg-slate-900 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
-              <div>
-                <h2 className="text-lg font-black text-white">Reset Password</h2>
-                <p className="text-xs text-slate-400">Admin-only password update</p>
+              {/* Placement Status */}
+              <div className="mb-3">
+                {s.placementStatus === 'Placed' ? (
+                  <div className="flex items-center gap-1.5">
+                    <span className="flex items-center gap-1 text-xs font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
+                      <CheckCircle size={11} /> Placed
+                    </span>
+                    {s.placedCompany && <span className="text-xs text-gray-500">{s.placedCompany}</span>}
+                    {s.placedSalary && <span className="text-xs text-emerald-600 font-semibold">₹{(s.placedSalary/100000).toFixed(1)}L</span>}
+                  </div>
+                ) : (
+                  <span className="flex items-center gap-1 text-xs text-gray-400 bg-gray-50 px-2 py-0.5 rounded-full w-fit">
+                    <Clock size={11} /> {s.placementStatus || 'Not Placed'}
+                  </span>
+                )}
               </div>
-              <button
-                type="button"
-                onClick={() => setResetModal(null)}
-                className="rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-white"
-              >
-                <X size={16} />
-              </button>
+
+              {/* Actions */}
+              <div className="flex gap-2 pt-3 border-t border-gray-50">
+                {s.resumeUrl && (
+                  <a href={s.resumeUrl} target="_blank" rel="noreferrer"
+                    className="flex-1 text-center text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 px-2 py-1.5 rounded-lg transition">
+                    Resume
+                  </a>
+                )}
+                <button onClick={() => openResetModal(s)}
+                  className="flex items-center gap-1 text-xs font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-2 py-1.5 rounded-lg transition">
+                  <KeyRound size={11} /> Reset
+                </button>
+                <button onClick={() => handleDelete(s)} disabled={deletingId === s.id}
+                  className="flex items-center gap-1 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 disabled:opacity-50 px-2 py-1.5 rounded-lg transition">
+                  {deletingId === s.id ? <Loader2 size={11} className="animate-spin" /> : <Trash2 size={11} />}
+                  Delete
+                </button>
+              </div>
             </div>
-            <form onSubmit={handleResetPassword} className="space-y-4 p-5">
-              <div>
-                <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-400">Student Name</label>
-                <input
-                  value={resetModal.user?.name || ''}
-                  readOnly
-                  className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-200 outline-none"
-                />
-              </div>
-              <div>
-                <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-400">Student Email</label>
-                <input
-                  value={resetModal.user?.email || ''}
-                  readOnly
-                  className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-200 outline-none"
-                />
-              </div>
-              <div>
-                <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-400">New Password</label>
-                <input
-                  type="password"
-                  value={resetForm.newPassword}
-                  onChange={e => setResetForm(p => ({ ...p, newPassword: e.target.value }))}
-                  className={`w-full rounded-lg border ${resetErrors.newPassword ? 'border-red-500' : 'border-white/10'} bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-blue-500`}
-                  placeholder="Minimum 8 characters"
-                />
-                {resetErrors.newPassword && <p className="mt-1 text-xs text-red-400">{resetErrors.newPassword}</p>}
-              </div>
-              <div>
-                <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-400">Confirm New Password</label>
-                <input
-                  type="password"
-                  value={resetForm.confirmPassword}
-                  onChange={e => setResetForm(p => ({ ...p, confirmPassword: e.target.value }))}
-                  className={`w-full rounded-lg border ${resetErrors.confirmPassword ? 'border-red-500' : 'border-white/10'} bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-blue-500`}
-                  placeholder="Re-enter new password"
-                />
-                {resetErrors.confirmPassword && <p className="mt-1 text-xs text-red-400">{resetErrors.confirmPassword}</p>}
-              </div>
-              <button
-                type="submit"
-                disabled={!canSubmitReset}
-                className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-500 py-2.5 text-sm font-bold text-white transition hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {resetting ? <Loader2 size={14} className="animate-spin" /> : <KeyRound size={14} />}
-                Reset Password
-              </button>
-            </form>
-          </div>
+          ))}
         </div>
       )}
 
-      {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-1.5 flex-wrap">
           {/* Prev */}
