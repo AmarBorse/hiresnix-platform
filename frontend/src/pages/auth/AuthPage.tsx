@@ -201,7 +201,11 @@ export function AuthPage() {
                   </div>
                   {loginErrors.password && <p className="text-red-400 text-xs mt-1.5">{loginErrors.password}</p>}
                 </div>
-                {/* Forgot password - only for student/company, not institution */}
+                <div className="flex justify-end">
+  <button type="button" onClick={() => setShowForgot(true)} className="text-blue-400 hover:text-blue-300 text-xs font-medium">
+    Forgot password?
+  </button>
+</div>
                 <button type="submit" disabled={loading} className="w-full bg-blue-500 hover:bg-blue-600 disabled:opacity-60 text-white font-bold py-2.5 rounded-xl text-sm transition flex items-center justify-center gap-2">
                   {loading && <Loader2 size={14} className="animate-spin" />} Sign In
                 </button>
