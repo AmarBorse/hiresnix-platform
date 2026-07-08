@@ -38,7 +38,7 @@ export const institutionApi = {
   issueCertificate:     (data: any) => client.post('/institution/certificates', data).then(r => r.data),
   downloadCertPdf:      (certId: string) => `${client.defaults.baseURL}/institution/certificates/${certId}/download-pdf`,
   verifyCertificate:    (certId: string) => client.get(`/institution/certificates/verify/${certId}`).then(r => r.data),
-  getStudentCredentials: () => client.get('/institution/students/credentials').then(r => r.data),
+  getStudentCredentials: () => client.get('/institution/student-credentials').then(r => r.data),
 };
 
 export const adminInstitutionApi = {

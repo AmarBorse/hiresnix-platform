@@ -24,14 +24,16 @@ r.get('/dashboard', ...withAuth, ctrl.getDashboardStats);
 r.get('/profile',  protect, authorize('institution'), ctrl.getProfile);
 r.put('/profile',  protect, authorize('institution'), ctrl.updateProfile);
 
+// Students — credentials route BEFORE /:id to avoid conflict
 r.get('/students',                    ...withAuth, ctrl.getStudents);
 r.post('/students',                   ...withAuth, ctrl.createStudent);
 r.post('/students/bulk-import',       ...withAuth, ctrl.bulkImportStudents);
-r.get('/students/credentials',        ...withAuth, ctrl.getStudentCredentials);  // NEW
+r.get('/student-credentials',         ...withAuth, ctrl.getStudentCredentials);
 r.get('/students/:id',                ...withAuth, ctrl.getStudent);
 r.put('/students/:id',                ...withAuth, ctrl.updateStudent);
 r.delete('/students/:id',             ...withAuth, ctrl.deleteStudent);
 
+// Batches
 r.get('/batches',                              ...withAuth, ctrl.getBatches);
 r.post('/batches',                             ...withAuth, ctrl.createBatch);
 r.put('/batches/:id',                          ...withAuth, ctrl.updateBatch);
@@ -40,12 +42,14 @@ r.get('/batches/:id/students',                 ...withAuth, ctrl.getBatchStudent
 r.post('/batches/:id/assign-students',         ...withAuth, ctrl.assignStudentsToBatch);
 r.delete('/batches/:id/students/:studentId',   ...withAuth, ctrl.removeStudentFromBatch);
 
+// Courses
 r.get('/courses',                      ...withAuth, ctrl.getCourses);
 r.post('/courses',                     ...withAuth, ctrl.createCourse);
 r.put('/courses/:id',                  ...withAuth, ctrl.updateCourse);
 r.delete('/courses/:id',               ...withAuth, ctrl.deleteCourse);
 r.post('/courses/:id/assign-students', ...withAuth, ctrl.assignStudentsToCourse);
 
+// Certificates
 r.get('/certificates',                      ...withAuth, ctrl.getCertificates);
 r.post('/certificates',                     ...withAuth, ctrl.issueCertificate);
 r.get('/certificates/verify/:certId',       ctrl.verifyCertificate);
