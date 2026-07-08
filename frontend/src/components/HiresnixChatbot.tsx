@@ -176,6 +176,90 @@ For jobs: hr@hiresnix.co.in | 9529120977`,
 
 📱 9529120977 | 📧 hr@hiresnix.co.in`,
   },
+  {
+    keys: ['about', 'company', 'hiresnix kya hai', 'kya hai hiresnix', 'kaun ho', 'who are you', 'what is hiresnix', 'overview', 'vision', 'mission', 'platform', 'describe'],
+    answer: `🏢 **Hiresnix के बारे में:**
+
+Hiresnix एक career-focused technology platform है जो students को internship और career opportunities से connect करता है।
+
+**Vision:** India's most trusted internship & career platform बनना 🇮🇳
+
+**Mission:** Students को meaningful internship experience देना और organizations को skilled talent hire करने में मदद करना।
+
+🌐 www.hiresnix.co.in
+🔗 linkedin.com/company/hiresnix`,
+  },
+  {
+    keys: ['offer', 'services', 'features', 'what do you offer', 'kya offer', 'kya milega', 'platform features', 'provide'],
+    answer: `✨ **Hiresnix क्या offer करता है:**
+
+**Students के लिए:**
+• Internship Opportunities
+• Student Career Portal
+• Offer Letter Generation
+• Daily Work Log Management
+• Completion Certificate
+• Letter of Recommendation (LOR)
+• Career Development Support
+• Job Opportunities 💼
+
+**Companies के लिए:**
+• Company Hiring Portal
+• Internship Posting & Management
+• Candidate Shortlisting
+• Internship Progress Tracking
+• Quality Talent Pipeline
+
+📱 9529120977 | hr@hiresnix.co.in`,
+  },
+  {
+    keys: ['linkedin', 'social', 'follow', 'social media', 'instagram', 'connect online'],
+    answer: `🔗 **Hiresnix Social Media:**
+
+🌐 Website: www.hiresnix.co.in
+💼 LinkedIn: linkedin.com/company/hiresnix
+
+Follow karo updates ke liye! 🚀`,
+  },
+  {
+    keys: ['log', 'daily log', 'work log', 'task submit', 'daily work', 'submission', 'submit task'],
+    answer: `📋 **Daily Work Log kya hai?**
+
+Internship ke dauran tumhe weekly/daily tasks submit karne hote hain:
+
+1. Login karo → Hiresnix Intern
+2. Apna enrolled internship dekho
+3. Task complete karo
+4. Submit Log karo ✅
+
+Yahi tumhara progress track hota hai — 0% se 100% tak! 🎯`,
+  },
+  {
+    keys: ['offer letter', 'offerr letter', 'joining letter', 'appointment'],
+    answer: `📄 **Offer Letter:**
+
+Approval ke baad Hiresnix automatically Offer Letter generate karta hai jisme hoga:
+• Joining Date
+• Internship Domain
+• Duration (6 Months)
+• Company seal aur signature
+
+PDF download kar sakte ho! 📥`,
+  },
+  {
+    keys: ['placement', 'placed', 'job guarantee', 'guarantee', 'assured', 'pakka'],
+    answer: `💼 **Placement Support:**
+
+Hiresnix placement guarantee nahi deta lekin:
+• Job portal pe companies actively hire karti hain
+• Certificate + LOR se profile strong hoti hai
+• Career guidance milti hai
+• Network build hota hai
+
+Mehnat + Hiresnix = Better Chances! 💪
+
+Jobs ke liye: hiresnix.co.in → Jobs section`,
+  },
 ];
 
 const GREETINGS = ['hi', 'hello', 'hey', 'hii', 'helo', 'namaste', 'namaskar', 'good morning', 'good evening', 'good afternoon', 'helo', 'hye'];
@@ -217,12 +301,14 @@ Ya in topics me se kuch poochho:
 }
 
 const QUICK_Q = [
-  { label: '📝 Apply kaise kare?', q: 'How to apply?' },
-  { label: '💰 Fees kitni hai?',   q: 'fees kitni hai' },
-  { label: '💻 Konse domains?',    q: 'konse domains hain' },
+  { label: '🏢 Hiresnix kya hai?', q: 'about hiresnix' },
+  { label: '📝 Apply kaise kare?', q: 'apply kaise kare' },
+  { label: '💰 Free hai?',         q: 'fees kitni hai' },
+  { label: '💻 Domains?',          q: 'konse domains hain' },
   { label: '🏆 Certificate?',      q: 'certificate kab milega' },
-  { label: '🏫 Institution tieup', q: 'institution tieup kaise hota hai' },
-  { label: '📞 Contact',           q: 'contact number kya hai' },
+  { label: '🏫 Institution tieup', q: 'institution tieup' },
+  { label: '✨ Kya offer karte?',  q: 'kya offer karte ho' },
+  { label: '📞 Contact',           q: 'contact number' },
 ];
 
 export function HiresnixChatbot() {
