@@ -3,39 +3,47 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { useAuthStore } from './store/useAuthStore';
 import { ProtectedRoute } from './components/common/ProtectedRoute';
-import { StudentLayout }  from './components/layout/StudentLayout';
-import { CompanyLayout }  from './components/layout/CompanyLayout';
-import { AdminLayout }    from './components/layout/AdminLayout';
-import { LandingPage }         from './pages/LandingPage';
-import { AuthPage }            from './pages/auth/AuthPage';
-import { StudentDashboard }    from './pages/student/StudentDashboard';
-import { StudentJobs }         from './pages/student/StudentJobs';
-import { StudentApplications } from './pages/student/StudentApplications';
-import { StudentInternships }  from './pages/student/StudentInternships';
-import { StudentResources }    from './pages/student/StudentResources';
-import { StudentCertificates } from './pages/student/StudentCertificates';
-import { StudentProfile }      from './pages/student/StudentProfile';
-import { StudentMockInterview } from './pages/student/StudentMockInterview';
-import { CompanyDashboard }  from './pages/company/CompanyDashboard';
-import { CompanyJobs }       from './pages/company/CompanyJobs';
-import { JobForm }           from './pages/company/JobForm';
-import { CompanyApplicants } from './pages/company/CompanyApplicants';
-import { CompanyProfile }    from './pages/company/CompanyProfile';
-import { AdminDashboard }    from './pages/admin/AdminDashboard';
-import { AdminStudents }     from './pages/admin/AdminStudents';
-import { AdminCompanies }    from './pages/admin/AdminCompanies';
-import { AdminJobs }         from './pages/admin/AdminJobs';
-import { AdminApplications } from './pages/admin/AdminApplications';
-import { AdminInternships }  from './pages/admin/AdminInternships';
-import { AdminResources }    from './pages/admin/AdminResources';
-import { AdminCertificates } from './pages/admin/AdminCertificates';
-import { AdminAnalytics }    from './pages/admin/AdminAnalytics';
-import { AdminSettings }     from './pages/admin/AdminSettings';
-import { AdminIPlatform }    from './pages/admin/AdminIPlatform';
-import { AdminEnquiries }    from './pages/admin/AdminEnquiries';
-import { AboutUs } from './pages/legal/AboutUs';
+import { StudentLayout }      from './components/layout/StudentLayout';
+import { CompanyLayout }      from './components/layout/CompanyLayout';
+import { AdminLayout }        from './components/layout/AdminLayout';
+import { InstitutionLayout }  from './components/layout/InstitutionLayout';
+import { LandingPage }        from './pages/LandingPage';
+import { AuthPage }           from './pages/auth/AuthPage';
+import { StudentDashboard }   from './pages/student/StudentDashboard';
+import { StudentJobs }        from './pages/student/StudentJobs';
+import { StudentApplications }from './pages/student/StudentApplications';
+import { StudentInternships } from './pages/student/StudentInternships';
+import { StudentResources }   from './pages/student/StudentResources';
+import { StudentCertificates }from './pages/student/StudentCertificates';
+import { StudentProfile }     from './pages/student/StudentProfile';
+import { StudentMockInterview }from './pages/student/StudentMockInterview';
+import { CompanyDashboard }   from './pages/company/CompanyDashboard';
+import { CompanyJobs }        from './pages/company/CompanyJobs';
+import { JobForm }            from './pages/company/JobForm';
+import { CompanyApplicants }  from './pages/company/CompanyApplicants';
+import { CompanyProfile }     from './pages/company/CompanyProfile';
+import { AdminDashboard }     from './pages/admin/AdminDashboard';
+import { AdminStudents }      from './pages/admin/AdminStudents';
+import { AdminCompanies }     from './pages/admin/AdminCompanies';
+import { AdminJobs }          from './pages/admin/AdminJobs';
+import { AdminApplications }  from './pages/admin/AdminApplications';
+import { AdminInternships }   from './pages/admin/AdminInternships';
+import { AdminResources }     from './pages/admin/AdminResources';
+import { AdminCertificates }  from './pages/admin/AdminCertificates';
+import { AdminAnalytics }     from './pages/admin/AdminAnalytics';
+import { AdminSettings }      from './pages/admin/AdminSettings';
+import { AdminIPlatform }     from './pages/admin/AdminIPlatform';
+import { AdminEnquiries }     from './pages/admin/AdminEnquiries';
+import { AdminInstitutions }  from './pages/admin/AdminInstitutions';
+import { InstitutionDashboard }  from './pages/institution/InstitutionDashboard';
+import { InstitutionStudents }   from './pages/institution/InstitutionStudents';
+import { InstitutionBatches }    from './pages/institution/InstitutionBatches';
+import { InstitutionCourses }    from './pages/institution/InstitutionCourses';
+import { InstitutionCertificates } from './pages/institution/InstitutionCertificates';
+import { InstitutionProfile }    from './pages/institution/InstitutionProfile';
+import { AboutUs }            from './pages/legal/AboutUs';
 import { CompanyInformation } from './pages/legal/CompanyInformation';
-import { ContactUs } from './pages/legal/ContactUs';
+import { ContactUs }          from './pages/legal/ContactUs';
 import { Disclaimer, InternshipPolicy, PrivacyPolicy, RefundPolicy, TermsAndConditions } from './pages/legal/policyPages';
 import { VerificationPortal } from './pages/legal/VerificationPortal';
 import { Role } from './types';
@@ -47,9 +55,10 @@ function AuthRedirect() {
   if (role === 'student' && user.emailVerified === false) {
     return <Navigate to="/auth" state={{ message: 'Please verify your email before accessing your account.' }} replace />;
   }
-  if (role === 'student') return <Navigate to="/student/dashboard" replace />;
-  if (role === 'company') return <Navigate to="/company/dashboard" replace />;
-  if (role === 'admin')   return <Navigate to="/admin/dashboard" replace />;
+  if (role === 'student')     return <Navigate to="/student/dashboard" replace />;
+  if (role === 'company')     return <Navigate to="/company/dashboard" replace />;
+  if (role === 'admin')       return <Navigate to="/admin/dashboard" replace />;
+  if (role === 'institution') return <Navigate to="/institution/dashboard" replace />;
   return <Navigate to="/auth" replace />;
 }
 
@@ -60,36 +69,29 @@ export default function App() {
       <Toaster richColors position="top-right" closeButton />
       <Routes>
         {/* Landing */}
-        <Route path="/" element={
-          isAuthenticated && user
-            ? <AuthRedirect />
-            : <LandingPage />
-        } />
+        <Route path="/" element={isAuthenticated && user ? <AuthRedirect /> : <LandingPage />} />
 
-        {/* Public Company, Legal, and Verification Pages */}
-        <Route path="/about-us" element={<AboutUs />} />
-        <Route path="/company-information" element={<CompanyInformation />} />
-        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-        <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
-        <Route path="/disclaimer" element={<Disclaimer />} />
-        <Route path="/refund-policy" element={<RefundPolicy />} />
-        <Route path="/internship-policy" element={<InternshipPolicy />} />
-        <Route path="/contact-us" element={<ContactUs />} />
-        <Route path="/verification" element={<VerificationPortal />} />
-        <Route path="/verification/:type" element={<VerificationPortal />} />
+        {/* Legal & Public */}
+        <Route path="/about-us"              element={<AboutUs />} />
+        <Route path="/company-information"   element={<CompanyInformation />} />
+        <Route path="/privacy-policy"        element={<PrivacyPolicy />} />
+        <Route path="/terms-and-conditions"  element={<TermsAndConditions />} />
+        <Route path="/disclaimer"            element={<Disclaimer />} />
+        <Route path="/refund-policy"         element={<RefundPolicy />} />
+        <Route path="/internship-policy"     element={<InternshipPolicy />} />
+        <Route path="/contact-us"            element={<ContactUs />} />
+        <Route path="/verification"          element={<VerificationPortal />} />
+        <Route path="/verification/:type"    element={<VerificationPortal />} />
         <Route path="/verification/:type/:id" element={<VerificationPortal />} />
-        <Route path="/verify" element={<VerificationPortal defaultType="certificate" />} />
-        <Route path="/verify/:id" element={<VerificationPortal defaultType="certificate" />} />
+        <Route path="/verify"                element={<VerificationPortal defaultType="certificate" />} />
+        <Route path="/verify/:id"            element={<VerificationPortal defaultType="certificate" />} />
 
         {/* Auth */}
-        <Route
-          path="/auth"
-          element={
-            isAuthenticated && user && !(user.role === 'student' && user.emailVerified === false)
-              ? <AuthRedirect />
-              : <AuthPage />
-          }
-        />
+        <Route path="/auth" element={
+          isAuthenticated && user && !(user.role === 'student' && user.emailVerified === false)
+            ? <AuthRedirect />
+            : <AuthPage />
+        } />
 
         {/* Student */}
         <Route path="/student" element={<ProtectedRoute allowedRoles={['student']}><StudentLayout /></ProtectedRoute>}>
@@ -122,6 +124,7 @@ export default function App() {
           <Route path="iplatform"    element={<AdminIPlatform />} />
           <Route path="students"     element={<AdminStudents />} />
           <Route path="companies"    element={<AdminCompanies />} />
+          <Route path="institutions" element={<AdminInstitutions />} />
           <Route path="jobs"         element={<AdminJobs />} />
           <Route path="applications" element={<AdminApplications />} />
           <Route path="internships"  element={<AdminInternships />} />
@@ -130,6 +133,17 @@ export default function App() {
           <Route path="enquiries"    element={<AdminEnquiries />} />
           <Route path="analytics"    element={<AdminAnalytics />} />
           <Route path="settings"     element={<AdminSettings />} />
+        </Route>
+
+        {/* Institution */}
+        <Route path="/institution" element={<ProtectedRoute allowedRoles={['institution']}><InstitutionLayout /></ProtectedRoute>}>
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard"    element={<InstitutionDashboard />} />
+          <Route path="students"     element={<InstitutionStudents />} />
+          <Route path="batches"      element={<InstitutionBatches />} />
+          <Route path="courses"      element={<InstitutionCourses />} />
+          <Route path="certificates" element={<InstitutionCertificates />} />
+          <Route path="profile"      element={<InstitutionProfile />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

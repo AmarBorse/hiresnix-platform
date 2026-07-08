@@ -1,27 +1,23 @@
+// routes/adminRoutes.js
 const express = require('express');
-const router = express.Router();
-const { verifyCompany, getAdminAnalytics } = require('../controllers/adminController');
-const { getAllApplications } = require('../controllers/applicationController');
-const { generateOfferLetter } = require('../controllers/internshipPlatformController');
-const { getAllEnquiries, markAsRead, deleteEnquiry } = require('../controllers/enquiryController');
+const asyncHandler = require('express-async-handler');
 const { protect, authorize } = require('../middleware/auth');
+const {
+  verifyCompany, getAdminAnalytics,
+  getInstitutions, getInstitution, approveInstitution, rejectInstitution, deleteInstitution,
+} = require('../controllers/adminController');
+const r = express.Router();
 
-// Admin Auth Middleware (uncomment when ready to secure)
-// router.use(protect, authorize('admin'));
+const admin = [protect, authorize('admin')];
 
-// Company Approval Routes (We add both in case frontend uses either one)
-router.put('/companies/:id/verify', verifyCompany);
-router.put('/companies/:id/verify/', verifyCompany);
-router.put('/companies/:id/approve', verifyCompany);
+r.get('/analytics',                      ...admin, getAdminAnalytics);
+r.put('/companies/:id/verify',           ...admin, verifyCompany);
 
-// Dashboard and application aliases used by the admin frontend
-router.get('/analytics', protect, authorize('admin'), getAdminAnalytics);
-router.get('/applications', protect, authorize('admin'), getAllApplications);
-router.post('/generate-offer', protect, authorize('admin'), generateOfferLetter);
+// Institution management
+r.get('/institutions',                   ...admin, getInstitutions);
+r.get('/institutions/:id',               ...admin, getInstitution);
+r.put('/institutions/:id/approve',       ...admin, approveInstitution);
+r.put('/institutions/:id/reject',        ...admin, rejectInstitution);
+r.delete('/institutions/:id',            ...admin, deleteInstitution);
 
-// Enquiries Routes (for your Admin Dashboard)
-router.get('/enquiries', getAllEnquiries);
-router.put('/enquiries/:id/read', markAsRead);
-router.delete('/enquiries/:id', deleteEnquiry);
-
-module.exports = router;
+module.exports = r;

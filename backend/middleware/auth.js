@@ -1,5 +1,6 @@
 /**
  * middleware/auth.js — JWT Authentication & Role Authorization
+ * Added: institution role support
  */
 
 const jwt = require('jsonwebtoken');
@@ -16,11 +17,9 @@ const protect = asyncHandler(async (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = await User.findByPk(decoded.id, {
-      attributes: { exclude: ['password'] },
-    });
-    if (!req.user)         { res.status(401); throw new Error('User not found'); }
-    if (!req.user.isActive){ res.status(401); throw new Error('Account has been deactivated'); }
+    req.user = await User.findByPk(decoded.id, { attributes: { exclude: ['password'] } });
+    if (!req.user)          { res.status(401); throw new Error('User not found'); }
+    if (!req.user.isActive) { res.status(401); throw new Error('Account has been deactivated'); }
     next();
   } catch (err) {
     res.status(401);
@@ -44,6 +43,10 @@ const requireApproved = asyncHandler(async (req, res, next) => {
   if (req.user.role === 'company' && !req.user.isApproved) {
     res.status(403);
     throw new Error('Company account pending admin approval');
+  }
+  if (req.user.role === 'institution' && !req.user.isApproved) {
+    res.status(403);
+    throw new Error('Institution account pending admin approval');
   }
   next();
 });

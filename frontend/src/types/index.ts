@@ -1,6 +1,6 @@
 // src/types/index.ts
 
-export type Role = 'student' | 'company' | 'admin';
+export type Role = 'student' | 'company' | 'admin' | 'institution';
 
 export interface AuthUser {
   id: number;
@@ -162,4 +162,93 @@ export interface PaginatedResponse<T> {
   total: number;
   totalPages: number;
   currentPage: number;
+}
+
+// ── Institution Module Types (NEW) ────────────────────────────────
+
+export interface InstitutionProfile {
+  id: number;
+  userId: number;
+  institutionName: string;
+  type: string | null;
+  affiliatedTo: string | null;
+  address: string | null;
+  city: string | null;
+  state: string | null;
+  pincode: string | null;
+  website: string | null;
+  phone: string | null;
+  logo: string | null;
+  description: string | null;
+  contactName: string | null;
+  contactEmail: string | null;
+  contactPhone: string | null;
+  isVerified: boolean;
+  isPartner: boolean;
+  rejectionReason: string | null;
+  createdAt: string;
+}
+
+export interface InstitutionStudent {
+  id: number;
+  institutionId: number;
+  careerId: string;
+  name: string;
+  email: string;
+  mobile: string | null;
+  dob: string | null;
+  gender: string | null;
+  address: string | null;
+  department: string | null;
+  rollNumber: string | null;
+  year: number | null;
+  skills: string[];
+  documents: any[];
+  photo: string | null;
+  isInternshipEligible: boolean;
+  batches?: InstituteBatch[];
+  courses?: InstituteCourse[];
+  createdAt: string;
+}
+
+export interface InstituteBatch {
+  id: number;
+  institutionId: number;
+  name: string;
+  description: string | null;
+  startDate: string | null;
+  endDate: string | null;
+  trainerName: string | null;
+  trainerEmail: string | null;
+  status: 'Active' | 'Completed' | 'Upcoming';
+  studentCount?: number;
+  createdAt: string;
+}
+
+export interface InstituteCourse {
+  id: number;
+  institutionId: number;
+  name: string;
+  description: string | null;
+  duration: string | null;
+  durationUnit: 'Days' | 'Weeks' | 'Months';
+  status: 'Active' | 'Inactive';
+  createdAt: string;
+}
+
+export interface InstitutionCertificate {
+  id: number;
+  certificateId: string;
+  institutionId: number;
+  studentId: number;
+  courseId: number | null;
+  type: 'Course Completion' | 'Training Completion' | 'Skill Assessment';
+  studentName: string;
+  courseName: string | null;
+  institutionName: string;
+  issuedAt: string;
+  isValid: boolean;
+  emailSent: boolean;
+  student?: { name: string; email: string; careerId: string };
+  course?: { name: string };
 }

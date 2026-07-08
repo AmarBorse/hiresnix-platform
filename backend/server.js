@@ -1,5 +1,5 @@
 /**
- * server.js — Smart Placement Portal Backend (MySQL + Sequelize)
+ * server.js — Hiresnix Platform Backend (MySQL/PostgreSQL + Sequelize)
  */
 
 const express    = require('express');
@@ -13,7 +13,6 @@ const path       = require('path');
 dotenv.config();
 
 const { connectDB } = require('./config/db');
-// Load all models & associations
 require('./models/index');
 
 connectDB();
@@ -32,12 +31,7 @@ const allowedOrigins = [
 
 const corsOptions = {
   origin: (origin, callback) => {
-    if (
-      !origin ||
-      allowedOrigins.includes(origin) ||
-      origin.endsWith('.vercel.app') ||
-      origin.endsWith('.onrender.com')
-    ) {
+    if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.vercel.app') || origin.endsWith('.onrender.com')) {
       return callback(null, true);
     }
     return callback(new Error('Not allowed by CORS'));
@@ -55,20 +49,21 @@ if (process.env.NODE_ENV === 'development') app.use(morgan('dev'));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // ── Routes ────────────────────────────────────────────────────────
-app.use('/api/public',       require('./routes/publicRoutes'));
-app.use('/api/auth',         require('./routes/authRoutes'));
-app.use('/api/students',     require('./routes/studentRoutes'));
-app.use('/api/companies',    require('./routes/companyRoutes'));
-app.use('/api/jobs',         require('./routes/jobRoutes'));
-app.use('/api/applications', require('./routes/applicationRoutes'));
-app.use('/api/admin',        require('./routes/adminRoutes'));
-app.use('/api/analytics',    require('./routes/analyticsRoutes'));
-app.use('/api/iplatform', require('./routes/internshipPlatformRoutes'));
-app.use('/api/internships',  require('./routes/internshipRoutes'));
-app.use('/api/resources',    require('./routes/resourceRoutes'));
-app.use('/api/certificates', require('./routes/certificateRoutes'));
+app.use('/api/public',        require('./routes/publicRoutes'));
+app.use('/api/auth',          require('./routes/authRoutes'));
+app.use('/api/students',      require('./routes/studentRoutes'));
+app.use('/api/companies',     require('./routes/companyRoutes'));
+app.use('/api/jobs',          require('./routes/jobRoutes'));
+app.use('/api/applications',  require('./routes/applicationRoutes'));
+app.use('/api/admin',         require('./routes/adminRoutes'));
+app.use('/api/analytics',     require('./routes/analyticsRoutes'));
+app.use('/api/iplatform',     require('./routes/internshipPlatformRoutes'));
+app.use('/api/internships',   require('./routes/internshipRoutes'));
+app.use('/api/resources',     require('./routes/resourceRoutes'));
+app.use('/api/certificates',  require('./routes/certificateRoutes'));
+app.use('/api/institution',   require('./routes/institutionRoutes'));   // NEW
 
-app.get('/api/health', (req, res) => res.json({ status: 'OK', db: 'MySQL (Sequelize)', timestamp: new Date() }));
+app.get('/api/health', (req, res) => res.json({ status: 'OK', db: 'MySQL/PostgreSQL (Sequelize)', timestamp: new Date() }));
 
 app.use((req, res) => res.status(404).json({ success: false, message: 'Route not found' }));
 app.use((err, req, res, next) => {

@@ -5,167 +5,169 @@ import { toast } from 'sonner';
 import { authApi } from '../../api/auth';
 import { useAuthStore } from '../../store/useAuthStore';
 import { Role } from '../../types';
-import { Eye, EyeOff, Loader2, ArrowLeft } from 'lucide-react';
+import { Eye, EyeOff, Loader2, ArrowLeft, GraduationCap } from 'lucide-react';
 
 type Tab = 'login' | 'register';
-type RegisterRole = 'student' | 'company';
+type RegisterRole = 'student' | 'company' | 'institution';
+
+const inputStyle = (err?: string) =>
+  `w-full border ${err ? 'border-red-500' : 'border-white/10'} rounded-xl px-4 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-blue-500 transition`;
+const bg07 = { background: 'rgba(255,255,255,0.07)' };
 
 export function AuthPage() {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const routeState = location.state as { message?: string } | null;
-  const { setAuth, updateUser, user } = useAuthStore();
-  const [tab, setTab] = useState<Tab>('login');
-  const [loading, setLoading] = useState(false);
+  const navigate    = useNavigate();
+  const location    = useLocation();
+  const routeState  = location.state as { message?: string } | null;
+  const { setAuth } = useAuthStore();
+  const [tab, setTab]           = useState<Tab>('login');
+  const [loading, setLoading]   = useState(false);
   const [showPass, setShowPass] = useState(false);
   const [registerRole, setRegisterRole] = useState<RegisterRole>('student');
-  const [showForgot, setShowForgot] = useState(false);
+  const [showForgot, setShowForgot]     = useState(false);
+  const [pendingApproval, setPendingApproval] = useState(false);
 
-  const [loginForm, setLoginForm]     = useState({ email: '', password: '' });
-  const [loginErrors, setLoginErrors] = useState({ email: '', password: '' });
-  const [registerForm, setRegisterForm] = useState({
-    name: '', email: '', password: '', companyName: '', industry: '',
-  });
-  const [registerErrors, setRegisterErrors] = useState({ name: '', email: '', password: '', companyName: '' });
+  const [loginForm, setLoginForm]         = useState({ email: '', password: '' });
+  const [loginErrors, setLoginErrors]     = useState({ email: '', password: '' });
+  const [registerForm, setRegisterForm]   = useState({ name: '', email: '', password: '', companyName: '', industry: '', institutionName: '', institutionType: '' });
+  const [registerErrors, setRegisterErrors] = useState({ name: '', email: '', password: '', companyName: '', institutionName: '' });
 
-  const roleRedirect: Record<Role, string> = {
-    student: '/student/dashboard',
-    company: '/company/dashboard',
-    admin:   '/admin/dashboard',
+  const roleRedirect: Record<string, string> = {
+    student: '/student/dashboard', company: '/company/dashboard',
+    admin: '/admin/dashboard', institution: '/institution/dashboard',
   };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    // ── Form Validation ──
     let hasError = false;
     const errors = { email: '', password: '' };
-    
     const cleanEmail = loginForm.email.trim();
-    if (!cleanEmail) {
-      errors.email = 'Email is required';
-      hasError = true;
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
-      errors.email = 'Please enter a valid email address';
-      hasError = true;
-    }
-    if (!loginForm.password) {
-      errors.password = 'Password is required';
-      hasError = true;
-    }
+    if (!cleanEmail) { errors.email = 'Email is required'; hasError = true; }
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) { errors.email = 'Please enter a valid email'; hasError = true; }
+    if (!loginForm.password) { errors.password = 'Password is required'; hasError = true; }
     setLoginErrors(errors);
     if (hasError) return;
-
     setLoading(true);
     try {
-      const res = await authApi.login({
-        ...loginForm,
-        email: cleanEmail
-      });
+      const res = await authApi.login({ ...loginForm, email: cleanEmail });
       setAuth(res.user, res.token);
       toast.success(`Welcome back, ${res.user.name}!`);
-      navigate(roleRedirect[res.user.role as Role]);
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Invalid credentials');
-    } finally { setLoading(false); }
+      navigate(roleRedirect[res.user.role] || '/');
+    } catch (err: any) { toast.error(err.response?.data?.message || 'Invalid credentials'); }
+    finally { setLoading(false); }
   };
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    // ── Form Validation ──
     let hasError = false;
-    const errors = { name: '', email: '', password: '', companyName: '' };
-
+    const errors = { name: '', email: '', password: '', companyName: '', institutionName: '' };
     const cleanEmail = registerForm.email.trim();
-
     if (!registerForm.name) { errors.name = 'Name is required'; hasError = true; }
-    if (!cleanEmail) {
-      errors.email = 'Email is required'; hasError = true;
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
-      errors.email = 'Please enter a valid email address'; hasError = true;
-    }
-    if (!registerForm.password || registerForm.password.length < 6) {
-      errors.password = 'Password must be at least 6 characters'; hasError = true;
-    }
-    if (registerRole === 'company' && !registerForm.companyName) {
-      errors.companyName = 'Company name is required'; hasError = true;
-    }
+    if (!cleanEmail) { errors.email = 'Email is required'; hasError = true; }
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) { errors.email = 'Please enter a valid email'; hasError = true; }
+    if (!registerForm.password || registerForm.password.length < 6) { errors.password = 'Password must be at least 6 characters'; hasError = true; }
+    if (registerRole === 'company' && !registerForm.companyName) { errors.companyName = 'Company name is required'; hasError = true; }
+    if (registerRole === 'institution' && !registerForm.institutionName) { errors.institutionName = 'Institution name is required'; hasError = true; }
     setRegisterErrors(errors);
     if (hasError) return;
-
     setLoading(true);
     try {
-      const payload = {
-        name: registerForm.name,
-        email: cleanEmail,
-        password: registerForm.password,
-        role: registerRole,
-        ...(registerRole === 'company' && {
-          companyName: registerForm.companyName,
-          industry: registerForm.industry,
-        }),
-      };
-
+      const payload: any = { name: registerForm.name, email: cleanEmail, password: registerForm.password, role: registerRole };
+      if (registerRole === 'company') { payload.companyName = registerForm.companyName; payload.industry = registerForm.industry; }
+      if (registerRole === 'institution') { payload.institutionName = registerForm.institutionName; payload.type = registerForm.institutionType; }
       const res = await authApi.register(payload);
+      if ((res as any).pendingApproval) { setPendingApproval(true); return; }
       setAuth(res.user, res.token);
       toast.success(`Account created! Welcome, ${res.user.name}!`);
-      navigate(roleRedirect[res.user.role as Role]);
-    } catch (err: any) {
-      console.error('Registration Error:', err);
-      toast.error(err.response?.data?.message || err.message || 'Registration failed');
-    } finally { setLoading(false); }
+      navigate(roleRedirect[res.user.role] || '/');
+    } catch (err: any) { toast.error(err.response?.data?.message || err.message || 'Registration failed'); }
+    finally { setLoading(false); }
   };
 
-  // ── FORGOT PASSWORD SCREEN ──
+  // Forgot password screen
+  const [forgotEmail, setForgotEmail]     = useState('');
+  const [forgotSent, setForgotSent]       = useState(false);
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const handleForgot = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setForgotLoading(true);
+    try { await new Promise(r => setTimeout(r, 800)); setForgotSent(true); }
+    finally { setForgotLoading(false); }
+  };
+
   if (showForgot) return (
     <div className="min-h-screen flex items-center justify-center px-4" style={{ background: 'linear-gradient(135deg,#060910,#0f172a,#060910)' }}>
-      <style>{`body { margin: 0; background-color: #060910; }`}</style>
-      <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(circle,rgba(59,130,246,0.08) 1px,transparent 1px)', backgroundSize: '30px 30px' }} />
-      <div className="relative z-10 w-full max-w-md">
-        <div className="text-center mb-8">
-          <img src="/hiresnix-logo.png" alt="Hiresnix" style={{ height: 90, objectFit: 'contain', margin: '0 auto 1rem', filter: 'drop-shadow(0 0 20px rgba(59,130,246,0.5))' }} />
+      <div className="w-full max-w-md">
+        <div className="text-center mb-7">
+          <Link to="/"><img src="/hiresnix-logo.png" alt="Hiresnix" style={{ height: 80, objectFit: 'contain', margin: '0 auto 0.75rem', filter: 'drop-shadow(0 0 20px rgba(59,130,246,0.5))', display: 'block' }} /></Link>
         </div>
-        <div style={{ background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(20px)', borderRadius: 16, border: '1px solid rgba(255,255,255,0.1)', overflow: 'hidden' }}>
-          <div style={{ padding: '1.5rem' }}>
-            <button onClick={() => setShowForgot(false)} className="flex items-center gap-1 text-gray-400 hover:text-white text-sm mb-4 transition-colors">
-              <ArrowLeft size={14} /> Back to Login
-            </button>
-            <h2 className="text-white font-bold text-xl mb-3">Forgot Password?</h2>
-            <p className="text-gray-300 text-sm leading-6 mb-5">Forgot your password? Please contact the Hiresnix Team to reset your password.</p>
-            <button
-              type="button"
-              onClick={() => setShowForgot(false)}
-              className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2.5 rounded-lg text-sm transition"
-            >
-              Back to Login
-            </button>
-          </div>
+        <div style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(24px)', borderRadius: 20, border: '1px solid rgba(255,255,255,0.09)', padding: '2rem', boxShadow: '0 25px 60px rgba(0,0,0,0.5)' }}>
+          {forgotSent ? (
+            <div className="text-center space-y-4">
+              <div className="w-14 h-14 bg-green-500/20 rounded-full flex items-center justify-center mx-auto">✓</div>
+              <h2 className="text-white font-bold text-lg">Check your email</h2>
+              <p className="text-gray-400 text-sm">Password reset instructions sent to {forgotEmail}</p>
+              <button onClick={() => { setShowForgot(false); setForgotSent(false); }} className="text-blue-400 hover:text-blue-300 text-sm">Back to Login</button>
+            </div>
+          ) : (
+            <form onSubmit={handleForgot} className="space-y-4">
+              <h2 className="text-white font-bold text-lg">Reset Password</h2>
+              <p className="text-gray-400 text-sm">Enter your email and we'll send reset instructions.</p>
+              <div>
+                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Email</label>
+                <input type="email" required value={forgotEmail} onChange={e => setForgotEmail(e.target.value)} style={bg07}
+                  className={inputStyle()} placeholder="you@example.com" />
+              </div>
+              <button type="submit" disabled={forgotLoading} className="w-full bg-blue-500 hover:bg-blue-600 disabled:opacity-60 text-white font-bold py-2.5 rounded-xl text-sm transition flex items-center justify-center gap-2">
+                {forgotLoading && <Loader2 size={14} className="animate-spin" />} Send Reset Link
+              </button>
+              <button type="button" onClick={() => setShowForgot(false)} className="w-full text-gray-500 hover:text-gray-300 text-sm transition flex items-center justify-center gap-1 mt-2">
+                <ArrowLeft size={12} /> Back to Login
+              </button>
+            </form>
+          )}
         </div>
       </div>
     </div>
   );
 
-  // ── MAIN AUTH ──
+  // Pending approval screen for institution
+  if (pendingApproval) return (
+    <div className="min-h-screen flex items-center justify-center px-4" style={{ background: 'linear-gradient(135deg,#060910,#0f172a,#060910)' }}>
+      <div className="w-full max-w-md text-center space-y-6">
+        <img src="/hiresnix-logo.png" alt="Hiresnix" style={{ height: 80, objectFit: 'contain', margin: '0 auto', filter: 'drop-shadow(0 0 20px rgba(99,102,241,0.5))' }} />
+        <div style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(24px)', borderRadius: 20, border: '1px solid rgba(255,255,255,0.09)', padding: '2.5rem', boxShadow: '0 25px 60px rgba(0,0,0,0.5)' }}>
+          <div className="w-16 h-16 bg-indigo-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+            <GraduationCap size={28} className="text-indigo-400" />
+          </div>
+          <h2 className="text-white font-bold text-xl mb-2">Registration Submitted!</h2>
+          <p className="text-gray-400 text-sm mb-4">Your institution registration is pending admin approval. You will be able to log in once your account has been reviewed and approved.</p>
+          <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-4 mb-5">
+            <p className="text-indigo-300 text-xs">✓ Registration received<br />⏳ Waiting for admin review<br />📧 You'll be notified on approval</p>
+          </div>
+          <button onClick={() => { setPendingApproval(false); setTab('login'); setRegisterRole('student'); }}
+            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl text-sm transition">
+            Back to Login
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-8" style={{ background: 'linear-gradient(135deg,#060910,#0f172a,#060910)', position: 'relative' }}>
       <style>{`body { margin: 0; background-color: #060910; }`}</style>
-      {/* Background */}
       <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(circle,rgba(59,130,246,0.07) 1px,transparent 1px)', backgroundSize: '30px 30px' }} />
       <div style={{ position: 'absolute', top: -200, right: -100, width: 500, height: 500, borderRadius: '50%', background: 'rgba(59,130,246,0.06)', filter: 'blur(80px)' }} />
       <div style={{ position: 'absolute', bottom: -150, left: -100, width: 400, height: 400, borderRadius: '50%', background: 'rgba(139,92,246,0.06)', filter: 'blur(80px)' }} />
 
       <div className="relative z-10 w-full max-w-md">
-        {/* Logo */}
         <div className="text-center mb-7">
-          <Link to="/">
-            <img src="/hiresnix-logo.png" alt="Hiresnix" style={{ height: 100, objectFit: 'contain', margin: '0 auto 0.75rem', filter: 'drop-shadow(0 0 25px rgba(59,130,246,0.6))', display: 'block', cursor: 'pointer' }} />
-          </Link>
+          <Link to="/"><img src="/hiresnix-logo.png" alt="Hiresnix" style={{ height: 100, objectFit: 'contain', margin: '0 auto 0.75rem', filter: 'drop-shadow(0 0 25px rgba(59,130,246,0.6))', display: 'block', cursor: 'pointer' }} /></Link>
           <p className="text-gray-500 text-sm" style={{ fontFamily: "'JetBrains Mono',monospace", letterSpacing: '0.05em' }}>Elevating Talent. Empowering Futures.</p>
         </div>
 
         <div style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(24px)', borderRadius: 20, border: '1px solid rgba(255,255,255,0.09)', overflow: 'hidden', boxShadow: '0 25px 60px rgba(0,0,0,0.5)' }}>
-          {/* Tabs — Login & Register both visible */}
+          {/* Tabs */}
           <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
             {(['login', 'register'] as Tab[]).map(t => (
               <button key={t} onClick={() => setTab(t)}
@@ -176,140 +178,118 @@ export function AuthPage() {
           </div>
 
           <div style={{ padding: '1.5rem' }}>
-            {/* ── LOGIN ── */}
+            {/* LOGIN */}
             {tab === 'login' && (
               <form onSubmit={handleLogin} noValidate className="space-y-4">
                 <div>
                   <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Email</label>
-                  <input type="email" required value={loginForm.email}
-                    onChange={e => {
-                      setLoginForm(p => ({ ...p, email: e.target.value }));
-                      if (loginErrors.email) setLoginErrors(p => ({ ...p, email: '' }));
-                    }}
-                    style={{ background: 'rgba(255,255,255,0.07)' }}
-                    className={`w-full border ${loginErrors.email ? 'border-red-500' : 'border-white/10'} rounded-xl px-4 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-blue-500 transition`}
-                    placeholder="you@example.com" />
+                  <input type="email" required value={loginForm.email} onChange={e => { setLoginForm(p => ({ ...p, email: e.target.value })); if (loginErrors.email) setLoginErrors(p => ({ ...p, email: '' })); }}
+                    style={bg07} className={inputStyle(loginErrors.email)} placeholder="you@example.com" />
                   {loginErrors.email && <p className="text-red-400 text-xs mt-1.5">{loginErrors.email}</p>}
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Password</label>
                   <div className="relative">
-                    <input type={showPass ? 'text' : 'password'} required value={loginForm.password}
-                      onChange={e => {
-                        setLoginForm(p => ({ ...p, password: e.target.value }));
-                        if (loginErrors.password) setLoginErrors(p => ({ ...p, password: '' }));
-                      }}
-                      style={{ background: 'rgba(255,255,255,0.07)' }}
-                      className={`w-full border ${loginErrors.password ? 'border-red-500' : 'border-white/10'} rounded-xl px-4 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-blue-500 transition pr-10`}
-                      placeholder="••••••••" />
-                    <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors">
+                    <input type={showPass ? 'text' : 'password'} required value={loginForm.password} onChange={e => { setLoginForm(p => ({ ...p, password: e.target.value })); if (loginErrors.password) setLoginErrors(p => ({ ...p, password: '' })); }}
+                      style={bg07} className={inputStyle(loginErrors.password) + ' pr-10'} placeholder="••••••••" />
+                    <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300">
                       {showPass ? <EyeOff size={15} /> : <Eye size={15} />}
                     </button>
                   </div>
                   {loginErrors.password && <p className="text-red-400 text-xs mt-1.5">{loginErrors.password}</p>}
                 </div>
                 <div className="flex justify-end">
-                  <button type="button" onClick={() => setShowForgot(true)} className="text-blue-400 hover:text-blue-300 text-xs font-medium transition-colors">
-                    Forgot password?
-                  </button>
+                  <button type="button" onClick={() => setShowForgot(true)} className="text-blue-400 hover:text-blue-300 text-xs font-medium">Forgot password?</button>
                 </div>
-                <button type="submit" disabled={loading}
-                  className="w-full bg-blue-500 hover:bg-blue-600 disabled:opacity-60 text-white font-bold py-2.5 rounded-xl text-sm transition flex items-center justify-center gap-2">
+                <button type="submit" disabled={loading} className="w-full bg-blue-500 hover:bg-blue-600 disabled:opacity-60 text-white font-bold py-2.5 rounded-xl text-sm transition flex items-center justify-center gap-2">
                   {loading && <Loader2 size={14} className="animate-spin" />} Sign In
                 </button>
                 <p className="text-center text-xs text-gray-600">
                   Don't have an account?{' '}
-                  <button type="button" onClick={() => setTab('register')} className="text-blue-400 hover:text-blue-300 font-semibold transition-colors">Register here</button>
+                  <button type="button" onClick={() => setTab('register')} className="text-blue-400 hover:text-blue-300 font-semibold">Register here</button>
                 </p>
               </form>
             )}
 
-            {/* ── REGISTER ── */}
+            {/* REGISTER */}
             {tab === 'register' && (
               <form onSubmit={handleRegister} noValidate className="space-y-3.5">
                 {/* Role switcher */}
                 <div>
                   <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">I am a</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {(['student', 'company'] as RegisterRole[]).map(r => (
+                  <div className="flex gap-2">
+                    {([
+                      { role: 'student', label: '🎓 Student' },
+                      { role: 'company', label: '🏢 Company' },
+                      { role: 'institution', label: '🏫 Institution' },
+                    ] as { role: RegisterRole; label: string }[]).map(({ role: r, label }) => (
                       <button key={r} type="button" onClick={() => setRegisterRole(r)}
-                        style={{ padding: '0.6rem 0.4rem', borderRadius: 10, fontSize: '0.78rem', fontWeight: 700, border: '1px solid', cursor: 'pointer', transition: 'all 0.2s', textTransform: 'capitalize', background: registerRole === r ? '#3b82f6' : 'transparent', borderColor: registerRole === r ? '#3b82f6' : 'rgba(255,255,255,0.1)', color: registerRole === r ? '#fff' : '#6b7a99' }}>
-                        {r === 'student' ? 'Student' : 'Company'}
+                        style={{ flex: 1, padding: '0.5rem 0.3rem', borderRadius: 10, fontSize: '0.78rem', fontWeight: 700, border: '1px solid', cursor: 'pointer', transition: 'all 0.2s', background: registerRole === r ? '#3b82f6' : 'transparent', borderColor: registerRole === r ? '#3b82f6' : 'rgba(255,255,255,0.1)', color: registerRole === r ? '#fff' : '#6b7a99' }}>
+                        {label}
                       </button>
                     ))}
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Full Name</label>
-                  <input type="text" required value={registerForm.name}
-                    onChange={e => {
-                      setRegisterForm(p => ({ ...p, name: e.target.value }));
-                      if (registerErrors.name) setRegisterErrors(p => ({ ...p, name: '' }));
-                    }}
-                    style={{ background: 'rgba(255,255,255,0.07)' }}
-                    className={`w-full border ${registerErrors.name ? 'border-red-500' : 'border-white/10'} rounded-xl px-4 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-blue-500 transition`}
-                    placeholder="Your full name" />
-                  {registerErrors.name && <p className="text-red-400 text-xs mt-1.5">{registerErrors.name}</p>}
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Email</label>
-                  <input type="email" required value={registerForm.email}
-                    onChange={e => {
-                      setRegisterForm(p => ({ ...p, email: e.target.value }));
-                      if (registerErrors.email) setRegisterErrors(p => ({ ...p, email: '' }));
-                    }}
-                    style={{ background: 'rgba(255,255,255,0.07)' }}
-                    className={`w-full border ${registerErrors.email ? 'border-red-500' : 'border-white/10'} rounded-xl px-4 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-blue-500 transition`}
-                    placeholder="you@example.com" />
-                  {registerErrors.email && <p className="text-red-400 text-xs mt-1.5">{registerErrors.email}</p>}
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Password</label>
-                  <div className="relative">
-                    <input type={showPass ? 'text' : 'password'} required minLength={6}
-                      value={registerForm.password}
-                      onChange={e => {
-                        setRegisterForm(p => ({ ...p, password: e.target.value }));
-                        if (registerErrors.password) setRegisterErrors(p => ({ ...p, password: '' }));
-                      }}
-                      style={{ background: 'rgba(255,255,255,0.07)' }}
-                      className={`w-full border ${registerErrors.password ? 'border-red-500' : 'border-white/10'} rounded-xl px-4 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-blue-500 transition pr-10`}
-                      placeholder="Min 6 characters" />
-                    <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors">
-                      {showPass ? <EyeOff size={15} /> : <Eye size={15} />}
-                    </button>
+                {/* Common fields */}
+                {(['name', 'email', 'password'] as const).map(k => (
+                  <div key={k}>
+                    <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">{k === 'name' ? 'Full Name' : k.charAt(0).toUpperCase() + k.slice(1)}</label>
+                    <div className="relative">
+                      <input type={k === 'password' ? (showPass ? 'text' : 'password') : k === 'email' ? 'email' : 'text'}
+                        required value={(registerForm as any)[k]}
+                        onChange={e => { setRegisterForm(p => ({ ...p, [k]: e.target.value })); if ((registerErrors as any)[k]) setRegisterErrors(p => ({ ...p, [k]: '' })); }}
+                        style={bg07} className={inputStyle((registerErrors as any)[k]) + (k === 'password' ? ' pr-10' : '')}
+                        placeholder={k === 'name' ? 'Your full name' : k === 'email' ? 'you@example.com' : 'Min 6 characters'} />
+                      {k === 'password' && (
+                        <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300">
+                          {showPass ? <EyeOff size={15} /> : <Eye size={15} />}
+                        </button>
+                      )}
+                    </div>
+                    {(registerErrors as any)[k] && <p className="text-red-400 text-xs mt-1.5">{(registerErrors as any)[k]}</p>}
                   </div>
-                  {registerErrors.password && <p className="text-red-400 text-xs mt-1.5">{registerErrors.password}</p>}
-                </div>
+                ))}
 
+                {/* Company-specific */}
                 {registerRole === 'company' && (
                   <>
                     <div>
                       <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Company Name</label>
-                      <input type="text" required value={registerForm.companyName}
-                        onChange={e => {
-                          setRegisterForm(p => ({ ...p, companyName: e.target.value }));
-                          if (registerErrors.companyName) setRegisterErrors(p => ({ ...p, companyName: '' }));
-                        }}
-                        style={{ background: 'rgba(255,255,255,0.07)' }}
-                        className={`w-full border ${registerErrors.companyName ? 'border-red-500' : 'border-white/10'} rounded-xl px-4 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-blue-500 transition`}
-                        placeholder="Your company name" />
+                      <input type="text" required value={registerForm.companyName} onChange={e => { setRegisterForm(p => ({ ...p, companyName: e.target.value })); if (registerErrors.companyName) setRegisterErrors(p => ({ ...p, companyName: '' })); }}
+                        style={bg07} className={inputStyle(registerErrors.companyName)} placeholder="Your company name" />
                       {registerErrors.companyName && <p className="text-red-400 text-xs mt-1.5">{registerErrors.companyName}</p>}
                     </div>
                     <div>
                       <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Industry</label>
-                      <select value={registerForm.industry}
-                        onChange={e => setRegisterForm(p => ({ ...p, industry: e.target.value }))}
-                        style={{ background: '#1e293b' }}
-                        className="w-full border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-blue-500 transition">
+                      <select value={registerForm.industry} onChange={e => setRegisterForm(p => ({ ...p, industry: e.target.value }))} style={{ background: '#1e293b' }}
+                        className="w-full border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-blue-500">
                         <option value="">Select industry</option>
-                        {['IT/Software','Finance','Healthcare','E-commerce','Manufacturing','Consulting','Media','Education','Other'].map(i => (
-                          <option key={i} value={i}>{i}</option>
-                        ))}
+                        {['IT/Software','Finance','Healthcare','E-commerce','Manufacturing','Consulting','Media','Education','Other'].map(i => <option key={i}>{i}</option>)}
                       </select>
+                    </div>
+                  </>
+                )}
+
+                {/* Institution-specific */}
+                {registerRole === 'institution' && (
+                  <>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Institution Name</label>
+                      <input type="text" required value={registerForm.institutionName} onChange={e => { setRegisterForm(p => ({ ...p, institutionName: e.target.value })); if (registerErrors.institutionName) setRegisterErrors(p => ({ ...p, institutionName: '' })); }}
+                        style={bg07} className={inputStyle(registerErrors.institutionName)} placeholder="e.g. ABC Institute of Technology" />
+                      {registerErrors.institutionName && <p className="text-red-400 text-xs mt-1.5">{registerErrors.institutionName}</p>}
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Institution Type</label>
+                      <select value={registerForm.institutionType} onChange={e => setRegisterForm(p => ({ ...p, institutionType: e.target.value }))} style={{ background: '#1e293b' }}
+                        className="w-full border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-blue-500">
+                        <option value="">Select type</option>
+                        {['University','College','Institute','Training Center','School','Other'].map(t => <option key={t}>{t}</option>)}
+                      </select>
+                    </div>
+                    <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-3">
+                      <p className="text-indigo-300 text-xs">🏫 Institution accounts require admin approval before you can log in. You'll be notified once reviewed.</p>
                     </div>
                   </>
                 )}
@@ -317,19 +297,16 @@ export function AuthPage() {
                 <button type="submit" disabled={loading}
                   className="w-full bg-blue-500 hover:bg-blue-600 disabled:opacity-60 text-white font-bold py-2.5 rounded-xl text-sm transition flex items-center justify-center gap-2 mt-1">
                   {loading && <Loader2 size={14} className="animate-spin" />}
-                  {registerRole === 'company' ? 'Register Company' : 'Create Account'}
+                  {registerRole === 'company' ? '🏢 Register Company' : registerRole === 'institution' ? '🏫 Register Institution' : '🎓 Create Account'}
                 </button>
-
                 <p className="text-center text-xs text-gray-600">
                   Already have an account?{' '}
-                  <button type="button" onClick={() => setTab('login')} className="text-blue-400 hover:text-blue-300 font-semibold transition-colors">Login here</button>
+                  <button type="button" onClick={() => setTab('login')} className="text-blue-400 hover:text-blue-300 font-semibold">Login here</button>
                 </p>
               </form>
             )}
           </div>
         </div>
-
-        {/* Back to home */}
         <p className="text-center mt-5">
           <Link to="/" className="text-gray-600 hover:text-gray-400 text-xs transition-colors flex items-center justify-center gap-1">
             <ArrowLeft size={12} /> Back to Home

@@ -3,8 +3,14 @@ import client from './client';
 import { AuthUser } from '../types';
 
 interface LoginPayload { email: string; password: string; }
-interface RegisterPayload { name: string; email: string; password: string; role: 'student' | 'company'; companyName?: string; industry?: string; }
+interface RegisterPayload {
+  name: string; email: string; password: string;
+  role: 'student' | 'company' | 'institution';
+  companyName?: string; industry?: string;
+  institutionName?: string; type?: string;
+}
 interface AuthResponse { success: boolean; token: string; user: AuthUser; }
+interface RegisterResponse extends Partial<AuthResponse> { pendingApproval?: boolean; message?: string; }
 
 export const authApi = {
   login: async (data: LoginPayload): Promise<AuthResponse> => {
@@ -12,7 +18,7 @@ export const authApi = {
     return res.data;
   },
 
-  register: async (data: RegisterPayload): Promise<AuthResponse> => {
+  register: async (data: RegisterPayload): Promise<RegisterResponse> => {
     const res = await client.post('/auth/register', data);
     return res.data;
   },
