@@ -1,4 +1,5 @@
 // src/api/instStudent.ts
+// src/api/instStudent.ts
 import axios from 'axios';
 
 const env = (import.meta as any).env;
@@ -29,14 +30,14 @@ instClient.interceptors.response.use(
 );
 
 export const instStudentApi = {
-  login:          (careerId: string, password: string) =>
-                    instClient.post('/inst-student/login', { careerId, password }).then(r => r.data),
-  getMe:          () => instClient.get('/inst-student/me').then(r => r.data),
-  getDashboard:   () => instClient.get('/inst-student/dashboard').then(r => r.data),
-  getCertificates:() => instClient.get('/inst-student/certificates').then(r => r.data),
-  changePassword: (currentPassword: string, newPassword: string) =>
-                    instClient.post('/inst-student/change-password', { currentPassword, newPassword }).then(r => r.data),
-  downloadCertPdf:(certId: string) => `${apiBaseUrl}/institution/certificates/${certId}/download-pdf`,
+  login:           (careerId: string, password: string) =>
+                     instClient.post('/inst-student/login', { careerId, password }).then(r => r.data),
+  getMe:           () => instClient.get('/inst-student/me').then(r => r.data),
+  getDashboard:    () => instClient.get('/inst-student/dashboard').then(r => r.data),
+  getCertificates: () => instClient.get('/inst-student/certificates').then(r => r.data),
+  changePassword:  (currentPassword: string, newPassword: string) =>
+                     instClient.put('/inst-student/change-password', { currentPassword, newPassword }).then(r => r.data),
+  downloadCertPdf: (certId: string) => `${apiBaseUrl}/institution/certificates/${certId}/download-pdf`,
 };
 
 export default instClient;
