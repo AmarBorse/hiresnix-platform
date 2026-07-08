@@ -1,4 +1,5 @@
 // src/pages/LandingPage.tsx
+import { HiresnixChatbot } from '../components/HiresnixChatbot';
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -571,6 +572,7 @@ export function LandingPage() {
           <p className="lp-font-m" style={{ fontSize: '0.72rem', color: '#6b7a99' }}>v1.0.0</p>
         </div>
       </footer>
+      <HiresnixChatbot />
     </div>
   );
 }
