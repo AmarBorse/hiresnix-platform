@@ -300,6 +300,30 @@ export function AdminInstitutions() {
                       </div>
                     ))}
                   </div>
+
+                  {/* Per Batch Student Count */}
+                  {(viewInst.batchesWithCount?.length ?? 0) > 0 && (
+                    <div className="bg-gray-50 rounded-xl p-4">
+                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-1.5">
+                        <Layers size={13} /> Batch-wise Students
+                      </p>
+                      <div className="space-y-2">
+                        {viewInst.batchesWithCount.map((b: any) => (
+                          <div key={b.id} className="flex items-center justify-between bg-white rounded-lg px-3 py-2 border border-gray-100">
+                            <div className="flex items-center gap-2">
+                              <span className={`w-2 h-2 rounded-full ${b.status === 'Active' ? 'bg-green-500' : b.status === 'Completed' ? 'bg-gray-400' : 'bg-blue-400'}`} />
+                              <span className="text-sm font-medium text-gray-800">{b.name}</span>
+                              <span className="text-xs text-gray-400">{b.status}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 text-indigo-600 font-semibold text-sm">
+                              <Users size={13} />
+                              {b.studentCount} students
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   {/* Details */}
                   <div className="space-y-2.5 text-sm">
                     {[

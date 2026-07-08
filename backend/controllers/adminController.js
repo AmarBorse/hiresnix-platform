@@ -52,17 +52,33 @@ const getInstitutions = asyncHandler(async (req, res) => {
 });
 
 const getInstitution = asyncHandler(async (req, res) => {
+  const { BatchStudent } = require('../models');
   const inst = await Institution.findByPk(req.params.id, {
     include: [{ model: User, as: 'user', attributes: ['name','email','isApproved','isActive','createdAt'] }],
   });
   if (!inst) { res.status(404); throw new Error('Institution not found'); }
-  const [studentCount, batchCount, courseCount, certCount] = await Promise.all([
+
+  const [studentCount, courseCount, certCount, batches] = await Promise.all([
     InstitutionStudent.count({ where: { institutionId: inst.id } }),
-    Batch.count({ where: { institutionId: inst.id } }),
     Course.count({ where: { institutionId: inst.id } }),
     InstitutionCertificate.count({ where: { institutionId: inst.id } }),
+    Batch.findAll({ where: { institutionId: inst.id }, order: [['createdAt','DESC']] }),
   ]);
-  res.json({ success: true, data: { ...inst.toJSON(), studentCount, batchCount, courseCount, certCount } });
+
+  // Per batch student count
+  const batchesWithCount = await Promise.all(batches.map(async (b) => {
+    const count = await BatchStudent.count({ where: { batchId: b.id } });
+    return { ...b.toJSON(), studentCount: count };
+  }));
+
+  res.json({ success: true, data: {
+    ...inst.toJSON(),
+    studentCount,
+    batchCount: batches.length,
+    batchesWithCount,
+    courseCount,
+    certCount,
+  }});
 });
 
 const approveInstitution = asyncHandler(async (req, res) => {
