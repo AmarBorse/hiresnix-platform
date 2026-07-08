@@ -32,11 +32,11 @@ export function AdminStudents() {
   const [resetting, setResetting] = useState(false);
 
   const { data: result, loading, error, refetch } = useFetch(
-    () => adminApi.getAllStudents({ page, limit: 50 }), [page]
+    () => adminApi.getAllStudents({ page, limit: 15 }), [page]
   );
-  const students: any[] = Array.isArray(result) ? result : (Array.isArray((result as any)?.data) ? (result as any)?.data : ((result as any)?.data?.data || []));
-  const total = (result as any)?.total || 0;
-  const totalPages = (result as any)?.totalPages || 1;
+  const students: any[] = (result as any)?.data || [];
+  const total = (result as any)?.total || students.length;
+  const totalPages = Math.ceil(total / 15) || 1;
 
   const filtered = students.filter(s => {
     const q = search.toLowerCase();
@@ -128,7 +128,7 @@ export function AdminStudents() {
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-black text-gray-900">Students</h1>
-          <p className="text-sm text-gray-500 mt-1">{total} registered · {filtered.length} shown</p>
+          <p className="text-sm text-gray-500 mt-1">{total} total students · {filtered.length} shown</p>
         </div>
         <button onClick={handleDownload}
           className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-bold px-4 py-2.5 rounded-xl transition">
@@ -329,12 +329,40 @@ export function AdminStudents() {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2">
+        <div className="flex items-center justify-center gap-1.5 flex-wrap">
+          {/* Prev */}
           <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
-            className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm disabled:opacity-40 hover:bg-gray-50">← Prev</button>
-          <span className="text-sm text-gray-600 font-medium">Page {page} of {totalPages}</span>
+            className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm disabled:opacity-40 hover:bg-gray-50">
+            ← Prev
+          </button>
+
+          {/* Page Numbers */}
+          {Array.from({ length: totalPages }, (_, i) => i + 1)
+            .filter(p => p === 1 || p === totalPages || Math.abs(p - page) <= 2)
+            .reduce((acc: (number | string)[], p, idx, arr) => {
+              if (idx > 0 && (p as number) - (arr[idx-1] as number) > 1) acc.push('...');
+              acc.push(p);
+              return acc;
+            }, [])
+            .map((p, idx) =>
+              p === '...'
+                ? <span key={`dots-${idx}`} className="px-2 text-gray-400 text-sm">...</span>
+                : <button key={p} onClick={() => setPage(p as number)}
+                    className={`w-9 h-9 rounded-lg text-sm font-medium border transition ${
+                      page === p
+                        ? 'bg-emerald-500 text-white border-emerald-500'
+                        : 'border-gray-200 hover:bg-gray-50 text-gray-600'
+                    }`}>
+                    {p}
+                  </button>
+            )
+          }
+
+          {/* Next */}
           <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
-            className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm disabled:opacity-40 hover:bg-gray-50">Next →</button>
+            className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm disabled:opacity-40 hover:bg-gray-50">
+            Next →
+          </button>
         </div>
       )}
     </div>
