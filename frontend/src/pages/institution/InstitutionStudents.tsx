@@ -1,122 +1,31 @@
 // src/pages/institution/InstitutionStudents.tsx
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Plus, Search, Pencil, Trash2, Upload, X, Eye, Download, ChevronLeft, ChevronRight, FileDown } from 'lucide-react';
 import { toast } from 'sonner';
 import { institutionApi } from '../../api/institution';
 import { InstitutionStudent } from '../../types';
 import * as XLSX from 'xlsx';
-
-const EMPTY_FORM = { name: '', email: '', mobile: '', dob: '', gender: '', department: '', rollNumber: '', year: '', skills: '', address: '' };
-
-const StudentModal = React.memo(function StudentModal({ student, onClose, onSaved }: { student?: InstitutionStudent | null; onClose: () => void; onSaved: () => void }) {
-  const [form, setForm] = useState(student ? {
-    name: student.name, email: student.email, mobile: student.mobile || '', dob: student.dob || '',
-    gender: student.gender || '', department: student.department || '', rollNumber: student.rollNumber || '',
-    year: student.year?.toString() || '', skills: (student.skills || []).join(', '), address: student.address || '',
-  } : { ...EMPTY_FORM });
-  const [loading, setLoading] = useState(false);
-
-  const f = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
-    setForm(p => ({ ...p, [k]: e.target.value }));
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!form.name || !form.email) { toast.error('Name and email required'); return; }
-    setLoading(true);
-    try {
-      const payload = { ...form, year: form.year ? parseInt(form.year) : undefined, skills: form.skills.split(',').map(s => s.trim()).filter(Boolean) };
-      if (student) await institutionApi.updateStudent(student.id, payload);
-      else await institutionApi.createStudent(payload);
-      toast.success(student ? 'Student updated' : 'Student added');
-      onSaved();
-    } catch (err: any) { toast.error(err.response?.data?.message || 'Error'); }
-    finally { setLoading(false); }
-  };
-
-  const Input = ({ label, k, type = 'text' }: { label: string; k: string; type?: string }) => (
-    <div>
-      <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
-      <input type={type} value={(form as any)[k]} onChange={f(k)}
-        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
-    </div>
-  );
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-      <div className="bg-white rounded-xl w-full max-w-xl shadow-xl max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between px-5 py-4 border-b">
-          <h2 className="font-semibold text-gray-800">{student ? 'Edit Student' : 'Add Student'}</h2>
-          <button onClick={onClose}><X size={18} className="text-gray-400" /></button>
-        </div>
-        <form onSubmit={handleSubmit} className="p-5 grid grid-cols-2 gap-3">
-          <Input label="Full Name *" k="name" />
-          <Input label="Email *" k="email" type="email" />
-          <Input label="Mobile" k="mobile" />
-          <Input label="Date of Birth" k="dob" type="date" />
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Gender</label>
-            <select value={form.gender} onChange={f('gender')}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300">
-              <option value="">Select</option>
-              <option>Male</option><option>Female</option><option>Other</option>
-            </select>
-          </div>
-          <Input label="Department" k="department" />
-          <Input label="Roll Number" k="rollNumber" />
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Year</label>
-            <select value={form.year} onChange={f('year')}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300">
-              <option value="">Select</option>
-              {[1,2,3,4,5].map(y => <option key={y}>{y}</option>)}
-            </select>
-          </div>
-          <div className="col-span-2">
-            <label className="block text-xs font-medium text-gray-600 mb-1">Skills (comma separated)</label>
-            <input value={form.skills} onChange={f('skills')}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
-              placeholder="e.g. Python, React, SQL" />
-          </div>
-          <div className="col-span-2">
-            <label className="block text-xs font-medium text-gray-600 mb-1">Address</label>
-            <textarea value={form.address} onChange={f('address')} rows={2}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
-          </div>
-          <div className="col-span-2 flex gap-3 justify-end pt-2">
-            <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50">Cancel</button>
-            <button type="submit" disabled={loading}
-              className="px-5 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50">
-              {loading ? 'Saving...' : (student ? 'Update' : 'Add Student')}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-});
+import { StudentModal } from './StudentModal';
 
 export function InstitutionStudents() {
   const [students, setStudents] = useState<InstitutionStudent[]>([]);
-  const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
-  const [search, setSearch] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [modal, setModal] = useState<'add' | 'edit' | 'view' | null>(null);
+  const [total, setTotal]       = useState(0);
+  const [page, setPage]         = useState(1);
+  const [search, setSearch]     = useState('');
+  const [loading, setLoading]   = useState(true);
+  const [modal, setModal]       = useState<'add' | 'edit' | 'view' | null>(null);
   const [selected, setSelected] = useState<InstitutionStudent | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const LIMIT = 15;
 
-  const load = useCallback(() => {
+  const load = () => {
     setLoading(true);
     institutionApi.getStudents({ search, page, limit: LIMIT })
       .then(r => { setStudents(r.data); setTotal(r.total); })
       .catch(() => toast.error('Failed to load students'))
       .finally(() => setLoading(false));
-  }, [search, page]);
-  useEffect(() => { load(); }, [load]);
-
-  const handleModalClose = useCallback(() => setModal(null), []);
-  const handleModalSaved = useCallback(() => { setModal(null); load(); }, [load]);
+  };
+  useEffect(() => { load(); }, [search, page]);
 
   const handleDelete = async (s: InstitutionStudent) => {
     if (!confirm(`Delete ${s.name}?`)) return;
@@ -150,14 +59,18 @@ export function InstitutionStudents() {
   };
 
   const exportExcel = () => {
-    const data = students.map(s => ({ 'Career ID': s.careerId, Name: s.name, Email: s.email, Mobile: s.mobile, Department: s.department, 'Roll No': s.rollNumber, Year: s.year, Skills: (s.skills||[]).join(', ') }));
+    const data = students.map(s => ({
+      'Career ID': s.careerId, Name: s.name, Email: s.email,
+      Mobile: s.mobile, Department: s.department,
+      'Roll No': s.rollNumber, Year: s.year,
+      Skills: (s.skills || []).join(', '),
+    }));
     const ws = XLSX.utils.json_to_sheet(data);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Students');
     XLSX.writeFile(wb, 'students.xlsx');
   };
 
-  // Download credentials sheet (Career ID + Default Password) for sharing
   const downloadCredentials = async () => {
     try {
       const res = await institutionApi.getStudentCredentials();
@@ -197,7 +110,6 @@ export function InstitutionStudents() {
         </div>
       </div>
 
-      {/* Info Banner */}
       <div className="bg-indigo-50 border border-indigo-200 rounded-xl px-4 py-3 text-sm text-indigo-700 flex items-start gap-2">
         <span className="mt-0.5">ℹ️</span>
         <span><strong>Login Sheet:</strong> "Download Login Sheet" button se ek Excel file milegi jisme Career ID aur Default Password hoga. Use students ke saath share karo. Students <strong>/inst-login</strong> se login kar sakte hain.</span>
@@ -241,11 +153,11 @@ export function InstitutionStudents() {
                 <td className="px-4 py-3">
                   <div className="flex items-center justify-center gap-2">
                     <button onClick={() => { setSelected(s); setModal('view'); }}
-                      className="p-1.5 rounded hover:bg-blue-50 text-blue-500" title="View"><Eye size={15} /></button>
+                      className="p-1.5 rounded hover:bg-blue-50 text-blue-500"><Eye size={15} /></button>
                     <button onClick={() => { setSelected(s); setModal('edit'); }}
-                      className="p-1.5 rounded hover:bg-indigo-50 text-indigo-500" title="Edit"><Pencil size={15} /></button>
+                      className="p-1.5 rounded hover:bg-indigo-50 text-indigo-500"><Pencil size={15} /></button>
                     <button onClick={() => handleDelete(s)}
-                      className="p-1.5 rounded hover:bg-red-50 text-red-500" title="Delete"><Trash2 size={15} /></button>
+                      className="p-1.5 rounded hover:bg-red-50 text-red-500"><Trash2 size={15} /></button>
                   </div>
                 </td>
               </tr>
@@ -258,16 +170,24 @@ export function InstitutionStudents() {
         <div className="flex items-center justify-between text-sm text-gray-500">
           <span>Showing {Math.min((page-1)*LIMIT+1, total)}–{Math.min(page*LIMIT, total)} of {total}</span>
           <div className="flex gap-2">
-            <button disabled={page===1} onClick={() => setPage(p=>p-1)} className="p-1.5 rounded border border-gray-200 hover:bg-gray-50 disabled:opacity-40"><ChevronLeft size={16} /></button>
-            <button disabled={page*LIMIT>=total} onClick={() => setPage(p=>p+1)} className="p-1.5 rounded border border-gray-200 hover:bg-gray-50 disabled:opacity-40"><ChevronRight size={16} /></button>
+            <button disabled={page===1} onClick={() => setPage(p=>p-1)}
+              className="p-1.5 rounded border border-gray-200 hover:bg-gray-50 disabled:opacity-40"><ChevronLeft size={16} /></button>
+            <button disabled={page*LIMIT>=total} onClick={() => setPage(p=>p+1)}
+              className="p-1.5 rounded border border-gray-200 hover:bg-gray-50 disabled:opacity-40"><ChevronRight size={16} /></button>
           </div>
         </div>
       )}
 
+      {/* Add / Edit Modal — separate component to prevent re-mount */}
       {(modal === 'add' || modal === 'edit') && (
-        <StudentModal student={modal === 'edit' ? selected : null} onClose={handleModalClose} onSaved={handleModalSaved} />
+        <StudentModal
+          student={modal === 'edit' ? selected : null}
+          onClose={() => setModal(null)}
+          onSaved={() => { setModal(null); load(); }}
+        />
       )}
 
+      {/* View Modal */}
       {modal === 'view' && selected && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
           <div className="bg-white rounded-xl w-full max-w-md shadow-xl">
@@ -282,19 +202,26 @@ export function InstitutionStudents() {
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-gray-500">Default Password</span>
-                <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded text-gray-700">HX@{selected.careerId?.split('-')[2]}</span>
+                <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded text-gray-700">
+                  HX@{selected.careerId?.split('-')[2]}
+                </span>
               </div>
-              {[['Name', selected.name], ['Email', selected.email], ['Mobile', selected.mobile], ['Department', selected.department], ['Year', selected.year ? `Year ${selected.year}` : null], ['Roll No', selected.rollNumber], ['Gender', selected.gender]].map(([l, v]) => v && (
+              {[['Name', selected.name], ['Email', selected.email], ['Mobile', selected.mobile],
+                ['Department', selected.department], ['Year', selected.year ? `Year ${selected.year}` : null],
+                ['Roll No', selected.rollNumber], ['Gender', selected.gender]
+              ].map(([l, v]) => v && (
                 <div key={l as string} className="flex items-center justify-between">
                   <span className="text-gray-500">{l}</span>
                   <span className="text-gray-800 font-medium">{v as string}</span>
                 </div>
               ))}
-              {(selected.skills||[]).length > 0 && (
+              {(selected.skills || []).length > 0 && (
                 <div>
                   <p className="text-gray-500 mb-1.5">Skills</p>
                   <div className="flex flex-wrap gap-1.5">
-                    {selected.skills.map(sk => <span key={sk} className="px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded text-xs">{sk}</span>)}
+                    {selected.skills.map(sk => (
+                      <span key={sk} className="px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded text-xs">{sk}</span>
+                    ))}
                   </div>
                 </div>
               )}
