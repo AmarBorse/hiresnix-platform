@@ -358,9 +358,36 @@ export function AdminIPlatform() {
               <Users size={36} className="mx-auto mb-3 opacity-30" />
               <p>No enrolled students yet</p>
             </div>
-          ) : (
-            <div className="divide-y divide-gray-50">
-              {enrollments.map((e: any) => (
+          ) : (() => {
+            // Group by month-year of startDate
+            const groups: Record<string, any[]> = {};
+            enrollments.forEach((e: any) => {
+              const key = e.startDate
+                ? new Date(e.startDate).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })
+                : 'No Start Date';
+              if (!groups[key]) groups[key] = [];
+              groups[key].push(e);
+            });
+            // Sort groups by date
+            const sortedKeys = Object.keys(groups).sort((a, b) => {
+              if (a === 'No Start Date') return 1;
+              if (b === 'No Start Date') return -1;
+              return new Date(groups[a][0].startDate) > new Date(groups[b][0].startDate) ? 1 : -1;
+            });
+            return (
+              <div>
+                {sortedKeys.map(month => (
+                  <div key={month}>
+                    {/* Batch Header */}
+                    <div className="flex items-center gap-3 px-5 py-2.5 bg-indigo-50 border-y border-indigo-100">
+                      <div className="w-2 h-2 rounded-full bg-indigo-500" />
+                      <p className="text-sm font-bold text-indigo-700">{month} Batch</p>
+                      <span className="text-xs bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full font-semibold">
+                        {groups[month].length} students
+                      </span>
+                    </div>
+                    <div className="divide-y divide-gray-50">
+                      {groups[month].map((e: any) => (
                 <div key={e.id} className="px-5 py-4 hover:bg-gray-50 transition">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3">
@@ -431,8 +458,12 @@ export function AdminIPlatform() {
                   )}
                 </div>
               ))}
-            </div>
-          )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
         </div>
       )}
 
