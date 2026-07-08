@@ -15,7 +15,7 @@ const InstitutionStudent = sequelize.define('InstitutionStudent', {
   },
   password: {
     type: DataTypes.STRING(255), allowNull: true,
-    comment: 'Hashed default password',
+    comment: 'Hashed default password, set on student creation',
   },
   name:          { type: DataTypes.STRING(100), allowNull: false },
   email:         { type: DataTypes.STRING(150), allowNull: false },
@@ -32,8 +32,7 @@ const InstitutionStudent = sequelize.define('InstitutionStudent', {
   isInternshipEligible: { type: DataTypes.BOOLEAN, defaultValue: false },
   lastLogin:     { type: DataTypes.DATE, allowNull: true },
 }, {
-  tableName: 'institution_students',
-  timestamps: true,
+  tableName: 'institution_students', timestamps: true,
   hooks: {
     beforeCreate: async (student) => {
       if (student.password) student.password = await bcrypt.hash(student.password, 10);
@@ -44,7 +43,10 @@ const InstitutionStudent = sequelize.define('InstitutionStudent', {
       }
     },
   },
-  // ✅ No indexes here — careerId unique is handled at column level above
+  indexes: [
+    { fields: ['institutionId'] },
+    { fields: ['email'] },
+  ],
 });
 
 InstitutionStudent.prototype.matchPassword = async function(entered) {

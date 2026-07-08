@@ -2,64 +2,78 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { useAuthStore } from './store/useAuthStore';
+import { useInstStudentStore } from './store/useInstStudentStore';
 import { ProtectedRoute } from './components/common/ProtectedRoute';
-import { StudentLayout }      from './components/layout/StudentLayout';
-import { CompanyLayout }      from './components/layout/CompanyLayout';
-import { AdminLayout }        from './components/layout/AdminLayout';
-import { InstitutionLayout }  from './components/layout/InstitutionLayout';
-import { LandingPage }        from './pages/LandingPage';
-import { AuthPage }           from './pages/auth/AuthPage';
-import { StudentDashboard }   from './pages/student/StudentDashboard';
-import { StudentJobs }        from './pages/student/StudentJobs';
-import { StudentApplications }from './pages/student/StudentApplications';
-import { StudentInternships } from './pages/student/StudentInternships';
-import { StudentResources }   from './pages/student/StudentResources';
-import { StudentCertificates }from './pages/student/StudentCertificates';
-import { StudentProfile }     from './pages/student/StudentProfile';
+import { StudentLayout }       from './components/layout/StudentLayout';
+import { CompanyLayout }       from './components/layout/CompanyLayout';
+import { AdminLayout }         from './components/layout/AdminLayout';
+import { InstitutionLayout }   from './components/layout/InstitutionLayout';
+import { InstStudentLayout }   from './components/layout/InstStudentLayout';
+import { LandingPage }         from './pages/LandingPage';
+import { AuthPage }            from './pages/auth/AuthPage';
+import { InstStudentLogin }    from './pages/instStudent/InstStudentLogin';
+import { InstStudentDashboard }    from './pages/instStudent/InstStudentDashboard';
+import { InstStudentProfile }      from './pages/instStudent/InstStudentProfile';
+import { InstStudentBatches }      from './pages/instStudent/InstStudentBatches';
+import { InstStudentCourses }      from './pages/instStudent/InstStudentCourses';
+import { InstStudentCertificates } from './pages/instStudent/InstStudentCertificates';
+import { StudentDashboard }    from './pages/student/StudentDashboard';
+import { StudentJobs }         from './pages/student/StudentJobs';
+import { StudentApplications } from './pages/student/StudentApplications';
+import { StudentInternships }  from './pages/student/StudentInternships';
+import { StudentResources }    from './pages/student/StudentResources';
+import { StudentCertificates } from './pages/student/StudentCertificates';
+import { StudentProfile }      from './pages/student/StudentProfile';
 import { StudentMockInterview }from './pages/student/StudentMockInterview';
-import { CompanyDashboard }   from './pages/company/CompanyDashboard';
-import { CompanyJobs }        from './pages/company/CompanyJobs';
-import { JobForm }            from './pages/company/JobForm';
-import { CompanyApplicants }  from './pages/company/CompanyApplicants';
-import { CompanyProfile }     from './pages/company/CompanyProfile';
-import { AdminDashboard }     from './pages/admin/AdminDashboard';
-import { AdminStudents }      from './pages/admin/AdminStudents';
-import { AdminCompanies }     from './pages/admin/AdminCompanies';
-import { AdminJobs }          from './pages/admin/AdminJobs';
-import { AdminApplications }  from './pages/admin/AdminApplications';
-import { AdminInternships }   from './pages/admin/AdminInternships';
-import { AdminResources }     from './pages/admin/AdminResources';
-import { AdminCertificates }  from './pages/admin/AdminCertificates';
-import { AdminAnalytics }     from './pages/admin/AdminAnalytics';
-import { AdminSettings }      from './pages/admin/AdminSettings';
-import { AdminIPlatform }     from './pages/admin/AdminIPlatform';
-import { AdminEnquiries }     from './pages/admin/AdminEnquiries';
-import { AdminInstitutions }  from './pages/admin/AdminInstitutions';
-import { InstitutionDashboard }  from './pages/institution/InstitutionDashboard';
-import { InstitutionStudents }   from './pages/institution/InstitutionStudents';
-import { InstitutionBatches }    from './pages/institution/InstitutionBatches';
-import { InstitutionCourses }    from './pages/institution/InstitutionCourses';
+import { CompanyDashboard }    from './pages/company/CompanyDashboard';
+import { CompanyJobs }         from './pages/company/CompanyJobs';
+import { JobForm }             from './pages/company/JobForm';
+import { CompanyApplicants }   from './pages/company/CompanyApplicants';
+import { CompanyProfile }      from './pages/company/CompanyProfile';
+import { AdminDashboard }      from './pages/admin/AdminDashboard';
+import { AdminStudents }       from './pages/admin/AdminStudents';
+import { AdminCompanies }      from './pages/admin/AdminCompanies';
+import { AdminJobs }           from './pages/admin/AdminJobs';
+import { AdminApplications }   from './pages/admin/AdminApplications';
+import { AdminInternships }    from './pages/admin/AdminInternships';
+import { AdminResources }      from './pages/admin/AdminResources';
+import { AdminCertificates }   from './pages/admin/AdminCertificates';
+import { AdminAnalytics }      from './pages/admin/AdminAnalytics';
+import { AdminSettings }       from './pages/admin/AdminSettings';
+import { AdminIPlatform }      from './pages/admin/AdminIPlatform';
+import { AdminEnquiries }      from './pages/admin/AdminEnquiries';
+import { AdminInstitutions }   from './pages/admin/AdminInstitutions';
+import { InstitutionDashboard }    from './pages/institution/InstitutionDashboard';
+import { InstitutionStudents }     from './pages/institution/InstitutionStudents';
+import { InstitutionBatches }      from './pages/institution/InstitutionBatches';
+import { InstitutionCourses }      from './pages/institution/InstitutionCourses';
 import { InstitutionCertificates } from './pages/institution/InstitutionCertificates';
-import { InstitutionProfile }    from './pages/institution/InstitutionProfile';
-import { AboutUs }            from './pages/legal/AboutUs';
-import { CompanyInformation } from './pages/legal/CompanyInformation';
-import { ContactUs }          from './pages/legal/ContactUs';
+import { InstitutionProfile }      from './pages/institution/InstitutionProfile';
+import { AboutUs }             from './pages/legal/AboutUs';
+import { CompanyInformation }  from './pages/legal/CompanyInformation';
+import { ContactUs }           from './pages/legal/ContactUs';
 import { Disclaimer, InternshipPolicy, PrivacyPolicy, RefundPolicy, TermsAndConditions } from './pages/legal/policyPages';
-import { VerificationPortal } from './pages/legal/VerificationPortal';
+import { VerificationPortal }  from './pages/legal/VerificationPortal';
 import { Role } from './types';
 
 function AuthRedirect() {
   const { isAuthenticated, user } = useAuthStore();
   if (!isAuthenticated || !user) return <Navigate to="/auth" replace />;
   const role = user.role as Role;
-  if (role === 'student' && user.emailVerified === false) {
-    return <Navigate to="/auth" state={{ message: 'Please verify your email before accessing your account.' }} replace />;
-  }
+  if (role === 'student' && user.emailVerified === false)
+    return <Navigate to="/auth" state={{ message: 'Please verify your email.' }} replace />;
   if (role === 'student')     return <Navigate to="/student/dashboard" replace />;
   if (role === 'company')     return <Navigate to="/company/dashboard" replace />;
   if (role === 'admin')       return <Navigate to="/admin/dashboard" replace />;
   if (role === 'institution') return <Navigate to="/institution/dashboard" replace />;
   return <Navigate to="/auth" replace />;
+}
+
+// Protected wrapper for institution students
+function InstStudentRoute({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated } = useInstStudentStore();
+  if (!isAuthenticated) return <Navigate to="/inst-login" replace />;
+  return <>{children}</>;
 }
 
 export default function App() {
@@ -92,6 +106,21 @@ export default function App() {
             ? <AuthRedirect />
             : <AuthPage />
         } />
+
+        {/* Institution Student Login */}
+        <Route path="/inst-login" element={<InstStudentLogin />} />
+
+        {/* Institution Student Portal */}
+        <Route path="/inst-student" element={
+          <InstStudentRoute><InstStudentLayout /></InstStudentRoute>
+        }>
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard"    element={<InstStudentDashboard />} />
+          <Route path="profile"      element={<InstStudentProfile />} />
+          <Route path="batches"      element={<InstStudentBatches />} />
+          <Route path="courses"      element={<InstStudentCourses />} />
+          <Route path="certificates" element={<InstStudentCertificates />} />
+        </Route>
 
         {/* Student */}
         <Route path="/student" element={<ProtectedRoute allowedRoles={['student']}><StudentLayout /></ProtectedRoute>}>

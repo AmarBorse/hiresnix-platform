@@ -61,6 +61,7 @@ app.use('/api/iplatform',     require('./routes/internshipPlatformRoutes'));
 app.use('/api/internships',   require('./routes/internshipRoutes'));
 app.use('/api/resources',     require('./routes/resourceRoutes'));
 app.use('/api/certificates',  require('./routes/certificateRoutes'));
+app.use('/api/inst-student',   require('./routes/instStudentRoutes'));
 app.use('/api/institution',   require('./routes/institutionRoutes'));   // NEW
 
 app.get('/api/health', (req, res) => res.json({ status: 'OK', db: 'MySQL/PostgreSQL (Sequelize)', timestamp: new Date() }));

@@ -1,6 +1,6 @@
 // src/pages/institution/InstitutionStudents.tsx
 import React, { useEffect, useState, useRef } from 'react';
-import { Plus, Search, Pencil, Trash2, Upload, X, Eye, Download, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Search, Pencil, Trash2, Upload, X, Eye, Download, ChevronLeft, ChevronRight, FileDown } from 'lucide-react';
 import { toast } from 'sonner';
 import { institutionApi } from '../../api/institution';
 import { InstitutionStudent } from '../../types';
@@ -113,7 +113,6 @@ export function InstitutionStudents() {
       .catch(() => toast.error('Failed to load students'))
       .finally(() => setLoading(false));
   };
-
   useEffect(() => { load(); }, [search, page]);
 
   const handleDelete = async (s: InstitutionStudent) => {
@@ -155,6 +154,18 @@ export function InstitutionStudents() {
     XLSX.writeFile(wb, 'students.xlsx');
   };
 
+  // Download credentials sheet (Career ID + Default Password) for sharing
+  const downloadCredentials = async () => {
+    try {
+      const res = await institutionApi.getStudentCredentials();
+      const ws = XLSX.utils.json_to_sheet(res.data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Student Credentials');
+      XLSX.writeFile(wb, 'student-login-credentials.xlsx');
+      toast.success('Credentials sheet downloaded!');
+    } catch { toast.error('Failed to download credentials'); }
+  };
+
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -162,7 +173,7 @@ export function InstitutionStudents() {
           <h1 className="text-xl font-bold text-gray-900">Student Management</h1>
           <p className="text-sm text-gray-500">{total} students enrolled</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button onClick={() => fileRef.current?.click()}
             className="flex items-center gap-2 px-3 py-2 text-sm bg-white border border-gray-200 rounded-lg hover:bg-gray-50">
             <Upload size={15} /> Import Excel
@@ -172,11 +183,21 @@ export function InstitutionStudents() {
             className="flex items-center gap-2 px-3 py-2 text-sm bg-white border border-gray-200 rounded-lg hover:bg-gray-50">
             <Download size={15} /> Export
           </button>
+          <button onClick={downloadCredentials}
+            className="flex items-center gap-2 px-3 py-2 text-sm bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-lg hover:bg-emerald-100">
+            <FileDown size={15} /> Download Login Sheet
+          </button>
           <button onClick={() => { setSelected(null); setModal('add'); }}
             className="flex items-center gap-2 px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
             <Plus size={15} /> Add Student
           </button>
         </div>
+      </div>
+
+      {/* Info Banner */}
+      <div className="bg-indigo-50 border border-indigo-200 rounded-xl px-4 py-3 text-sm text-indigo-700 flex items-start gap-2">
+        <span className="mt-0.5">ℹ️</span>
+        <span><strong>Login Sheet:</strong> "Download Login Sheet" button se ek Excel file milegi jisme Career ID aur Default Password hoga. Use students ke saath share karo. Students <strong>/inst-login</strong> se login kar sakte hain.</span>
       </div>
 
       <div className="relative">
@@ -234,10 +255,8 @@ export function InstitutionStudents() {
         <div className="flex items-center justify-between text-sm text-gray-500">
           <span>Showing {Math.min((page-1)*LIMIT+1, total)}–{Math.min(page*LIMIT, total)} of {total}</span>
           <div className="flex gap-2">
-            <button disabled={page===1} onClick={() => setPage(p=>p-1)}
-              className="p-1.5 rounded border border-gray-200 hover:bg-gray-50 disabled:opacity-40"><ChevronLeft size={16} /></button>
-            <button disabled={page*LIMIT>=total} onClick={() => setPage(p=>p+1)}
-              className="p-1.5 rounded border border-gray-200 hover:bg-gray-50 disabled:opacity-40"><ChevronRight size={16} /></button>
+            <button disabled={page===1} onClick={() => setPage(p=>p-1)} className="p-1.5 rounded border border-gray-200 hover:bg-gray-50 disabled:opacity-40"><ChevronLeft size={16} /></button>
+            <button disabled={page*LIMIT>=total} onClick={() => setPage(p=>p+1)} className="p-1.5 rounded border border-gray-200 hover:bg-gray-50 disabled:opacity-40"><ChevronRight size={16} /></button>
           </div>
         </div>
       )}
@@ -257,6 +276,10 @@ export function InstitutionStudents() {
               <div className="flex items-center justify-between">
                 <span className="text-gray-500">Career ID</span>
                 <span className="font-mono font-semibold text-indigo-600">{selected.careerId}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-gray-500">Default Password</span>
+                <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded text-gray-700">HX@{selected.careerId?.split('-')[2]}</span>
               </div>
               {[['Name', selected.name], ['Email', selected.email], ['Mobile', selected.mobile], ['Department', selected.department], ['Year', selected.year ? `Year ${selected.year}` : null], ['Roll No', selected.rollNumber], ['Gender', selected.gender]].map(([l, v]) => v && (
                 <div key={l as string} className="flex items-center justify-between">
