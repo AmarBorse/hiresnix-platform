@@ -26,13 +26,15 @@ export function AdminStudents() {
   const [search, setSearch] = useState('');
   const [deptFilter, setDeptFilter] = useState('');
   const [placementFilter, setPlacementFilter] = useState('');
+  const handlePlacementFilter = (v: string) => { setPlacementFilter(v); setPage(1); };
+  const handleDeptFilter = (v: string) => { setDeptFilter(v); setPage(1); };
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [resetModal, setResetModal] = useState<any | null>(null);
   const [resetForm, setResetForm] = useState({ newPassword: '', confirmPassword: '' });
   const [resetting, setResetting] = useState(false);
 
   const { data: result, loading, error, refetch } = useFetch(
-    () => adminApi.getAllStudents({ page, limit: 15 }), [page]
+    () => adminApi.getAllStudents({ page, limit: 15, placementStatus: placementFilter || undefined, department: deptFilter || undefined }), [page, placementFilter, deptFilter]
   );
   const students: any[] = (result as any)?.data || [];
   const total = (result as any)?.total || students.length;
@@ -144,12 +146,12 @@ export function AdminStudents() {
             value={search} onChange={e => setSearch(e.target.value)}
             className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500 bg-white" />
         </div>
-        <select value={deptFilter} onChange={e => setDeptFilter(e.target.value)}
+        <select value={deptFilter} onChange={e => handleDeptFilter(e.target.value)}
           className="px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500 bg-white">
           <option value="">All Departments</option>
           {departments.map(d => <option key={d} value={d}>{d}</option>)}
         </select>
-        <select value={placementFilter} onChange={e => setPlacementFilter(e.target.value)}
+        <select value={placementFilter} onChange={e => handlePlacementFilter(e.target.value)}
           className="px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500 bg-white">
           <option value="">All Statuses</option>
           <option value="Placed">Placed</option>
