@@ -28,7 +28,6 @@ r.put('/profile',  protect, authorize('institution'), ctrl.updateProfile);
 r.get('/students',                    ...withAuth, ctrl.getStudents);
 r.post('/students',                   ...withAuth, ctrl.createStudent);
 r.post('/students/bulk-import',       ...withAuth, ctrl.bulkImportStudents);
-r.get('/student-credentials',         ...withAuth, ctrl.getStudentCredentials);
 r.get('/students/:id',                ...withAuth, ctrl.getStudent);
 r.put('/students/:id',                ...withAuth, ctrl.updateStudent);
 r.delete('/students/:id',             ...withAuth, ctrl.deleteStudent);
