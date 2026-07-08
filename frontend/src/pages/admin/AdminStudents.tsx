@@ -1,7 +1,6 @@
 // src/pages/admin/AdminStudents.tsx
 import React, { useState } from 'react';
 import { adminApi } from '../../api/admin';
-import { useFetch } from '../../hooks/useFetch';
 import { PageLoader, ErrorState, EmptyState } from '../../components/common/LoadingState';
 import { toast } from 'sonner';
 import { Search, CheckCircle, Clock, Download, Trash2, Loader2, KeyRound, X } from 'lucide-react';
@@ -33,12 +32,24 @@ export function AdminStudents() {
   const [resetForm, setResetForm] = useState({ newPassword: '', confirmPassword: '' });
   const [resetting, setResetting] = useState(false);
 
-  const { data: result, loading, error, refetch } = useFetch(
-    () => adminApi.getAllStudents({ page, limit: 15, placementStatus: placementFilter || undefined, department: deptFilter || undefined }), [page, placementFilter, deptFilter]
-  );
-  const students: any[] = (result as any)?.data || [];
-  const total = (result as any)?.total || students.length;
+  const [students, setStudents] = React.useState<any[]>([]);
+  const [total, setTotal]       = React.useState(0);
+  const [loading, setLoading]   = React.useState(true);
+  const [error, setError]       = React.useState<string | null>(null);
   const totalPages = Math.ceil(total / 15) || 1;
+
+  const refetch = React.useCallback(() => {
+    setLoading(true);
+    adminApi.getAllStudents({ page, limit: 15, placementStatus: placementFilter || undefined, department: deptFilter || undefined })
+      .then((res: any) => {
+        setStudents(res.data || []);
+        setTotal(res.total || 0);
+      })
+      .catch((err: any) => setError(err.message || 'Failed to load'))
+      .finally(() => setLoading(false));
+  }, [page, placementFilter, deptFilter]);
+
+  React.useEffect(() => { refetch(); }, [refetch]);
 
   const filtered = students.filter(s => {
     const q = search.toLowerCase();
