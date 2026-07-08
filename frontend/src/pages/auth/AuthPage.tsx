@@ -103,30 +103,31 @@ export function AuthPage() {
           <Link to="/"><img src="/hiresnix-logo.png" alt="Hiresnix" style={{ height: 80, objectFit: 'contain', margin: '0 auto 0.75rem', filter: 'drop-shadow(0 0 20px rgba(59,130,246,0.5))', display: 'block' }} /></Link>
         </div>
         <div style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(24px)', borderRadius: 20, border: '1px solid rgba(255,255,255,0.09)', padding: '2rem', boxShadow: '0 25px 60px rgba(0,0,0,0.5)' }}>
-          {forgotSent ? (
-            <div className="text-center space-y-4">
-              <div className="w-14 h-14 bg-green-500/20 rounded-full flex items-center justify-center mx-auto">✓</div>
-              <h2 className="text-white font-bold text-lg">Check your email</h2>
-              <p className="text-gray-400 text-sm">Password reset instructions sent to {forgotEmail}</p>
-              <button onClick={() => { setShowForgot(false); setForgotSent(false); }} className="text-blue-400 hover:text-blue-300 text-sm">Back to Login</button>
-            </div>
-          ) : (
-            <form onSubmit={handleForgot} className="space-y-4">
-              <h2 className="text-white font-bold text-lg">Reset Password</h2>
-              <p className="text-gray-400 text-sm">Enter your email and we'll send reset instructions.</p>
-              <div>
-                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Email</label>
-                <input type="email" required value={forgotEmail} onChange={e => setForgotEmail(e.target.value)} style={bg07}
-                  className={inputStyle()} placeholder="you@example.com" />
+          <div className="space-y-5">
+            <div className="text-center">
+              <div className="w-14 h-14 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                <span className="text-2xl">🔐</span>
               </div>
-              <button type="submit" disabled={forgotLoading} className="w-full bg-blue-500 hover:bg-blue-600 disabled:opacity-60 text-white font-bold py-2.5 rounded-xl text-sm transition flex items-center justify-center gap-2">
-                {forgotLoading && <Loader2 size={14} className="animate-spin" />} Send Reset Link
-              </button>
-              <button type="button" onClick={() => setShowForgot(false)} className="w-full text-gray-500 hover:text-gray-300 text-sm transition flex items-center justify-center gap-1 mt-2">
-                <ArrowLeft size={12} /> Back to Login
-              </button>
-            </form>
-          )}
+              <h2 className="text-white font-bold text-lg">Forgot Password?</h2>
+              <p className="text-gray-400 text-sm mt-1">Password reset ke liye Hiresnix admin se contact karo.</p>
+            </div>
+            <div style={{ background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.2)', borderRadius: 12, padding: '1rem' }}>
+              <p className="text-blue-300 text-sm font-semibold mb-2">📞 Kaise reset hoga?</p>
+              <p className="text-gray-400 text-xs leading-relaxed">
+                1. Hiresnix admin se contact karo<br/>
+                2. Admin temporary password set karega<br/>
+                3. Login karo → <strong className="text-white">Profile → Change Password</strong><br/>
+                4. Apna naya password set karo ✅
+              </p>
+            </div>
+            <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 10, padding: '0.75rem' }} className="text-center">
+              <p className="text-gray-400 text-xs mb-1">Contact us at</p>
+              <a href="mailto:hr@hiresnix.co.in" className="text-blue-400 hover:text-blue-300 text-sm font-semibold">hr@hiresnix.co.in</a>
+            </div>
+            <button type="button" onClick={() => setShowForgot(false)} className="w-full text-gray-500 hover:text-gray-300 text-sm transition flex items-center justify-center gap-1">
+              <ArrowLeft size={12} /> Back to Login
+            </button>
+          </div>
         </div>
       </div>
     </div>
