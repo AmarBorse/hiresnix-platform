@@ -75,10 +75,12 @@ export function AuthPage() {
       if (registerRole === 'company') { payload.companyName = registerForm.companyName; payload.industry = registerForm.industry; }
       if (registerRole === 'institution') { payload.institutionName = registerForm.institutionName; payload.type = registerForm.institutionType; }
       const res = await authApi.register(payload);
-      if ((res as any).pendingApproval) { setPendingApproval(true); return; }
-      setAuth(res.user, res.token);
-      toast.success(`Account created! Welcome, ${res.user.name}!`);
-      navigate(roleRedirect[res.user.role] || '/');
+      if (res.pendingApproval) { setPendingApproval(true); return; }
+      if (res.token && res.user) {
+        setAuth(res.user, res.token);
+        toast.success(`Account created! Welcome, ${res.user.name}!`);
+        navigate(roleRedirect[res.user.role] || '/');
+      }
     } catch (err: any) { toast.error(err.response?.data?.message || err.message || 'Registration failed'); }
     finally { setLoading(false); }
   };
@@ -198,9 +200,7 @@ export function AuthPage() {
                   </div>
                   {loginErrors.password && <p className="text-red-400 text-xs mt-1.5">{loginErrors.password}</p>}
                 </div>
-                <div className="flex justify-end">
-                  <button type="button" onClick={() => setShowForgot(true)} className="text-blue-400 hover:text-blue-300 text-xs font-medium">Forgot password?</button>
-                </div>
+                {/* Forgot password - only for student/company, not institution */}
                 <button type="submit" disabled={loading} className="w-full bg-blue-500 hover:bg-blue-600 disabled:opacity-60 text-white font-bold py-2.5 rounded-xl text-sm transition flex items-center justify-center gap-2">
                   {loading && <Loader2 size={14} className="animate-spin" />} Sign In
                 </button>
