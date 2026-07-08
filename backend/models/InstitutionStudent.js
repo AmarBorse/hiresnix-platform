@@ -1,6 +1,7 @@
 /**
  * models/InstitutionStudent.js — Students enrolled under an Institution
  * Added: password (hashed), lastLogin
+ * Note: unique constraint on careerId handled via SQL migration only
  */
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/db');
@@ -8,15 +9,9 @@ const bcrypt = require('bcryptjs');
 
 const InstitutionStudent = sequelize.define('InstitutionStudent', {
   id:            { type: DataTypes.BIGINT, autoIncrement: true, primaryKey: true },
-  institutionId: { type: DataTypes.BIGINT, allowNull: false, references: { model: 'institutions', key: 'id' } },
-  careerId: {
-    type: DataTypes.STRING(20), unique: true, allowNull: true,
-    comment: 'Hiresnix Career ID e.g. HX-2026-000001',
-  },
-  password: {
-    type: DataTypes.STRING(255), allowNull: true,
-    comment: 'Hashed default password',
-  },
+  institutionId: { type: DataTypes.BIGINT, allowNull: false },
+  careerId:      { type: DataTypes.STRING(20), allowNull: true },
+  password:      { type: DataTypes.STRING(255), allowNull: true },
   name:          { type: DataTypes.STRING(100), allowNull: false },
   email:         { type: DataTypes.STRING(150), allowNull: false },
   mobile:        { type: DataTypes.STRING(20), allowNull: true },
@@ -44,7 +39,6 @@ const InstitutionStudent = sequelize.define('InstitutionStudent', {
       }
     },
   },
-  // ✅ No indexes here — careerId unique is handled at column level above
 });
 
 InstitutionStudent.prototype.matchPassword = async function(entered) {
