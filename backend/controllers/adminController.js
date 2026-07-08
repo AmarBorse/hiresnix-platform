@@ -1,12 +1,12 @@
 /**
  * controllers/adminController.js
- * Added: institution approval/reject/manage
  */
 const asyncHandler = require('express-async-handler');
 const { Op } = require('sequelize');
 const { User, Student, Company, Job, Application, Certificate, Enquiry, Internship, Institution, InstitutionStudent, Batch, Course, InstitutionCertificate } = require('../models');
+const bcrypt = require('bcryptjs');
 
-// ── Existing: verifyCompany ───────────────────────────────────────
+// ── verifyCompany ─────────────────────────────────────────────────
 const verifyCompany = asyncHandler(async (req, res) => {
   const id = req.params.id;
   let company = await Company.findByPk(id, { include: [{ model: User, as: 'user' }] });
@@ -18,38 +18,31 @@ const verifyCompany = asyncHandler(async (req, res) => {
   res.json({ success: true, message: 'Company verified successfully!', data: company });
 });
 
-// ── Existing: getAdminAnalytics ───────────────────────────────────
+// ── getAdminAnalytics ─────────────────────────────────────────────
 const getAdminAnalytics = asyncHandler(async (req, res) => {
   const [
     totalStudents, totalCompanies, totalJobs, totalApplications,
-    placedStudents, pendingJobs, totalCertificates, unreadEnquiries, activeInternships, totalInstitutions,
+    placedStudents, pendingJobs, totalCertificates, unreadEnquiries,
+    activeInternships, totalInstitutions,
   ] = await Promise.all([
-    Student.count(),
-    Company.count(),
-    Job.count(),
-    Application.count(),
+    Student.count(), Company.count(), Job.count(), Application.count(),
     Student.count({ where: { placementStatus: 'Placed' } }),
     Job.count({ where: { status: 'Pending' } }),
     Certificate.count(),
     Enquiry.count({ where: { isRead: false } }),
-    Internship.count({ where: { status: { [Op.in]: ['Active', 'Open', 'Approved'] } } }).catch(() => 0),
+    Internship.count({ where: { status: { [Op.in]: ['Active','Open','Approved'] } } }).catch(() => 0),
     Institution.count(),
   ]);
-  res.json({
-    success: true,
-    data: { totalStudents, totalCompanies, totalJobs, totalApplications, placedStudents, pendingJobs, totalCertificates, unreadEnquiries, activeInternships, totalInstitutions },
-  });
+  res.json({ success: true, data: { totalStudents, totalCompanies, totalJobs, totalApplications, placedStudents, pendingJobs, totalCertificates, unreadEnquiries, activeInternships, totalInstitutions } });
 });
 
-// ── NEW: Institution Management ────────────────────────────────────
+// ── Institution Management ────────────────────────────────────────
 
-// GET /api/admin/institutions
 const getInstitutions = asyncHandler(async (req, res) => {
   const { status, page = 1, limit = 20 } = req.query;
   const userWhere = {};
   if (status === 'pending')  userWhere.isApproved = false;
   if (status === 'approved') userWhere.isApproved = true;
-
   const { count, rows } = await Institution.findAndCountAll({
     include: [{ model: User, as: 'user', where: userWhere, attributes: ['name','email','isApproved','isActive','createdAt'] }],
     order: [['createdAt','DESC']],
@@ -58,7 +51,6 @@ const getInstitutions = asyncHandler(async (req, res) => {
   res.json({ success: true, total: count, data: rows });
 });
 
-// GET /api/admin/institutions/:id
 const getInstitution = asyncHandler(async (req, res) => {
   const inst = await Institution.findByPk(req.params.id, {
     include: [{ model: User, as: 'user', attributes: ['name','email','isApproved','isActive','createdAt'] }],
@@ -73,47 +65,73 @@ const getInstitution = asyncHandler(async (req, res) => {
   res.json({ success: true, data: { ...inst.toJSON(), studentCount, batchCount, courseCount, certCount } });
 });
 
-// PUT /api/admin/institutions/:id/approve
 const approveInstitution = asyncHandler(async (req, res) => {
   const inst = await Institution.findByPk(req.params.id, { include: [{ model: User, as: 'user' }] });
   if (!inst) { res.status(404); throw new Error('Institution not found'); }
-  inst.isVerified = true;
-  inst.rejectionReason = null;
+  inst.isVerified = true; inst.rejectionReason = null;
   await inst.save();
   if (inst.user) { inst.user.isApproved = true; await inst.user.save(); }
-  res.json({ success: true, message: 'Institution approved successfully', data: inst });
+  res.json({ success: true, message: 'Institution approved', data: inst });
 });
 
-// PUT /api/admin/institutions/:id/reject
 const rejectInstitution = asyncHandler(async (req, res) => {
   const { reason } = req.body;
   const inst = await Institution.findByPk(req.params.id, { include: [{ model: User, as: 'user' }] });
   if (!inst) { res.status(404); throw new Error('Institution not found'); }
-  inst.isVerified = false;
-  inst.rejectionReason = reason || 'Application rejected by admin';
+  inst.isVerified = false; inst.rejectionReason = reason || 'Rejected by admin';
   await inst.save();
   if (inst.user) { inst.user.isApproved = false; await inst.user.save(); }
   res.json({ success: true, message: 'Institution rejected', data: inst });
 });
 
-// DELETE /api/admin/institutions/:id
 const deleteInstitution = asyncHandler(async (req, res) => {
   const inst = await Institution.findByPk(req.params.id, { include: [{ model: User, as: 'user' }] });
   if (!inst) { res.status(404); throw new Error('Institution not found'); }
-  if (inst.user) await inst.user.destroy(); // cascade deletes institution
+  if (inst.user) await inst.user.destroy();
   else await inst.destroy();
   res.json({ success: true, message: 'Institution deleted' });
 });
 
-// GET /api/admin/institutions/:id/verify-cert/:certId  (public cert verify via admin route)
-const verifyInstitutionCertificate = asyncHandler(async (req, res) => {
-  const cert = await InstitutionCertificate.findOne({ where: { certificateId: req.params.certId } });
-  if (!cert) { res.status(404); throw new Error('Certificate not found'); }
-  res.json({ success: true, valid: cert.isValid, data: cert });
+// ── Password Reset ────────────────────────────────────────────────
+
+// Reset Institution Admin password
+const resetInstitutionPassword = asyncHandler(async (req, res) => {
+  const { newPassword } = req.body;
+  if (!newPassword || newPassword.length < 6) { res.status(400); throw new Error('Min 6 characters required'); }
+  const inst = await Institution.findByPk(req.params.id, { include: [{ model: User, as: 'user' }] });
+  if (!inst || !inst.user) { res.status(404); throw new Error('Institution not found'); }
+  const { updateUserPassword } = require('../utils/passwords');
+  await updateUserPassword(inst.user, newPassword);
+  res.json({ success: true, message: `Password reset for ${inst.institutionName}` });
+});
+
+// Reset individual institution student password
+const resetInstStudentPassword = asyncHandler(async (req, res) => {
+  const { studentId, newPassword } = req.body;
+  if (!newPassword || newPassword.length < 6) { res.status(400); throw new Error('Min 6 characters required'); }
+  const student = await InstitutionStudent.findOne({ where: { id: studentId, institutionId: req.params.id } });
+  if (!student) { res.status(404); throw new Error('Student not found'); }
+  const hashed = await bcrypt.hash(newPassword, 10);
+  await student.update({ password: hashed });
+  res.json({ success: true, message: `Password reset for ${student.name}` });
+});
+
+// Reset ALL students of institution to default password (HX@XXXXXX)
+const resetAllStudentPasswords = asyncHandler(async (req, res) => {
+  const students = await InstitutionStudent.findAll({ where: { institutionId: req.params.id } });
+  let count = 0;
+  for (const s of students) {
+    if (!s.careerId) continue;
+    const defaultPwd = `HX@${s.careerId.split('-')[2]}`;
+    const hashed = await bcrypt.hash(defaultPwd, 10);
+    await s.update({ password: hashed });
+    count++;
+  }
+  res.json({ success: true, message: `Passwords reset for ${count} students to default (HX@XXXXXX)` });
 });
 
 module.exports = {
   verifyCompany, getAdminAnalytics,
   getInstitutions, getInstitution, approveInstitution, rejectInstitution, deleteInstitution,
-  verifyInstitutionCertificate,
+  resetInstitutionPassword, resetInstStudentPassword, resetAllStudentPasswords,
 };
