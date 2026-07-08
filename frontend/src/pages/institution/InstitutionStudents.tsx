@@ -1,5 +1,5 @@
 // src/pages/institution/InstitutionStudents.tsx
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Plus, Search, Pencil, Trash2, Upload, X, Eye, Download, ChevronLeft, ChevronRight, FileDown } from 'lucide-react';
 import { toast } from 'sonner';
 import { institutionApi } from '../../api/institution';
@@ -8,7 +8,7 @@ import * as XLSX from 'xlsx';
 
 const EMPTY_FORM = { name: '', email: '', mobile: '', dob: '', gender: '', department: '', rollNumber: '', year: '', skills: '', address: '' };
 
-function StudentModal({ student, onClose, onSaved }: { student?: InstitutionStudent | null; onClose: () => void; onSaved: () => void }) {
+const StudentModal = React.memo(function StudentModal({ student, onClose, onSaved }: { student?: InstitutionStudent | null; onClose: () => void; onSaved: () => void }) {
   const [form, setForm] = useState(student ? {
     name: student.name, email: student.email, mobile: student.mobile || '', dob: student.dob || '',
     gender: student.gender || '', department: student.department || '', rollNumber: student.rollNumber || '',
@@ -93,7 +93,7 @@ function StudentModal({ student, onClose, onSaved }: { student?: InstitutionStud
       </div>
     </div>
   );
-}
+});
 
 export function InstitutionStudents() {
   const [students, setStudents] = useState<InstitutionStudent[]>([]);
@@ -106,14 +106,17 @@ export function InstitutionStudents() {
   const fileRef = useRef<HTMLInputElement>(null);
   const LIMIT = 15;
 
-  const load = () => {
+  const load = useCallback(() => {
     setLoading(true);
     institutionApi.getStudents({ search, page, limit: LIMIT })
       .then(r => { setStudents(r.data); setTotal(r.total); })
       .catch(() => toast.error('Failed to load students'))
       .finally(() => setLoading(false));
-  };
-  useEffect(() => { load(); }, [search, page]);
+  }, [search, page]);
+  useEffect(() => { load(); }, [load]);
+
+  const handleModalClose = useCallback(() => setModal(null), []);
+  const handleModalSaved = useCallback(() => { setModal(null); load(); }, [load]);
 
   const handleDelete = async (s: InstitutionStudent) => {
     if (!confirm(`Delete ${s.name}?`)) return;
@@ -262,7 +265,7 @@ export function InstitutionStudents() {
       )}
 
       {(modal === 'add' || modal === 'edit') && (
-        <StudentModal student={modal === 'edit' ? selected : null} onClose={() => setModal(null)} onSaved={() => { setModal(null); load(); }} />
+        <StudentModal student={modal === 'edit' ? selected : null} onClose={handleModalClose} onSaved={handleModalSaved} />
       )}
 
       {modal === 'view' && selected && (
