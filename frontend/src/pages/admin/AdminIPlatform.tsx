@@ -77,7 +77,6 @@ export function AdminIPlatform() {
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [completeModal, setCompleteModal] = useState<any>(null);
   const [offerModal, setOfferModal] = useState<any>(null);
-  const [offerGenerated, setOfferGenerated] = useState<{name: string; phone: string; pdfUrl: string} | null>(null);
   const [generatingOffer, setGeneratingOffer] = useState(false);
 
   // Forms
@@ -334,7 +333,7 @@ To complete your Profile Verification, please share the following documents:
 🎓 If this internship is required for your college verification, academic submission, or mandatory internship requirement, please mention it in your reply.
 
 📩 You can send the above documents to:
-WhatsApp: +91 9322690710
+WhatsApp: +91 9529120977
 Email: hr@hiresnix.co.in`)}`}
                           target="_blank" rel="noreferrer"
                           title="Send Profile Verification on WhatsApp"
@@ -695,50 +694,6 @@ Email: hr@hiresnix.co.in`)}`}
       )}
 
       {/* ── MARK COMPLETE MODAL ───────────────────────────────── */}
-      {/* ── WHATSAPP SHARE MODAL ── */}
-      {offerGenerated && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-xl p-6 space-y-4">
-            <div className="text-center">
-              <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                <span className="text-2xl">✅</span>
-              </div>
-              <h3 className="font-bold text-gray-900 text-lg">Offer Letter Generated!</h3>
-              <p className="text-gray-500 text-sm mt-1">PDF downloaded. Share with <strong>{offerGenerated.name}</strong></p>
-            </div>
-            <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-xs text-gray-600 leading-relaxed">
-              <p className="font-semibold text-green-800 mb-1">WhatsApp Message Preview:</p>
-              Hi <strong>{offerGenerated.name}</strong>,<br/><br/>
-              🎉 Congratulations! Your Hiresnix Internship Offer Letter has been generated.<br/><br/>
-              Please download your offer letter from the portal and complete the joining formalities.<br/><br/>
-              🌐 hiresnix.co.in &nbsp;|&nbsp; 📧 hr@hiresnix.co.in &nbsp;|&nbsp; 📞 9529120977<br/><br/>
-              Regards, Team Hiresnix 🚀
-            </div>
-            <div className="space-y-2">
-              <a href={`https://wa.me/${(offerGenerated.phone||'').replace(/[^0-9]/g,'')}?text=${encodeURIComponent(`Hi ${offerGenerated.name},
-
-🎉 Congratulations! Your Hiresnix Internship Offer Letter has been generated.
-
-Please download your offer letter from the portal and complete the joining formalities at the earliest.
-
-🌐 hiresnix.co.in
-📧 hr@hiresnix.co.in
-📞 9529120977
-
-Regards,
-Team Hiresnix 🚀`)}`}
-                target="_blank" rel="noreferrer"
-                className="w-full flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-xl transition text-sm">
-                💬 {offerGenerated.phone ? `Send WhatsApp to ${offerGenerated.phone}` : 'Share on WhatsApp'}
-              </a>
-              <button onClick={() => setOfferGenerated(null)}
-                className="w-full py-2.5 rounded-xl border border-gray-200 text-gray-500 text-sm hover:bg-gray-50 transition">
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {completeModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -796,12 +751,7 @@ Team Hiresnix 🚀`)}`}
                 const res = await client.post('/iplatform/generate-offer', offerModal, { responseType: 'blob' });
                 const url = URL.createObjectURL(res.data);
                 const a = document.createElement('a'); a.href = url; a.download = `Hiresnix_Offer_${offerModal.candidateName}.pdf`; a.click();
-                toast.success('Offer Letter Generated! Share via WhatsApp below.');
-                setOfferGenerated({
-                  name: offerModal.candidateName,
-                  phone: offerModal.phone || '',
-                  pdfUrl: url,
-                });
+                toast.success('Offer Letter Generated!');
                 setOfferModal(null);
               } catch {
                 toast.error('Failed to generate offer letter');
