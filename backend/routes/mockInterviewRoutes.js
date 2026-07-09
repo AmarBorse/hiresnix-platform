@@ -4,7 +4,7 @@ const asyncHandler = require('express-async-handler');
 const axios        = require('axios');
 const r            = express.Router();
 
-const SYSTEM_PROMPT = `You are an expert technical interviewer conducting a mock interview. 
+const SYSTEM_PROMPT = `You are an expert technical interviewer conducting a mock interview.
 Your role is to:
 1. Ask ONE clear technical question at a time
 2. Evaluate the candidate's answer
@@ -20,7 +20,7 @@ Always respond in this exact JSON format:
   "isComplete": false
 }
 
-When interview is complete after 5 questions, set isComplete to true and give final feedback.
+When interview is complete after 5 questions, set isComplete to true.
 Keep questions relevant to the selected domain. Be encouraging but honest.`;
 
 r.post('/chat', asyncHandler(async (req, res) => {
@@ -31,7 +31,7 @@ r.post('/chat', asyncHandler(async (req, res) => {
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
     {
       system_instruction: { parts: [{ text: SYSTEM_PROMPT + `\nDomain: ${domain || 'Full Stack'}` }] },
-      contents: messages.map((m: any) => ({
+      contents: messages.map(m => ({
         role: m.role === 'assistant' ? 'model' : 'user',
         parts: [{ text: m.content }]
       })),
@@ -40,8 +40,6 @@ r.post('/chat', asyncHandler(async (req, res) => {
   );
 
   const text = response.data?.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
-  
-  // Parse JSON from response
   const clean = text.replace(/```json\n?|\n?```/g, '').trim();
   let parsed;
   try { parsed = JSON.parse(clean); }
