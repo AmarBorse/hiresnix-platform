@@ -1,4 +1,5 @@
 // src/pages/LandingPage.tsx
+import FloatingDots from '../components/FloatingDots';
 import { AntiGravityBackground } from '../components/AntiGravityBackground';
 import { HiresnixChatbot } from '../components/HiresnixChatbot';
 import React, { useEffect, useRef, useState } from 'react';
@@ -573,7 +574,7 @@ export function LandingPage() {
           <p className="lp-font-m" style={{ fontSize: '0.72rem', color: '#6b7a99' }}>v1.0.0</p>
         </div>
       </footer>
-      <AntiGravityBackground />
+      <FloatingDots />
       <HiresnixChatbot />
     </div>
   );
