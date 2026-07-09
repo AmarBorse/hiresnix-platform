@@ -813,11 +813,6 @@ Team Hiresnix 🚀`)}`}
                   value={offerModal.candidateName} onChange={e => setOfferModal({ ...offerModal, candidateName: e.target.value })} />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-gray-500 mb-1">WhatsApp Number (with country code)</label>
-                <input type="tel" placeholder="e.g. 919876543210" className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
-                  value={offerModal.phone || ''} onChange={e => setOfferModal({ ...offerModal, phone: e.target.value })} />
-              </div>
-              <div>
                 <label className="block text-xs font-semibold text-gray-500 mb-1">Role / Domain</label>
                 <input required className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
                   value={offerModal.role} onChange={e => setOfferModal({ ...offerModal, role: e.target.value })} />
