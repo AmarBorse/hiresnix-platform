@@ -335,9 +335,12 @@ export function StudentMockInterview() {
                 <textarea
                   value={manualInput}
                   onChange={e => setManualInput(e.target.value)}
+                  onFocus={() => { stopListening(); }}
+                  onBlur={() => { if (!manualInput.trim()) startListening(); }}
                   placeholder="Type your answer or speak into mic..."
-                  className="w-full text-sm text-gray-800 resize-none outline-none bg-transparent"
+                  className="w-full text-sm text-gray-800 resize-none outline-none bg-transparent cursor-text"
                   rows={3}
+                  autoFocus
                 />
               </div>
               <button onClick={handleSubmit} disabled={loading || (!manualInput.trim() && !transcript.trim())}
