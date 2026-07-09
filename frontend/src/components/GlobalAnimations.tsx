@@ -9,6 +9,94 @@ export function GlobalAnimations() {
     const style = document.createElement('style');
     style.id = 'hx-global-animations';
     style.textContent = `
+      /* ── Professional Background ── */
+      body {
+        background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 40%, #0f172a 70%, #0c1a2e 100%) !important;
+        min-height: 100vh;
+      }
+      /* Light pages (student/admin dashboards) */
+      .bg-\[\#F5F6FA\] {
+        background: linear-gradient(135deg, #f0f4ff 0%, #e8eeff 50%, #f5f0ff 100%) !important;
+      }
+
+      /* ── Glassmorphism / Mirror Cards ── */
+      .glass-card,
+      .bg-white.rounded-xl,
+      .bg-white.rounded-2xl,
+      .bg-white.rounded-lg {
+        background: rgba(255,255,255,0.85) !important;
+        backdrop-filter: blur(20px) saturate(180%) !important;
+        -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+        border: 1px solid rgba(255,255,255,0.6) !important;
+        box-shadow: 0 8px 32px rgba(99,102,241,0.08), 0 2px 8px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.9) !important;
+      }
+      .bg-white.rounded-xl:hover,
+      .bg-white.rounded-2xl:hover {
+        background: rgba(255,255,255,0.92) !important;
+        box-shadow: 0 16px 48px rgba(99,102,241,0.14), 0 4px 12px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,1) !important;
+        transform: translateY(-2px);
+      }
+
+      /* ── Admin/Institution dark sidebar glass ── */
+      .bg-\[\#0F172A\] {
+        background: linear-gradient(180deg, #0f172a 0%, #1a1040 100%) !important;
+        border-right: 1px solid rgba(255,255,255,0.06) !important;
+      }
+
+      /* ── Stat cards glass ── */
+      .bg-white.rounded-xl p,
+      .bg-white.rounded-xl span {
+        position: relative;
+        z-index: 1;
+      }
+
+      /* ── Table glass ── */
+      .bg-white.rounded-xl table,
+      .bg-white.shadow-sm {
+        background: transparent !important;
+      }
+
+      /* ── Input glass ── */
+      input, select, textarea {
+        background: rgba(255,255,255,0.8) !important;
+        backdrop-filter: blur(8px) !important;
+        border: 1px solid rgba(99,102,241,0.2) !important;
+        transition: border-color 0.2s, box-shadow 0.2s !important;
+      }
+      input:focus, select:focus, textarea:focus {
+        background: rgba(255,255,255,0.95) !important;
+        border-color: rgba(99,102,241,0.5) !important;
+        box-shadow: 0 0 0 3px rgba(99,102,241,0.1) !important;
+      }
+
+      /* ── Modal glass ── */
+      .fixed.inset-0 > div.bg-white {
+        background: rgba(255,255,255,0.9) !important;
+        backdrop-filter: blur(24px) !important;
+        border: 1px solid rgba(255,255,255,0.7) !important;
+        box-shadow: 0 32px 80px rgba(0,0,0,0.2), 0 8px 32px rgba(99,102,241,0.15) !important;
+      }
+
+      /* ── Page background mesh ── */
+      main {
+        position: relative;
+      }
+      main::before {
+        content: '';
+        position: fixed;
+        inset: 0;
+        background:
+          radial-gradient(ellipse at 20% 20%, rgba(99,102,241,0.07) 0%, transparent 60%),
+          radial-gradient(ellipse at 80% 80%, rgba(139,92,246,0.07) 0%, transparent 60%),
+          radial-gradient(ellipse at 60% 10%, rgba(59,130,246,0.05) 0%, transparent 50%);
+        pointer-events: none;
+        z-index: 0;
+      }
+      main > * {
+        position: relative;
+        z-index: 1;
+      }
+
       /* ── Page Load Fade In ── */
       @keyframes hxFadeIn {
         from { opacity: 0; transform: translateY(16px); }
@@ -174,67 +262,15 @@ export function GlobalAnimations() {
     `;
     document.head.appendChild(style);
 
-    // ── 2. Scroll Reveal Observer ─────────────────────────────────
-    const revealObserver = new IntersectionObserver(
-      (entries) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('hx-visible');
-            revealObserver.unobserve(entry.target);
-          }
-        });
-      },
-      { threshold: 0.12, rootMargin: '0px 0px -40px 0px' }
-    );
-
-    // Auto-tag cards, tables, stat boxes for scroll reveal
-    const autoReveal = () => {
-      const selectors = [
-        '.bg-white.rounded-xl',
-        '.bg-white.rounded-lg',
-        'table',
-        '.grid > div',
-        '.space-y-4 > div',
-        '.space-y-5 > div',
-        '.space-y-6 > div',
-      ];
-      selectors.forEach(sel => {
-        document.querySelectorAll(sel).forEach((el, i) => {
-          if (!el.classList.contains('hx-reveal') && !el.closest('[data-no-animate]')) {
-            el.classList.add('hx-reveal');
-            (el as HTMLElement).style.transitionDelay = `${Math.min(i * 40, 300)}ms`;
-            revealObserver.observe(el);
-          }
-        });
-      });
-    };
-
-    // Run on mount and after DOM changes
-    autoReveal();
-    const mutationObserver = new MutationObserver(() => autoReveal());
-    mutationObserver.observe(document.body, { childList: true, subtree: true });
-
-    // ── 3. Page transition on route change ───────────────────────
+    // ── 2. Page transition ───────────────────────────────────────
     const main = document.querySelector('main');
     if (main) main.classList.add('hx-page-enter');
 
-    // ── 4. Card hover on all white cards ─────────────────────────
-    const addCardHover = () => {
-      document.querySelectorAll('.bg-white.rounded-xl, .bg-white.rounded-lg').forEach(el => {
-        if (!el.classList.contains('hx-card-hover') && !el.closest('[data-no-animate]')) {
-          el.classList.add('hx-card-hover');
-        }
-      });
-    };
-    addCardHover();
-    const cardObserver = new MutationObserver(() => addCardHover());
-    cardObserver.observe(document.body, { childList: true, subtree: true });
+    // ── 3. Card hover — only on explicit .hx-card class ──────────
+    // (Don't auto-add to prevent content disappearing)
 
     return () => {
       document.getElementById('hx-global-animations')?.remove();
-      revealObserver.disconnect();
-      mutationObserver.disconnect();
-      cardObserver.disconnect();
     };
   }, []);
 
