@@ -111,27 +111,31 @@ export function StudentMockInterview() {
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
   }, [timer, timerActive]);
 
-  // ── Call Gemini API directly from frontend ──────────────────────
-  const GEMINI_KEY = (import.meta as any).env.VITE_GEMINI_API_KEY || '';
-  const SYSTEM = `You are an expert technical interviewer. Ask ONE question at a time. Evaluate answers. Always respond in this exact JSON format: {"feedback":"feedback on previous answer (empty for first)","score":0,"nextQuestion":"next question","isComplete":false}. After 5 questions set isComplete to true. Domain: ${domain}`;
+  // ── Call Groq API directly from frontend ────────────────────────
+  const GROQ_KEY = (import.meta as any).env.VITE_GROQ_API_KEY || '';
+  const SYSTEM_MSG = `You are an expert technical interviewer. Ask ONE question at a time. Evaluate answers honestly. Always respond ONLY in this exact JSON format with no other text: {"feedback":"feedback on previous answer, empty string for first question","score":0,"nextQuestion":"your next question here","isComplete":false}. After 5 questions set isComplete to true. Current domain: ${domain}`;
 
   const askGemini = async (msgs: Message[]): Promise<{feedback: string; score: number; nextQuestion: string; isComplete: boolean}> => {
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          system_instruction: { parts: [{ text: SYSTEM }] },
-          contents: msgs.map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] })),
-          generationConfig: { temperature: 0.7, maxOutputTokens: 500 }
-        })
-      }
-    );
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${GROQ_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'llama-3.1-8b-instant',
+        messages: [
+          { role: 'system', content: SYSTEM_MSG },
+          ...msgs.map(m => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: m.content }))
+        ],
+        temperature: 0.7,
+        max_tokens: 500,
+        response_format: { type: 'json_object' }
+      })
+    });
     const data = await res.json();
-    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
-    const clean = text.replace(/```json\n?|\n?```/g, '').trim();
-    try { return JSON.parse(clean); }
+    const text = data?.choices?.[0]?.message?.content || '{}';
+    try { return JSON.parse(text); }
     catch { return { feedback: '', score: 5, nextQuestion: text, isComplete: false }; }
   };
 
