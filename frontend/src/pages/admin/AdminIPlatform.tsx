@@ -77,6 +77,7 @@ export function AdminIPlatform() {
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [completeModal, setCompleteModal] = useState<any>(null);
   const [offerModal, setOfferModal] = useState<any>(null);
+  const [offerGenerated, setOfferGenerated] = useState<{name: string; phone: string; pdfUrl: string} | null>(null);
   const [generatingOffer, setGeneratingOffer] = useState(false);
 
   // Forms
@@ -729,8 +730,12 @@ export function AdminIPlatform() {
                 const res = await client.post('/iplatform/generate-offer', offerModal, { responseType: 'blob' });
                 const url = URL.createObjectURL(res.data);
                 const a = document.createElement('a'); a.href = url; a.download = `Hiresnix_Offer_${offerModal.candidateName}.pdf`; a.click();
-                URL.revokeObjectURL(url);
-                toast.success('Offer Letter Generated!');
+                toast.success('Offer Letter Generated! Share via WhatsApp below.');
+                setOfferGenerated({
+                  name: offerModal.candidateName,
+                  phone: offerModal.phone || '',
+                  pdfUrl: url,
+                });
                 setOfferModal(null);
               } catch {
                 toast.error('Failed to generate offer letter');
@@ -740,6 +745,11 @@ export function AdminIPlatform() {
                 <label className="block text-xs font-semibold text-gray-500 mb-1">Candidate Name</label>
                 <input required className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
                   value={offerModal.candidateName} onChange={e => setOfferModal({ ...offerModal, candidateName: e.target.value })} />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1">WhatsApp Number (with country code)</label>
+                <input type="tel" placeholder="e.g. 919876543210" className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+                  value={offerModal.phone || ''} onChange={e => setOfferModal({ ...offerModal, phone: e.target.value })} />
               </div>
               <div>
                 <label className="block text-xs font-semibold text-gray-500 mb-1">Role / Domain</label>
