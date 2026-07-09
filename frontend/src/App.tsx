@@ -1,4 +1,5 @@
 import React from 'react';
+import { GlobalAnimations } from './components/GlobalAnimations';
 // src/App.tsx — Lazy loaded for performance
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
@@ -106,6 +107,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <Toaster richColors position="top-right" closeButton />
+      <GlobalAnimations />
       <Suspense fallback={<PageSpinner />}>
         <Routes>
           {/* Landing */}
