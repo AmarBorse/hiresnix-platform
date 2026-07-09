@@ -69,7 +69,6 @@ export function AdminIPlatform() {
   const [applications, setApplications] = useState<any[]>([]);
   const [applicationTotal, setApplicationTotal] = useState(0);
   const [enrollments, setEnrollments] = useState<any[]>([]);
-  const [selectedBatch, setSelectedBatch] = useState<string | null>(null);
   const [domains, setDomains] = useState<any[]>([]);
   const [resources, setResources] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -345,171 +344,97 @@ export function AdminIPlatform() {
       )}
 
       {/* ── STUDENTS (ENROLLMENTS) ──────────────────────────── */}
-      {!loading && tab === 'students' && (() => {
-        // Group enrollments by month-year of startDate
-        const groups: Record<string, any[]> = {};
-        enrollments.forEach((e: any) => {
-          const key = e.startDate
-            ? new Date(e.startDate).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })
-            : 'No Start Date';
-          if (!groups[key]) groups[key] = [];
-          groups[key].push(e);
-        });
-        const sortedKeys = Object.keys(groups).sort((a, b) => {
-          if (a === 'No Start Date') return 1;
-          if (b === 'No Start Date') return -1;
-          return new Date(groups[a][0].startDate) > new Date(groups[b][0].startDate) ? 1 : -1;
-        });
-
-        return (
-          <div className="space-y-4">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-semibold text-gray-700">{enrollments.length} enrolled students · {sortedKeys.length} batches</p>
-              <button onClick={downloadEnrollmentsCSV}
-                className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg transition">
-                <Download size={13} /> Export CSV
-              </button>
-            </div>
-
-            {enrollments.length === 0 ? (
-              <div className="bg-white rounded-xl text-center py-16 text-gray-400 border border-gray-100">
-                <Users size={36} className="mx-auto mb-3 opacity-30" />
-                <p>No enrolled students yet</p>
-              </div>
-            ) : (
-              <>
-                {/* Batch Cards Grid */}
-                {selectedBatch === null ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {sortedKeys.map(month => {
-                      const batchStudents = groups[month];
-                      const firstDate = batchStudents[0]?.startDate;
-                      const active    = batchStudents.filter((e: any) => e.status === 'Active').length;
-                      const completed = batchStudents.filter((e: any) => e.status === 'Completed').length;
-                      return (
-                        <div key={month} className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm hover:shadow-md transition">
-                          <div className="flex items-start justify-between mb-3">
-                            <div>
-                              <h3 className="font-semibold text-gray-900">{month} Batch</h3>
-                              {firstDate && <p className="text-xs text-gray-400 mt-0.5">{new Date(firstDate).toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' })} onwards</p>}
-                            </div>
-                            <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-green-100 text-green-700">Active</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-2xl font-bold text-indigo-600 mb-3">
-                            <Users size={20} className="text-indigo-400" />
-                            {batchStudents.length}
-                            <span className="text-sm font-normal text-gray-400">students</span>
-                          </div>
-                          <div className="flex gap-3 text-xs mb-4">
-                            <span className="text-green-600 font-medium">{active} active</span>
-                            {completed > 0 && <span className="text-purple-600 font-medium">{completed} completed</span>}
-                          </div>
-                          <div className="pt-3 border-t border-gray-50">
-                            <button onClick={() => setSelectedBatch(month)}
-                              className="w-full flex items-center justify-center gap-1.5 py-1.5 text-xs text-indigo-600 font-medium hover:bg-indigo-50 rounded-lg transition">
-                              <ChevronDown size={14} /> View Students
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  /* Batch Detail View */
-                  <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-                    <div className="flex items-center gap-3 px-5 py-3.5 border-b border-gray-100">
-                      <button onClick={() => setSelectedBatch(null)}
-                        className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500">
-                        <ChevronUp size={16} />
-                      </button>
-                      <div>
-                        <p className="font-semibold text-gray-900">{selectedBatch}</p>
-                        <p className="text-xs text-gray-400">{groups[selectedBatch]?.length} students</p>
-                      </div>
-                      <button onClick={downloadEnrollmentsCSV}
-                        className="ml-auto flex items-center gap-1 text-xs text-emerald-600 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg">
-                        <Download size={12} /> Export
-                      </button>
-                    </div>
-                    <div className="divide-y divide-gray-50">
-                      {(groups[selectedBatch] || []).map((e: any) => (
-                        <div key={e.id} className="px-5 py-4 hover:bg-gray-50 transition">
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 font-bold text-sm flex-shrink-0">
-                                {e.studentName?.[0]?.toUpperCase()}
-                              </div>
-                              <div>
-                                <div className="flex items-center gap-2 mb-0.5">
-                                  <p className="font-semibold text-gray-900">{e.studentName}</p>
-                                  <Badge status={e.status} />
-                                </div>
-                                <p className="text-xs text-gray-500">{e.email}</p>
-                                <p className="text-sm font-medium text-blue-600">{e.domain?.name}</p>
-                                <div className="flex items-center gap-3 mt-1.5">
-                                  <div className="flex items-center gap-2">
-                                    <div className="w-28 bg-gray-100 rounded-full h-2">
-                                      <div className="bg-emerald-500 h-2 rounded-full" style={{ width: `${e.progress}%` }} />
-                                    </div>
-                                    <span className="text-xs font-bold text-emerald-600">{e.progress}%</span>
-                                  </div>
-                                  <span className="text-xs text-gray-400">{(e.taskLogs || []).length} tasks submitted</span>
-                                </div>
-                              </div>
-                            </div>
-                            <div className="flex flex-col items-end gap-2">
-                              <p className="text-xs text-gray-400">
-                                Started {e.startDate ? new Date(e.startDate).toLocaleDateString() : '—'}
-                              </p>
-                              {e.status === 'Active' && (
-                                <button
-                                  onClick={() => setCompleteModal({ id: e.id, name: e.studentName, adminRemark: '', lorPerformance: 'Excellent', lorHighlights: '' })}
-                                  className="flex items-center gap-1 text-xs font-bold bg-purple-500 hover:bg-purple-600 text-white px-3 py-1.5 rounded-lg transition">
-                                  <Award size={11} /> Mark Complete
-                                </button>
-                              )}
-                              {e.status === 'Completed' && (
-                                <span className="text-xs text-purple-600 font-semibold flex items-center gap-1">
-                                  <CheckCircle size={12} /> Cert issued
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                          {(e.taskLogs || []).length > 0 && (
-                            <div className="mt-3">
-                              <button onClick={() => setExpandedId(expandedId === e.id ? null : e.id)}
-                                className="text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1">
-                                {expandedId === e.id ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
-                                View submitted tasks ({(e.taskLogs || []).length})
-                              </button>
-                              {expandedId === e.id && (
-                                <div className="mt-2 space-y-1.5 max-h-40 overflow-y-auto">
-                                  {[...(e.taskLogs || [])].reverse().map((log: any) => (
-                                    <div key={log.id} className="flex items-start gap-2 p-2 bg-gray-50 rounded-lg">
-                                      <CheckCircle size={12} className="text-emerald-500 mt-0.5 flex-shrink-0" />
-                                      <div>
-                                        <p className="text-xs font-semibold text-gray-800">{log.title}</p>
-                                        <p className="text-xs text-gray-500">{log.description}</p>
-                                        {log.url && <a href={log.url} target="_blank" rel="noreferrer" className="text-xs text-blue-500 hover:underline">{log.url}</a>}
-                                        <p className="text-[10px] text-gray-400 mt-0.5">Week {log.week} · {new Date(log.submittedAt).toLocaleDateString()}</p>
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
+      {!loading && tab === 'students' && (
+        <div className="bg-white rounded-b-xl rounded-tr-xl shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100">
+            <p className="text-sm font-semibold text-gray-700">{enrollments.length} enrolled students</p>
+            <button onClick={downloadEnrollmentsCSV}
+              className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg transition">
+              <Download size={13} /> Export CSV
+            </button>
           </div>
-        );
-      })()}
+          {enrollments.length === 0 ? (
+            <div className="text-center py-16 text-gray-400">
+              <Users size={36} className="mx-auto mb-3 opacity-30" />
+              <p>No enrolled students yet</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-50">
+              {enrollments.map((e: any) => (
+                <div key={e.id} className="px-5 py-4 hover:bg-gray-50 transition">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 font-bold text-sm flex-shrink-0">
+                        {e.studentName?.[0]?.toUpperCase()}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <p className="font-semibold text-gray-900">{e.studentName}</p>
+                          <Badge status={e.status} />
+                        </div>
+                        <p className="text-xs text-gray-500">{e.email}</p>
+                        <p className="text-sm font-medium text-blue-600">{e.domain?.name}</p>
+                        <div className="flex items-center gap-3 mt-1.5">
+                          <div className="flex items-center gap-2">
+                            <div className="w-28 bg-gray-100 rounded-full h-2">
+                              <div className="bg-emerald-500 h-2 rounded-full" style={{ width: `${e.progress}%` }} />
+                            </div>
+                            <span className="text-xs font-bold text-emerald-600">{e.progress}%</span>
+                          </div>
+                          <span className="text-xs text-gray-400">{(e.taskLogs || []).length} tasks submitted</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end gap-2">
+                      <p className="text-xs text-gray-400">
+                        Started {e.startDate ? new Date(e.startDate).toLocaleDateString() : '—'}
+                      </p>
+                      {e.status === 'Active' && (
+                        <button
+                          onClick={() => setCompleteModal({ id: e.id, name: e.studentName, adminRemark: '', lorPerformance: 'Excellent', lorHighlights: '' })}
+                          className="flex items-center gap-1 text-xs font-bold bg-purple-500 hover:bg-purple-600 text-white px-3 py-1.5 rounded-lg transition">
+                          <Award size={11} /> Mark Complete
+                        </button>
+                      )}
+                      {e.status === 'Completed' && (
+                        <span className="text-xs text-purple-600 font-semibold flex items-center gap-1">
+                          <CheckCircle size={12} /> Cert issued
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Task logs preview */}
+                  {(e.taskLogs || []).length > 0 && (
+                    <div className="mt-3 ml-13">
+                      <button onClick={() => setExpandedId(expandedId === e.id ? null : e.id)}
+                        className="text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1">
+                        {expandedId === e.id ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
+                        View submitted tasks ({(e.taskLogs || []).length})
+                      </button>
+                      {expandedId === e.id && (
+                        <div className="mt-2 space-y-1.5 max-h-40 overflow-y-auto">
+                          {[...(e.taskLogs || [])].reverse().map((log: any) => (
+                            <div key={log.id} className="flex items-start gap-2 p-2 bg-gray-50 rounded-lg">
+                              <CheckCircle size={12} className="text-emerald-500 mt-0.5 flex-shrink-0" />
+                              <div>
+                                <p className="text-xs font-semibold text-gray-800">{log.title}</p>
+                                <p className="text-xs text-gray-500">{log.description}</p>
+                                {log.url && <a href={log.url} target="_blank" rel="noreferrer" className="text-xs text-blue-500 hover:underline">{log.url}</a>}
+                                <p className="text-[10px] text-gray-400 mt-0.5">Week {log.week} · {new Date(log.submittedAt).toLocaleDateString()}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── DOMAINS ─────────────────────────────────────────── */}
       {!loading && tab === 'domains' && (
@@ -726,7 +651,7 @@ export function AdminIPlatform() {
               e.preventDefault();
               setGeneratingOffer(true);
               try {
-                const res = await client.post('/admin/generate-offer', offerModal, { responseType: 'blob' });
+                const res = await client.post('/iplatform/generate-offer', offerModal, { responseType: 'blob' });
                 const url = URL.createObjectURL(res.data);
                 const a = document.createElement('a'); a.href = url; a.download = `Hiresnix_Offer_${offerModal.candidateName}.pdf`; a.click();
                 URL.revokeObjectURL(url);
