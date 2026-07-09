@@ -77,9 +77,22 @@ export function StudentMockInterview() {
       setTranscript(text);
       setManualInput(text);
     };
-    recog.onerror = () => { try { recog.stop(); setTimeout(() => recog.start(), 300); } catch {} };
-    recog.onend = () => { if (recognRef.current === recog) { try { recog.start(); } catch {} } };
-    try { recog.start(); recognRef.current = recog; setListening(true); } catch {}
+    let isStarted = false;
+    recog.onerror = (e: any) => {
+      if (e.error === 'no-speech') return;
+      isStarted = false;
+    };
+    recog.onend = () => {
+      isStarted = false;
+      if (recognRef.current === recog) {
+        setTimeout(() => {
+          if (!isStarted && recognRef.current === recog) {
+            try { recog.start(); isStarted = true; } catch {}
+          }
+        }, 200);
+      }
+    };
+    try { recog.start(); isStarted = true; recognRef.current = recog; setListening(true); } catch {}
   }, []);
 
   const stopListening = useCallback(() => {
