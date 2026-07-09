@@ -674,6 +674,51 @@ export function AdminIPlatform() {
       )}
 
       {/* ── MARK COMPLETE MODAL ───────────────────────────────── */}
+      {/* ── WHATSAPP SHARE MODAL ── */}
+      {offerGenerated && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-xl p-6 space-y-4">
+            <div className="text-center">
+              <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                <span className="text-2xl">✅</span>
+              </div>
+              <h3 className="font-bold text-gray-900 text-lg">Offer Letter Generated!</h3>
+              <p className="text-gray-500 text-sm mt-1">PDF downloaded. Share with <strong>{offerGenerated.name}</strong></p>
+            </div>
+            <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-xs text-gray-600 leading-relaxed">
+              <p className="font-semibold text-green-800 mb-1">WhatsApp Message Preview:</p>
+              Hi <strong>{offerGenerated.name}</strong>,<br/><br/>
+              🎉 Congratulations! Your Hiresnix Internship Offer Letter has been generated.<br/><br/>
+              Please download your offer letter from the portal and complete the joining formalities.<br/><br/>
+              🌐 hiresnix.co.in &nbsp;|&nbsp; 📧 hr@hiresnix.co.in &nbsp;|&nbsp; 📞 9529120977<br/><br/>
+              Regards, Team Hiresnix 🚀
+            </div>
+            <div className="space-y-2">
+              <a href={`https://wa.me/${(offerGenerated.phone||'').replace(/[^0-9]/g,'')}?text=${encodeURIComponent(`Hi ${offerGenerated.name},
+
+🎉 Congratulations! Your Hiresnix Internship Offer Letter has been generated.
+
+Please download your offer letter from the portal and complete the joining formalities at the earliest.
+
+🌐 hiresnix.co.in
+📧 hr@hiresnix.co.in
+📞 9529120977
+
+Regards,
+Team Hiresnix 🚀`)}`}
+                target="_blank" rel="noreferrer"
+                className="w-full flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-xl transition text-sm">
+                💬 {offerGenerated.phone ? `Send WhatsApp to ${offerGenerated.phone}` : 'Share on WhatsApp'}
+              </a>
+              <button onClick={() => setOfferGenerated(null)}
+                className="w-full py-2.5 rounded-xl border border-gray-200 text-gray-500 text-sm hover:bg-gray-50 transition">
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {completeModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl">
