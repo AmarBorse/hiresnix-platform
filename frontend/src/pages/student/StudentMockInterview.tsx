@@ -146,30 +146,35 @@ export function StudentMockInterview() {
   // ── Speech Recognition ────────────────────────────────────────────
   const startListening = useCallback(() => {
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SR) return;
-    if (recognRef.current) { try { recognRef.current.stop(); } catch {} }
+    if (!SR) { alert('Use Chrome browser for voice input'); return; }
+    if (recognRef.current) { try { recognRef.current.abort(); } catch {} recognRef.current = null; }
+    
     const recog = new SR();
     recog.continuous = true;
     recog.interimResults = true;
     recog.lang = 'en-US';
+    
+    let finalTranscript = '';
     recog.onresult = (e: any) => {
-      let final = '', interim = '';
-      for (let i = 0; i < e.results.length; i++) {
-        if (e.results[i].isFinal) final += e.results[i][0].transcript + ' ';
-        else interim += e.results[i][0].transcript;
+      let interim = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        if (e.results[i].isFinal) {
+          finalTranscript += e.results[i][0].transcript + ' ';
+        } else {
+          interim += e.results[i][0].transcript;
+        }
       }
-      const text = (final + interim).trim();
-      setTranscript(text);
-      setAnswer(text);
+      setTranscript(finalTranscript + interim);
+      setAnswer(finalTranscript + interim);
     };
-    recog.onerror = () => {};
-    recog.onend = () => {
-      if (recognRef.current === recog && isRecording) {
-        try { recog.start(); } catch {}
-      }
-    };
-    try { recog.start(); recognRef.current = recog; } catch {}
-  }, [isRecording]);
+    recog.onerror = (e: any) => { console.log('Speech error:', e.error); };
+    recog.onend = () => {};
+    
+    setTimeout(() => {
+      try { recog.start(); recognRef.current = recog; }
+      catch(e) { console.log('Recognition start error:', e); }
+    }, 100);
+  }, []);
 
   const stopListening = useCallback(() => {
     if (recognRef.current) { try { recognRef.current.stop(); } catch {} recognRef.current = null; }
@@ -444,24 +449,27 @@ export function StudentMockInterview() {
               className={`flex-1 py-2 rounded-xl text-xs font-medium flex items-center justify-center gap-1.5 transition ${camOn?'bg-gray-200 text-gray-700':'bg-gray-100 text-gray-500'}`}>
               {camOn ? <><VideoOff size={13}/> Camera Off</> : <><Video size={13}/> Camera On</>}
             </button>
-            <button onClick={() => {
-              if (isRecording) { stopListening(); setIsRecording(false); }
-              else { setIsRecording(true); startListening(); }
-            }}
-              className={`flex-1 py-2 rounded-xl text-xs font-medium flex items-center justify-center gap-1.5 transition ${isRecording?'bg-red-100 text-red-600':'bg-emerald-100 text-emerald-700'}`}>
-              {isRecording ? <><MicOff size={13}/> Mic Off</> : <><Mic size={13}/> Mic On</>}
+            <button
+              onMouseDown={() => { setIsRecording(true); startListening(); }}
+              onMouseUp={() => { stopListening(); setIsRecording(false); }}
+              onTouchStart={(e) => { e.preventDefault(); setIsRecording(true); startListening(); }}
+              onTouchEnd={(e) => { e.preventDefault(); stopListening(); setIsRecording(false); }}
+              className={`flex-1 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition select-none ${isRecording?'bg-red-500 text-white scale-95':'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>
+              {isRecording ? <><MicOff size={13}/> 🔴 Recording...</> : <><Mic size={13}/> Hold to Speak</>}
             </button>
           </div>
 
-          {/* Voice transcript */}
-          <div className="bg-white border-2 border-gray-100 rounded-xl p-3 min-h-[80px]">
-            <div className="flex items-center gap-2 mb-1.5">
-              {isRecording && <SoundWave active={!!transcript} color="#22c55e" />}
-              <p className="text-xs text-gray-400">{isRecording ? 'Listening... speak now' : 'Your answer'}</p>
-            </div>
-            <p className="text-sm text-gray-800 leading-relaxed">
-              {transcript || <span className="text-gray-300 italic">Start speaking or the AI will move on after 90 seconds...</span>}
-            </p>
+          {/* Answer textarea - primary input */}
+          <div className="relative">
+            <textarea
+              value={answer}
+              onChange={e => setAnswer(e.target.value)}
+              placeholder="Type your answer here... (or hold mic button to speak)"
+              rows={4}
+              autoFocus
+              className="w-full px-4 py-3 border-2 border-indigo-200 rounded-xl text-sm text-gray-800 resize-none focus:outline-none focus:border-indigo-500 bg-white"
+            />
+            <span className="absolute bottom-2 right-3 text-xs text-gray-300">{answer.length} chars</span>
           </div>
 
           {/* Submit */}
