@@ -98,10 +98,28 @@ export function StudentMockInterview() {
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
   }, [timer, timerActive]);
 
-  // ── Call Gemini API ───────────────────────────────────────────────
+  // ── Call Gemini API directly from frontend ──────────────────────
+  const GEMINI_KEY = (import.meta as any).env.VITE_GEMINI_API_KEY || '';
+  const SYSTEM = `You are an expert technical interviewer. Ask ONE question at a time. Evaluate answers. Always respond in this exact JSON format: {"feedback":"feedback on previous answer (empty for first)","score":0,"nextQuestion":"next question","isComplete":false}. After 5 questions set isComplete to true. Domain: ${domain}`;
+
   const askGemini = async (msgs: Message[]): Promise<{feedback: string; score: number; nextQuestion: string; isComplete: boolean}> => {
-    const res = await client.post('/mock-interview/chat', { messages: msgs, domain });
-    return res.data.data;
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: SYSTEM }] },
+          contents: msgs.map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] })),
+          generationConfig: { temperature: 0.7, maxOutputTokens: 500 }
+        })
+      }
+    );
+    const data = await res.json();
+    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+    const clean = text.replace(/```json\n?|\n?```/g, '').trim();
+    try { return JSON.parse(clean); }
+    catch { return { feedback: '', score: 5, nextQuestion: text, isComplete: false }; }
   };
 
   // ── Start Interview ──────────────────────────────────────────────
