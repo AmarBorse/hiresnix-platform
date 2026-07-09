@@ -320,6 +320,27 @@ export function AdminIPlatform() {
                           })} className="flex items-center gap-1 text-xs font-bold bg-blue-500 hover:bg-blue-600 text-white px-3 py-1.5 rounded-lg transition">
                           <FileText size={11} /> Offer Letter
                         </button>
+                        {/* WhatsApp Profile Verification */}
+                        <a href={`https://wa.me/?text=${encodeURIComponent(`Hi ${app.studentName},
+
+Thank you for applying for the Hiresnix Internship Program. 🎉
+
+To complete your Profile Verification, please share the following documents:
+
+📄 Updated Resume (PDF)
+💼 LinkedIn Profile URL
+💻 GitHub Profile URL (if available)
+✍️ A brief introduction about your skills, projects, and career interests
+🎓 If this internship is required for your college verification, academic submission, or mandatory internship requirement, please mention it in your reply.
+
+📩 You can send the above documents to:
+WhatsApp: +91 9322690710
+Email: hr@hiresnix.co.in`)}`}
+                          target="_blank" rel="noreferrer"
+                          title="Send Profile Verification on WhatsApp"
+                          className="flex items-center gap-1 text-xs font-bold bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded-lg transition">
+                          💬 WA
+                        </a>
                       </div>
                     </div>
                   </div>
