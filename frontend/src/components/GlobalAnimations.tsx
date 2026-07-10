@@ -56,17 +56,21 @@ export function GlobalAnimations() {
         background: transparent !important;
       }
 
-      /* ── Input glass ── */
-      input, select, textarea {
-        background: rgba(255,255,255,0.8) !important;
+      /* ── Input glass — only for light portal pages, NOT dark auth ── */
+      /* Dark auth pages use .dark-input class which overrides this */
+      :not(.dark-input):not([class*="auth"]) > input:not(.dark-input),
+      :not(.dark-input):not([class*="auth"]) > select:not(.dark-input),
+      :not(.dark-input):not([class*="auth"]) > textarea:not(.dark-input) {
         backdrop-filter: blur(8px) !important;
-        border: 1px solid rgba(99,102,241,0.2) !important;
         transition: border-color 0.2s, box-shadow 0.2s !important;
       }
-      input:focus, select:focus, textarea:focus {
-        background: rgba(255,255,255,0.95) !important;
-        border-color: rgba(99,102,241,0.5) !important;
-        box-shadow: 0 0 0 3px rgba(99,102,241,0.1) !important;
+      .dark-input,
+      .dark-input:focus,
+      .dark-input:hover,
+      .dark-input:-webkit-autofill {
+        background-color: #1a2235 !important;
+        background: #1a2235 !important;
+        color: #ffffff !important;
       }
 
       /* ── Modal glass ── */
