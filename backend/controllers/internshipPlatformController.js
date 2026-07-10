@@ -277,7 +277,7 @@ const COMPANY = {
   tagline: 'Empowering Future Professionals',
   email:   'support@hiresnix.co.in',
   website: 'www.hiresnix.co.in',
-  address: 'Pune, Maharashtra, India',
+  address: 'Shirpur, Maharashtra, India',
   colors: {
     accent: '#d4af37',    // Gold (used for borders, stars, dividers)
     primary: '#1e40af',   // Deep Blue (used for the domain name text)
@@ -1106,7 +1106,7 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
   doc.fillColor('#334155').fontSize(8.8).font('Helvetica')
     .text('support@hiresnix.co.in', left, founderTextY + 72, { width: 265, lineGap: 0 })
     .text('www.hiresnix.co.in', left, founderTextY + 82, { width: 265, lineGap: 0 })
-    .text('Pune, Maharashtra, India', left, founderTextY + 92, { width: 265, lineGap: 0 });
+    .text('Shirpur, Maharashtra, India', left, founderTextY + 92, { width: 265, lineGap: 0 });
 
   doc.end();
   return;

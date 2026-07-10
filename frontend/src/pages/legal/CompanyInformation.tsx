@@ -10,7 +10,7 @@ const rows = [
   ['Company Type', COMPANY.companyType],
   ['Category', COMPANY.category],
   ['Status', COMPANY.status],
-  ['Registered Office', registeredOfficeText],
+  ['Registered Office', "9V3M+JP3, Ambika Nagar, Shirpur, Maharashtra 425405, India" ],
   ['Official Email', COMPANY.email],
   ['Website', COMPANY.website],
 ];
