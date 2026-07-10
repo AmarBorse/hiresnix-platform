@@ -253,8 +253,7 @@ export function AdminInstitutions() {
                   <td className="px-4 py-3">
                     {inst.user?.isApproved
                       ? <span className="flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full w-fit" style={{background:"rgba(16,185,129,0.15)",color:"#34d399"}}><CheckCircle2 size={12} /> Approved</span>
-                      : <span className="flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full w-fit" style={{background:"rgba(245,158,11,0.15)",color:"#fbbf24""><CheckCircle2 size={12} /> Approved</span>
-                      : <span className="flex items-center gap-1 text-yellow-700 text-xs font-medium bg-yellow-50 px-2 py-0.5 rounded-full w-fit">Pending</span>}
+                      : <span className="flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full w-fit" style={{background:"rgba(245,158,11,0.15)",color:"#fbbf24"}}>Pending</span>}
                   </td>
                   <td className="px-4 py-3 text-gray-400 text-xs">{new Date(inst.createdAt).toLocaleDateString('en-IN')}</td>
                   <td className="px-4 py-3">
