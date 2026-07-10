@@ -32,7 +32,7 @@ export function AdminStudents() {
 
   // Debounce search → triggers backend call
   React.useEffect(() => {
-    const t = setTimeout(() => { setSearch(searchInput); setPage(1); }, 400);
+    const t = setTimeout(() => { setSearch(searchInput); setPage(1); }, 700);
     return () => clearTimeout(t);
   }, [searchInput]);
   const [deletingId, setDeletingId] = useState<number | null>(null);
@@ -43,6 +43,7 @@ export function AdminStudents() {
   const [students, setStudents] = React.useState<any[]>([]);
   const [total, setTotal]       = React.useState(0);
   const [loading, setLoading]   = React.useState(true);
+  const [searching, setSearching] = React.useState(false);
   const [error, setError]       = React.useState<string | null>(null);
 
   // Internship data
@@ -52,7 +53,8 @@ export function AdminStudents() {
   const totalPages = Math.ceil(total / 15) || 1;
 
   const refetch = React.useCallback(() => {
-    setLoading(true);
+    if (students.length > 0) setSearching(true);
+    else setLoading(true);
     Promise.all([
       adminApi.getAllStudents({ page, limit: 15, department: deptFilter || undefined, search: search || undefined }),
       adminApi.getIPlatformApplications(),
@@ -65,7 +67,7 @@ export function AdminStudents() {
         setEnrollments(enrRes.data || []);
       })
       .catch((err: any) => setError(err.message || 'Failed to load'))
-      .finally(() => setLoading(false));
+      .finally(() => { setLoading(false); setSearching(false); });
   }, [page, deptFilter, search]);
 
   React.useEffect(() => { refetch(); }, [refetch]);
@@ -215,7 +217,10 @@ export function AdminStudents() {
       {/* Search + Dept filter */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          {searching
+            ? <Loader2 size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-500 animate-spin" />
+            : <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          }
           <input type="text" placeholder="Search name, email, roll no..."
             value={searchInput} onChange={e => setSearchInput(e.target.value)}
             className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500 bg-white" />
