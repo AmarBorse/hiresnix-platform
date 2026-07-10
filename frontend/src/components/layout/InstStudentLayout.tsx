@@ -1,7 +1,7 @@
 // src/components/layout/InstStudentLayout.tsx
 import React, { useState } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Award, User, Menu, X, LogOut, GraduationCap, BookOpen, Layers } from 'lucide-react';
+import { LayoutDashboard, Award, User, Menu, X, LogOut, GraduationCap, BookOpen, Layers, Briefcase } from 'lucide-react';
 import { useInstStudentStore } from '../../store/useInstStudentStore';
 import { PORTAL_STYLES, PORTAL_COLORS } from './PortalTheme';
 
@@ -13,6 +13,7 @@ const NAV = [
   { to: '/inst-student/courses',      icon: BookOpen,        label: 'My Courses'      },
   { to: '/inst-student/batches',      icon: Layers,          label: 'My Batch'        },
   { to: '/inst-student/certificates', icon: Award,           label: 'My Certificates' },
+  { to: '/inst-student/internship',   icon: Briefcase,       label: 'Internship 🆕'   },
 ];
 
 function NavItem({ to, icon: Icon, label, onClick }: any) {

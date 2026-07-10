@@ -27,6 +27,7 @@ const InstStudentProfile      = lazy(() => import('./pages/instStudent/InstStude
 const InstStudentBatches      = lazy(() => import('./pages/instStudent/InstStudentBatches').then(m => ({ default: m.InstStudentBatches })));
 const InstStudentCourses      = lazy(() => import('./pages/instStudent/InstStudentCourses').then(m => ({ default: m.InstStudentCourses })));
 const InstStudentCertificates = lazy(() => import('./pages/instStudent/InstStudentCertificates').then(m => ({ default: m.InstStudentCertificates })));
+const InstStudentInternship   = lazy(() => import('./pages/instStudent/InstStudentInternship').then(m => ({ default: m.InstStudentInternship })));
 
 const StudentDashboard    = lazy(() => import('./pages/student/StudentDashboard').then(m => ({ default: m.StudentDashboard })));
 const StudentJobs         = lazy(() => import('./pages/student/StudentJobs').then(m => ({ default: m.StudentJobs })));
@@ -143,6 +144,7 @@ export default function App() {
             <Route path="batches"      element={<InstStudentBatches />} />
             <Route path="courses"      element={<InstStudentCourses />} />
             <Route path="certificates" element={<InstStudentCertificates />} />
+            <Route path="internship"   element={<InstStudentInternship />} />
           </Route>
 
           {/* Student */}

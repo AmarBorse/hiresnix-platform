@@ -4,10 +4,13 @@
  */
 const asyncHandler = require('express-async-handler');
 const jwt          = require('jsonwebtoken');
+const bcrypt       = require('bcryptjs');
+const crypto       = require('crypto');
 const { Op }       = require('sequelize');
 const {
   InstitutionStudent, Institution,
   Batch, BatchStudent, Course, CourseStudent, InstitutionCertificate,
+  User,
 } = require('../models');
 
 // ── JWT for institution students ─────────────────────────────────
@@ -48,7 +51,7 @@ const login = asyncHandler(async (req, res) => {
 
   const student = await InstitutionStudent.findOne({
     where: { careerId: careerId.trim().toUpperCase() },
-    include: [{ model: Institution, as: 'institution', attributes: ['institutionName','isVerified'] }],
+    include: [{ model: Institution, as: 'institution', attributes: ['institutionName','isVerified','id'] }],
   });
 
   if (!student || !student.password) {
@@ -58,6 +61,45 @@ const login = asyncHandler(async (req, res) => {
   const match = await student.matchPassword(password);
   if (!match) { res.status(401); throw new Error('Invalid Career ID or password'); }
 
+  // ── Auto-create or find linked Hiresnix User account ──────────
+  // Email format: careerId@inst.hiresnix.co.in (unique, internal)
+  const syntheticEmail = `${student.careerId.toLowerCase()}@inst.hiresnix.co.in`;
+  let hiresnixUser = null;
+  let hiresnixToken = null;
+
+  try {
+    // Try to find existing linked user
+    hiresnixUser = await User.findOne({ where: { email: syntheticEmail } });
+
+    if (!hiresnixUser) {
+      // Create new Hiresnix User for this inst student
+      const tempPassword = crypto.randomBytes(16).toString('hex'); // random internal password
+      hiresnixUser = await User.create({
+        name: student.name,
+        email: syntheticEmail,
+        password: tempPassword,
+        role: 'student',
+        isActive: true,
+        isApproved: true,
+      });
+
+      // Also create Student profile entry so internship APIs work
+      const { Student } = require('../models');
+      await Student.findOrCreate({
+        where: { userId: hiresnixUser.id },
+        defaults: {
+          userId: hiresnixUser.id,
+          isProfileComplete: false,
+        },
+      });
+    }
+
+    hiresnixToken = hiresnixUser.getSignedJwtToken();
+  } catch (err) {
+    // If user creation fails, still allow inst portal login
+    console.error('Hiresnix user link failed:', err.message);
+  }
+
   // Update last login
   await student.update({ lastLogin: new Date() });
 
@@ -65,6 +107,8 @@ const login = asyncHandler(async (req, res) => {
   res.json({
     success: true,
     token,
+    hiresnixToken,  // null if linking failed — frontend handles gracefully
+    hiresnixUserId: hiresnixUser?.id || null,
     student: {
       id: student.id,
       careerId: student.careerId,

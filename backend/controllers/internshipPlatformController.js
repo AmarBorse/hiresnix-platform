@@ -65,6 +65,12 @@ const applyInternship = asyncHandler(async (req, res) => {
     res.status(400); throw new Error('No seats available in this domain');
   }
 
+  // Check if this is an institution student (via x-inst-student-id header)
+  const instStudentId   = req.headers['x-inst-student-id'] || null;
+  const institutionId   = req.headers['x-institution-id'] || null;
+  const institutionName = req.headers['x-institution-name'] || null;
+  const source = instStudentId ? 'institution' : 'hiresnix';
+
   const application = await InternshipApplication.create({
     userId: req.user.id,
     domainId,
@@ -72,6 +78,10 @@ const applyInternship = asyncHandler(async (req, res) => {
     email: user.email,
     phone, college, year, whyJoin,
     status: 'Pending',
+    source,
+    instStudentId: instStudentId ? parseInt(instStudentId) : null,
+    institutionId: institutionId ? parseInt(institutionId) : null,
+    institutionName: institutionName || null,
   });
 
   res.status(201).json({ success: true, data: application, message: 'Application submitted! Admin will review soon.' });
@@ -96,9 +106,10 @@ const getMyApplication = asyncHandler(async (req, res) => {
 });
 
 const getAllApplications = asyncHandler(async (req, res) => {
-  const { status, page = 1, limit } = req.query;
+  const { status, page = 1, limit, source } = req.query;
   const where = {};
   if (status) where.status = status;
+  if (source) where.source = source; // 'hiresnix' | 'institution'
 
   const query = {
     where,

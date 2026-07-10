@@ -63,6 +63,11 @@ const InternshipEnrollment = sequelize.define('InternshipEnrollment', {
   // LOR details filled by admin
   lorPerformance:  { type: DataTypes.STRING(20), defaultValue: 'Good' },
   lorHighlights:   { type: DataTypes.TEXT },
+  // Institution student fields
+  source:          { type: DataTypes.STRING(20), defaultValue: 'hiresnix' },
+  instStudentId:   { type: DataTypes.BIGINT, allowNull: true },
+  institutionId:   { type: DataTypes.BIGINT, allowNull: true },
+  institutionName: { type: DataTypes.STRING(200), allowNull: true },
 }, { tableName: 'ip_enrollments', timestamps: true });
 
 // ── INTERNSHIP RESOURCE (domain-wise) ─────────────────────────────
