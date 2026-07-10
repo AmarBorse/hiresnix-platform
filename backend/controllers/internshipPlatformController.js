@@ -482,7 +482,7 @@ function drawOfferSeal(doc, x, y) {
   doc.fontSize(4.7).font('Helvetica')
     .text(cinText, x - 42, y + 14, { width: 84, align: 'center' });
   doc.fontSize(6.2).font('Helvetica-Bold')
-    .text('PUNE', x - 42, y + 29, { width: 84, align: 'center' });
+    .text('SHIRPUR', x - 42, y + 29, { width: 84, align: 'center' });
   drawStampStar(x - 31, y, 3.2);
   drawStampStar(x + 31, y, 3.2);
   doc.restore();
