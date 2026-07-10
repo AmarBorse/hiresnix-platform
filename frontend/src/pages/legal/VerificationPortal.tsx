@@ -35,13 +35,7 @@ const configs: Record<VerificationType, { label: string; idLabel: string; path: 
     icon: QrCode,
     placeholder: 'e.g. HX-2026-000001',
   },
-  'inst-certificate': {
-    label: 'Institution Certificate',
-    idLabel: 'Certificate ID',
-    path: '/verification/inst-certificate',
-    icon: FileCheck2,
-    placeholder: 'e.g. HX-CERT-E2FF4358',
-  },
+
 };
 
 const normalizeType = (type?: string): VerificationType => {

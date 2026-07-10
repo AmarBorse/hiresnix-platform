@@ -1,6 +1,6 @@
 import client from './client';
 
-export type VerificationType = 'certificate' | 'offer-letter' | 'recommendation-letter' | 'career-id' | 'inst-certificate';
+export type VerificationType = 'certificate' | 'offer-letter' | 'recommendation-letter' | 'career-id';
 
 export type VerificationRecord = {
   valid: boolean;
@@ -16,7 +16,6 @@ const endpoints: Record<VerificationType, string> = {
   'offer-letter': '/iplatform/verify-offer',
   'recommendation-letter': '/iplatform/verify-recommendation',
   'career-id': '/iplatform/verify-career-id',
-  'inst-certificate': '/iplatform/verify-inst-cert',
 };
 
 const getLookupIds = (type: VerificationType, id: string) => {
