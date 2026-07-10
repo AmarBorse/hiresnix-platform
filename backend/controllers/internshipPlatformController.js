@@ -629,7 +629,17 @@ const downloadCertificate = asyncHandler(async (req, res) => {
   doc.fillColor(COMPANY.colors.primary).fontSize(20).font('Helvetica-Bold')
      .text(enrollment.domain?.name || 'Technology', 0, 300, { align: 'center' });
 
-  const duration = enrollment.domain?.duration || '8 Weeks';
+  // Calculate duration from startDate → completedAt
+  let duration = enrollment.domain?.duration || '8 Weeks';
+  const startD = enrollment.startDate ? new Date(enrollment.startDate) : null;
+  const endD   = enrollment.completedAt ? new Date(enrollment.completedAt) : null;
+  if (startD && endD && !isNaN(startD) && !isNaN(endD) && endD > startD) {
+    let months = (endD.getFullYear() - startD.getFullYear()) * 12 + (endD.getMonth() - startD.getMonth());
+    const dayDiff = endD.getDate() - startD.getDate();
+    if (dayDiff >= 15) months += 1;
+    months = Math.max(1, months);
+    duration = `${months} Month${months === 1 ? '' : 's'}`;
+  }
   doc.fillColor('#475569').fontSize(12).font('Helvetica')
      .text(`Duration: ${duration}`, 0, 328, { align: 'center' });
 
