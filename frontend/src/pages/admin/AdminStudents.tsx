@@ -25,9 +25,16 @@ type InternTab = 'all' | 'not_applied' | 'active' | 'rejected';
 export function AdminStudents() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
+  const [searchInput, setSearchInput] = useState('');
   const [deptFilter, setDeptFilter] = useState('');
   const [internTab, setInternTab] = useState<InternTab>('all');
   const handleDeptFilter = (v: string) => { setDeptFilter(v); setPage(1); };
+
+  // Debounce search → triggers backend call
+  React.useEffect(() => {
+    const t = setTimeout(() => { setSearch(searchInput); setPage(1); }, 400);
+    return () => clearTimeout(t);
+  }, [searchInput]);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [resetModal, setResetModal] = useState<any | null>(null);
   const [resetForm, setResetForm] = useState({ newPassword: '', confirmPassword: '' });
@@ -47,7 +54,7 @@ export function AdminStudents() {
   const refetch = React.useCallback(() => {
     setLoading(true);
     Promise.all([
-      adminApi.getAllStudents({ page, limit: 15, department: deptFilter || undefined }),
+      adminApi.getAllStudents({ page, limit: 15, department: deptFilter || undefined, search: search || undefined }),
       adminApi.getIPlatformApplications(),
       adminApi.getIPlatformEnrollments(),
     ])
@@ -59,7 +66,7 @@ export function AdminStudents() {
       })
       .catch((err: any) => setError(err.message || 'Failed to load'))
       .finally(() => setLoading(false));
-  }, [page, deptFilter]);
+  }, [page, deptFilter, search]);
 
   React.useEffect(() => { refetch(); }, [refetch]);
 
@@ -89,14 +96,9 @@ export function AdminStudents() {
   };
 
   const filtered = students.filter(s => {
-    const q = search.toLowerCase();
-    const matchSearch = !search ||
-      s.user?.name?.toLowerCase().includes(q) ||
-      s.user?.email?.toLowerCase().includes(q) ||
-      s.rollNumber?.toLowerCase().includes(q);
+    // search already handled by backend — only apply tab + dept filter locally
     const matchDept = !deptFilter || s.department === deptFilter;
-
-    if (!matchSearch || !matchDept) return false;
+    if (!matchDept) return false;
 
     if (internTab === 'all') return true;
     const uid = s.userId || s.user?.id;
@@ -215,7 +217,7 @@ export function AdminStudents() {
         <div className="relative flex-1">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input type="text" placeholder="Search name, email, roll no..."
-            value={search} onChange={e => setSearch(e.target.value)}
+            value={searchInput} onChange={e => setSearchInput(e.target.value)}
             className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500 bg-white" />
         </div>
         <select value={deptFilter} onChange={e => handleDeptFilter(e.target.value)}

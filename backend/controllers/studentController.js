@@ -143,11 +143,29 @@ const getJobRecommendations = asyncHandler(async (req, res) => {
 
 // GET /api/students  (admin only)
 const getAllStudents = asyncHandler(async (req, res) => {
-  const { department, placementStatus, minCGPA, page = 1, limit = 20 } = req.query;
+  const { department, placementStatus, minCGPA, search, page = 1, limit = 20 } = req.query;
   const where = {};
   if (department)      where.department      = department;
   if (placementStatus) where.placementStatus = placementStatus;
   if (minCGPA)         where.cgpa            = { [Op.gte]: parseFloat(minCGPA) };
+
+  // Search: find matching userIds first, then include in student query
+  if (search) {
+    const matchingUsers = await User.findAll({
+      where: {
+        [Op.or]: [
+          { name:  { [Op.iLike]: `%${search}%` } },
+          { email: { [Op.iLike]: `%${search}%` } },
+        ],
+      },
+      attributes: ['id'],
+    });
+    const matchingUserIds = matchingUsers.map(u => u.id);
+    where[Op.or] = [
+      { rollNumber: { [Op.iLike]: `%${search}%` } },
+      ...(matchingUserIds.length ? [{ userId: { [Op.in]: matchingUserIds } }] : []),
+    ];
+  }
 
   const { count, rows } = await Student.findAndCountAll({
     where,
