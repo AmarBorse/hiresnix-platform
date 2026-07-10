@@ -53,13 +53,14 @@ export const verificationApi = {
     const flat = res.data || {};
     const data = flat.data || flat;
 
+    const isValid = Boolean(flat.valid ?? data.valid ?? data.isValid ?? true);
     return {
-      valid: Boolean(flat.valid ?? data.valid ?? data.isValid ?? true),
-      studentName: data.studentName || data.candidateName || flat.studentName,
-      issueDate: data.issueDate || data.issuedAt || flat.issueDate || flat.issuedAt,
-      internshipDomain: data.courseName || data.internshipDomain || flat.courseName || flat.internshipDomain || data.domainName,
-      documentId: data.documentId || data.certificateId || flat.documentId || id,
-      documentType: data.documentType || flat.documentType,
+      valid: isValid,
+      studentName: flat.studentName || data.studentName || data.candidateName,
+      issueDate: flat.issueDate || flat.issuedAt || data.issueDate || data.issuedAt,
+      internshipDomain: flat.courseName || data.courseName || flat.internshipDomain || data.internshipDomain || data.domainName,
+      documentId: flat.documentId || data.documentId || data.certificateId || id,
+      documentType: flat.documentType || data.documentType,
     };
   },
 };

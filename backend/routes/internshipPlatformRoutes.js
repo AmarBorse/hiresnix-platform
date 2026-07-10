@@ -46,47 +46,41 @@ r.get('/enrolled-students',          protect, authorize('admin'), ctrl.getEnroll
 r.get('/all-enrollments',            protect, authorize('admin'), ctrl.getAllEnrollments);
 
 
-// Institution Certificate verification — type-specific
-r.get('/verify-skill-assessment/:id?', asyncHandler(async (req, res) => {
+// Institution Certificate verification — single route, type-aware
+const verifyCert = (expectedType) => asyncHandler(async (req, res) => {
   const id = req.params.id || req.query.id;
   if (!id) { res.status(400); throw new Error('Certificate ID required'); }
   const { InstitutionCertificate, Institution } = require('../models');
-  const cert = await InstitutionCertificate.findOne({
-    where: { certificateId: id.toString().toUpperCase().trim(), type: 'Skill Assessment' },
-    include: [{ model: Institution, as: 'institution', attributes: ['institutionName','city','state'] }]
-  });
-  if (!cert) return res.json({ valid: false, message: 'No Skill Assessment certificate found with this ID' });
-  res.json({
-    valid: true,
-    studentName: cert.studentName,
-    documentId: cert.certificateId,
-    institutionName: cert.institutionName || cert.institution?.institutionName || 'Hiresnix',
-    courseName: cert.courseName,
-    type: cert.type,
-    issueDate: cert.issuedAt,
-    documentType: 'Certificate of Skill Assessment',
-  });
-}));
 
-r.get('/verify-course-completion/:id?', asyncHandler(async (req, res) => {
-  const id = req.params.id || req.query.id;
-  if (!id) { res.status(400); throw new Error('Certificate ID required'); }
-  const { InstitutionCertificate, Institution } = require('../models');
+  // Find by ID only first
   const cert = await InstitutionCertificate.findOne({
-    where: { certificateId: id.toString().toUpperCase().trim(), type: 'Course Completion' },
+    where: { certificateId: id.toString().toUpperCase().trim() },
     include: [{ model: Institution, as: 'institution', attributes: ['institutionName','city','state'] }]
   });
-  if (!cert) return res.json({ valid: false, message: 'No Course Completion certificate found with this ID' });
+
+  if (!cert) return res.json({ valid: false, message: 'Certificate not found' });
+
+  // Check type matches
+  if (expectedType && cert.type !== expectedType) {
+    return res.json({
+      valid: false,
+      message: `This is a "${cert.type}" certificate, not a "${expectedType}" certificate. Please use the correct tab.`
+    });
+  }
+
   res.json({
     valid: true,
     studentName: cert.studentName,
     documentId: cert.certificateId,
     institutionName: cert.institutionName || cert.institution?.institutionName || 'Hiresnix',
     courseName: cert.courseName,
-    type: cert.type,
+    certType: cert.type,
     issueDate: cert.issuedAt,
-    documentType: 'Certificate of Course Completion',
+    documentType: `Certificate of ${cert.type}`,
   });
-}));
+});
+
+r.get('/verify-skill-assessment/:id?',  verifyCert('Skill Assessment'));
+r.get('/verify-course-completion/:id?', verifyCert('Course Completion'));
 
 module.exports = r;
