@@ -11,7 +11,7 @@ type Tab = 'login' | 'register';
 type RegisterRole = 'student' | 'company' | 'institution';
 
 const inputStyle = (err?: string) =>
-  `w-full border ${err ? 'border-red-500' : 'border-white/10'} rounded-xl px-4 py-2.5 text-white text-sm placeholder-gray-500 focus:outline-none focus:border-blue-500 transition auth-input`;
+  `w-full border ${err ? 'border-red-500' : 'border-white/10'} rounded-xl px-4 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-blue-500 transition`;
 const bg07 = { background: 'rgba(255,255,255,0.07)' };
 
 export function AuthPage() {
@@ -158,22 +158,7 @@ export function AuthPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-8" style={{ background: 'linear-gradient(135deg,#060910,#0f172a,#060910)', position: 'relative' }}>
-      <style>{`
-        body { margin: 0; background-color: #060910; }
-        .auth-input:-webkit-autofill,
-        .auth-input:-webkit-autofill:hover,
-        .auth-input:-webkit-autofill:focus,
-        .auth-input:-webkit-autofill:active {
-          -webkit-box-shadow: 0 0 0 1000px rgba(30,41,59,0.95) inset !important;
-          -webkit-text-fill-color: #fff !important;
-          caret-color: #fff;
-          border-color: rgba(255,255,255,0.15) !important;
-          transition: background-color 9999s ease-in-out 0s;
-        }
-        .auth-input {
-          color-scheme: dark;
-        }
-      `}</style>
+      <style>{`body { margin: 0; background-color: #060910; }`}</style>
       <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(circle,rgba(59,130,246,0.07) 1px,transparent 1px)', backgroundSize: '30px 30px' }} />
       <div style={{ position: 'absolute', top: -200, right: -100, width: 500, height: 500, borderRadius: '50%', background: 'rgba(59,130,246,0.06)', filter: 'blur(80px)' }} />
       <div style={{ position: 'absolute', bottom: -150, left: -100, width: 400, height: 400, borderRadius: '50%', background: 'rgba(139,92,246,0.06)', filter: 'blur(80px)' }} />
