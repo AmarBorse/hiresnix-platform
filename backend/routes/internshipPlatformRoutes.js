@@ -45,3 +45,46 @@ r.get('/enrolled-students',          protect, authorize('admin'), ctrl.getEnroll
 r.get('/all-enrollments',            protect, authorize('admin'), ctrl.getAllEnrollments);
 
 module.exports = r;
+
+// Career ID verification
+r.get('/verify-career-id', asyncHandler(async (req, res) => {
+  const { id } = req.query;
+  if (!id) { res.status(400); throw new Error('Career ID required'); }
+  const { InstitutionStudent, Institution } = require('../models');
+  const student = await InstitutionStudent.findOne({
+    where: { careerId: id.toString().toUpperCase() },
+    include: [{ model: Institution, as: 'institution', attributes: ['institutionName','city','state'] }]
+  });
+  if (!student) return res.json({ valid: false });
+  res.json({
+    valid: true,
+    studentName: student.name,
+    careerId: student.careerId,
+    institutionName: student.institution?.institutionName,
+    city: student.institution?.city,
+    issueDate: student.createdAt,
+    documentType: 'Career ID',
+  });
+}));
+
+// Institution Certificate verification
+r.get('/verify-inst-cert', asyncHandler(async (req, res) => {
+  const { id } = req.query;
+  if (!id) { res.status(400); throw new Error('Certificate ID required'); }
+  const { InstitutionCertificate, Institution } = require('../models');
+  const cert = await InstitutionCertificate.findOne({
+    where: { certificateId: id.toString().toUpperCase() },
+    include: [{ model: Institution, as: 'institution', attributes: ['institutionName','city'] }]
+  });
+  if (!cert) return res.json({ valid: false });
+  res.json({
+    valid: true,
+    studentName: cert.studentName,
+    documentId: cert.certificateId,
+    institutionName: cert.institutionName || cert.institution?.institutionName,
+    courseName: cert.courseName,
+    type: cert.type,
+    issueDate: cert.issuedAt,
+    documentType: 'Institution Certificate',
+  });
+}));

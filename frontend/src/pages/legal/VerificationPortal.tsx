@@ -8,25 +8,39 @@ import { VerificationRecord, VerificationType, verificationApi } from '../../api
 
 const configs: Record<VerificationType, { label: string; idLabel: string; path: string; icon: typeof Award; placeholder: string }> = {
   certificate: {
-    label: 'Certificate Verification',
+    label: 'Internship Certificate',
     idLabel: 'Certificate Number',
     path: '/verification/certificate',
     icon: Award,
     placeholder: 'e.g. HRX-LZ9X4Q',
   },
   'offer-letter': {
-    label: 'Offer Letter Verification',
+    label: 'Offer Letter',
     idLabel: 'Offer Letter ID',
     path: '/verification/offer-letter',
     icon: FileText,
     placeholder: 'e.g. HSH-INT-2026-AB12',
   },
   'recommendation-letter': {
-    label: 'Letter of Recommendation Verification',
+    label: 'Letter of Recommendation',
     idLabel: 'Recommendation Letter ID',
     path: '/verification/recommendation-letter',
     icon: FileCheck2,
     placeholder: 'e.g. LOR-1024',
+  },
+  'career-id': {
+    label: 'Career ID (Institution)',
+    idLabel: 'Career ID',
+    path: '/verification/career-id',
+    icon: QrCode,
+    placeholder: 'e.g. HX-2026-000001',
+  },
+  'inst-certificate': {
+    label: 'Institution Certificate',
+    idLabel: 'Certificate ID',
+    path: '/verification/inst-certificate',
+    icon: FileCheck2,
+    placeholder: 'e.g. HX-CERT-E2FF4358',
   },
 };
 
