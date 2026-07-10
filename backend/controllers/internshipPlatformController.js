@@ -629,12 +629,16 @@ const downloadCertificate = asyncHandler(async (req, res) => {
   doc.fillColor(COMPANY.colors.primary).fontSize(20).font('Helvetica-Bold')
      .text(enrollment.domain?.name || 'Technology', 0, 300, { align: 'center' });
 
+  const duration = enrollment.domain?.duration || '8 Weeks';
   doc.fillColor('#475569').fontSize(12).font('Helvetica')
-     .text(`at ${COMPANY.name} | Issued on ${issueDate}`, 0, 335, { align: 'center' });
+     .text(`Duration: ${duration}`, 0, 328, { align: 'center' });
+
+  doc.fillColor('#475569').fontSize(12).font('Helvetica')
+     .text(`at ${COMPANY.name} | Issued on ${issueDate}`, 0, 348, { align: 'center' });
 
   if (cert?.certificateNo) {
     doc.fillColor('#94a3b8').fontSize(9).font('Helvetica')
-       .text(`Certificate No: ${cert.certificateNo}`, 0, 358, { align: 'center' });
+       .text(`Certificate No: ${cert.certificateNo}`, 0, 372, { align: 'center' });
   }
 
   // QR Code for Verification
