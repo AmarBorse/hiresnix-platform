@@ -74,9 +74,10 @@ export function StudentMockInterview() {
   const streamRef   = useRef<MediaStream | null>(null);
   const recognRef   = useRef<any>(null);
   const timerRef    = useRef<NodeJS.Timeout | null>(null);
-  const faceTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const micActiveRef = useRef(false);   // track mic state without stale closure
-  const finalTextRef = useRef('');      // accumulate final transcript
+  const faceTimerRef  = useRef<NodeJS.Timeout | null>(null);
+  const micActiveRef   = useRef(false);
+  const finalTextRef   = useRef('');
+  const prevFrameRef   = useRef<ImageData | null>(null);ipt
 
   // ── Camera ───────────────────────────────────────────────────────
   const startCamera = async () => {
@@ -100,25 +101,98 @@ export function StudentMockInterview() {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     if (!ctx || video.videoWidth === 0) return;
-    canvas.width = video.videoWidth / 4;
-    canvas.height = video.videoHeight / 4;
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    const W = Math.floor(video.videoWidth / 3);
+    const H = Math.floor(video.videoHeight / 3);
+    canvas.width = W;
+    canvas.height = H;
+    ctx.drawImage(video, 0, 0, W, H);
+
     try {
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const imageData = ctx.getImageData(0, 0, W, H);
       const data = imageData.data;
+
+      // ── 1. Skin pixel detection ─────────────────────────────────
       let skinPixels = 0;
-      for (let i = 0; i < data.length; i += 16) {
-        const r = data[i], g = data[i+1], b = data[i+2];
-        if (r > 95 && g > 40 && b > 20 && r > g && r > b && Math.abs(r-g) > 15) skinPixels++;
+      let totalChecked = 0;
+
+      // Check center region (face should be centered)
+      const cx = Math.floor(W / 2), cy = Math.floor(H / 2);
+      const rx = Math.floor(W * 0.35), ry = Math.floor(H * 0.45);
+
+      for (let y = cy - ry; y < cy + ry; y += 2) {
+        for (let x = cx - rx; x < cx + rx; x += 2) {
+          const i = (y * W + x) * 4;
+          const r = data[i], g = data[i+1], b = data[i+2];
+          totalChecked++;
+          // Broader skin detection (works for Indian skin tones)
+          const isSkin = (
+            r > 60 && g > 30 && b > 15 &&
+            r > b &&
+            (r - g) > 5 &&
+            r < 250 &&
+            Math.max(r,g,b) - Math.min(r,g,b) > 10
+          );
+          if (isSkin) skinPixels++;
+        }
       }
-      const totalPixels = (canvas.width * canvas.height) / 4;
-      setFaceWarning(skinPixels / totalPixels > 0.35);
+
+      const skinRatio = totalChecked > 0 ? skinPixels / totalChecked : 0;
+
+      // ── 2. Motion / look-away detection ────────────────────────
+      // Compare brightness across left/right halves of face region
+      // If person looks away, brightness distribution shifts significantly
+      let leftBrightness = 0, rightBrightness = 0, brightCount = 0;
+      for (let y = cy - ry; y < cy + ry; y += 4) {
+        for (let x = cx - rx; x < cx + rx; x += 4) {
+          const i = (y * W + x) * 4;
+          const brightness = (data[i] * 0.299 + data[i+1] * 0.587 + data[i+2] * 0.114);
+          if (x < cx) leftBrightness += brightness;
+          else rightBrightness += brightness;
+          brightCount++;
+        }
+      }
+      const halfCount = brightCount / 2 || 1;
+      const leftAvg = leftBrightness / halfCount;
+      const rightAvg = rightBrightness / halfCount;
+      const asymmetry = Math.abs(leftAvg - rightAvg) / (Math.max(leftAvg, rightAvg) || 1);
+
+      // ── 3. Frame difference (motion = looking away quickly) ─────
+      let motionScore = 0;
+      if (prevFrameRef.current) {
+        const prev = prevFrameRef.current.data;
+        let diff = 0;
+        for (let i = 0; i < data.length; i += 16) {
+          diff += Math.abs(data[i] - prev[i]) + Math.abs(data[i+1] - prev[i+1]) + Math.abs(data[i+2] - prev[i+2]);
+        }
+        motionScore = diff / (data.length / 16) / 255;
+      }
+      prevFrameRef.current = imageData;
+
+      // ── Decision ────────────────────────────────────────────────
+      // Face not in center = low skin in center region
+      const noFaceInCenter = skinRatio < 0.08;
+      // Strong asymmetry = looking to the side
+      const lookingAway = asymmetry > 0.25 && skinRatio > 0.05;
+      // High motion = sudden head turn
+      const suddenTurn = motionScore > 0.12;
+
+      const isWarning = noFaceInCenter || lookingAway || suddenTurn;
+
+      if (isWarning) {
+        setFaceWarning(true);
+        setEyeContact(false);
+        setLookAwayCount(c => c + 1);
+      } else {
+        setFaceWarning(false);
+        setEyeContact(skinRatio > 0.12);
+      }
     } catch {}
   }, []);
 
   useEffect(() => {
     if (stage === 'interview' && camOn) {
-      faceTimerRef.current = setInterval(detectFaces, 3000);
+      faceTimerRef.current = setInterval(detectFaces, 2000);
     }
     return () => { if (faceTimerRef.current) clearInterval(faceTimerRef.current); };
   }, [stage, camOn, detectFaces]);
@@ -262,7 +336,49 @@ export function StudentMockInterview() {
 
   // ── Groq AI ───────────────────────────────────────────────────────
   const GROQ_KEY = (import.meta as any).env.VITE_GROQ_API_KEY || '';
-  const SYSTEM = `You are Alex, a professional technical interviewer at Hiresnix. Conduct realistic interview for ${domain}. Ask ONE focused technical question at a time. Be conversational. Always respond ONLY in valid JSON: {"feedback":"brief feedback on previous answer (empty string for first question)","score":0,"nextQuestion":"your question","isComplete":false}. Set isComplete true after 5 questions.`;
+  const SYSTEM = `You are Alex, a friendly and encouraging technical interviewer at Hiresnix conducting a ${domain} interview with 20 questions.
+
+QUESTION FLOW — follow this order strictly:
+
+PHASE 1 — Personal (Q1-Q5):
+Q1: "Tell me about yourself." — listen carefully, note their name, background, college/company.
+Q2: "Tell me about your projects — what have you built, what technologies did you use, and what was your role?" — NOTE DOWN every project, tech stack, and feature they mention. You will use these in Q3 and later.
+Q3: Ask a DEEP follow-up question about ONE specific project they mentioned in Q2. Example: if they said they built a "login system", ask "In your login system, how did you handle password security and session management?" — always reference their actual project details.
+Q4: "What are your interests and hobbies outside of coding?"
+Q5: "Why did you choose ${domain} and where do you see yourself in 2-3 years?"
+
+PHASE 2 — Project Deep Dive (Q6-Q8):
+Ask 3 more technical questions specifically about the projects/technologies the candidate mentioned in Q2. Dig into implementation details, challenges faced, design decisions. Example: "You mentioned using React — how did you manage state in your project? Did you use Redux or Context API?" Always reference their actual answers.
+
+PHASE 3 — Technical Beginner (Q9-Q12):
+Ask 4 beginner-level ${domain} technical questions (core concepts, definitions, basic usage).
+
+PHASE 4 — Technical Intermediate (Q13-Q16):
+Ask 4 intermediate ${domain} questions (design patterns, problem-solving, real scenarios).
+
+PHASE 5 — Technical Advanced (Q17-Q19):
+Ask 3 advanced ${domain} questions (architecture, optimization, system design).
+
+Q20: "Do you have any questions for me?" (closing)
+
+STRICT RULES:
+1. In Q3 and Q6-Q8, ALWAYS reference the candidate's actual projects and tech stack from their Q2 answer. Never ask generic questions in these slots.
+2. After EVERY answer, give the CORRECT/IDEAL answer so the student learns.
+   Format: "[What they got right]. ✅ Ideal Answer: [complete correct explanation]. 💡 Tip: [one improvement]"
+3. For Q1, Q2, Q3, Q4, Q5 — scoring should be based on communication quality and detail, not technical accuracy.
+4. Be GENEROUS with scoring. Ignore voice recognition errors, filler words, informal language. Judge content only.
+
+SCORING GUIDE:
+9-10: Excellent, detailed, accurate
+7-8: Correct concept, minor gaps  
+5-6: Partially correct, right direction
+3-4: Some understanding but significant gaps
+1-2: Mostly wrong
+0-1: Blank or irrelevant
+
+Always respond ONLY in valid JSON (no extra text):
+{"feedback":"[praise] ✅ Ideal Answer: [correct explanation] 💡 Tip: [suggestion]","score":0,"nextQuestion":"your next question text","isComplete":false}
+Set isComplete true only after Q20.`;
 
   const callAI = async (msgs: Message[]) => {
     const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -292,7 +408,7 @@ export function StudentMockInterview() {
 
   const beginInterview = async () => {
     setStage('interview'); setAiThinking(true);
-    await speak(`Hello! I'm Alex, your Hiresnix interviewer. We'll cover ${domain} today with 5 questions. Please speak clearly or type your answers. Let's begin!`);
+    await speak(`Hello! I'm Alex, your Hiresnix interviewer. Today we have a 20-question ${domain} interview. We'll start with some questions about you and your projects, then move into technical topics. Please speak clearly or type your answers. Let's begin!`);
     const init: Message = {role:'user',content:`Start interview for ${domain}. Ask first question.`};
     try {
       const res = await callAI([init]);
@@ -326,7 +442,7 @@ export function StudentMockInterview() {
       const res = await callAI(newMsgs);
       setResults(prev => [...prev,{question:currentQ,answer:ans||'(No answer)',score:res.score,feedback:res.feedback}]);
 
-      if (res.isComplete || qNumber >= 5) {
+      if (res.isComplete || qNumber >= 20) {
         setAiThinking(false);
         await speak('That concludes our interview! Great effort. Let me calculate your results.');
         stopCamera(); setStage('result'); return;
@@ -336,7 +452,14 @@ export function StudentMockInterview() {
       setMessages([...newMsgs, aiMsg]);
       setAiThinking(false);
       setFeedback({score:res.score, text:res.feedback});
-      if (res.feedback) await speak(res.feedback);
+      // Speak a shortened version (remove emoji symbols for TTS clarity)
+      if (res.feedback) {
+        const spokenFeedback = res.feedback
+          .replace(/✅ Full Answer:/g, 'Here is the complete answer.')
+          .replace(/💡 Tip:/g, 'Tip:')
+          .replace(/[🎯🌟👍📚💪⚠️✅💡]/g, '');
+        await speak(spokenFeedback.slice(0, 300)); // limit length for TTS
+      }
       setFeedback(null);
       setCurrentQ(res.nextQuestion);
       setQNumber(n => n+1);
@@ -377,7 +500,7 @@ export function StudentMockInterview() {
           </div>
         </div>
         <div className="bg-indigo-50 rounded-xl p-4 space-y-1.5 text-sm text-indigo-700">
-          {['🤖 AI interviewer Alex will greet and question you','🔊 Questions spoken aloud (enable sound)','🎤 Mic auto-on after each question — speak or type','⚠️ Use Chrome browser for best voice recognition','⏱️ 90 seconds per question • 5 questions total'].map((t,i)=><p key={i}>{t}</p>)}
+          {['🤖 20 questions: Personal → Projects → Technical (Beginner→Advanced)','🔊 Questions spoken aloud (enable sound)','🎤 Mic auto-on after each question — speak or type','⚠️ Use Chrome browser for best voice recognition','⏱️ 90 seconds per question • 20 questions total'].map((t,i)=><p key={i}>{t}</p>)}
         </div>
         <div className="flex gap-3">
           <button onClick={()=>setMuted(m=>!m)}
@@ -425,7 +548,7 @@ export function StudentMockInterview() {
         <div className="flex items-center gap-3">
           <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"/>
           <span className="text-sm font-bold text-gray-700">LIVE INTERVIEW</span>
-          <span className="text-xs text-gray-400">• {domain} • Q{qNumber}/5</span>
+          <span className="text-xs text-gray-400">• {domain} • Q{qNumber}/20</span>
         </div>
         <div className="flex items-center gap-3">
           <button onClick={()=>setMuted(m=>!m)} className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition">
@@ -438,7 +561,7 @@ export function StudentMockInterview() {
       </div>
 
       <div className="w-full bg-gray-200 rounded-full h-1 mb-5">
-        <div className="bg-indigo-500 h-1 rounded-full transition-all" style={{width:`${((qNumber-1)/5)*100}%`}}/>
+        <div className="bg-indigo-500 h-1 rounded-full transition-all" style={{width:`${((qNumber-1)/20)*100}%`}}/>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -468,8 +591,26 @@ export function StudentMockInterview() {
             <video ref={videoRef} autoPlay muted playsInline className="w-full h-full object-cover"/>
             <canvas ref={canvasRef} className="hidden"/>
             {!camOn && <div className="absolute inset-0 flex flex-col items-center justify-center gap-2"><VideoOff size={32} className="text-gray-600"/><p className="text-gray-500 text-xs">Camera off</p></div>}
+
+            {/* Face warning overlay on video */}
+            {faceWarning && camOn && (
+              <div className="absolute inset-0 border-4 border-red-500 rounded-2xl pointer-events-none animate-pulse">
+                <div className="absolute top-0 left-0 right-0 bg-red-500/90 text-white text-xs font-bold px-3 py-2 flex items-center gap-2">
+                  <AlertTriangle size={13}/> 
+                  {lookAwayCount > 3 ? `⚠️ Look at camera! (${lookAwayCount} warnings)` : '👁️ Please look at the camera'}
+                </div>
+              </div>
+            )}
+
+            {/* Eye contact indicator */}
+            {camOn && !faceWarning && (
+              <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-green-500/80 text-white text-[10px] font-bold px-2 py-1 rounded-full">
+                <div className="w-1.5 h-1.5 bg-white rounded-full"/> 👁️ Good eye contact
+              </div>
+            )}
+
             <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-sm px-2 py-1 rounded-lg">
-              <p className="text-white text-xs font-semibold">You</p>
+              <p className="text-white text-xs font-semibold">You {lookAwayCount > 0 && <span className="text-red-300 text-[10px]">· {lookAwayCount} look-away</span>}</p>
             </div>
             {micOn && (
               <div className="absolute top-3 right-3 flex items-center gap-1.5 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
@@ -533,7 +674,7 @@ export function StudentMockInterview() {
         <h2 className="text-2xl font-black">Interview Complete!</h2>
         <p className="text-5xl font-black my-3">{avgScore}<span className="text-2xl">/10</span></p>
         <p className="text-lg font-semibold">{avgScore>=8?'🌟 Excellent!':avgScore>=6?'👍 Good Job!':avgScore>=4?'📚 Keep Practicing!':'💪 Keep Going!'}</p>
-        <p className="text-sm opacity-80 mt-1">{domain} • {results.length} Questions</p>
+        <p className="text-sm opacity-80 mt-1">{domain} • {results.length}/20 Questions</p>
       </div>
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="px-5 py-4 border-b flex items-center gap-2">
