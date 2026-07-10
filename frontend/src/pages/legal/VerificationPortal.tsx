@@ -28,18 +28,28 @@ const configs: Record<VerificationType, { label: string; idLabel: string; path: 
     icon: FileCheck2,
     placeholder: 'e.g. LOR-1024',
   },
-  'career-id': {
-    label: 'Career ID (Institution)',
-    idLabel: 'Career ID',
-    path: '/verification/career-id',
-    icon: QrCode,
-    placeholder: 'e.g. HX-2026-000001',
+  'skill-assessment': {
+    label: 'Certificate of Skill Assessment',
+    idLabel: 'Certificate ID',
+    path: '/verification/skill-assessment',
+    icon: Award,
+    placeholder: 'e.g. HX-CERT-EFB35F2C',
+  },
+  'course-completion': {
+    label: 'Certificate of Course Completion',
+    idLabel: 'Certificate ID',
+    path: '/verification/course-completion',
+    icon: FileCheck2,
+    placeholder: 'e.g. HX-CERT-504AAFC2',
   },
 
 };
 
 const normalizeType = (type?: string): VerificationType => {
-  if (type === 'offer-letter' || type === 'recommendation-letter' || type === 'certificate') return type;
+  if (type === 'skill-assessment') return 'skill-assessment';
+  if (type === 'course-completion') return 'course-completion';
+  if (type === 'offer-letter') return 'offer-letter';
+  if (type === 'recommendation-letter') return 'recommendation-letter';
   return 'certificate';
 };
 
