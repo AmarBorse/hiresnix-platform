@@ -173,13 +173,15 @@ export function StudentMockInterview() {
 
       // ── Decision ────────────────────────────────────────────────
       // Face not in center = low skin in center region
-      const noFaceInCenter = skinRatio < 0.08;
+      const noFaceInCenter = skinRatio < 0.05;
       // Strong asymmetry = looking to the side
-      const lookingAway = asymmetry > 0.25 && skinRatio > 0.05;
+      const lookingAway = asymmetry > 0.45 && skinRatio > 0.05;
       // High motion = sudden head turn
-      const suddenTurn = motionScore > 0.12;
+      const suddenTurn = motionScore > 0.22;
 
-      const isWarning = noFaceInCenter || lookingAway || suddenTurn;
+      // Require at least 2 signals to avoid false positives (glasses, lighting, etc)
+      const warningSignals = [noFaceInCenter, lookingAway, suddenTurn].filter(Boolean).length;
+      const isWarning = warningSignals >= 2;
 
       if (isWarning) {
         setFaceWarning(true);
@@ -439,6 +441,7 @@ Set isComplete true only after Q20.`;
     const newMsgs = [...messages, userMsg];
     setMessages(newMsgs);
     resetAnswer();
+    setLookAwayCount(0);
 
     try {
       const res = await callAI(newMsgs);
