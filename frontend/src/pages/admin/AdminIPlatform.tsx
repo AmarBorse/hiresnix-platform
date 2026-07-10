@@ -106,6 +106,7 @@ export function AdminIPlatform() {
   const [generatingOffer, setGeneratingOffer] = useState(false);
   const [appSearch, setAppSearch] = useState('');
   const [appStatusFilter, setAppStatusFilter] = useState<'All' | 'Pending' | 'Approved' | 'Rejected'>('All');
+  const [appSourceFilter, setAppSourceFilter] = useState<'All' | 'hiresnix' | 'institution'>('All');
 
   // Forms
   const [domainForm, setDomainForm] = useState({ name: '', description: '', icon: '💻', duration: '8 Weeks', totalSeats: 30 });
@@ -260,11 +261,11 @@ export function AdminIPlatform() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 border-b border-gray-200 bg-white rounded-t-xl px-3 pt-3">
+      <div className="flex gap-1 px-3 pt-3 rounded-t-xl" style={{background:"rgba(255,255,255,0.04)",borderBottom:"1px solid rgba(255,255,255,0.07)"}}>
         {tabs.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
             className={`px-4 py-2 text-sm font-semibold border-b-2 transition-all flex items-center gap-1.5 -mb-px ${
-              tab === t.id ? 'border-emerald-500 text-emerald-600' : 'border-transparent text-gray-500 hover:text-gray-700'
+              tab === t.id ? 'border-emerald-500 text-emerald-400' : 'border-transparent text-gray-600 hover:text-gray-300'
             }`}>
             {t.label}
             {t.count != null && t.count > 0 && (
@@ -289,31 +290,35 @@ export function AdminIPlatform() {
             (app.email || '').toLowerCase().includes(q) ||
             (app.phone || '').toLowerCase().includes(q) ||
             (app.college || '').toLowerCase().includes(q) ||
-            (app.domain?.name || '').toLowerCase().includes(q);
+            (app.domain?.name || '').toLowerCase().includes(q) ||
+            (app.institutionName || '').toLowerCase().includes(q);
           const matchStatus = appStatusFilter === 'All' || app.status === appStatusFilter;
-          return matchSearch && matchStatus;
+          const matchSource = appSourceFilter === 'All' || (app.source || 'hiresnix') === appSourceFilter;
+          return matchSearch && matchStatus && matchSource;
         });
 
         const pending  = filtered.filter((a: any) => a.status === 'Pending');
         const approved = filtered.filter((a: any) => a.status === 'Approved');
         const rejected = filtered.filter((a: any) => a.status === 'Rejected');
 
-        const AppCard = ({ app, accent, avatarBg, avatarText }: any) => (
-          <div className={`rounded-xl border-l-4 ${accent} bg-white shadow-sm p-4 hover:shadow-md transition`}>
+        const AppCard = ({ app, accent, accentColor }: any) => (
+          <div className={`rounded-xl border-l-4 ${accent} p-4 hover:shadow-xl transition-all hover:-translate-y-0.5`}
+            style={{background:"linear-gradient(135deg,rgba(15,23,42,0.95) 0%,rgba(20,30,55,0.95) 100%)",border:"1px solid rgba(255,255,255,0.1)",backdropFilter:"blur(12px)"}}>
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0 ${avatarBg} ${avatarText}`}>
+                <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0 text-white"
+                  style={{background:`linear-gradient(135deg,${accentColor}cc,${accentColor}88)`,border:`1.5px solid ${accentColor}66`}}>
                   {app.studentName?.[0]?.toUpperCase()}
                 </div>
                 <div>
                   <div className="flex items-center gap-2 flex-wrap">
-                    <p className="font-bold text-gray-900 text-sm">{app.studentName}</p>
+                    <p className="font-bold text-white text-sm">{app.studentName}</p>
                     <Badge status={app.status} />
                   </div>
-                  <p className="text-xs text-gray-500 mt-0.5">{app.email} · {app.phone}</p>
-                  <p className="text-xs text-gray-500">{app.college} · {app.year}</p>
-                  <p className="text-xs font-semibold text-blue-600 mt-0.5">{app.domain?.name}</p>
-                  <p className="text-[11px] text-gray-400 mt-0.5">Applied: {new Date(app.createdAt).toLocaleDateString('en-IN')}</p>
+                  <p className="text-xs mt-0.5" style={{color:"#475569"}}>{app.email} · {app.phone}</p>
+                  <p className="text-xs" style={{color:"#475569"}}>{app.college} · {app.year}</p>
+                  <p className="text-xs font-semibold mt-0.5" style={{color:"#60a5fa"}}>{app.domain?.name}</p>
+                  <p className="text-[11px] mt-0.5" style={{color:"#475569"}}>Applied: {new Date(app.createdAt).toLocaleDateString('en-IN')}</p>
                 </div>
               </div>
               <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
@@ -359,17 +364,17 @@ export function AdminIPlatform() {
             {app.whyJoin && (
               <div className="mt-2.5">
                 <button onClick={() => setExpandedId(expandedId === app.id ? null : app.id)}
-                  className="text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1">
+                  className="text-xs text-gray-600 hover:text-gray-400 flex items-center gap-1">
                   {expandedId === app.id ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
                   Why they want to join
                 </button>
                 {expandedId === app.id && (
-                  <p className="text-xs text-gray-600 mt-1.5 bg-gray-50 rounded-lg p-3 italic">"{app.whyJoin}"</p>
+                  <p className="text-xs mt-1.5 rounded-lg p-3 italic" style={{background:"rgba(255,255,255,0.05)",color:"#94a3b8"}}>"{app.whyJoin}"</p>
                 )}
               </div>
             )}
             {app.adminNote && app.status === 'Rejected' && (
-              <p className="text-xs text-red-500 mt-1.5 bg-red-50 rounded-lg px-3 py-1.5">❌ Note: {app.adminNote}</p>
+              <p className="text-xs mt-1.5 rounded-lg px-3 py-1.5" style={{background:"rgba(239,68,68,0.1)",color:"#f87171"}}>❌ Note: {app.adminNote}</p>
             )}
           </div>
         );
@@ -377,18 +382,32 @@ export function AdminIPlatform() {
         return (
           <div className="space-y-5">
             {/* Search + Filter + Export bar */}
-            <div className="bg-white rounded-xl border border-gray-100 shadow-sm px-4 py-3 flex flex-wrap items-center gap-3">
+            <div className="rounded-xl px-4 py-3 flex flex-wrap items-center gap-3" style={{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.07)"}}>
               <div className="flex-1 min-w-[180px] relative">
                 <input
                   type="text"
                   placeholder="Search by name, email, college, domain..."
                   value={appSearch}
                   onChange={e => setAppSearch(e.target.value)}
-                  className="w-full pl-8 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-blue-400"
+                  className="w-full pl-8 pr-3 py-2 text-sm rounded-lg focus:outline-none dark-input"
                 />
                 <span className="absolute left-2.5 top-2.5 text-gray-400 text-xs">🔍</span>
               </div>
               <div className="flex gap-1 flex-wrap">
+                {/* Source filter */}
+                {(['All', 'hiresnix', 'institution'] as const).map(s => (
+                  <button key={s} onClick={() => setAppSourceFilter(s)}
+                    className={`text-xs font-semibold px-2.5 py-1.5 rounded-lg transition ${
+                      appSourceFilter === s
+                        ? s === 'institution' ? 'bg-violet-500 text-white'
+                          : s === 'hiresnix' ? 'bg-blue-500 text-white'
+                          : 'bg-gray-700 text-white'
+                        : 'bg-white/5 text-gray-500 hover:bg-white/10'
+                    }`}>
+                    {s === 'All' ? '🌐 All' : s === 'hiresnix' ? '💙 Hiresnix' : '🏫 Institution'}
+                  </button>
+                ))}
+                <div className="w-px bg-white/10 mx-1" />
                 {(['All', 'Pending', 'Approved', 'Rejected'] as const).map(s => (
                   <button key={s} onClick={() => setAppStatusFilter(s)}
                     className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition ${
@@ -410,7 +429,7 @@ export function AdminIPlatform() {
             </div>
 
             {filtered.length === 0 && (
-              <div className="text-center py-16 text-gray-400 bg-white rounded-xl border border-gray-100">
+              <div className="text-center py-16 rounded-xl" style={{background:"rgba(15,23,42,0.8)",border:"1px solid rgba(255,255,255,0.08)",color:"#64748b"}}>
                 <GraduationCap size={36} className="mx-auto mb-3 opacity-30" />
                 <p>{appSearch ? 'No results found' : 'No applications yet'}</p>
               </div>
@@ -421,11 +440,11 @@ export function AdminIPlatform() {
               <div>
                 <div className="flex items-center gap-2 mb-3">
                   <div className="w-3 h-3 rounded-full bg-amber-400" />
-                  <h3 className="font-bold text-gray-800 text-sm">⏳ Pending Review <span className="text-amber-500 font-black">({pending.length})</span></h3>
+                  <h3 className="font-bold text-white text-sm">⏳ Pending Review <span className="font-black" style={{color:"#fbbf24"}}>({pending.length})</span></h3>
                 </div>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                   {pending.map((app: any) => (
-                    <AppCard key={app.id} app={app} accent="border-amber-400" avatarBg="bg-amber-50" avatarText="text-amber-600" />
+                    <AppCard key={app.id} app={app} accent="border-amber-400" accentColor="#f59e0b" />
                   ))}
                 </div>
               </div>
@@ -436,11 +455,11 @@ export function AdminIPlatform() {
               <div>
                 <div className="flex items-center gap-2 mb-3">
                   <div className="w-3 h-3 rounded-full bg-emerald-500" />
-                  <h3 className="font-bold text-gray-800 text-sm">✅ Approved <span className="text-emerald-600 font-black">({approved.length})</span></h3>
+                  <h3 className="font-bold text-white text-sm">✅ Approved <span className="font-black" style={{color:"#34d399"}}>({approved.length})</span></h3>
                 </div>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                   {approved.map((app: any) => (
-                    <AppCard key={app.id} app={app} accent="border-emerald-400" avatarBg="bg-emerald-50" avatarText="text-emerald-700" />
+                    <AppCard key={app.id} app={app} accent="border-emerald-400" accentColor="#10b981" />
                   ))}
                 </div>
               </div>
@@ -451,11 +470,11 @@ export function AdminIPlatform() {
               <div>
                 <div className="flex items-center gap-2 mb-3">
                   <div className="w-3 h-3 rounded-full bg-red-400" />
-                  <h3 className="font-bold text-gray-800 text-sm">❌ Rejected <span className="text-red-500 font-black">({rejected.length})</span></h3>
+                  <h3 className="font-bold text-white text-sm">❌ Rejected <span className="font-black" style={{color:"#f87171"}}>({rejected.length})</span></h3>
                 </div>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                   {rejected.map((app: any) => (
-                    <AppCard key={app.id} app={app} accent="border-red-400" avatarBg="bg-red-50" avatarText="text-red-500" />
+                    <AppCard key={app.id} app={app} accent="border-red-400" accentColor="#ef4444" />
                   ))}
                 </div>
               </div>
@@ -512,9 +531,9 @@ export function AdminIPlatform() {
                       onClick={() => setSelectedBatch(month)}>
                       <div className="flex items-start justify-between mb-3">
                         <div>
-                          <h3 className="font-bold text-gray-900">{month} Batch</h3>
+                          <h3 className="font-bold text-white">{month} Batch</h3>
                           {firstDate && (
-                            <p className="text-xs text-gray-400 mt-0.5">
+                            <p className="text-xs mt-0.5" style={{color:"#475569"}}>
                               From {new Date(firstDate).toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' })}
                             </p>
                           )}
@@ -546,7 +565,7 @@ export function AdminIPlatform() {
                     <ChevronUp size={16} />
                   </button>
                   <div className="flex-1">
-                    <p className="font-bold text-gray-900">{selectedBatch}</p>
+                    <p className="font-bold text-white">{selectedBatch}</p>
                     <p className="text-xs text-gray-400">{groups[selectedBatch]?.length} students</p>
                   </div>
                   <button onClick={() => {
@@ -570,7 +589,7 @@ export function AdminIPlatform() {
                 </div>
                 <div className="divide-y divide-gray-50">
                   {(groups[selectedBatch] || []).map((e: any) => (
-                    <div key={e.id} className="px-5 py-4 hover:bg-gray-50 transition">
+                    <div key={e.id} className="px-5 py-4 transition" style={{borderBottom:"1px solid rgba(255,255,255,0.05)"}}>
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 font-bold text-sm flex-shrink-0">
@@ -578,10 +597,10 @@ export function AdminIPlatform() {
                           </div>
                           <div>
                             <div className="flex items-center gap-2 mb-0.5">
-                              <p className="font-semibold text-gray-900">{e.studentName}</p>
+                              <p className="font-semibold text-white">{e.studentName}</p>
                               <Badge status={e.status} />
                             </div>
-                            <p className="text-xs text-gray-500">{e.email}</p>
+                            <p className="text-xs" style={{color:"#475569"}}>{e.email}</p>
                             <p className="text-sm font-medium text-blue-600">{e.domain?.name}</p>
                             <div className="flex items-center gap-3 mt-1.5">
                               <div className="flex items-center gap-2">
@@ -635,7 +654,7 @@ export function AdminIPlatform() {
                       {(e.taskLogs || []).length > 0 && (
                         <div className="mt-3">
                           <button onClick={() => setExpandedId(expandedId === e.id ? null : e.id)}
-                            className="text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1">
+                            className="text-xs text-gray-600 hover:text-gray-400 flex items-center gap-1">
                             {expandedId === e.id ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
                             View submitted tasks ({(e.taskLogs || []).length})
                           </button>
@@ -646,7 +665,7 @@ export function AdminIPlatform() {
                                   <CheckCircle size={12} className="text-emerald-500 mt-0.5 flex-shrink-0" />
                                   <div>
                                     <p className="text-xs font-semibold text-gray-800">{log.title}</p>
-                                    <p className="text-xs text-gray-500">{log.description}</p>
+                                    <p className="text-xs" style={{color:"#475569"}}>{log.description}</p>
                                     {log.url && <a href={log.url} target="_blank" rel="noreferrer" className="text-xs text-blue-500 hover:underline">{log.url}</a>}
                                     <p className="text-[10px] text-gray-400 mt-0.5">Week {log.week} · {new Date(log.submittedAt).toLocaleDateString()}</p>
                                   </div>
@@ -670,7 +689,7 @@ export function AdminIPlatform() {
         <div className="grid md:grid-cols-2 gap-5">
           {/* Create Form */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-            <h3 className="font-bold text-gray-900 text-base mb-4 flex items-center gap-2">
+            <h3 className="font-bold text-white text-base mb-4 flex items-center gap-2">
               <Plus size={16} className="text-emerald-500" /> Create Domain
             </h3>
             <form onSubmit={handleCreateDomain} className="space-y-3">
@@ -715,13 +734,13 @@ export function AdminIPlatform() {
 
           {/* Domain List */}
           <div className="space-y-3">
-            <h3 className="font-bold text-gray-900 text-sm">{domains.length} domains</h3>
+            <h3 className="font-bold text-white text-sm">{domains.length} domains</h3>
             {domains.map((d: any) => (
               <div key={d.id} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex items-center gap-3">
                 <span className="text-2xl">{d.icon}</span>
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-gray-900 truncate">{d.name}</p>
-                  <p className="text-xs text-gray-500">{d.duration} · {d.filledSeats}/{d.totalSeats} seats</p>
+                  <p className="text-xs" style={{color:"#475569"}}>{d.duration} · {d.filledSeats}/{d.totalSeats} seats</p>
                 </div>
                 <button onClick={async () => { 
                     if (window.confirm(`Are you sure you want to delete the ${d.name} domain?`)) {
@@ -747,7 +766,7 @@ export function AdminIPlatform() {
         <div className="grid md:grid-cols-2 gap-5">
           {/* Add Form */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-            <h3 className="font-bold text-gray-900 text-base mb-4 flex items-center gap-2">
+            <h3 className="font-bold text-white text-base mb-4 flex items-center gap-2">
               <BookOpen size={16} className="text-blue-500" /> Add Resource
             </h3>
             <form onSubmit={handleAddResource} className="space-y-3">
@@ -798,7 +817,7 @@ export function AdminIPlatform() {
 
           {/* Resource List */}
           <div className="space-y-2">
-            <h3 className="font-bold text-gray-900 text-sm">{resources.length} resources</h3>
+            <h3 className="font-bold text-white text-sm">{resources.length} resources</h3>
             <div className="max-h-[600px] overflow-y-auto space-y-2">
               {resources.map((r: any) => {
                 const iconMap: Record<string, any> = { Video: '🎬', PDF: '📄', Article: '📰', Assignment: '📝', Link: '🔗' };
