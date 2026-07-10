@@ -2,8 +2,6 @@
 // Shared glass design system for all portals — inject once per layout
 
 export const PORTAL_STYLES = `
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
-
   :root {
     --glass-bg:      rgba(255,255,255,0.06);
     --glass-border:  rgba(255,255,255,0.10);
@@ -21,11 +19,20 @@ export const PORTAL_STYLES = `
     display: flex; align-items: center; justify-content: space-between;
     padding: 9px 12px; border-radius: 10px;
     font-size: 13px; font-weight: 500;
-    transition: all 0.18s ease; cursor: pointer; text-decoration: none;
+    transition: background 0.18s ease, color 0.18s ease, transform 0.15s ease;
+    cursor: default;
+    text-decoration: none !important;
     color: #94A3B8; letter-spacing: 0.01em;
+    -webkit-font-smoothing: antialiased;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   }
-  .nav-item:hover { background: var(--glass-hover); color: #F1F5F9; transform: translateX(2px); }
-  .nav-item.active { color: #fff; }
+  .nav-item:hover {
+    background: var(--glass-hover);
+    color: #F1F5F9;
+    transform: translateX(2px);
+    cursor: default;
+  }
+  .nav-item.active { color: #fff; cursor: default; }
 
   /* ── Glass card ── */
   .glass-card {

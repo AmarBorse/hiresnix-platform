@@ -50,9 +50,9 @@ function ResetPasswordModal({ inst, onClose }: { inst: any; onClose: () => void 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-      <div className="bg-white rounded-xl w-full max-w-md shadow-xl">
-        <div className="flex items-center justify-between px-5 py-4 border-b">
-          <h2 className="font-semibold text-gray-800 flex items-center gap-2">
+      <div className="rounded-xl w-full max-w-md" style={{background:"#0f1729",border:"1px solid rgba(255,255,255,0.1)",boxShadow:"0 25px 60px rgba(0,0,0,0.6)"}}>
+        <div className="flex items-center justify-between px-5 py-4" style={{borderBottom:"1px solid rgba(255,255,255,0.08)"}}>
+          <h2 className="font-semibold text-white flex items-center gap-2">
             <KeyRound size={16} className="text-indigo-500" /> Reset Password
           </h2>
           <button onClick={onClose}><X size={18} className="text-gray-400" /></button>
@@ -76,11 +76,11 @@ function ResetPasswordModal({ inst, onClose }: { inst: any; onClose: () => void 
           {/* Admin tab */}
           {tab === 'admin' && (
             <div>
-              <p className="text-sm text-gray-500 mb-3">Reset login password for <strong>{inst.institutionName}</strong> admin account.</p>
-              <label className="block text-xs font-medium text-gray-600 mb-1">New Password</label>
+              <p className="text-sm text-gray-400 mb-3">Reset login password for <strong>{inst.institutionName}</strong> admin account.</p>
+              <label className="block text-xs font-medium text-gray-400 mb-1">New Password</label>
               <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)}
                 placeholder="Min 6 characters" autoFocus
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
+                className="w-full px-3 py-2 rounded-lg text-sm focus:outline-none dark-input" />
             </div>
           )}
 
@@ -88,9 +88,9 @@ function ResetPasswordModal({ inst, onClose }: { inst: any; onClose: () => void 
           {tab === 'student' && (
             <div className="space-y-3">
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Select Student</label>
+                <label className="block text-xs font-medium text-gray-400 mb-1">Select Student</label>
                 <select value={selectedStudent} onChange={e => setSelectedStudent(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300">
+                  className="w-full px-3 py-2 rounded-lg text-sm focus:outline-none dark-input">
                   <option value="">Select student...</option>
                   {stuLoading
                     ? <option disabled>Loading...</option>
@@ -100,10 +100,10 @@ function ResetPasswordModal({ inst, onClose }: { inst: any; onClose: () => void 
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">New Password</label>
+                <label className="block text-xs font-medium text-gray-400 mb-1">New Password</label>
                 <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)}
                   placeholder="Min 6 characters"
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
+                  className="w-full px-3 py-2 rounded-lg text-sm focus:outline-none dark-input" />
               </div>
             </div>
           )}
@@ -111,7 +111,7 @@ function ResetPasswordModal({ inst, onClose }: { inst: any; onClose: () => void 
           {/* All Students tab */}
           {tab === 'all' && (
             <div className="space-y-3">
-              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+              <div className="rounded-xl p-4" style={{background:"rgba(245,158,11,0.1)",border:"1px solid rgba(245,158,11,0.3)"}}>
                 <p className="text-sm text-amber-700 font-medium mb-1">⚠️ Reset All Student Passwords</p>
                 <p className="text-xs text-amber-600">
                   Sabhi students ka password default pe reset ho jayega:<br />
@@ -124,7 +124,7 @@ function ResetPasswordModal({ inst, onClose }: { inst: any; onClose: () => void 
           )}
 
           <div className="flex gap-3 justify-end pt-2">
-            <button onClick={onClose} className="px-4 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50">Cancel</button>
+            <button onClick={onClose} className="px-4 py-2 text-sm rounded-lg hover:bg-white/10 text-gray-400 transition" style={{border:"1px solid rgba(255,255,255,0.1)"}}>Cancel</button>
             <button onClick={handleReset} disabled={loading}
               className="flex items-center gap-2 px-5 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50">
               {loading ? <RefreshCw size={14} className="animate-spin" /> : <KeyRound size={14} />}
@@ -195,15 +195,15 @@ export function AdminInstitutions() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-xl font-bold text-gray-900">Institution Management</h1>
+        <h1 className="text-xl font-bold text-white">Institution Management</h1>
         <p className="text-sm text-gray-500">{total} institutions registered</p>
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
-        <div className="flex bg-white border border-gray-200 rounded-lg overflow-hidden">
+        <div className="flex rounded-lg overflow-hidden border border-white/10">
           {STATUS_TABS.map(t => (
             <button key={t} onClick={() => setTab(t)}
-              className={`px-4 py-2 text-sm font-medium capitalize transition ${tab === t ? 'bg-emerald-500 text-white' : 'text-gray-500 hover:bg-gray-50'}`}>
+              className={`px-4 py-2 text-sm font-medium capitalize transition ${tab === t ? 'bg-emerald-500 text-white' : 'text-gray-400 hover:bg-white/10 hover:text-white'}`}>
               {t}
             </button>
           ))}
@@ -211,14 +211,14 @@ export function AdminInstitutions() {
         <div className="relative flex-1 min-w-52">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search institutions..."
-            className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300 bg-white" />
+            className="w-full pl-9 pr-4 py-2 rounded-lg text-sm focus:outline-none dark-input" />
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-x-auto">
+      <div className="rounded-xl overflow-x-auto" style={{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.07)"}}>
         <table className="w-full text-sm">
           <thead>
-            <tr className="text-left text-xs text-gray-500 uppercase tracking-wide border-b border-gray-100">
+            <tr className="text-left text-xs uppercase tracking-wide" style={{color:"#475569",borderBottom:"1px solid rgba(255,255,255,0.06)"}}>
               <th className="px-4 py-3">Institution</th>
               <th className="px-4 py-3">Type</th>
               <th className="px-4 py-3">Contact</th>
@@ -229,42 +229,43 @@ export function AdminInstitutions() {
           </thead>
           <tbody>
             {loading
-              ? <tr><td colSpan={6} className="text-center py-12 text-gray-400">Loading...</td></tr>
+              ? <tr><td colSpan={6} className="text-center py-12 text-gray-600">Loading...</td></tr>
               : filtered.length === 0
-              ? <tr><td colSpan={6} className="text-center py-12 text-gray-400">No institutions found</td></tr>
+              ? <tr><td colSpan={6} className="text-center py-12 text-gray-600">No institutions found</td></tr>
               : filtered.map(inst => (
-                <tr key={inst.id} className="border-b border-gray-50 hover:bg-gray-50 transition">
+                <tr key={inst.id} className="transition" style={{borderBottom:"1px solid rgba(255,255,255,0.05)"}} onMouseEnter={e=>(e.currentTarget.style.background="rgba(255,255,255,0.04)")} onMouseLeave={e=>(e.currentTarget.style.background="")}>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center flex-shrink-0">
-                        <GraduationCap size={15} className="text-indigo-600" />
+                      <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <GraduationCap size={15} className="text-indigo-400" />
                       </div>
                       <div>
-                        <p className="font-medium text-gray-800">{inst.institutionName}</p>
-                        <p className="text-xs text-gray-400">{inst.city}{inst.state ? `, ${inst.state}` : ''}</p>
+                        <p className="font-medium text-white">{inst.institutionName}</p>
+                        <p className="text-xs text-gray-600">{inst.city}{inst.state ? `, ${inst.state}` : ''}</p>
                       </div>
                     </div>
                   </td>
                   <td className="px-4 py-3 text-gray-500">{inst.type || '—'}</td>
                   <td className="px-4 py-3">
                     <p className="text-gray-700">{inst.user?.name}</p>
-                    <p className="text-xs text-gray-400">{inst.user?.email}</p>
+                    <p className="text-xs text-gray-600">{inst.user?.email}</p>
                   </td>
                   <td className="px-4 py-3">
                     {inst.user?.isApproved
-                      ? <span className="flex items-center gap-1 text-emerald-700 text-xs font-medium bg-emerald-50 px-2 py-0.5 rounded-full w-fit"><CheckCircle2 size={12} /> Approved</span>
+                      ? <span className="flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full w-fit" style={{background:"rgba(16,185,129,0.15)",color:"#34d399"}}><CheckCircle2 size={12} /> Approved</span>
+                      : <span className="flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full w-fit" style={{background:"rgba(245,158,11,0.15)",color:"#fbbf24""><CheckCircle2 size={12} /> Approved</span>
                       : <span className="flex items-center gap-1 text-yellow-700 text-xs font-medium bg-yellow-50 px-2 py-0.5 rounded-full w-fit">Pending</span>}
                   </td>
                   <td className="px-4 py-3 text-gray-400 text-xs">{new Date(inst.createdAt).toLocaleDateString('en-IN')}</td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-center gap-1">
-                      <button onClick={() => openView(inst)} className="p-1.5 rounded hover:bg-blue-50 text-blue-500" title="View"><Eye size={15} /></button>
-                      <button onClick={() => setResetModal(inst)} className="p-1.5 rounded hover:bg-indigo-50 text-indigo-500" title="Reset Password"><KeyRound size={15} /></button>
+                      <button onClick={() => openView(inst)} className="p-1.5 rounded hover:bg-blue-500/20 text-blue-400 transition" title="View"><Eye size={15} /></button>
+                      <button onClick={() => setResetModal(inst)} className="p-1.5 rounded hover:bg-indigo-500/20 text-indigo-400 transition" title="Reset Password"><KeyRound size={15} /></button>
                       {!inst.user?.isApproved && (
-                        <button onClick={() => handleApprove(inst)} className="p-1.5 rounded hover:bg-emerald-50 text-emerald-600" title="Approve"><CheckCircle2 size={15} /></button>
+                        <button onClick={() => handleApprove(inst)} className="p-1.5 rounded hover:bg-emerald-500/20 text-emerald-400 transition" title="Approve"><CheckCircle2 size={15} /></button>
                       )}
-                      <button onClick={() => { setRejectModal(inst); setRejectReason(''); }} className="p-1.5 rounded hover:bg-orange-50 text-orange-500" title="Reject"><XCircle size={15} /></button>
-                      <button onClick={() => handleDelete(inst)} className="p-1.5 rounded hover:bg-red-50 text-red-500" title="Delete"><Trash2 size={15} /></button>
+                      <button onClick={() => { setRejectModal(inst); setRejectReason(''); }} className="p-1.5 rounded hover:bg-orange-500/20 text-orange-400 transition" title="Reject"><XCircle size={15} /></button>
+                      <button onClick={() => handleDelete(inst)} className="p-1.5 rounded hover:bg-red-500/20 text-red-400 transition" title="Delete"><Trash2 size={15} /></button>
                     </div>
                   </td>
                 </tr>
@@ -276,8 +277,8 @@ export function AdminInstitutions() {
       {/* View Modal */}
       {viewInst && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-          <div className="bg-white rounded-xl w-full max-w-lg shadow-xl max-h-[85vh] overflow-y-auto">
-            <div className="flex items-center justify-between px-5 py-4 border-b">
+          <div className="rounded-xl w-full max-w-lg max-h-[85vh] overflow-y-auto" style={{background:"#0f1729",border:"1px solid rgba(255,255,255,0.1)",boxShadow:"0 25px 60px rgba(0,0,0,0.6)"}}>
+            <div className="flex items-center justify-between px-5 py-4" style={{borderBottom:"1px solid rgba(255,255,255,0.08)"}}>
               <h2 className="font-semibold text-gray-800">Institution Details</h2>
               <button onClick={() => setViewInst(null)}><X size={18} className="text-gray-400" /></button>
             </div>
@@ -303,17 +304,17 @@ export function AdminInstitutions() {
 
                   {/* Per Batch Student Count */}
                   {(viewInst.batchesWithCount?.length ?? 0) > 0 && (
-                    <div className="bg-gray-50 rounded-xl p-4">
+                    <div className="rounded-xl p-4" style={{background:"rgba(255,255,255,0.04)"}}>
                       <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-1.5">
                         <Layers size={13} /> Batch-wise Students
                       </p>
                       <div className="space-y-2">
                         {viewInst.batchesWithCount.map((b: any) => (
-                          <div key={b.id} className="flex items-center justify-between bg-white rounded-lg px-3 py-2 border border-gray-100">
+                          <div key={b.id} className="flex items-center justify-between rounded-lg px-3 py-2" style={{background:"rgba(255,255,255,0.06)"}}>
                             <div className="flex items-center gap-2">
                               <span className={`w-2 h-2 rounded-full ${b.status === 'Active' ? 'bg-green-500' : b.status === 'Completed' ? 'bg-gray-400' : 'bg-blue-400'}`} />
-                              <span className="text-sm font-medium text-gray-800">{b.name}</span>
-                              <span className="text-xs text-gray-400">{b.status}</span>
+                              <span className="text-sm font-medium text-white">{b.name}</span>
+                              <span className="text-xs text-gray-600">{b.status}</span>
                             </div>
                             <div className="flex items-center gap-1.5 text-indigo-600 font-semibold text-sm">
                               <Users size={13} />
@@ -377,8 +378,8 @@ export function AdminInstitutions() {
       {/* Reject Modal */}
       {rejectModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-          <div className="bg-white rounded-xl w-full max-w-md shadow-xl">
-            <div className="flex items-center justify-between px-5 py-4 border-b">
+          <div className="rounded-xl w-full max-w-md" style={{background:"#0f1729",border:"1px solid rgba(255,255,255,0.1)",boxShadow:"0 25px 60px rgba(0,0,0,0.6)"}}>
+            <div className="flex items-center justify-between px-5 py-4" style={{borderBottom:"1px solid rgba(255,255,255,0.08)"}}>
               <h2 className="font-semibold">Reject Institution</h2>
               <button onClick={() => setRejectModal(null)}><X size={18} className="text-gray-400" /></button>
             </div>
@@ -386,7 +387,7 @@ export function AdminInstitutions() {
               <p className="text-sm text-gray-600">Rejecting <strong>{rejectModal.institutionName}</strong>. Reason (optional):</p>
               <textarea value={rejectReason} onChange={e => setRejectReason(e.target.value)} rows={3}
                 placeholder="Reason for rejection..."
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-300" />
+                className="w-full px-3 py-2 rounded-lg text-sm focus:outline-none dark-input" />
               <div className="flex gap-3 justify-end">
                 <button onClick={() => setRejectModal(null)} className="px-4 py-2 text-sm border rounded-lg hover:bg-gray-50">Cancel</button>
                 <button onClick={handleReject} className="px-5 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700">Reject</button>
