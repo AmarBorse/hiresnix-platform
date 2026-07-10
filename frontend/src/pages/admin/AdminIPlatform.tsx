@@ -104,6 +104,8 @@ export function AdminIPlatform() {
   const [completeModal, setCompleteModal] = useState<any>(null);
   const [offerModal, setOfferModal] = useState<any>(null);
   const [generatingOffer, setGeneratingOffer] = useState(false);
+  const [appSearch, setAppSearch] = useState('');
+  const [appStatusFilter, setAppStatusFilter] = useState<'All' | 'Pending' | 'Approved' | 'Rejected'>('All');
 
   // Forms
   const [domainForm, setDomainForm] = useState({ name: '', description: '', icon: '💻', duration: '8 Weeks', totalSeats: 30 });
@@ -279,119 +281,190 @@ export function AdminIPlatform() {
       )}
 
       {/* ── APPLICATIONS ─────────────────────────────────────── */}
-      {!loading && tab === 'applications' && (
-        <div className="bg-white rounded-b-xl rounded-tr-xl shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100">
-            <p className="text-sm font-semibold text-gray-700">{applicationTotal} total applications</p>
-            <button onClick={downloadApplicationsCSV}
-              className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg transition">
-              <Download size={13} /> Export CSV
-            </button>
-          </div>
-          {applications.length === 0 ? (
-            <div className="text-center py-16 text-gray-400">
-              <GraduationCap size={36} className="mx-auto mb-3 opacity-30" />
-              <p>No applications yet</p>
-            </div>
-          ) : (
-            <div className="divide-y divide-gray-50">
-              {applications.map((app: any) => (
-                <div key={app.id} className="px-5 py-4 hover:bg-gray-50 transition">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 font-bold text-sm flex-shrink-0">
-                        {app.studentName?.[0]?.toUpperCase()}
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <p className="font-semibold text-gray-900">{app.studentName}</p>
-                          <Badge status={app.status} />
-                        </div>
-                        <p className="text-xs text-gray-500">{app.email} · {app.phone}</p>
-                        <p className="text-xs text-gray-500">{app.college} · {app.year}</p>
-                        <p className="text-sm font-medium text-blue-600 mt-0.5">{app.domain?.name}</p>
-                      </div>
-                    </div>
-                    <div className="flex flex-col items-end gap-2">
-                      <p className="text-xs text-gray-400">{new Date(app.createdAt).toLocaleDateString()}</p>
-                      <div className="flex gap-2">
-                        {app.status === 'Pending' && (
-                          <>
-                            <button
-                              onClick={() => handleAppAction(app.id, 'Approved')}
-                              disabled={actionId === `app-${app.id}`}
-                              className="flex items-center gap-1 text-xs font-bold bg-emerald-500 hover:bg-emerald-600 disabled:opacity-60 text-white px-3 py-1.5 rounded-lg transition">
-                              {actionId === `app-${app.id}` ? <Loader2 size={11} className="animate-spin" /> : <CheckCircle size={11} />}
-                              Approve
-                            </button>
-                            <button
-                              onClick={() => handleAppAction(app.id, 'Rejected')}
-                              disabled={actionId === `app-${app.id}`}
-                              className="flex items-center gap-1 text-xs font-bold bg-red-500 hover:bg-red-600 disabled:opacity-60 text-white px-3 py-1.5 rounded-lg transition">
-                              ✕ Reject
-                            </button>
-                          </>
-                        )}
-                        <button onClick={() => setOfferModal({
-                            applicationId: app.id,
-                            candidateName: app.studentName || '',
-                            role: `${app.domain?.name || 'Internship'} Intern`,
-                            companyName: 'Hiresnix',
-                            salary: 'Unpaid Internship',
-                            offerLetterDate: app.offerLetterDate || todayInputValue(),
-                            joiningDate: app.offerJoiningDate || '',
-                            endDate: app.offerEndDate || '',
-                            datesLocked: Boolean(app.offerLetterDate || app.offerJoiningDate || app.offerEndDate),
-                          })} className="flex items-center gap-1 text-xs font-bold bg-blue-500 hover:bg-blue-600 text-white px-3 py-1.5 rounded-lg transition">
-                          <FileText size={11} /> Offer Letter
-                        </button>
-                        {/* WhatsApp Profile Verification */}
-                        <a href={`https://wa.me/?text=${encodeURIComponent(`Hi ${app.studentName},
+      {!loading && tab === 'applications' && (() => {
+        const q = appSearch.toLowerCase();
+        const filtered = applications.filter((app: any) => {
+          const matchSearch = !q ||
+            (app.studentName || '').toLowerCase().includes(q) ||
+            (app.email || '').toLowerCase().includes(q) ||
+            (app.phone || '').toLowerCase().includes(q) ||
+            (app.college || '').toLowerCase().includes(q) ||
+            (app.domain?.name || '').toLowerCase().includes(q);
+          const matchStatus = appStatusFilter === 'All' || app.status === appStatusFilter;
+          return matchSearch && matchStatus;
+        });
 
-Thank you for applying for the Hiresnix Internship Program. 🎉
+        const pending  = filtered.filter((a: any) => a.status === 'Pending');
+        const approved = filtered.filter((a: any) => a.status === 'Approved');
+        const rejected = filtered.filter((a: any) => a.status === 'Rejected');
 
-To complete your Profile Verification, please share the following documents:
-
-📄 Updated Resume (PDF)
-💼 LinkedIn Profile URL
-💻 GitHub Profile URL (if available)
-✍️ A brief introduction about your skills, projects, and career interests
-🎓 If this internship is required for your college verification, academic submission, or mandatory internship requirement, please mention it in your reply.
-
-📩 You can send the above documents to:
-WhatsApp: +91 9529120977
-Email: hr@hiresnix.co.in`)}`}
-                          target="_blank" rel="noreferrer"
-                          title="Send Profile Verification on WhatsApp"
-                          className="flex items-center gap-1 text-xs font-bold bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded-lg transition">
-                          💬 WA
-                        </a>
-                      </div>
-                    </div>
-                  </div>
-                  {app.whyJoin && (
-                    <div className="mt-2 ml-13 pl-13">
-                      <button onClick={() => setExpandedId(expandedId === app.id ? null : app.id)}
-                        className="text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1">
-                        {expandedId === app.id ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
-                        Why they want to join
-                      </button>
-                      {expandedId === app.id && (
-                        <p className="text-xs text-gray-600 mt-1.5 bg-gray-50 rounded-lg p-3 italic">"{app.whyJoin}"</p>
-                      )}
-                    </div>
-                  )}
-                  {app.adminNote && app.status === 'Rejected' && (
-                    <p className="text-xs text-red-500 mt-1 ml-13 pl-13">Note: {app.adminNote}</p>
-                  )}
+        const AppCard = ({ app, accent, avatarBg, avatarText }: any) => (
+          <div className={`rounded-xl border-l-4 ${accent} bg-white shadow-sm p-4 hover:shadow-md transition`}>
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0 ${avatarBg} ${avatarText}`}>
+                  {app.studentName?.[0]?.toUpperCase()}
                 </div>
-              ))}
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <p className="font-bold text-gray-900 text-sm">{app.studentName}</p>
+                    <Badge status={app.status} />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-0.5">{app.email} · {app.phone}</p>
+                  <p className="text-xs text-gray-500">{app.college} · {app.year}</p>
+                  <p className="text-xs font-semibold text-blue-600 mt-0.5">{app.domain?.name}</p>
+                  <p className="text-[11px] text-gray-400 mt-0.5">Applied: {new Date(app.createdAt).toLocaleDateString('en-IN')}</p>
+                </div>
+              </div>
+              <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
+                <div className="flex gap-1.5 flex-wrap justify-end">
+                  {app.status === 'Pending' && (
+                    <>
+                      <button
+                        onClick={() => handleAppAction(app.id, 'Approved')}
+                        disabled={actionId === `app-${app.id}`}
+                        className="flex items-center gap-1 text-xs font-bold bg-emerald-500 hover:bg-emerald-600 disabled:opacity-60 text-white px-2.5 py-1.5 rounded-lg transition">
+                        {actionId === `app-${app.id}` ? <Loader2 size={11} className="animate-spin" /> : <CheckCircle size={11} />}
+                        Approve
+                      </button>
+                      <button
+                        onClick={() => handleAppAction(app.id, 'Rejected')}
+                        disabled={actionId === `app-${app.id}`}
+                        className="flex items-center gap-1 text-xs font-bold bg-red-500 hover:bg-red-600 disabled:opacity-60 text-white px-2.5 py-1.5 rounded-lg transition">
+                        ✕ Reject
+                      </button>
+                    </>
+                  )}
+                  <button onClick={() => setOfferModal({
+                      applicationId: app.id,
+                      candidateName: app.studentName || '',
+                      role: `${app.domain?.name || 'Internship'} Intern`,
+                      companyName: 'Hiresnix',
+                      salary: 'Unpaid Internship',
+                      offerLetterDate: app.offerLetterDate || todayInputValue(),
+                      joiningDate: app.offerJoiningDate || '',
+                      endDate: app.offerEndDate || '',
+                      datesLocked: Boolean(app.offerLetterDate || app.offerJoiningDate || app.offerEndDate),
+                    })} className="flex items-center gap-1 text-xs font-bold bg-blue-500 hover:bg-blue-600 text-white px-2.5 py-1.5 rounded-lg transition">
+                    <FileText size={11} /> Offer
+                  </button>
+                  <a href={`https://wa.me/?text=${encodeURIComponent(`Hi ${app.studentName},\n\nThank you for applying for the Hiresnix Internship Program. 🎉\n\nTo complete your Profile Verification, please share the following documents:\n\n📄 Updated Resume (PDF)\n💼 LinkedIn Profile URL\n💻 GitHub Profile URL (if available)\n✍️ A brief introduction about your skills, projects, and career interests\n🎓 If this internship is required for your college verification, academic submission, or mandatory internship requirement, please mention it in your reply.\n\n📩 You can send the above documents to:\nWhatsApp: +91 9529120977\nEmail: hr@hiresnix.co.in`)}`}
+                    target="_blank" rel="noreferrer"
+                    className="flex items-center gap-1 text-xs font-bold bg-green-500 hover:bg-green-600 text-white px-2.5 py-1.5 rounded-lg transition">
+                    💬 WA
+                  </a>
+                </div>
+              </div>
             </div>
-          )}
-        </div>
-      )}
+            {app.whyJoin && (
+              <div className="mt-2.5">
+                <button onClick={() => setExpandedId(expandedId === app.id ? null : app.id)}
+                  className="text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1">
+                  {expandedId === app.id ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
+                  Why they want to join
+                </button>
+                {expandedId === app.id && (
+                  <p className="text-xs text-gray-600 mt-1.5 bg-gray-50 rounded-lg p-3 italic">"{app.whyJoin}"</p>
+                )}
+              </div>
+            )}
+            {app.adminNote && app.status === 'Rejected' && (
+              <p className="text-xs text-red-500 mt-1.5 bg-red-50 rounded-lg px-3 py-1.5">❌ Note: {app.adminNote}</p>
+            )}
+          </div>
+        );
 
-      {/* ── STUDENTS (ENROLLMENTS) ──────────────────────────── */}
+        return (
+          <div className="space-y-5">
+            {/* Search + Filter + Export bar */}
+            <div className="bg-white rounded-xl border border-gray-100 shadow-sm px-4 py-3 flex flex-wrap items-center gap-3">
+              <div className="flex-1 min-w-[180px] relative">
+                <input
+                  type="text"
+                  placeholder="Search by name, email, college, domain..."
+                  value={appSearch}
+                  onChange={e => setAppSearch(e.target.value)}
+                  className="w-full pl-8 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-blue-400"
+                />
+                <span className="absolute left-2.5 top-2.5 text-gray-400 text-xs">🔍</span>
+              </div>
+              <div className="flex gap-1 flex-wrap">
+                {(['All', 'Pending', 'Approved', 'Rejected'] as const).map(s => (
+                  <button key={s} onClick={() => setAppStatusFilter(s)}
+                    className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition ${
+                      appStatusFilter === s
+                        ? s === 'Pending' ? 'bg-amber-500 text-white'
+                          : s === 'Approved' ? 'bg-emerald-500 text-white'
+                          : s === 'Rejected' ? 'bg-red-500 text-white'
+                          : 'bg-gray-800 text-white'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}>
+                    {s}{s !== 'All' ? ` (${applications.filter((a: any) => a.status === s).length})` : ` (${applications.length})`}
+                  </button>
+                ))}
+              </div>
+              <button onClick={downloadApplicationsCSV}
+                className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg transition">
+                <Download size={13} /> Export CSV
+              </button>
+            </div>
+
+            {filtered.length === 0 && (
+              <div className="text-center py-16 text-gray-400 bg-white rounded-xl border border-gray-100">
+                <GraduationCap size={36} className="mx-auto mb-3 opacity-30" />
+                <p>{appSearch ? 'No results found' : 'No applications yet'}</p>
+              </div>
+            )}
+
+            {/* PENDING */}
+            {pending.length > 0 && (appStatusFilter === 'All' || appStatusFilter === 'Pending') && (
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-3 h-3 rounded-full bg-amber-400" />
+                  <h3 className="font-bold text-gray-800 text-sm">⏳ Pending Review <span className="text-amber-500 font-black">({pending.length})</span></h3>
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                  {pending.map((app: any) => (
+                    <AppCard key={app.id} app={app} accent="border-amber-400" avatarBg="bg-amber-50" avatarText="text-amber-600" />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* APPROVED */}
+            {approved.length > 0 && (appStatusFilter === 'All' || appStatusFilter === 'Approved') && (
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-3 h-3 rounded-full bg-emerald-500" />
+                  <h3 className="font-bold text-gray-800 text-sm">✅ Approved <span className="text-emerald-600 font-black">({approved.length})</span></h3>
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                  {approved.map((app: any) => (
+                    <AppCard key={app.id} app={app} accent="border-emerald-400" avatarBg="bg-emerald-50" avatarText="text-emerald-700" />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* REJECTED */}
+            {rejected.length > 0 && (appStatusFilter === 'All' || appStatusFilter === 'Rejected') && (
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-3 h-3 rounded-full bg-red-400" />
+                  <h3 className="font-bold text-gray-800 text-sm">❌ Rejected <span className="text-red-500 font-black">({rejected.length})</span></h3>
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                  {rejected.map((app: any) => (
+                    <AppCard key={app.id} app={app} accent="border-red-400" avatarBg="bg-red-50" avatarText="text-red-500" />
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
+            {/* ── STUDENTS (ENROLLMENTS) ──────────────────────────── */}
       {!loading && tab === 'students' && (() => {
         // Group by month-year of startDate
         const groups: Record<string, any[]> = {};
