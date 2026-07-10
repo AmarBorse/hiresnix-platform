@@ -73,7 +73,7 @@ const verifyCert = (expectedType) => asyncHandler(async (req, res) => {
     studentName: cert.studentName,
     documentId: cert.certificateId,
     institutionName: cert.institutionName || cert.institution?.institutionName || 'Hiresnix',
-    courseName: cert.courseName,
+    courseName: cert.courseName || cert.type || null,
     certType: cert.type,
     issueDate: cert.issuedAt,
     documentType: `Certificate of ${cert.type}`,
