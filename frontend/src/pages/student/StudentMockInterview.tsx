@@ -8,7 +8,6 @@ interface Message { role: 'user' | 'assistant'; content: string; }
 interface QResult { question: string; answer: string; score: number; feedback: string; }
 type Stage = 'setup' | 'countdown' | 'interview' | 'result';
 
-// ── AI Avatar ─────────────────────────────────────────────────────
 function AIAvatar({ speaking, thinking }: { speaking: boolean; thinking: boolean }) {
   return (
     <div className="relative flex flex-col items-center">
@@ -68,14 +67,16 @@ export function StudentMockInterview() {
   const [timer, setTimer]           = useState(90);
   const [timerActive, setTimerActive] = useState(false);
   const [faceWarning, setFaceWarning] = useState(false);
-  const [faceCount, setFaceCount]   = useState(0);
+  const [micError, setMicError]     = useState('');
 
-  const videoRef   = useRef<HTMLVideoElement>(null);
-  const canvasRef  = useRef<HTMLCanvasElement>(null);
-  const streamRef  = useRef<MediaStream | null>(null);
-  const recognRef  = useRef<any>(null);
-  const timerRef   = useRef<NodeJS.Timeout | null>(null);
+  const videoRef    = useRef<HTMLVideoElement>(null);
+  const canvasRef   = useRef<HTMLCanvasElement>(null);
+  const streamRef   = useRef<MediaStream | null>(null);
+  const recognRef   = useRef<any>(null);
+  const timerRef    = useRef<NodeJS.Timeout | null>(null);
   const faceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const micActiveRef = useRef(false);   // track mic state without stale closure
+  const finalTextRef = useRef('');      // accumulate final transcript
 
   // ── Camera ───────────────────────────────────────────────────────
   const startCamera = async () => {
@@ -92,42 +93,28 @@ export function StudentMockInterview() {
     setCamOn(false);
   };
 
-  // ── Face Detection (using skin color heuristic) ──────────────────
+  // ── Face Detection ───────────────────────────────────────────────
   const detectFaces = useCallback(() => {
-    if (!videoRef.current || !canvasRef.current || !camOn) return;
+    if (!videoRef.current || !canvasRef.current) return;
     const video = videoRef.current;
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     if (!ctx || video.videoWidth === 0) return;
-
     canvas.width = video.videoWidth / 4;
     canvas.height = video.videoHeight / 4;
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
     try {
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
       const data = imageData.data;
       let skinPixels = 0;
-
-      // Simple skin color detection
       for (let i = 0; i < data.length; i += 16) {
         const r = data[i], g = data[i+1], b = data[i+2];
-        if (r > 95 && g > 40 && b > 20 && r > g && r > b && Math.abs(r-g) > 15) {
-          skinPixels++;
-        }
+        if (r > 95 && g > 40 && b > 20 && r > g && r > b && Math.abs(r-g) > 15) skinPixels++;
       }
-
       const totalPixels = (canvas.width * canvas.height) / 4;
-      const skinRatio = skinPixels / totalPixels;
-
-      // Simple heuristic: if too much skin area, might be multiple people
-      if (skinRatio > 0.35) {
-        setFaceWarning(true);
-      } else {
-        setFaceWarning(false);
-      }
+      setFaceWarning(skinPixels / totalPixels > 0.35);
     } catch {}
-  }, [camOn]);
+  }, []);
 
   useEffect(() => {
     if (stage === 'interview' && camOn) {
@@ -144,7 +131,8 @@ export function StudentMockInterview() {
       const utt = new SpeechSynthesisUtterance(text);
       utt.rate = 0.9; utt.pitch = 1.1; utt.volume = 1;
       const voices = window.speechSynthesis.getVoices();
-      const preferred = voices.find(v => v.name.includes('Google') && v.lang==='en-US') || voices.find(v => v.lang==='en-US') || voices[0];
+      const preferred = voices.find(v => v.name.includes('Google') && v.lang==='en-US')
+        || voices.find(v => v.lang==='en-US') || voices[0];
       if (preferred) utt.voice = preferred;
       utt.onstart = () => setAiSpeaking(true);
       utt.onend   = () => { setAiSpeaking(false); resolve(); };
@@ -153,43 +141,116 @@ export function StudentMockInterview() {
     });
   }, [muted]);
 
-  // ── Speech Recognition — Continuous ──────────────────────────────
-  const startMic = useCallback(() => {
+  // ── Speech Recognition ───────────────────────────────────────────
+  // Key fixes:
+  // 1. micActiveRef tracks real mic state (no stale closure in onend)
+  // 2. finalTextRef accumulates final transcripts across restarts
+  // 3. Auto-restart on end only if mic is still meant to be on
+  // 4. Permission check before starting
+  const startMic = useCallback(async () => {
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SR) return;
-    if (recognRef.current) { try { recognRef.current.abort(); } catch {} }
+    if (!SR) {
+      setMicError('Speech recognition not supported. Please use Chrome browser.');
+      return;
+    }
+
+    // Request mic permission explicitly first
+    try {
+      await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch {
+      setMicError('Microphone permission denied. Please allow mic access.');
+      setMicOn(false);
+      micActiveRef.current = false;
+      return;
+    }
+
+    setMicError('');
+    if (recognRef.current) {
+      try { recognRef.current.stop(); } catch {}
+      recognRef.current = null;
+    }
 
     const recog = new SR();
-    recog.continuous = true;
-    recog.interimResults = true;
-    recog.lang = 'en-US';
+    recog.continuous      = true;
+    recog.interimResults  = true;
+    recog.lang            = 'en-IN'; // en-IN works better for Indian accents
+    recog.maxAlternatives = 1;
 
-    let finalText = '';
+    recog.onstart = () => {
+      setMicError('');
+    };
+
     recog.onresult = (e: any) => {
       let interim = '';
       for (let i = e.resultIndex; i < e.results.length; i++) {
-        if (e.results[i].isFinal) finalText += e.results[i][0].transcript + ' ';
-        else interim += e.results[i][0].transcript;
+        if (e.results[i].isFinal) {
+          finalTextRef.current += e.results[i][0].transcript + ' ';
+        } else {
+          interim += e.results[i][0].transcript;
+        }
       }
-      setAnswer(finalText + interim);
+      setAnswer(finalTextRef.current + interim);
     };
-    recog.onerror = (e: any) => { console.log('mic error:', e.error); };
+
+    recog.onerror = (e: any) => {
+      console.warn('Speech recognition error:', e.error);
+      if (e.error === 'not-allowed') {
+        setMicError('Microphone blocked. Allow mic in browser settings.');
+        micActiveRef.current = false;
+        setMicOn(false);
+      } else if (e.error === 'no-speech') {
+        // No speech detected — just restart, don't show error
+      } else if (e.error === 'network') {
+        setMicError('Network error. Check internet connection.');
+      } else if (e.error === 'aborted') {
+        // Intentional abort — ignore
+      }
+    };
+
     recog.onend = () => {
-      if (recognRef.current === recog && micOn) {
-        setTimeout(() => { try { recog.start(); } catch {} }, 200);
+      // Auto-restart ONLY if mic should still be on
+      if (micActiveRef.current) {
+        setTimeout(() => {
+          if (micActiveRef.current && recognRef.current) {
+            try { recognRef.current.start(); } catch {}
+          }
+        }, 300);
       }
     };
 
-    try { recog.start(); recognRef.current = recog; } catch {}
-  }, [micOn]);
-
-  const stopMic = useCallback(() => {
-    if (recognRef.current) { try { recognRef.current.abort(); } catch {} recognRef.current = null; }
+    recognRef.current = recog;
+    try {
+      recog.start();
+    } catch (err) {
+      console.warn('Could not start recognition:', err);
+    }
   }, []);
 
-  const toggleMic = () => {
-    if (micOn) { stopMic(); setMicOn(false); }
-    else { setMicOn(true); startMic(); }
+  const stopMic = useCallback(() => {
+    micActiveRef.current = false;
+    if (recognRef.current) {
+      try { recognRef.current.stop(); } catch {}
+      try { recognRef.current.abort(); } catch {}
+      recognRef.current = null;
+    }
+  }, []);
+
+  const toggleMic = async () => {
+    if (micOn) {
+      micActiveRef.current = false;
+      stopMic();
+      setMicOn(false);
+    } else {
+      micActiveRef.current = true;
+      setMicOn(true);
+      await startMic();
+    }
+  };
+
+  // Reset finalTextRef when answer is cleared (new question)
+  const resetAnswer = () => {
+    finalTextRef.current = '';
+    setAnswer('');
   };
 
   // ── Timer ─────────────────────────────────────────────────────────
@@ -239,14 +300,18 @@ export function StudentMockInterview() {
       const msgs: Message[] = [init,{role:'assistant',content:res.nextQuestion}];
       setMessages(msgs); setCurrentQ(res.nextQuestion); setQNumber(1);
       await speak(res.nextQuestion);
-      setMicOn(true); startMic();
+      // Start mic AFTER AI finishes speaking
+      micActiveRef.current = true;
+      setMicOn(true);
+      await startMic();
       setTimer(90); setTimerActive(true);
     } catch { setAiThinking(false); alert('AI connection failed.'); }
   };
 
   // ── Submit ────────────────────────────────────────────────────────
   const handleSubmit = useCallback(async () => {
-    const ans = answer.trim();
+    const ans = (finalTextRef.current + answer).trim() || answer.trim();
+    micActiveRef.current = false;
     stopMic(); setMicOn(false);
     setTimerActive(false);
     window.speechSynthesis.cancel();
@@ -254,7 +319,8 @@ export function StudentMockInterview() {
 
     const userMsg: Message = {role:'user',content:ans||'I need to pass on this one.'};
     const newMsgs = [...messages, userMsg];
-    setMessages(newMsgs); setAnswer('');
+    setMessages(newMsgs);
+    resetAnswer();
 
     try {
       const res = await callAI(newMsgs);
@@ -275,7 +341,10 @@ export function StudentMockInterview() {
       setCurrentQ(res.nextQuestion);
       setQNumber(n => n+1);
       await speak(res.nextQuestion);
-      setMicOn(true); startMic();
+      // Restart mic after AI finishes speaking next question
+      micActiveRef.current = true;
+      setMicOn(true);
+      await startMic();
       setTimer(90); setTimerActive(true);
     } catch { setAiThinking(false); alert('AI error.'); }
   }, [answer, messages, currentQ, qNumber, stopMic, startMic, speak]);
@@ -308,7 +377,7 @@ export function StudentMockInterview() {
           </div>
         </div>
         <div className="bg-indigo-50 rounded-xl p-4 space-y-1.5 text-sm text-indigo-700">
-          {['🤖 AI interviewer Alex will greet and question you','🔊 Questions spoken aloud (enable sound)','🎤 Mic auto-on — speak or type your answers','⚠️ Face monitoring — stay alone in frame','⏱️ 90 seconds per question • 5 questions total'].map((t,i)=><p key={i}>{t}</p>)}
+          {['🤖 AI interviewer Alex will greet and question you','🔊 Questions spoken aloud (enable sound)','🎤 Mic auto-on after each question — speak or type','⚠️ Use Chrome browser for best voice recognition','⏱️ 90 seconds per question • 5 questions total'].map((t,i)=><p key={i}>{t}</p>)}
         </div>
         <div className="flex gap-3">
           <button onClick={()=>setMuted(m=>!m)}
@@ -339,15 +408,19 @@ export function StudentMockInterview() {
   // ── INTERVIEW ─────────────────────────────────────────────────────
   if (stage === 'interview') return (
     <div className="max-w-5xl mx-auto">
-      {/* Face Warning Banner */}
       {faceWarning && (
         <div className="mb-4 flex items-center gap-3 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl animate-pulse">
           <AlertTriangle size={20} className="flex-shrink-0"/>
           <p className="text-sm font-semibold">⚠️ Multiple faces detected! Please ensure you are alone during the interview.</p>
         </div>
       )}
+      {micError && (
+        <div className="mb-4 flex items-center gap-3 bg-amber-50 border border-amber-200 text-amber-700 px-4 py-3 rounded-xl">
+          <Mic size={18} className="flex-shrink-0"/>
+          <p className="text-sm font-semibold">{micError}</p>
+        </div>
+      )}
 
-      {/* Top bar */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
           <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"/>
@@ -391,7 +464,6 @@ export function StudentMockInterview() {
 
         {/* Student Side */}
         <div className="space-y-3">
-          {/* Camera */}
           <div className="relative bg-gray-900 rounded-2xl overflow-hidden" style={{aspectRatio:'4/3'}}>
             <video ref={videoRef} autoPlay muted playsInline className="w-full h-full object-cover"/>
             <canvas ref={canvasRef} className="hidden"/>
@@ -404,14 +476,8 @@ export function StudentMockInterview() {
                 <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"/> REC
               </div>
             )}
-            {faceWarning && (
-              <div className="absolute top-3 left-3 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1">
-                <AlertTriangle size={10}/> Multiple faces!
-              </div>
-            )}
           </div>
 
-          {/* Controls */}
           <div className="flex gap-2">
             <button onClick={camOn?stopCamera:startCamera}
               className={`flex-1 py-2 rounded-xl text-xs font-medium flex items-center justify-center gap-1.5 transition ${camOn?'bg-gray-200 text-gray-700':'bg-gray-100 text-gray-500'}`}>
@@ -423,7 +489,15 @@ export function StudentMockInterview() {
             </button>
           </div>
 
-          {/* Answer input — type or voice */}
+          {/* Mic status indicator */}
+          <div className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium ${micOn ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-gray-50 text-gray-400 border border-gray-100'}`}>
+            {micOn ? (
+              <><div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"/> 🎤 Mic is ON — speak your answer</>
+            ) : (
+              <><div className="w-2 h-2 bg-gray-300 rounded-full"/> Mic is OFF — click Mic On or type below</>
+            )}
+          </div>
+
           <div className="relative bg-white border-2 border-indigo-100 rounded-xl p-3 focus-within:border-indigo-400 transition-colors">
             <p className="text-xs text-gray-400 mb-1.5 flex items-center gap-2">
               {micOn && <SoundWave active={!!answer} color="#22c55e"/>}
@@ -431,7 +505,10 @@ export function StudentMockInterview() {
             </p>
             <textarea
               value={answer}
-              onChange={e => setAnswer(e.target.value)}
+              onChange={e => {
+                finalTextRef.current = '';
+                setAnswer(e.target.value);
+              }}
               placeholder="Speak or type your answer here..."
               rows={3}
               className="w-full text-sm text-gray-800 resize-none outline-none bg-transparent"
@@ -439,7 +516,6 @@ export function StudentMockInterview() {
             {answer && <span className="absolute bottom-2 right-3 text-xs text-gray-300">{answer.length} chars</span>}
           </div>
 
-          {/* Submit */}
           <button onClick={handleSubmit} disabled={aiSpeaking||aiThinking}
             className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition text-sm">
             {aiThinking?'⏳ AI is thinking...':aiSpeaking?'🔊 AI is speaking...':'✓ Submit Answer'}
@@ -457,7 +533,7 @@ export function StudentMockInterview() {
         <h2 className="text-2xl font-black">Interview Complete!</h2>
         <p className="text-5xl font-black my-3">{avgScore}<span className="text-2xl">/10</span></p>
         <p className="text-lg font-semibold">{avgScore>=8?'🌟 Excellent!':avgScore>=6?'👍 Good Job!':avgScore>=4?'📚 Keep Practicing!':'💪 Keep Going!'}</p>
-        <p className="text-sm opacity-80 mt-1">{domain} • {results.length} Questions • Groq AI</p>
+        <p className="text-sm opacity-80 mt-1">{domain} • {results.length} Questions</p>
       </div>
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="px-5 py-4 border-b flex items-center gap-2">
@@ -478,7 +554,7 @@ export function StudentMockInterview() {
         </div>
       </div>
       <div className="flex gap-3">
-        <button onClick={()=>{setStage('setup');setResults([]);setMessages([]);setQNumber(0);setAnswer('');setFeedback(null);window.speechSynthesis.cancel();}}
+        <button onClick={()=>{setStage('setup');setResults([]);setMessages([]);setQNumber(0);resetAnswer();setFeedback(null);window.speechSynthesis.cancel();}}
           className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition">
           <RotateCcw size={16}/> Try Again
         </button>
