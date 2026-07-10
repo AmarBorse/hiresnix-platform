@@ -47,8 +47,8 @@ r.get('/all-enrollments',            protect, authorize('admin'), ctrl.getAllEnr
 
 
 // Institution Certificate verification (Skill Assessment + Course Completion)
-r.get('/verify-inst-cert', asyncHandler(async (req, res) => {
-  const { id } = req.query;
+r.get('/verify-inst-cert/:id?', asyncHandler(async (req, res) => {
+  const id = req.params.id || req.query.id;
   if (!id) { res.status(400); throw new Error('Certificate ID required'); }
   const { InstitutionCertificate, Institution } = require('../models');
   const cert = await InstitutionCertificate.findOne({
