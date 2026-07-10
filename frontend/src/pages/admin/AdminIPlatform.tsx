@@ -489,10 +489,10 @@ Email: hr@hiresnix.co.in`)}`}
                         'Completed On': e.completedAt ? new Date(e.completedAt).toLocaleDateString('en-IN') : '',
                         'Admin Remark': e.adminRemark || '',
                       }));
-                      downloadExcel(rows, `Hiresnix_Batch_${selectedBatch.replace(/\s+/g, '_')}.xlsx`);
+                      downloadCSV(rows, `Hiresnix_Batch_${selectedBatch.replace(/\s+/g, '_')}.csv`);
                     }}
                     className="flex items-center gap-1 text-xs text-emerald-600 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg transition">
-                    <Download size={12} /> Export Excel
+                    <Download size={12} /> Export CSV
                   </button>
                 </div>
                 <div className="divide-y divide-gray-50">
@@ -551,7 +551,7 @@ Email: hr@hiresnix.co.in`)}`}
                                   'Status': log.status || 'Submitted',
                                   'Submitted On': log.submittedAt ? new Date(log.submittedAt).toLocaleDateString('en-IN') : '',
                                 }));
-                                downloadExcel(logs, `DailyLog_${(e.studentName || 'Student').replace(/\s+/g, '_')}.xlsx`);
+                                downloadCSV(logs, `DailyLog_${(e.studentName || 'Student').replace(/\s+/g, '_')}.csv`);
                               }}
                               className="flex items-center gap-1 text-xs font-bold bg-orange-500 hover:bg-orange-600 text-white px-3 py-1.5 rounded-lg transition">
                               <Download size={11} /> Daily Log
