@@ -49,15 +49,17 @@ export const verificationApi = {
 
     if (!res) throw lastError;
 
-    const data = res.data?.data || {};
+    // Support both {data:{...}} and flat {studentName,...} responses
+    const flat = res.data || {};
+    const data = flat.data || flat;
 
     return {
-      valid: Boolean(res.data?.valid ?? data.isValid ?? true),
-      studentName: data.studentName || data.candidateName || data.application?.studentName,
-      issueDate: data.issueDate || data.issuedAt || data.offerLetterDate || data.completedAt || data.createdAt,
-      internshipDomain: data.internshipDomain || data.domainName || data.role || data.domain?.name,
-      documentId: data.documentId || data.certificateNo || data.offerLetterId || id,
-      documentType: data.documentType,
+      valid: Boolean(flat.valid ?? data.valid ?? data.isValid ?? true),
+      studentName: data.studentName || data.candidateName || flat.studentName,
+      issueDate: data.issueDate || data.issuedAt || flat.issueDate || flat.issuedAt,
+      internshipDomain: data.courseName || data.internshipDomain || flat.courseName || flat.internshipDomain || data.domainName,
+      documentId: data.documentId || data.certificateId || flat.documentId || id,
+      documentType: data.documentType || flat.documentType,
     };
   },
 };

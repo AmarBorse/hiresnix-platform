@@ -203,8 +203,11 @@ export function VerificationPortal({ defaultType }: { defaultType?: Verification
                     <dl className="mt-5 grid gap-4 sm:grid-cols-2">
                       {[
                         ['Student Name', record.studentName || 'Not available'],
-                        ['Issue Date', formatDate(record.issueDate)],
-                        ['Internship Domain', record.internshipDomain || 'Internship Program'],
+                        ['Issue Date', formatDate(record.issueDate) || 'Not available'],
+                        [
+                          (type === 'skill-assessment' || type === 'course-completion') ? 'Course / Subject' : 'Internship Domain',
+                          record.internshipDomain || 'Not available'
+                        ],
                         ['Document Type', record.documentType || active.label],
                       ].map(([label, value]) => (
                         <div key={label} className="rounded-lg border border-white/10 bg-white/[0.03] p-4">
