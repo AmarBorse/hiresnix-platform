@@ -67,6 +67,8 @@ export function StudentMockInterview() {
   const [timer, setTimer]           = useState(90);
   const [timerActive, setTimerActive] = useState(false);
   const [faceWarning, setFaceWarning] = useState(false);
+  const [lookAwayCount, setLookAwayCount] = useState(0);
+  const [eyeContact, setEyeContact]       = useState(true);
   const [micError, setMicError]     = useState('');
 
   const videoRef    = useRef<HTMLVideoElement>(null);
@@ -77,7 +79,7 @@ export function StudentMockInterview() {
   const faceTimerRef  = useRef<NodeJS.Timeout | null>(null);
   const micActiveRef   = useRef(false);
   const finalTextRef   = useRef('');
-  const prevFrameRef   = useRef<ImageData | null>(null);ipt
+  const prevFrameRef   = useRef<ImageData | null>(null);
 
   // ── Camera ───────────────────────────────────────────────────────
   const startCamera = async () => {
