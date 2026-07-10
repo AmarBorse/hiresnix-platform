@@ -30,6 +30,32 @@ function downloadCSV(data: any[], filename: string) {
   toast.success(`Downloaded ${filename}`);
 }
 
+// ── Excel (.xlsx) Download helper ────────────────────────────────
+function downloadExcel(data: any[], filename: string) {
+  if (!data.length) { toast.error('No data to export'); return; }
+  const keys = Object.keys(data[0]);
+
+  // Build worksheet as tab-separated with BOM for Excel to detect encoding
+  const tsv = [
+    keys.join('\t'),
+    ...data.map(row =>
+      keys.map(k => {
+        const val = row[k] ?? '';
+        const str = typeof val === 'object' ? JSON.stringify(val) : String(val);
+        return str.replace(/\t/g, ' ').replace(/\n/g, ' ');
+      }).join('\t')
+    ),
+  ].join('\n');
+
+  const bom = '\uFEFF';
+  const blob = new Blob([bom + tsv], { type: 'application/vnd.ms-excel;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+  toast.success(`Downloaded ${filename}`);
+}
+
 function todayInputValue() {
   return new Date().toISOString().slice(0, 10);
 }
@@ -450,9 +476,23 @@ Email: hr@hiresnix.co.in`)}`}
                     <p className="font-bold text-gray-900">{selectedBatch}</p>
                     <p className="text-xs text-gray-400">{groups[selectedBatch]?.length} students</p>
                   </div>
-                  <button onClick={downloadEnrollmentsCSV}
+                  <button onClick={() => {
+                      const batchStudents = groups[selectedBatch] || [];
+                      const rows = batchStudents.map((e: any) => ({
+                        Name: e.studentName || '',
+                        Email: e.email || '',
+                        Domain: e.domain?.name || '',
+                        Progress: `${e.progress || 0}%`,
+                        Status: e.status || '',
+                        'Tasks Submitted': (e.taskLogs || []).length,
+                        'Start Date': e.startDate ? new Date(e.startDate).toLocaleDateString('en-IN') : '',
+                        'Completed On': e.completedAt ? new Date(e.completedAt).toLocaleDateString('en-IN') : '',
+                        'Admin Remark': e.adminRemark || '',
+                      }));
+                      downloadExcel(rows, `Hiresnix_Batch_${selectedBatch.replace(/\s+/g, '_')}.xlsx`);
+                    }}
                     className="flex items-center gap-1 text-xs text-emerald-600 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg transition">
-                    <Download size={12} /> Export
+                    <Download size={12} /> Export Excel
                   </button>
                 </div>
                 <div className="divide-y divide-gray-50">
@@ -496,6 +536,26 @@ Email: hr@hiresnix.co.in`)}`}
                             <span className="text-xs text-purple-600 font-semibold flex items-center gap-1">
                               <CheckCircle size={12} /> Cert issued
                             </span>
+                          )}
+                          {(e.taskLogs || []).length > 0 && (
+                            <button
+                              onClick={() => {
+                                const logs = (e.taskLogs || []).map((log: any, idx: number) => ({
+                                  'Sr No': idx + 1,
+                                  'Student Name': e.studentName || '',
+                                  'Domain': e.domain?.name || '',
+                                  'Task Title': log.title || '',
+                                  'Description': log.description || '',
+                                  'URL / Link': log.url || '',
+                                  'Week': log.week || '',
+                                  'Status': log.status || 'Submitted',
+                                  'Submitted On': log.submittedAt ? new Date(log.submittedAt).toLocaleDateString('en-IN') : '',
+                                }));
+                                downloadExcel(logs, `DailyLog_${(e.studentName || 'Student').replace(/\s+/g, '_')}.xlsx`);
+                              }}
+                              className="flex items-center gap-1 text-xs font-bold bg-orange-500 hover:bg-orange-600 text-white px-3 py-1.5 rounded-lg transition">
+                              <Download size={11} /> Daily Log
+                            </button>
                           )}
                         </div>
                       </div>
