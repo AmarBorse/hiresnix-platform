@@ -319,16 +319,9 @@ const getCourseStudents = asyncHandler(async (req, res) => {
   if (!course) { res.status(404); throw new Error('Course not found'); }
   const enrolled = await CourseStudent.findAll({
     where: { courseId: course.id },
-    include: [{ model: InstitutionStudent, as: 'student' }],
+    include: [{ model: InstitutionStudent, as: 'student', attributes: { exclude: ['password'] } }],
   });
-  // For each student, get their batch info
-  const students = await Promise.all(enrolled.map(async e => {
-    const batchStudent = await BatchStudent.findOne({
-      where: { studentId: e.student.id },
-      include: [{ model: Batch, as: 'batch', attributes: ['id','name','status'] }],
-    });
-    return { ...e.student.toJSON(), batch: batchStudent?.batch || null };
-  }));
+  const students = enrolled.map(e => e.student?.toJSON()).filter(Boolean);
   res.json({ success: true, data: students });
 });
 

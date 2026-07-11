@@ -1,6 +1,6 @@
 // src/pages/institution/InstitutionCourses.tsx
 import React, { useEffect, useState } from 'react';
-import { Plus, Pencil, Trash2, BookOpen, X, Users, ChevronRight, ArrowLeft, CheckCircle, Layers } from 'lucide-react';
+import { Plus, Pencil, Trash2, BookOpen, X, Users, ChevronRight, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { institutionApi } from '../../api/institution';
 import { InstituteCourse } from '../../types';
@@ -107,92 +107,57 @@ export function InstitutionCourses() {
   };
 
   // ── Course Students View ────────────────────────────────────────
-  if (viewCourse) {
-    // Group by batch
-    const batchMap: Record<string, any[]> = {};
-    courseStudents.forEach(s => {
-      const batchName = s.batch?.name || 'No Batch';
-      if (!batchMap[batchName]) batchMap[batchName] = [];
-      batchMap[batchName].push(s);
-    });
-    const batchStatus: Record<string, string> = {};
-    courseStudents.forEach(s => { if (s.batch) batchStatus[s.batch.name] = s.batch.status; });
-
-    return (
-      <div className="space-y-5">
-        <div className="flex items-center gap-3">
-          <button onClick={() => setViewCourse(null)} className="p-2 rounded-lg hover:bg-white/10 text-gray-400 transition">
-            <ArrowLeft size={18} />
-          </button>
-          <div>
-            <h1 className="text-xl font-bold text-white">{viewCourse.name}</h1>
-            <p className="text-sm" style={{color:"#64748b"}}>{courseStudents.length} students enrolled</p>
-          </div>
+  if (viewCourse) return (
+    <div className="space-y-5">
+      <div className="flex items-center gap-3">
+        <button onClick={() => setViewCourse(null)} className="p-2 rounded-lg hover:bg-white/10 text-gray-400 transition">
+          <ArrowLeft size={18} />
+        </button>
+        <div>
+          <h1 className="text-xl font-bold text-white">{viewCourse.name}</h1>
+          <p className="text-sm" style={{color:"#64748b"}}>{courseStudents.length} students enrolled</p>
         </div>
-
-        {studLoading ? (
-          <div className="flex justify-center py-16">
-            <div className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin" style={{borderColor:`${C.accent} transparent transparent transparent`}} />
-          </div>
-        ) : courseStudents.length === 0 ? (
-          <div className="rounded-xl p-12 text-center" style={{background:"rgba(15,23,42,0.6)",border:"1px solid rgba(255,255,255,0.08)",color:"#475569"}}>
-            <Users size={32} className="mx-auto mb-3 opacity-40" />
-            <p>No students enrolled in this course yet</p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {Object.entries(batchMap).map(([batchName, students]) => {
-              const status = batchStatus[batchName] || 'Active';
-              const isCompleted = status === 'Completed';
-              return (
-                <div key={batchName} className="rounded-xl overflow-hidden" style={{background:"linear-gradient(135deg,rgba(15,23,42,0.95),rgba(20,30,55,0.95))",border:"1px solid rgba(255,255,255,0.1)"}}>
-                  {/* Batch header */}
-                  <div className="flex items-center justify-between px-5 py-3" style={{borderBottom:"1px solid rgba(255,255,255,0.07)",background:"rgba(255,255,255,0.03)"}}>
-                    <div className="flex items-center gap-2.5">
-                      <Layers size={14} style={{color: isCompleted ? '#34d399' : C.accent}} />
-                      <span className="font-bold text-white text-sm">{batchName}</span>
-                      <span className="text-xs font-bold px-2 py-0.5 rounded-full"
-                        style={isCompleted
-                          ? {background:"rgba(16,185,129,0.15)",color:"#34d399"}
-                          : {background:"rgba(139,92,246,0.15)",color:C.accent}}>
-                        {status}
-                      </span>
-                    </div>
-                    <span className="text-xs" style={{color:"#64748b"}}>{students.length} students</span>
-                  </div>
-                  {/* Students */}
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="text-xs uppercase tracking-wide" style={{color:"#475569",borderBottom:"1px solid rgba(255,255,255,0.06)"}}>
-                        <th className="px-4 py-2.5 text-left">Career ID</th>
-                        <th className="px-4 py-2.5 text-left">Name</th>
-                        <th className="px-4 py-2.5 text-left">Email</th>
-                        <th className="px-4 py-2.5 text-left">Department</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {students.map(s => (
-                        <tr key={s.id} className="transition" style={{borderBottom:"1px solid rgba(255,255,255,0.04)"}}
-                          onMouseEnter={e=>(e.currentTarget.style.background="rgba(255,255,255,0.04)")}
-                          onMouseLeave={e=>(e.currentTarget.style.background="")}>
-                          <td className="px-4 py-2.5">
-                            <span className="font-mono text-xs px-2 py-0.5 rounded" style={{background:"rgba(99,102,241,0.15)",color:"#818cf8"}}>{s.careerId}</span>
-                          </td>
-                          <td className="px-4 py-2.5 font-medium text-white">{s.name}</td>
-                          <td className="px-4 py-2.5" style={{color:"#64748b"}}>{s.email}</td>
-                          <td className="px-4 py-2.5" style={{color:"#64748b"}}>{s.department || '—'}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              );
-            })}
-          </div>
-        )}
       </div>
-    );
-  }
+
+      {studLoading ? (
+        <div className="flex justify-center py-16">
+          <div className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin" style={{borderColor:`${C.accent} transparent transparent transparent`}} />
+        </div>
+      ) : courseStudents.length === 0 ? (
+        <div className="rounded-xl p-12 text-center" style={{background:"rgba(15,23,42,0.6)",border:"1px solid rgba(255,255,255,0.08)",color:"#475569"}}>
+          <Users size={32} className="mx-auto mb-3 opacity-40" />
+          <p>No students enrolled in this course yet</p>
+        </div>
+      ) : (
+        <div className="rounded-xl overflow-hidden" style={{background:"linear-gradient(135deg,rgba(15,23,42,0.95),rgba(20,30,55,0.95))",border:"1px solid rgba(255,255,255,0.1)"}}>
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-xs uppercase tracking-wide" style={{color:"#475569",borderBottom:"1px solid rgba(255,255,255,0.08)"}}>
+                <th className="px-4 py-3 text-left">Career ID</th>
+                <th className="px-4 py-3 text-left">Name</th>
+                <th className="px-4 py-3 text-left">Email</th>
+                <th className="px-4 py-3 text-left">Department</th>
+              </tr>
+            </thead>
+            <tbody>
+              {courseStudents.map((s: any) => (
+                <tr key={s.id} className="transition" style={{borderBottom:"1px solid rgba(255,255,255,0.05)"}}
+                  onMouseEnter={e=>(e.currentTarget.style.background="rgba(255,255,255,0.04)")}
+                  onMouseLeave={e=>(e.currentTarget.style.background="")}>
+                  <td className="px-4 py-3">
+                    <span className="font-mono text-xs px-2 py-0.5 rounded" style={{background:"rgba(99,102,241,0.15)",color:"#818cf8"}}>{s.careerId}</span>
+                  </td>
+                  <td className="px-4 py-3 font-medium text-white">{s.name}</td>
+                  <td className="px-4 py-3" style={{color:"#64748b"}}>{s.email}</td>
+                  <td className="px-4 py-3" style={{color:"#64748b"}}>{s.department || '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
 
   // ── Course List ─────────────────────────────────────────────────
   return (
