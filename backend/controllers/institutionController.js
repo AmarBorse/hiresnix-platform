@@ -293,7 +293,15 @@ const getCourseStudents = asyncHandler(async (req, res) => {
     where: { courseId: course.id },
     include: [{ model: InstitutionStudent, as: 'student' }],
   });
-  res.json({ success: true, data: enrolled.map(e => e.student) });
+  // For each student, get their batch info
+  const students = await Promise.all(enrolled.map(async e => {
+    const batchStudent = await BatchStudent.findOne({
+      where: { studentId: e.student.id },
+      include: [{ model: Batch, as: 'batch', attributes: ['id','name','status'] }],
+    });
+    return { ...e.student.toJSON(), batch: batchStudent?.batch || null };
+  }));
+  res.json({ success: true, data: students });
 });
 
 const assignStudentsToCourse = asyncHandler(async (req, res) => {
@@ -332,6 +340,15 @@ const issueCertificate = asyncHandler(async (req, res) => {
   if (!studentId || !type) { res.status(400); throw new Error('studentId and type are required'); }
   const student = await InstitutionStudent.findOne({ where: { id: studentId, institutionId } });
   if (!student) { res.status(404); throw new Error('Student not found'); }
+
+  // Skip if already issued same type + course
+  const alreadyIssued = await InstitutionCertificate.findOne({
+    where: { institutionId, studentId, type, courseId: courseId || null },
+  });
+  if (alreadyIssued) {
+    return res.status(200).json({ success: true, skipped: true, message: 'Certificate already issued', data: alreadyIssued });
+  }
+
   let courseName = null;
   if (courseId) {
     const course = await Course.findOne({ where: { id: courseId, institutionId } });
@@ -508,12 +525,14 @@ const getDashboardStats = asyncHandler(async (req, res) => {
     where: { institutionId }, attributes: { exclude: ['password'] },
     order: [['createdAt','DESC']], limit: 5,
   });
-  const batches = await Batch.findAll({ where: { institutionId }, order: [['createdAt','DESC']], limit: 5 });
+  const batches = await Batch.findAll({ where: { institutionId }, order: [['createdAt','DESC']], limit: 10 });
   const batchesWithCount = await Promise.all(batches.map(async b => {
     const count = await BatchStudent.count({ where: { batchId: b.id } });
     return { ...b.toJSON(), studentCount: count };
   }));
-  res.json({ success: true, data: { totalStudents, totalBatches, totalCourses, totalCertificates, recentStudents, recentBatches: batchesWithCount } });
+  const completedBatches = batchesWithCount.filter(b => b.status === 'Completed');
+  const recentBatches = batchesWithCount.filter(b => b.status !== 'Completed').slice(0, 5);
+  res.json({ success: true, data: { totalStudents, totalBatches, totalCourses, totalCertificates, recentStudents, recentBatches, completedBatches } });
 });
 
 module.exports = {

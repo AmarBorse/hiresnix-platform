@@ -24,12 +24,38 @@ function IssueCertModal({ onClose, onSaved }: { onClose: () => void; onSaved: ()
   const [loading, setLoading]     = useState(false);
   const [dataLoading, setDataLoading] = useState(true);
 
+  const [issuedStudentIds, setIssuedStudentIds] = useState<Set<number>>(new Set());
+
   useEffect(() => {
-    Promise.all([institutionApi.getStudents({ limit: 200 }), institutionApi.getCourses()])
-      .then(([s, c]) => { setStudents(s.data); setCourses(c.data); })
+    Promise.all([
+      institutionApi.getStudents({ limit: 200 }),
+      institutionApi.getCourses(),
+      institutionApi.getCertificates({ limit: 500 }),
+    ])
+      .then(([s, c, certs]) => {
+        setStudents(s.data);
+        setCourses(c.data);
+        // Track already issued for this type+course combo
+        const issued = new Set<number>(
+          (certs.data || []).map((cert: any) => cert.studentId)
+        );
+        setIssuedStudentIds(issued);
+      })
       .catch(() => toast.error('Failed to load data'))
       .finally(() => setDataLoading(false));
   }, []);
+
+  // Recompute issued when type/courseId changes
+  useEffect(() => {
+    institutionApi.getCertificates({ limit: 500 }).then(certs => {
+      const issued = new Set<number>(
+        (certs.data || [])
+          .filter((cert: any) => cert.type === certType && (courseId ? String(cert.courseId) === courseId : !cert.courseId))
+          .map((cert: any) => cert.studentId)
+      );
+      setIssuedStudentIds(issued);
+    }).catch(() => {});
+  }, [certType, courseId]);
 
   // Select All
   const allSelected  = students.length > 0 && selected.length === students.length;
