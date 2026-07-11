@@ -87,6 +87,7 @@ export function InstitutionCourses() {
   const [assignModal, setAssignModal] = useState(false);
   const [assignCourse, setAssignCourse] = useState<InstituteCourse | null>(null);
   const [allStudents, setAllStudents] = useState<InstitutionStudent[]>([]);
+  const [enrolledStudents, setEnrolledStudents] = useState<InstitutionStudent[]>([]);
   const [assignSelected, setAssignSelected] = useState<number[]>([]);
 
   const load = () => {
@@ -105,14 +106,15 @@ export function InstitutionCourses() {
     setAssignCourse(c);
     setAssignSelected([]);
     try {
-      // Get all students and already enrolled students
       const [allRes, enrolledRes] = await Promise.all([
         institutionApi.getStudents({ limit: 200 }),
-        // Get course students via getStudent with course filter — use all students and filter
-        institutionApi.getStudents({ limit: 200 }),
+        institutionApi.getCourseStudents(c.id),
       ]);
-      // For now load all — backend handles duplicate via findOrCreate
-      setAllStudents(allRes.data);
+      const enrolledIds = new Set((enrolledRes.data || []).map((s: any) => s.id));
+      // Available = not yet assigned
+      const available = (allRes.data || []).filter((s: any) => !enrolledIds.has(s.id));
+      setEnrolledStudents(enrolledRes.data || []);
+      setAllStudents(available);
       setAssignModal(true);
     } catch { toast.error('Failed to load students'); }
   };

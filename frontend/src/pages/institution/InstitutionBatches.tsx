@@ -91,6 +91,7 @@ export function InstitutionBatches() {
   const [batchStudents, setBatchStudents] = useState<InstitutionStudent[]>([]);
   const [studentsLoading, setStudentsLoading] = useState(false);
   const [allStudents, setAllStudents] = useState<InstitutionStudent[]>([]);
+  const [enrolledStudents, setEnrolledStudents] = useState<InstitutionStudent[]>([]);
   const [assignModal, setAssignModal] = useState(false);
   const [assignSelected, setAssignSelected] = useState<number[]>([]);
 
@@ -122,6 +123,7 @@ export function InstitutionBatches() {
       // Filter out already assigned students
       const alreadyAssigned = new Set(batchRes.data.map((s: any) => s.id));
       const available = allRes.data.filter((s: any) => !alreadyAssigned.has(s.id));
+      setEnrolledStudents(batchRes.data || []);
       setAllStudents(available);
       setAssignSelected([]);
       setAssignModal(true);

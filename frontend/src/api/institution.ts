@@ -31,6 +31,7 @@ export const institutionApi = {
   createCourse:         (data: any) => client.post('/institution/courses', data).then(r => r.data),
   updateCourse:         (id: number, data: any) => client.put(`/institution/courses/${id}`, data).then(r => r.data),
   deleteCourse:         (id: number) => client.delete(`/institution/courses/${id}`).then(r => r.data),
+  getCourseStudents:     (id: number) => client.get(`/institution/courses/${id}/students`).then(r => r.data),
   assignStudentsToCourse:(id: number, studentIds: number[]) => client.post(`/institution/courses/${id}/assign-students`, { studentIds }).then(r => r.data),
 
   // Certificates

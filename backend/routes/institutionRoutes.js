@@ -43,6 +43,7 @@ r.get('/courses',                      ...withAuth, ctrl.getCourses);
 r.post('/courses',                     ...withAuth, ctrl.createCourse);
 r.put('/courses/:id',                  ...withAuth, ctrl.updateCourse);
 r.delete('/courses/:id',               ...withAuth, ctrl.deleteCourse);
+r.get('/courses/:id/students', ...withAuth, ctrl.getCourseStudents);
 r.post('/courses/:id/assign-students', ...withAuth, ctrl.assignStudentsToCourse);
 
 r.get('/certificates',                      ...withAuth, ctrl.getCertificates);

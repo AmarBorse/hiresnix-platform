@@ -285,6 +285,17 @@ const deleteCourse = asyncHandler(async (req, res) => {
   res.json({ success: true, message: 'Course deleted' });
 });
 
+const getCourseStudents = asyncHandler(async (req, res) => {
+  const institutionId = getInstitutionId(req);
+  const course = await Course.findOne({ where: { id: req.params.id, institutionId } });
+  if (!course) { res.status(404); throw new Error('Course not found'); }
+  const enrolled = await CourseStudent.findAll({
+    where: { courseId: course.id },
+    include: [{ model: InstitutionStudent, as: 'student' }],
+  });
+  res.json({ success: true, data: enrolled.map(e => e.student) });
+});
+
 const assignStudentsToCourse = asyncHandler(async (req, res) => {
   const institutionId = getInstitutionId(req);
   const { studentIds } = req.body;
@@ -370,7 +381,7 @@ const downloadCertificatePDF = asyncHandler(async (req, res) => {
     tagline: 'Empowering Future Professionals',
     email: 'support@hiresnix.co.in',
     website: 'www.hiresnix.co.in',
-    address: 'Shirpur, Maharashtra, India',
+    address: 'Pune, Maharashtra, India',
     colors: {
       accent:    '#d4af37',
       primary:   '#1e40af',
@@ -511,7 +522,7 @@ module.exports = {
   bulkImportStudents, getStudentCredentials,
   getBatches, createBatch, updateBatch, deleteBatch, getBatchStudents,
   assignStudentsToBatch, removeStudentFromBatch,
-  getCourses, createCourse, updateCourse, deleteCourse, assignStudentsToCourse,
+  getCourses, createCourse, updateCourse, deleteCourse, getCourseStudents, assignStudentsToCourse,
   getCertificates, issueCertificate, verifyCertificate, downloadCertificatePDF,
   getDashboardStats,
 };
