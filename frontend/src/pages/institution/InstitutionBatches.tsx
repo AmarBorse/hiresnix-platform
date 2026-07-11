@@ -316,6 +316,7 @@ export function InstitutionBatches() {
 
   const openAssign = async () => {
     try {
+      // Try new API with course filtering
       const res = await institutionApi.getAvailableStudentsForBatch(viewBatch!.id);
       setAllStudents(res.data || []);
       setEnrolledStudents(res.alreadyInBatch || []);
@@ -323,7 +324,22 @@ export function InstitutionBatches() {
       setBatchCourse(res.batchCourse || null);
       setAssignSelected([]);
       setAssignModal(true);
-    } catch { toast.error('Failed to load students'); }
+    } catch {
+      // Fallback: if new API fails (DB migration not run yet), use old API
+      try {
+        const [allRes, batchRes] = await Promise.all([
+          institutionApi.getStudents({ limit: 200 }),
+          institutionApi.getBatchStudents(viewBatch!.id),
+        ]);
+        const enrolledIds = new Set((batchRes.data || []).map((s: any) => s.id));
+        setEnrolledStudents(batchRes.data || []);
+        setSameCourseStudents([]);
+        setBatchCourse(null);
+        setAllStudents((allRes.data || []).filter((s: any) => !enrolledIds.has(s.id)));
+        setAssignSelected([]);
+        setAssignModal(true);
+      } catch { toast.error('Failed to load students'); }
+    }
   };
 
   const handleAssign = async () => {
