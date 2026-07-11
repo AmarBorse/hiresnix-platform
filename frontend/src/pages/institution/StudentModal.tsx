@@ -49,76 +49,76 @@ export function StudentModal({ student, onClose, onSaved }: Props) {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
       <div className="bg-white rounded-xl w-full max-w-xl shadow-xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between px-5 py-4 border-b">
-          <h2 className="font-semibold text-gray-800">{student ? 'Edit Student' : 'Add Student'}</h2>
+          <h2 className="font-semibold text-white">{student ? 'Edit Student' : 'Add Student'}</h2>
           <button onClick={onClose}><X size={18} className="text-gray-400" /></button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-5 grid grid-cols-2 gap-3">
           {/* Name */}
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Full Name *</label>
+            <label className="block text-xs font-medium mb-1" style={{color:"#64748b"}}>Full Name *</label>
             <input value={form.name} onChange={handleChange('name')}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
+              className="w-full px-3 py-2 rounded-lg text-sm focus:outline-none dark-input" />
           </div>
           {/* Email */}
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Email *</label>
+            <label className="block text-xs font-medium mb-1" style={{color:"#64748b"}}>Email *</label>
             <input type="email" value={form.email} onChange={handleChange('email')}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
+              className="w-full px-3 py-2 rounded-lg text-sm focus:outline-none dark-input" />
           </div>
           {/* Mobile */}
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Mobile</label>
+            <label className="block text-xs font-medium mb-1" style={{color:"#64748b"}}>Mobile</label>
             <input value={form.mobile} onChange={handleChange('mobile')}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
+              className="w-full px-3 py-2 rounded-lg text-sm focus:outline-none dark-input" />
           </div>
           {/* DOB */}
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Date of Birth</label>
+            <label className="block text-xs font-medium mb-1" style={{color:"#64748b"}}>Date of Birth</label>
             <input type="date" value={form.dob} onChange={handleChange('dob')}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
+              className="w-full px-3 py-2 rounded-lg text-sm focus:outline-none dark-input" />
           </div>
           {/* Gender */}
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Gender</label>
+            <label className="block text-xs font-medium mb-1" style={{color:"#64748b"}}>Gender</label>
             <select value={form.gender} onChange={handleChange('gender')}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300">
+              className="w-full px-3 py-2 rounded-lg text-sm focus:outline-none dark-input">
               <option value="">Select</option>
               <option>Male</option><option>Female</option><option>Other</option>
             </select>
           </div>
           {/* Department */}
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Department</label>
+            <label className="block text-xs font-medium mb-1" style={{color:"#64748b"}}>Department</label>
             <input value={form.department} onChange={handleChange('department')}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
+              className="w-full px-3 py-2 rounded-lg text-sm focus:outline-none dark-input" />
           </div>
           {/* Roll Number */}
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Roll Number</label>
+            <label className="block text-xs font-medium mb-1" style={{color:"#64748b"}}>Roll Number</label>
             <input value={form.rollNumber} onChange={handleChange('rollNumber')}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
+              className="w-full px-3 py-2 rounded-lg text-sm focus:outline-none dark-input" />
           </div>
           {/* Year */}
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Year</label>
+            <label className="block text-xs font-medium mb-1" style={{color:"#64748b"}}>Year</label>
             <select value={form.year} onChange={handleChange('year')}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300">
+              className="w-full px-3 py-2 rounded-lg text-sm focus:outline-none dark-input">
               <option value="">Select</option>
               {[1,2,3,4,5].map(y => <option key={y}>{y}</option>)}
             </select>
           </div>
           {/* Skills */}
           <div className="col-span-2">
-            <label className="block text-xs font-medium text-gray-600 mb-1">Skills (comma separated)</label>
+            <label className="block text-xs font-medium mb-1" style={{color:"#64748b"}}>Skills (comma separated)</label>
             <input value={form.skills} onChange={handleChange('skills')} placeholder="e.g. Python, React, SQL"
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
+              className="w-full px-3 py-2 rounded-lg text-sm focus:outline-none dark-input" />
           </div>
           {/* Address */}
           <div className="col-span-2">
-            <label className="block text-xs font-medium text-gray-600 mb-1">Address</label>
+            <label className="block text-xs font-medium mb-1" style={{color:"#64748b"}}>Address</label>
             <textarea value={form.address} onChange={handleChange('address')} rows={2}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
+              className="w-full px-3 py-2 rounded-lg text-sm focus:outline-none dark-input" />
           </div>
           {/* Buttons */}
           <div className="col-span-2 flex gap-3 justify-end pt-2">
