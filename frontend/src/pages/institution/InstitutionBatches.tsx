@@ -92,6 +92,8 @@ export function InstitutionBatches() {
   const [studentsLoading, setStudentsLoading] = useState(false);
   const [allStudents, setAllStudents] = useState<InstitutionStudent[]>([]);
   const [enrolledStudents, setEnrolledStudents] = useState<InstitutionStudent[]>([]);
+  const [courses, setCourses] = useState<any[]>([]);
+  const [selectedCourseId, setSelectedCourseId] = useState<string>('');
   const [assignModal, setAssignModal] = useState(false);
   const [assignSelected, setAssignSelected] = useState<number[]>([]);
 
@@ -116,15 +118,17 @@ export function InstitutionBatches() {
 
   const openAssign = async () => {
     try {
-      const [allRes, batchRes] = await Promise.all([
+      const [allRes, batchRes, courseRes] = await Promise.all([
         institutionApi.getStudents({ limit: 200 }),
         institutionApi.getBatchStudents(viewBatch!.id),
+        institutionApi.getCourses(),
       ]);
-      // Filter out already assigned students
       const alreadyAssigned = new Set(batchRes.data.map((s: any) => s.id));
       const available = allRes.data.filter((s: any) => !alreadyAssigned.has(s.id));
       setEnrolledStudents(batchRes.data || []);
       setAllStudents(available);
+      setCourses(courseRes.data || []);
+      setSelectedCourseId('');
       setAssignSelected([]);
       setAssignModal(true);
     } catch { toast.error('Failed to load students'); }
@@ -133,8 +137,8 @@ export function InstitutionBatches() {
   const handleAssign = async () => {
     if (!viewBatch || assignSelected.length === 0) return;
     try {
-      await institutionApi.assignStudentsToBatch(viewBatch.id, assignSelected);
-      toast.success('Students assigned');
+      await institutionApi.assignStudentsToBatch(viewBatch.id, assignSelected, selectedCourseId ? parseInt(selectedCourseId) : undefined);
+      toast.success('Students assigned' + (selectedCourseId ? ' to course' : ''));
       setAssignModal(false);
       openBatch(viewBatch);
     } catch { toast.error('Failed to assign students'); }
@@ -171,7 +175,7 @@ export function InstitutionBatches() {
             <tr className="text-left text-xs uppercase tracking-wide" style={{color:"#475569",borderBottom:"1px solid rgba(255,255,255,0.08)"}}>
               <th className="px-4 py-3">Career ID</th>
               <th className="px-4 py-3">Name</th>
-              <th className="px-4 py-3">Email</th>
+              <th className="px-4 py-3">Course</th>
               <th className="px-4 py-3">Department</th>
               <th className="px-4 py-3"></th>
             </tr>
@@ -181,11 +185,15 @@ export function InstitutionBatches() {
               ? <tr><td colSpan={5} className="text-center py-10" style={{color:"#475569"}}>Loading...</td></tr>
               : batchStudents.length === 0
               ? <tr><td colSpan={5} className="text-center py-10" style={{color:"#475569"}}>No students in this batch yet</td></tr>
-              : batchStudents.map(s => (
+              : batchStudents.map((s: any) => (
                 <tr key={s.id} className="transition" style={{borderBottom:"1px solid rgba(255,255,255,0.05)"}} onMouseEnter={e=>(e.currentTarget.style.background="rgba(255,255,255,0.04)")} onMouseLeave={e=>(e.currentTarget.style.background="")}>
                   <td className="px-4 py-3"><span className="font-mono text-xs px-2 py-0.5 rounded" style={{background:"rgba(99,102,241,0.15)",color:"#818cf8"}}>{s.careerId}</span></td>
                   <td className="px-4 py-3 font-medium text-white">{s.name}</td>
-                  <td className="px-4 py-3" style={{color:"#64748b"}}>{s.email}</td>
+                  <td className="px-4 py-3">
+                    {s.course
+                      ? <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={{background:"rgba(139,92,246,0.15)",color:"#c084fc"}}>{s.course.name}</span>
+                      : <span style={{color:"#475569"}}>—</span>}
+                  </td>
                   <td className="px-4 py-3" style={{color:"#64748b"}}>{s.department || '—'}</td>
                   <td className="px-4 py-3 text-right">
                     <button onClick={async () => {
@@ -207,6 +215,38 @@ export function InstitutionBatches() {
             <div className="flex items-center justify-between px-5 py-4" style={{borderBottom:"1px solid rgba(255,255,255,0.08)"}}>
               <h2 className="font-semibold text-white">Assign Students to Batch</h2>
               <button onClick={() => setAssignModal(false)}><X size={18} className="text-gray-400" /></button>
+            </div>
+            {/* Course selector */}
+            <div className="px-5 py-3" style={{borderBottom:"1px solid rgba(255,255,255,0.08)",background:"rgba(255,255,255,0.02)"}}>
+              <label className="block text-xs font-semibold uppercase tracking-wider mb-2" style={{color:"#64748b"}}>Select Course (optional)</label>
+              <select value={selectedCourseId} onChange={e => setSelectedCourseId(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg text-sm focus:outline-none dark-input">
+                <option value="">No specific course</option>
+                {courses.map((c: any) => (
+                  <option key={c.id} value={c.id}>{c.name}{c.duration ? ` — ${c.duration} ${c.durationUnit}` : ''}</option>
+                ))}
+              </select>
+              {selectedCourseId && (
+                <p className="text-xs mt-1.5 font-medium" style={{color:"#818cf8"}}>📚 Students will be linked to this course</p>
+              )}
+            </div>
+            {/* Course selector */}
+            <div className="px-5 py-3" style={{borderBottom:"1px solid rgba(255,255,255,0.08)",background:"rgba(255,255,255,0.02)"}}>
+              <label className="block text-xs font-semibold uppercase tracking-wider mb-2" style={{color:"#64748b"}}>
+                Select Course (optional)
+              </label>
+              <select value={selectedCourseId} onChange={e => setSelectedCourseId(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg text-sm focus:outline-none dark-input">
+                <option value="">No specific course</option>
+                {courses.map((c: any) => (
+                  <option key={c.id} value={c.id}>{c.name} {c.duration ? `— ${c.duration} ${c.durationUnit}` : ''}</option>
+                ))}
+              </select>
+              {selectedCourseId && (
+                <p className="text-xs mt-1.5 font-medium" style={{color:"#818cf8"}}>
+                  📚 Students will be linked to this course in the batch
+                </p>
+              )}
             </div>
 
             {/* Select All bar */}

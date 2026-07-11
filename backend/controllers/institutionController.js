@@ -223,21 +223,49 @@ const getBatchStudents = asyncHandler(async (req, res) => {
   const institutionId = getInstitutionId(req);
   const batch = await Batch.findOne({ where: { id: req.params.id, institutionId } });
   if (!batch) { res.status(404); throw new Error('Batch not found'); }
-  const students = await InstitutionStudent.findAll({
-    attributes: { exclude: ['password'] },
-    include: [{ model: Batch, as: 'batches', where: { id: req.params.id }, through: { attributes: [] } }],
+
+  // Get students with their course info via BatchStudent
+  const batchStudents = await BatchStudent.findAll({
+    where: { batchId: batch.id },
+    include: [
+      { model: InstitutionStudent, as: 'student', attributes: { exclude: ['password'] } },
+      { model: Course, as: 'course', attributes: ['id', 'name', 'duration', 'durationUnit'] },
+    ],
   });
+
+  const students = batchStudents.map(bs => ({
+    ...bs.student.toJSON(),
+    course: bs.course || null,
+    courseId: bs.courseId || null,
+  }));
+
   res.json({ success: true, data: students, batch });
 });
 
 const assignStudentsToBatch = asyncHandler(async (req, res) => {
   const institutionId = getInstitutionId(req);
-  const { studentIds } = req.body;
+  const { studentIds, courseId } = req.body;
   const batch = await Batch.findOne({ where: { id: req.params.id, institutionId } });
   if (!batch) { res.status(404); throw new Error('Batch not found'); }
+
+  // Validate course belongs to this institution
+  let validCourse = null;
+  if (courseId) {
+    validCourse = await Course.findOne({ where: { id: courseId, institutionId } });
+  }
+
   for (const sid of studentIds) {
     const st = await InstitutionStudent.findOne({ where: { id: sid, institutionId } });
-    if (st) await BatchStudent.findOrCreate({ where: { batchId: batch.id, studentId: sid } });
+    if (st) {
+      const [bs, created] = await BatchStudent.findOrCreate({
+        where: { batchId: batch.id, studentId: sid },
+        defaults: { courseId: validCourse?.id || null },
+      });
+      // Update courseId if already exists and courseId provided
+      if (!created && validCourse && !bs.courseId) {
+        await bs.update({ courseId: validCourse.id });
+      }
+    }
   }
   res.json({ success: true, message: 'Students assigned to batch' });
 });

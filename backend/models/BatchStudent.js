@@ -8,6 +8,7 @@ const BatchStudent = sequelize.define('BatchStudent', {
   id:        { type: DataTypes.BIGINT, autoIncrement: true, primaryKey: true },
   batchId:   { type: DataTypes.BIGINT, allowNull: false, references: { model: 'batches', key: 'id' } },
   studentId: { type: DataTypes.BIGINT, allowNull: false, references: { model: 'institution_students', key: 'id' } },
+  courseId:  { type: DataTypes.BIGINT, allowNull: true,  references: { model: 'courses', key: 'id' } },
 }, {
   tableName: 'batch_students', timestamps: true,
   indexes: [{ unique: true, fields: ['batchId', 'studentId'] }],

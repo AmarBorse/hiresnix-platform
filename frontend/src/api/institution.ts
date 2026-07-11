@@ -23,7 +23,7 @@ export const institutionApi = {
   updateBatch:          (id: number, data: any) => client.put(`/institution/batches/${id}`, data).then(r => r.data),
   deleteBatch:          (id: number) => client.delete(`/institution/batches/${id}`).then(r => r.data),
   getBatchStudents:     (id: number) => client.get(`/institution/batches/${id}/students`).then(r => r.data),
-  assignStudentsToBatch:(id: number, studentIds: number[]) => client.post(`/institution/batches/${id}/assign-students`, { studentIds }).then(r => r.data),
+  assignStudentsToBatch:(id: number, studentIds: number[], courseId?: number) => client.post(`/institution/batches/${id}/assign-students`, { studentIds, courseId }).then(r => r.data),
   removeFromBatch:      (batchId: number, studentId: number) => client.delete(`/institution/batches/${batchId}/students/${studentId}`).then(r => r.data),
 
   // Courses
