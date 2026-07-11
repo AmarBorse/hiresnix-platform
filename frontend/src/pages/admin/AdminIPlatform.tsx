@@ -892,10 +892,12 @@ export function AdminIPlatform() {
 
       {/* ── GENERATE OFFER MODAL ───────────────────────────────── */}
       {offerModal && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-          <div className="rounded-2xl p-6 w-full max-w-md shadow-2xl" style={{background:"linear-gradient(135deg,#0f1729,#0d1b35)",border:"1px solid rgba(255,255,255,0.1)"}}>
-            <h3 className="font-black text-white text-lg mb-0.5">Generate Offer Letter</h3>
-            <p className="text-sm mb-4" style={{color:"#64748b"}}>Create a Hiresnix PDF offer letter for this candidate.</p>
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 backdrop-blur-sm overflow-y-auto">
+          <div className="rounded-2xl w-full max-w-md shadow-2xl my-auto" style={{background:"linear-gradient(135deg,#0f1729,#0d1b35)",border:"1px solid rgba(255,255,255,0.1)"}}>
+            <div className="p-5" style={{borderBottom:"1px solid rgba(255,255,255,0.08)"}}>
+              <h3 className="font-black text-white text-base mb-0.5">Generate Offer Letter</h3>
+              <p className="text-xs" style={{color:"#64748b"}}>Create a Hiresnix PDF offer letter for this candidate.</p>
+            </div>
             <form onSubmit={async (e) => {
               e.preventDefault();
               setGeneratingOffer(true);
@@ -908,7 +910,7 @@ export function AdminIPlatform() {
               } catch {
                 toast.error('Failed to generate offer letter');
               } finally { setGeneratingOffer(false); }
-            }} className="space-y-3">
+            }} className="p-5 space-y-3">
               <div>
                 <label className="block text-xs font-semibold mb-1" style={{color:"#64748b"}}>Candidate Name</label>
                 <input required className="w-full rounded-xl px-3 py-2 text-sm focus:outline-none dark-input"
@@ -943,11 +945,11 @@ export function AdminIPlatform() {
                   value={offerModal.offerLetterDate} onChange={e => setOfferModal({ ...offerModal, offerLetterDate: e.target.value })} />
                 {offerModal.datesLocked && <p className="text-[11px] mt-1" style={{color:"#64748b"}}>Dates are locked because this offer letter was already generated.</p>}
               </div>
-              <div className="flex gap-3 mt-5">
+              <div className="flex gap-3 pt-2">
                 <button type="submit" disabled={generatingOffer}
                   className="flex-1 flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 disabled:opacity-60 text-white font-bold py-2.5 rounded-xl text-sm transition">
                   {generatingOffer ? <Loader2 size={14} className="animate-spin" /> : <FileText size={14} />}
-                  {generatingOffer ? 'Generating PDF (10-20s)...' : 'Download PDF'}
+                  {generatingOffer ? 'Generating...' : 'Download PDF'}
                 </button>
                 <button type="button" onClick={() => setOfferModal(null)} className="flex-1 font-bold py-2.5 rounded-xl text-sm hover:bg-white/10 transition text-gray-400" style={{border:"1px solid rgba(255,255,255,0.1)"}}>
                   Cancel
