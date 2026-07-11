@@ -81,11 +81,9 @@ export function GlobalAnimations() {
         box-shadow: 0 32px 80px rgba(0,0,0,0.2), 0 8px 32px rgba(99,102,241,0.15) !important;
       }
 
-      /* ── Page background mesh ── */
-      main {
-        position: relative;
-      }
-      main::before {
+      /* ── Page background mesh — on body, NOT main ── */
+      /* IMPORTANT: Do NOT put position/z-index on main — it breaks fixed modals */
+      body::before {
         content: '';
         position: fixed;
         inset: 0;
@@ -95,10 +93,6 @@ export function GlobalAnimations() {
           radial-gradient(ellipse at 60% 10%, rgba(59,130,246,0.05) 0%, transparent 50%);
         pointer-events: none;
         z-index: 0;
-      }
-      main > * {
-        position: relative;
-        z-index: 1;
       }
 
       /* ── Page Load Fade In ── */

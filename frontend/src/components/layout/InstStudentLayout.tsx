@@ -95,7 +95,7 @@ export function InstStudentLayout() {
           </div>
           <span className="text-xs font-mono" style={{ color: C.accent }}>{student?.careerId}</span>
         </header>
-        <main key={pathname} className="flex-1 p-4 sm:p-6 animate-page" style={{overflowY:"auto",isolation:"isolate"}}>
+        <main key={pathname} className="flex-1 p-4 sm:p-6 animate-page" style={{overflowY:"auto"}}>
           <Outlet />
         </main>
       </div>
