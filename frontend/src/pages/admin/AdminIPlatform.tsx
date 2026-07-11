@@ -892,15 +892,15 @@ export function AdminIPlatform() {
 
       {/* ── GENERATE OFFER MODAL ───────────────────────────────── */}
       {offerModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl">
-            <h3 className="font-black text-gray-900 text-lg mb-0.5">Generate Offer Letter</h3>
-            <p className="text-gray-500 text-sm mb-4">Create a Hiresnix PDF offer letter for this candidate.</p>
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+          <div className="rounded-2xl p-6 w-full max-w-md shadow-2xl" style={{background:"linear-gradient(135deg,#0f1729,#0d1b35)",border:"1px solid rgba(255,255,255,0.1)"}}>
+            <h3 className="font-black text-white text-lg mb-0.5">Generate Offer Letter</h3>
+            <p className="text-sm mb-4" style={{color:"#64748b"}}>Create a Hiresnix PDF offer letter for this candidate.</p>
             <form onSubmit={async (e) => {
               e.preventDefault();
               setGeneratingOffer(true);
               try {
-                const res = await client.post('/iplatform/generate-offer', offerModal, { responseType: 'blob' });
+                const res = await client.post('/iplatform/generate-offer', offerModal, { responseType: 'blob', timeout: 60000 });
                 const url = URL.createObjectURL(res.data);
                 const a = document.createElement('a'); a.href = url; a.download = `Hiresnix_Offer_${offerModal.candidateName}.pdf`; a.click();
                 toast.success('Offer Letter Generated!');
@@ -910,46 +910,46 @@ export function AdminIPlatform() {
               } finally { setGeneratingOffer(false); }
             }} className="space-y-3">
               <div>
-                <label className="block text-xs font-semibold text-gray-500 mb-1">Candidate Name</label>
-                <input required className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+                <label className="block text-xs font-semibold mb-1" style={{color:"#64748b"}}>Candidate Name</label>
+                <input required className="w-full rounded-xl px-3 py-2 text-sm focus:outline-none dark-input"
                   value={offerModal.candidateName} onChange={e => setOfferModal({ ...offerModal, candidateName: e.target.value })} />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-gray-500 mb-1">Role / Domain</label>
-                <input required className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+                <label className="block text-xs font-semibold mb-1" style={{color:"#64748b"}}>Role / Domain</label>
+                <input required className="w-full rounded-xl px-3 py-2 text-sm focus:outline-none dark-input"
                   value={offerModal.role} onChange={e => setOfferModal({ ...offerModal, role: e.target.value })} />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-gray-500 mb-1">Stipend / Salary</label>
-                  <input required className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+                  <label className="block text-xs font-semibold mb-1" style={{color:"#64748b"}}>Stipend / Salary</label>
+                  <input required className="w-full rounded-xl px-3 py-2 text-sm focus:outline-none dark-input"
                     placeholder="e.g. Unpaid or ₹5000" value={offerModal.salary} onChange={e => setOfferModal({ ...offerModal, salary: e.target.value })} />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-500 mb-1">Joining Date</label>
-                  <input required type="date" disabled={offerModal.datesLocked} className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
+                  <label className="block text-xs font-semibold mb-1" style={{color:"#64748b"}}>Joining Date</label>
+                  <input required type="date" disabled={offerModal.datesLocked} className="w-full rounded-xl px-3 py-2 text-sm focus:outline-none dark-input disabled:opacity-50"
                     value={offerModal.joiningDate} onChange={e => setOfferModal({ ...offerModal, joiningDate: e.target.value })} />
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-gray-500 mb-1">End Date <span className="font-normal text-gray-400">(optional)</span></label>
-                <input type="date" disabled={offerModal.datesLocked} className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
+                <label className="block text-xs font-semibold mb-1" style={{color:"#64748b"}}>End Date <span className="font-normal text-gray-400">(optional)</span></label>
+                <input type="date" disabled={offerModal.datesLocked} className="w-full rounded-xl px-3 py-2 text-sm focus:outline-none dark-input disabled:opacity-50"
                   value={offerModal.endDate || ''} onChange={e => setOfferModal({ ...offerModal, endDate: e.target.value })} />
-                {offerModal.datesLocked && <p className="text-[11px] text-gray-400 mt-1">End Date is locked because this offer letter was already generated.</p>}
+                {offerModal.datesLocked && <p className="text-[11px] mt-1" style={{color:"#64748b"}}>End Date is locked because this offer letter was already generated.</p>}
               </div>
               <div>
-                <label className="block text-xs font-semibold text-gray-500 mb-1">Offer Letter Date</label>
-                <input required type="date" disabled={offerModal.datesLocked} className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
+                <label className="block text-xs font-semibold mb-1" style={{color:"#64748b"}}>Offer Letter Date</label>
+                <input required type="date" disabled={offerModal.datesLocked} className="w-full rounded-xl px-3 py-2 text-sm focus:outline-none dark-input disabled:opacity-50"
                   value={offerModal.offerLetterDate} onChange={e => setOfferModal({ ...offerModal, offerLetterDate: e.target.value })} />
-                {offerModal.datesLocked && <p className="text-[11px] text-gray-400 mt-1">Dates are locked because this offer letter was already generated.</p>}
+                {offerModal.datesLocked && <p className="text-[11px] mt-1" style={{color:"#64748b"}}>Dates are locked because this offer letter was already generated.</p>}
               </div>
               <div className="flex gap-3 mt-5">
                 <button type="submit" disabled={generatingOffer}
                   className="flex-1 flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 disabled:opacity-60 text-white font-bold py-2.5 rounded-xl text-sm transition">
                   {generatingOffer ? <Loader2 size={14} className="animate-spin" /> : <FileText size={14} />}
-                  Download PDF
+                  {generatingOffer ? 'Generating PDF (10-20s)...' : 'Download PDF'}
                 </button>
-                <button type="button" onClick={() => setOfferModal(null)} className="flex-1 border border-gray-200 text-gray-600 font-bold py-2.5 rounded-xl text-sm hover:bg-gray-50 transition">
+                <button type="button" onClick={() => setOfferModal(null)} className="flex-1 font-bold py-2.5 rounded-xl text-sm hover:bg-white/10 transition text-gray-400" style={{border:"1px solid rgba(255,255,255,0.1)"}}>
                   Cancel
                 </button>
               </div>
