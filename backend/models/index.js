@@ -88,6 +88,9 @@ BatchStudent.belongsTo(InstitutionStudent, { foreignKey: 'studentId', as: 'stude
 // Course ↔ InstitutionStudent (many-to-many via CourseStudent)
 Course.belongsToMany(InstitutionStudent, { through: CourseStudent, foreignKey: 'courseId', otherKey: 'studentId', as: 'students' });
 InstitutionStudent.belongsToMany(Course, { through: CourseStudent, foreignKey: 'studentId', otherKey: 'courseId', as: 'courses' });
+Course.hasMany(CourseStudent, { foreignKey: 'courseId', as: 'courseStudents' });
+CourseStudent.belongsTo(Course, { foreignKey: 'courseId', as: 'course' });
+CourseStudent.belongsTo(InstitutionStudent, { foreignKey: 'studentId', as: 'student' });
 
 module.exports = {
   User, Student, Company, Job, Application, Internship, Enrollment,
