@@ -233,15 +233,10 @@ const getBatchStudents = asyncHandler(async (req, res) => {
     where: { batchId: batch.id },
     include: [
       { model: InstitutionStudent, as: 'student', attributes: { exclude: ['password'] } },
-      { model: Course, as: 'course', attributes: ['id', 'name', 'duration', 'durationUnit'] },
     ],
   });
 
-  const students = batchStudents.map(bs => ({
-    ...bs.student.toJSON(),
-    course: bs.course || null,
-    courseId: bs.courseId || null,
-  }));
+  const students = batchStudents.map(bs => bs.student?.toJSON()).filter(Boolean);
 
   res.json({ success: true, data: students, batch });
 });
@@ -272,6 +267,54 @@ const assignStudentsToBatch = asyncHandler(async (req, res) => {
     }
   }
   res.json({ success: true, message: 'Students assigned to batch' });
+});
+
+// Returns students NOT already assigned to a batch with the same course
+const getAvailableStudentsForBatch = asyncHandler(async (req, res) => {
+  const institutionId = getInstitutionId(req);
+  const batch = await Batch.findOne({
+    where: { id: req.params.id, institutionId },
+    include: [{ model: Course, as: 'course' }],
+  });
+  if (!batch) { res.status(404); throw new Error('Batch not found'); }
+
+  // All students in this institution
+  const allStudents = await InstitutionStudent.findAll({
+    where: { institutionId },
+    attributes: { exclude: ['password'] },
+  });
+
+  // Students already in THIS batch
+  const inThisBatch = await BatchStudent.findAll({ where: { batchId: batch.id } });
+  const inThisBatchIds = new Set(inThisBatch.map(bs => bs.studentId));
+
+  // If batch has a course, find students already in ANY batch with same course
+  let sameCourseStudentIds = new Set();
+  if (batch.courseId) {
+    // Find all batches with same course (excluding this batch)
+    const sameCoursBatches = await Batch.findAll({
+      where: { institutionId, courseId: batch.courseId, id: { [Op.ne]: batch.id } },
+    });
+    if (sameCoursBatches.length > 0) {
+      const sameBatchIds = sameCoursBatches.map(b => b.id);
+      const enrolled = await BatchStudent.findAll({
+        where: { batchId: { [Op.in]: sameBatchIds } },
+      });
+      enrolled.forEach(e => sameCourseStudentIds.add(e.studentId));
+    }
+  }
+
+  const available  = allStudents.filter(s => !inThisBatchIds.has(s.id) && !sameCourseStudentIds.has(s.id));
+  const alreadyIn  = allStudents.filter(s => inThisBatchIds.has(s.id));
+  const sameCourseDuplicate = allStudents.filter(s => !inThisBatchIds.has(s.id) && sameCourseStudentIds.has(s.id));
+
+  res.json({
+    success: true,
+    data: available,
+    alreadyInBatch: alreadyIn,
+    alreadyInSameCourse: sameCourseDuplicate,
+    batchCourse: batch.course || null,
+  });
 });
 
 const removeStudentFromBatch = asyncHandler(async (req, res) => {

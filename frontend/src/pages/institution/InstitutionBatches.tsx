@@ -282,8 +282,10 @@ export function InstitutionBatches() {
   const [viewBatch, setViewBatch]   = useState<InstituteBatch | null>(null);
   const [batchStudents, setBatchStudents]   = useState<any[]>([]);
   const [studentsLoading, setStudentsLoading] = useState(false);
-  const [allStudents, setAllStudents]       = useState<any[]>([]);
-  const [enrolledStudents, setEnrolledStudents] = useState<any[]>([]);
+  const [allStudents, setAllStudents]           = useState<any[]>([]);
+  const [enrolledStudents, setEnrolledStudents]   = useState<any[]>([]);
+  const [sameCourseStudents, setSameCourseStudents] = useState<any[]>([]);
+  const [batchCourse, setBatchCourse]             = useState<any>(null);
   const [assignModal, setAssignModal]       = useState(false);
   const [assignSelected, setAssignSelected] = useState<number[]>([]);
   const [certModal, setCertModal]           = useState<InstituteBatch | null>(null);
@@ -314,13 +316,11 @@ export function InstitutionBatches() {
 
   const openAssign = async () => {
     try {
-      const [allRes, batchRes] = await Promise.all([
-        institutionApi.getStudents({ limit: 200 }),
-        institutionApi.getBatchStudents(viewBatch!.id),
-      ]);
-      const enrolledIds = new Set(batchRes.data.map((s: any) => s.id));
-      setEnrolledStudents(batchRes.data || []);
-      setAllStudents(allRes.data.filter((s: any) => !enrolledIds.has(s.id)));
+      const res = await institutionApi.getAvailableStudentsForBatch(viewBatch!.id);
+      setAllStudents(res.data || []);
+      setEnrolledStudents(res.alreadyInBatch || []);
+      setSameCourseStudents(res.alreadyInSameCourse || []);
+      setBatchCourse(res.batchCourse || null);
       setAssignSelected([]);
       setAssignModal(true);
     } catch { toast.error('Failed to load students'); }
@@ -434,12 +434,32 @@ export function InstitutionBatches() {
             <div className="flex-1 overflow-y-auto p-4 space-y-1">
               {enrolledStudents.length > 0 && (
                 <div className="mb-3">
-                  <p className="text-[11px] font-bold uppercase tracking-wider mb-2" style={{color:"#34d399"}}>✅ Already in Batch ({enrolledStudents.length})</p>
-                  {enrolledStudents.map(s => (
+                  <p className="text-[11px] font-bold uppercase tracking-wider mb-2" style={{color:"#34d399"}}>✅ Already in this Batch ({enrolledStudents.length})</p>
+                  {enrolledStudents.map((s: any) => (
                     <div key={s.id} className="flex items-center gap-3 p-2.5 rounded-lg opacity-50 mb-1"
                       style={{background:"rgba(16,185,129,0.06)",border:"1px solid rgba(16,185,129,0.15)"}}>
                       <CheckCircle size={13} style={{color:"#34d399",flexShrink:0}} />
                       <div><p className="text-sm font-medium text-white">{s.name}</p><p className="text-xs" style={{color:"#475569"}}>{s.careerId}</p></div>
+                    </div>
+                  ))}
+                  {(allStudents.length > 0 || sameCourseStudents.length > 0) && <div className="my-3 border-t" style={{borderColor:"rgba(255,255,255,0.08)"}} />}
+                </div>
+              )}
+
+              {/* Same course — not eligible */}
+              {sameCourseStudents.length > 0 && (
+                <div className="mb-3">
+                  <p className="text-[11px] font-bold uppercase tracking-wider mb-2" style={{color:"#f59e0b"}}>
+                    ⚠️ Already in {batchCourse?.name || 'same course'} batch ({sameCourseStudents.length})
+                  </p>
+                  {sameCourseStudents.map((s: any) => (
+                    <div key={s.id} className="flex items-center gap-3 p-2.5 rounded-lg opacity-50 mb-1"
+                      style={{background:"rgba(245,158,11,0.06)",border:"1px solid rgba(245,158,11,0.2)"}}>
+                      <span style={{color:"#f59e0b",fontSize:13,flexShrink:0}}>⚠</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-white truncate">{s.name}</p>
+                        <p className="text-xs" style={{color:"#475569"}}>{s.careerId} · Already enrolled in this course</p>
+                      </div>
                     </div>
                   ))}
                   {allStudents.length > 0 && <div className="my-3 border-t" style={{borderColor:"rgba(255,255,255,0.08)"}} />}
