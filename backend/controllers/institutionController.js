@@ -288,10 +288,12 @@ const getAvailableStudentsForBatch = asyncHandler(async (req, res) => {
   const inThisBatch = await BatchStudent.findAll({ where: { batchId: batch.id } });
   const inThisBatchIds = new Set(inThisBatch.map(bs => bs.studentId));
 
-  // If batch has a course, find students already in ANY batch with same course
+  // If batch has a course, find students who:
+  // 1. Already in another batch with same course
+  // 2. Already have a certificate for this course
   let sameCourseStudentIds = new Set();
   if (batch.courseId) {
-    // Find all batches with same course (excluding this batch)
+    // Find all other batches with same course
     const sameCoursBatches = await Batch.findAll({
       where: { institutionId, courseId: batch.courseId, id: { [Op.ne]: batch.id } },
     });
@@ -302,6 +304,13 @@ const getAvailableStudentsForBatch = asyncHandler(async (req, res) => {
       });
       enrolled.forEach(e => sameCourseStudentIds.add(e.studentId));
     }
+
+    // Also block students who already have a certificate for this course
+    const certifiedStudents = await InstitutionCertificate.findAll({
+      where: { institutionId, courseId: batch.courseId },
+      attributes: ['studentId'],
+    });
+    certifiedStudents.forEach(c => sameCourseStudentIds.add(c.studentId));
   }
 
   const available  = allStudents.filter(s => !inThisBatchIds.has(s.id) && !sameCourseStudentIds.has(s.id));

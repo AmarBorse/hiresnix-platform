@@ -466,7 +466,7 @@ export function InstitutionBatches() {
               {sameCourseStudents.length > 0 && (
                 <div className="mb-3">
                   <p className="text-[11px] font-bold uppercase tracking-wider mb-2" style={{color:"#f59e0b"}}>
-                    ⚠️ Already in {batchCourse?.name || 'same course'} batch ({sameCourseStudents.length})
+                    ⚠️ Already completed/enrolled in {batchCourse?.name || 'same course'} ({sameCourseStudents.length})
                   </p>
                   {sameCourseStudents.map((s: any) => (
                     <div key={s.id} className="flex items-center gap-3 p-2.5 rounded-lg opacity-50 mb-1"
@@ -474,7 +474,7 @@ export function InstitutionBatches() {
                       <span style={{color:"#f59e0b",fontSize:13,flexShrink:0}}>⚠</span>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-white truncate">{s.name}</p>
-                        <p className="text-xs" style={{color:"#475569"}}>{s.careerId} · Already enrolled in this course</p>
+                        <p className="text-xs" style={{color:"#475569"}}>{s.careerId} · Already in this course or certificate issued</p>
                       </div>
                     </div>
                   ))}
