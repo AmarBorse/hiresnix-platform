@@ -184,7 +184,11 @@ const getStudentCredentials = asyncHandler(async (req, res) => {
 
 const getBatches = asyncHandler(async (req, res) => {
   const institutionId = getInstitutionId(req);
-  const batches = await Batch.findAll({ where: { institutionId }, order: [['createdAt','DESC']] });
+  const batches = await Batch.findAll({
+    where: { institutionId },
+    include: [{ model: Course, as: 'course', attributes: ['id','name','duration','durationUnit'] }],
+    order: [['createdAt','DESC']],
+  });
   const batchesWithCount = await Promise.all(batches.map(async (b) => {
     const count = await BatchStudent.count({ where: { batchId: b.id } });
     return { ...b.toJSON(), studentCount: count };
@@ -194,9 +198,9 @@ const getBatches = asyncHandler(async (req, res) => {
 
 const createBatch = asyncHandler(async (req, res) => {
   const institutionId = getInstitutionId(req);
-  const { name, description, startDate, endDate, trainerName, trainerEmail, status } = req.body;
+  const { name, description, startDate, endDate, trainerName, trainerEmail, status, courseId } = req.body;
   if (!name) { res.status(400); throw new Error('Batch name is required'); }
-  const batch = await Batch.create({ institutionId, name, description, startDate, endDate, trainerName, trainerEmail, status });
+  const batch = await Batch.create({ institutionId, name, description, startDate, endDate, trainerName, trainerEmail, status, courseId: courseId || null });
   res.status(201).json({ success: true, data: batch });
 });
 
@@ -357,26 +361,41 @@ const getCertificates = asyncHandler(async (req, res) => {
 const issueCertificate = asyncHandler(async (req, res) => {
   const institutionId = getInstitutionId(req);
   const inst = await Institution.findOne({ where: { userId: req.user.id } });
-  const { studentId, courseId, type } = req.body;
+  const { studentId, courseId, batchId, type } = req.body;
   if (!studentId || !type) { res.status(400); throw new Error('studentId and type are required'); }
   const student = await InstitutionStudent.findOne({ where: { id: studentId, institutionId } });
   if (!student) { res.status(404); throw new Error('Student not found'); }
 
+  // Resolve courseId from batch if not provided directly
+  let resolvedCourseId = courseId || null;
+  let courseName = null;
+
+  if (batchId && !resolvedCourseId) {
+    const batch = await Batch.findOne({
+      where: { id: batchId, institutionId },
+      include: [{ model: Course, as: 'course' }],
+    });
+    if (batch?.course) {
+      resolvedCourseId = batch.course.id;
+      courseName = batch.course.name;
+    }
+  }
+
+  if (!courseName && resolvedCourseId) {
+    const course = await Course.findOne({ where: { id: resolvedCourseId, institutionId } });
+    if (course) courseName = course.name;
+  }
+
   // Skip if already issued same type + course
   const alreadyIssued = await InstitutionCertificate.findOne({
-    where: { institutionId, studentId, type, courseId: courseId || null },
+    where: { institutionId, studentId, type, courseId: resolvedCourseId || null },
   });
   if (alreadyIssued) {
     return res.status(200).json({ success: true, skipped: true, message: 'Certificate already issued', data: alreadyIssued });
   }
 
-  let courseName = null;
-  if (courseId) {
-    const course = await Course.findOne({ where: { id: courseId, institutionId } });
-    if (course) courseName = course.name;
-  }
   const cert = await InstitutionCertificate.create({
-    institutionId, studentId, courseId: courseId || null, type,
+    institutionId, studentId, courseId: resolvedCourseId || null, type,
     studentName: student.name, courseName,
     institutionName: inst.institutionName,
   });
@@ -546,7 +565,11 @@ const getDashboardStats = asyncHandler(async (req, res) => {
     where: { institutionId }, attributes: { exclude: ['password'] },
     order: [['createdAt','DESC']], limit: 5,
   });
-  const batches = await Batch.findAll({ where: { institutionId }, order: [['createdAt','DESC']], limit: 10 });
+  const batches = await Batch.findAll({
+    where: { institutionId },
+    include: [{ model: Course, as: 'course', attributes: ['id','name'] }],
+    order: [['createdAt','DESC']], limit: 10,
+  });
   const batchesWithCount = await Promise.all(batches.map(async b => {
     const count = await BatchStudent.count({ where: { batchId: b.id } });
     return { ...b.toJSON(), studentCount: count };

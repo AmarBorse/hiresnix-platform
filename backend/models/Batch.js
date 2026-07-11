@@ -17,6 +17,7 @@ const Batch = sequelize.define('Batch', {
     type: DataTypes.STRING(20), defaultValue: 'Active',
     validate: { isIn: [['Active', 'Completed', 'Upcoming']] },
   },
+  courseId: { type: DataTypes.BIGINT, allowNull: true, references: { model: 'courses', key: 'id' } },
 }, {
   tableName: 'batches', timestamps: true,
 });

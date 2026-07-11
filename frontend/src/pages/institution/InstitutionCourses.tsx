@@ -1,13 +1,12 @@
 // src/pages/institution/InstitutionCourses.tsx
 import React, { useEffect, useState } from 'react';
-import { Plus, Pencil, Trash2, BookOpen, X, Users, ChevronRight, ArrowLeft } from 'lucide-react';
+import { Plus, Pencil, Trash2, BookOpen, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { institutionApi } from '../../api/institution';
 import { InstituteCourse } from '../../types';
 import { PORTAL_COLORS } from '../../components/layout/PortalTheme';
 
 const C = PORTAL_COLORS.institution;
-
 const EMPTY = { name: '', description: '', duration: '', durationUnit: 'Weeks' as const, status: 'Active' as const };
 
 function CourseModal({ course, onClose, onSaved }: { course?: InstituteCourse | null; onClose: () => void; onSaved: () => void }) {
@@ -78,12 +77,9 @@ function CourseModal({ course, onClose, onSaved }: { course?: InstituteCourse | 
 
 export function InstitutionCourses() {
   const [courses, setCourses] = useState<InstituteCourse[]>([]);
-  const [loading, setLoading]  = useState(true);
-  const [modal, setModal]      = useState<'create' | 'edit' | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [modal, setModal] = useState<'create' | 'edit' | null>(null);
   const [selected, setSelected] = useState<InstituteCourse | null>(null);
-  const [viewCourse, setViewCourse] = useState<InstituteCourse | null>(null);
-  const [courseStudents, setCourseStudents] = useState<any[]>([]);
-  const [studLoading, setStudLoading] = useState(false);
 
   const load = () => {
     setLoading(true);
@@ -97,69 +93,6 @@ export function InstitutionCourses() {
     catch { toast.error('Delete failed'); }
   };
 
-  const openView = async (c: InstituteCourse) => {
-    setViewCourse(c); setStudLoading(true);
-    try {
-      const res = await institutionApi.getCourseStudents(c.id);
-      setCourseStudents(res.data || []);
-    } catch { toast.error('Failed to load students'); }
-    finally { setStudLoading(false); }
-  };
-
-  // ── Course Students View ────────────────────────────────────────
-  if (viewCourse) return (
-    <div className="space-y-5">
-      <div className="flex items-center gap-3">
-        <button onClick={() => setViewCourse(null)} className="p-2 rounded-lg hover:bg-white/10 text-gray-400 transition">
-          <ArrowLeft size={18} />
-        </button>
-        <div>
-          <h1 className="text-xl font-bold text-white">{viewCourse.name}</h1>
-          <p className="text-sm" style={{color:"#64748b"}}>{courseStudents.length} students enrolled</p>
-        </div>
-      </div>
-
-      {studLoading ? (
-        <div className="flex justify-center py-16">
-          <div className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin" style={{borderColor:`${C.accent} transparent transparent transparent`}} />
-        </div>
-      ) : courseStudents.length === 0 ? (
-        <div className="rounded-xl p-12 text-center" style={{background:"rgba(15,23,42,0.6)",border:"1px solid rgba(255,255,255,0.08)",color:"#475569"}}>
-          <Users size={32} className="mx-auto mb-3 opacity-40" />
-          <p>No students enrolled in this course yet</p>
-        </div>
-      ) : (
-        <div className="rounded-xl overflow-hidden" style={{background:"linear-gradient(135deg,rgba(15,23,42,0.95),rgba(20,30,55,0.95))",border:"1px solid rgba(255,255,255,0.1)"}}>
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-xs uppercase tracking-wide" style={{color:"#475569",borderBottom:"1px solid rgba(255,255,255,0.08)"}}>
-                <th className="px-4 py-3 text-left">Career ID</th>
-                <th className="px-4 py-3 text-left">Name</th>
-                <th className="px-4 py-3 text-left">Email</th>
-                <th className="px-4 py-3 text-left">Department</th>
-              </tr>
-            </thead>
-            <tbody>
-              {courseStudents.map((s: any) => (
-                <tr key={s.id} className="transition" style={{borderBottom:"1px solid rgba(255,255,255,0.05)"}}
-                  onMouseEnter={e=>(e.currentTarget.style.background="rgba(255,255,255,0.04)")}
-                  onMouseLeave={e=>(e.currentTarget.style.background="")}>
-                  <td className="px-4 py-3">
-                    <span className="font-mono text-xs px-2 py-0.5 rounded" style={{background:"rgba(99,102,241,0.15)",color:"#818cf8"}}>{s.careerId}</span>
-                  </td>
-                  <td className="px-4 py-3 font-medium text-white">{s.name}</td>
-                  <td className="px-4 py-3" style={{color:"#64748b"}}>{s.email}</td>
-                  <td className="px-4 py-3" style={{color:"#64748b"}}>{s.department || '—'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
-  );
-
-  // ── Course List ─────────────────────────────────────────────────
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
@@ -173,16 +106,26 @@ export function InstitutionCourses() {
         </button>
       </div>
 
+      {/* Info banner */}
+      <div className="rounded-xl px-4 py-3 text-sm flex items-start gap-2" style={{background:"rgba(139,92,246,0.08)",border:"1px solid rgba(139,92,246,0.2)",color:"#c084fc"}}>
+        <span>💡</span>
+        <span>Create courses here, then select them while creating a Batch. Students are assigned per batch.</span>
+      </div>
+
       {loading
         ? <div className="flex justify-center py-16"><div className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin" style={{borderColor:`${C.accent} transparent transparent transparent`}} /></div>
         : courses.length === 0
-        ? <div className="rounded-xl p-12 text-center" style={{background:"rgba(15,23,42,0.6)",border:"1px solid rgba(255,255,255,0.08)",color:"#475569"}}>No courses yet</div>
+        ? <div className="rounded-xl p-12 text-center" style={{background:"rgba(15,23,42,0.6)",border:"1px solid rgba(255,255,255,0.08)",color:"#475569"}}>
+            <BookOpen size={32} className="mx-auto mb-3 opacity-40" />
+            <p>No courses yet. Create your first course!</p>
+          </div>
         : <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {courses.map(c => (
               <div key={c.id} className="rounded-xl p-5 transition hover:shadow-xl hover:-translate-y-0.5"
                 style={{background:"linear-gradient(135deg,rgba(15,23,42,0.95),rgba(20,30,55,0.95))",border:"1px solid rgba(255,255,255,0.1)",backdropFilter:"blur(12px)"}}>
                 <div className="flex items-start justify-between mb-3">
-                  <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{background:"rgba(59,130,246,0.15)",color:"#60a5fa"}}>
+                  <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
+                    style={{background:"rgba(59,130,246,0.15)",color:"#60a5fa"}}>
                     <BookOpen size={18} />
                   </div>
                   <span className="text-xs px-2 py-0.5 rounded-full font-medium"
@@ -191,18 +134,19 @@ export function InstitutionCourses() {
                   </span>
                 </div>
                 <h3 className="font-semibold text-white mb-1">{c.name}</h3>
-                {c.duration && <p className="text-xs mb-1" style={{color:"#64748b"}}>Duration: {c.duration} {c.durationUnit}</p>}
-                {c.description && <p className="text-xs mb-3 line-clamp-2" style={{color:"#64748b"}}>{c.description}</p>}
+                {c.duration && (
+                  <p className="text-xs mb-1" style={{color:"#64748b"}}>⏱ {c.duration} {c.durationUnit}</p>
+                )}
+                {c.description && (
+                  <p className="text-xs mb-3 line-clamp-2" style={{color:"#64748b"}}>{c.description}</p>
+                )}
                 <div className="flex gap-2 pt-3" style={{borderTop:"1px solid rgba(255,255,255,0.07)"}}>
-                  {/* View Students instead of Assign */}
-                  <button onClick={() => openView(c)}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium rounded-lg transition hover:bg-indigo-500/20" style={{color:"#818cf8"}}>
-                    <Users size={13} /> View Students
-                  </button>
                   <button onClick={() => { setSelected(c); setModal('edit'); }}
-                    className="p-1.5 text-gray-500 hover:text-indigo-400 hover:bg-indigo-500/20 rounded-lg transition"><Pencil size={14} /></button>
+                    className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium rounded-lg transition hover:bg-indigo-500/20" style={{color:"#818cf8"}}>
+                    <Pencil size={13}/> Edit
+                  </button>
                   <button onClick={() => handleDelete(c)}
-                    className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-500/20 rounded-lg transition"><Trash2 size={14} /></button>
+                    className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-500/20 rounded-lg transition"><Trash2 size={14}/></button>
                 </div>
               </div>
             ))}

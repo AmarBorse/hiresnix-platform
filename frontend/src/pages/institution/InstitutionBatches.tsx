@@ -1,27 +1,37 @@
 // src/pages/institution/InstitutionBatches.tsx
 import React, { useEffect, useState } from 'react';
-import { Plus, Pencil, Trash2, Users, X, ChevronRight, ArrowLeft, CheckSquare, Square } from 'lucide-react';
+import { Plus, Pencil, Trash2, Users, X, ChevronRight, ArrowLeft, CheckSquare, Square, Award, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { institutionApi } from '../../api/institution';
 import { InstituteBatch, InstitutionStudent } from '../../types';
+import { PORTAL_COLORS } from '../../components/layout/PortalTheme';
 
-const EMPTY = { name: '', description: '', startDate: '', endDate: '', trainerName: '', trainerEmail: '', status: 'Active' as const };
+const C = PORTAL_COLORS.institution;
+const EMPTY = { name: '', description: '', startDate: '', endDate: '', trainerName: '', trainerEmail: '', status: 'Active' as const, courseId: '' };
 
+// ── Batch Create/Edit Modal ───────────────────────────────────────
 function BatchModal({ batch, onClose, onSaved }: { batch?: InstituteBatch | null; onClose: () => void; onSaved: () => void }) {
   const [form, setForm] = useState(batch ? {
     name: batch.name, description: batch.description||'', startDate: batch.startDate||'',
-    endDate: batch.endDate||'', trainerName: batch.trainerName||'', trainerEmail: batch.trainerEmail||'', status: batch.status,
+    endDate: batch.endDate||'', trainerName: batch.trainerName||'', trainerEmail: batch.trainerEmail||'',
+    status: batch.status, courseId: String((batch as any).courseId || ''),
   } : { ...EMPTY });
+  const [courses, setCourses] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const f = (k: string) => (e: any) => setForm(p => ({ ...p, [k]: e.target.value }));
+
+  useEffect(() => {
+    institutionApi.getCourses().then(r => setCourses(r.data || [])).catch(() => {});
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name) { toast.error('Batch name required'); return; }
     setLoading(true);
     try {
-      if (batch) await institutionApi.updateBatch(batch.id, form);
-      else await institutionApi.createBatch(form);
+      const payload = { ...form, courseId: form.courseId ? parseInt(form.courseId) : null };
+      if (batch) await institutionApi.updateBatch(batch.id, payload);
+      else await institutionApi.createBatch(payload);
       toast.success(batch ? 'Batch updated' : 'Batch created');
       onSaved();
     } catch (err: any) { toast.error(err.response?.data?.message || 'Error'); }
@@ -29,13 +39,27 @@ function BatchModal({ batch, onClose, onSaved }: { batch?: InstituteBatch | null
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
       <div className="rounded-xl w-full max-w-lg" style={{background:"linear-gradient(135deg,#0f1729,#0d1b35)",border:"1px solid rgba(255,255,255,0.1)",boxShadow:"0 25px 60px rgba(0,0,0,0.7)"}}>
         <div className="flex items-center justify-between px-5 py-4" style={{borderBottom:"1px solid rgba(255,255,255,0.08)"}}>
           <h2 className="font-semibold text-white">{batch ? 'Edit Batch' : 'Create Batch'}</h2>
           <button onClick={onClose}><X size={18} className="text-gray-400" /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-5 space-y-3">
+          {/* Course select — top & prominent */}
+          <div className="p-3 rounded-xl" style={{background:"rgba(139,92,246,0.08)",border:"1px solid rgba(139,92,246,0.2)"}}>
+            <label className="block text-xs font-bold uppercase tracking-wider mb-2" style={{color:C.accent}}>
+              📚 Course *
+            </label>
+            <select value={form.courseId} onChange={f('courseId')}
+              className="w-full px-3 py-2 rounded-lg text-sm focus:outline-none dark-input">
+              <option value="">Select course...</option>
+              {courses.map((c: any) => (
+                <option key={c.id} value={c.id}>{c.name} {c.duration ? `(${c.duration} ${c.durationUnit})` : ''}</option>
+              ))}
+            </select>
+          </div>
+
           {[['Batch Name *', 'name', 'text'], ['Trainer Name', 'trainerName', 'text'], ['Trainer Email', 'trainerEmail', 'email']].map(([l, k, t]) => (
             <div key={k}>
               <label className="block text-xs font-medium mb-1" style={{color:"#64748b"}}>{l}</label>
@@ -54,8 +78,7 @@ function BatchModal({ batch, onClose, onSaved }: { batch?: InstituteBatch | null
           </div>
           <div>
             <label className="block text-xs font-medium mb-1" style={{color:"#64748b"}}>Status</label>
-            <select value={form.status} onChange={f('status')}
-              className="w-full px-3 py-2 rounded-lg text-sm focus:outline-none dark-input">
+            <select value={form.status} onChange={f('status')} className="w-full px-3 py-2 rounded-lg text-sm focus:outline-none dark-input">
               <option>Active</option><option>Upcoming</option><option>Completed</option>
             </select>
           </div>
@@ -65,7 +88,7 @@ function BatchModal({ batch, onClose, onSaved }: { batch?: InstituteBatch | null
               className="w-full px-3 py-2 rounded-lg text-sm focus:outline-none dark-input" />
           </div>
           <div className="flex gap-3 justify-end pt-2">
-            <button type="button" onClick={onClose} className="px-4 py-2 text-sm rounded-lg transition text-gray-400 hover:bg-white/10" style={{border:"1px solid rgba(255,255,255,0.1)"}}>Cancel</button>
+            <button type="button" onClick={onClose} className="px-4 py-2 text-sm rounded-lg text-gray-400 hover:bg-white/10 transition" style={{border:"1px solid rgba(255,255,255,0.1)"}}>Cancel</button>
             <button type="submit" disabled={loading} className="px-5 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50">
               {loading ? 'Saving...' : (batch ? 'Update' : 'Create Batch')}
             </button>
@@ -76,30 +99,201 @@ function BatchModal({ batch, onClose, onSaved }: { batch?: InstituteBatch | null
   );
 }
 
+// ── Issue Certificate Modal (from Batch) ─────────────────────────
+function IssueCertFromBatchModal({ batch, onClose, onSaved }: { batch: InstituteBatch; onClose: () => void; onSaved: () => void }) {
+  const [students, setStudents] = useState<any[]>([]);
+  const [selected, setSelected] = useState<number[]>([]);
+  const [certType, setCertType] = useState('Course Completion');
+  const [loading, setLoading] = useState(false);
+  const [dataLoading, setDataLoading] = useState(true);
+  const [issuedIds, setIssuedIds] = useState<Set<number>>(new Set());
+
+  const CERT_TYPES = ['Course Completion', 'Training Completion', 'Skill Assessment'];
+
+  useEffect(() => {
+    Promise.all([
+      institutionApi.getBatchStudents(batch.id),
+      institutionApi.getCertificates({ limit: 500 }),
+    ]).then(([studRes, certRes]) => {
+      setStudents(studRes.data || []);
+      // Find already issued for this batch's course + type
+      const batchCourseId = (batch as any).courseId;
+      const issued = new Set<number>(
+        (certRes.data || [])
+          .filter((c: any) => c.type === certType && (batchCourseId ? c.courseId === batchCourseId : !c.courseId))
+          .map((c: any) => c.studentId)
+      );
+      setIssuedIds(issued);
+      // Auto-select non-issued students
+      const available = (studRes.data || []).filter((s: any) => !issued.has(s.id));
+      setSelected(available.map((s: any) => s.id));
+    }).catch(() => toast.error('Failed to load')).finally(() => setDataLoading(false));
+  }, []);
+
+  // Recompute issued when type changes
+  useEffect(() => {
+    if (dataLoading) return;
+    institutionApi.getCertificates({ limit: 500 }).then(certRes => {
+      const batchCourseId = (batch as any).courseId;
+      const issued = new Set<number>(
+        (certRes.data || [])
+          .filter((c: any) => c.type === certType && (batchCourseId ? c.courseId === batchCourseId : !c.courseId))
+          .map((c: any) => c.studentId)
+      );
+      setIssuedIds(issued);
+      const available = students.filter(s => !issued.has(s.id));
+      setSelected(available.map(s => s.id));
+    }).catch(() => {});
+  }, [certType]);
+
+  const handleIssue = async () => {
+    if (selected.length === 0) { toast.error('Select at least one student'); return; }
+    setLoading(true);
+    let success = 0, failed = 0;
+    for (const sid of selected) {
+      try {
+        await institutionApi.issueCertificate({
+          studentId: sid,
+          batchId: batch.id,
+          courseId: (batch as any).courseId || undefined,
+          type: certType,
+        });
+        success++;
+      } catch { failed++; }
+    }
+    if (success > 0) toast.success(`${success} certificate${success > 1 ? 's' : ''} issued!`);
+    if (failed > 0) toast.error(`${failed} already issued or failed`);
+    onSaved();
+    setLoading(false);
+  };
+
+  const available = students.filter(s => !issuedIds.has(s.id));
+  const allSelected = available.length > 0 && selected.length === available.length;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
+      <div className="rounded-2xl w-full max-w-lg max-h-[85vh] flex flex-col"
+        style={{background:"linear-gradient(135deg,#0f1729,#0d1b35)",border:"1px solid rgba(255,255,255,0.1)",boxShadow:"0 25px 60px rgba(0,0,0,0.7)"}}>
+        <div className="flex items-center justify-between px-5 py-4 flex-shrink-0" style={{borderBottom:"1px solid rgba(255,255,255,0.08)"}}>
+          <div>
+            <h2 className="font-bold text-white">Issue Certificates</h2>
+            <p className="text-xs mt-0.5" style={{color:"#64748b"}}>{batch.name} {(batch as any).course ? `· ${(batch as any).course.name}` : ''}</p>
+          </div>
+          <button onClick={onClose}><X size={18} className="text-gray-400" /></button>
+        </div>
+
+        {/* Cert type */}
+        <div className="px-5 py-3 flex-shrink-0" style={{borderBottom:"1px solid rgba(255,255,255,0.08)"}}>
+          <label className="block text-xs font-semibold uppercase tracking-wider mb-2" style={{color:"#64748b"}}>Certificate Type</label>
+          <div className="flex gap-2 flex-wrap">
+            {CERT_TYPES.map(t => (
+              <button key={t} onClick={() => setCertType(t)}
+                className="text-xs font-semibold px-3 py-1.5 rounded-lg transition"
+                style={certType === t
+                  ? {background:`linear-gradient(135deg,${C.accent},${C.accent}99)`,color:'#fff'}
+                  : {background:'rgba(255,255,255,0.06)',color:'#94a3b8',border:'1px solid rgba(255,255,255,0.1)'}}>
+                {t}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Select all */}
+        <div className="px-4 py-2.5 flex items-center justify-between flex-shrink-0" style={{borderBottom:"1px solid rgba(255,255,255,0.06)",background:"rgba(255,255,255,0.02)"}}>
+          <button onClick={() => setSelected(allSelected ? [] : available.map(s => s.id))}
+            className="flex items-center gap-2 text-sm font-medium text-indigo-400 hover:text-indigo-300 transition">
+            {allSelected ? <CheckSquare size={16} /> : <Square size={16} className="text-gray-500" />}
+            {allSelected ? 'Deselect All' : 'Select All'}
+          </button>
+          <span className="text-xs" style={{color:"#64748b"}}>{available.length} available · {selected.length} selected</span>
+        </div>
+
+        {/* Students list */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-1.5">
+          {dataLoading ? (
+            <div className="flex justify-center py-8">
+              <div className="w-6 h-6 rounded-full border-2 border-t-transparent animate-spin" style={{borderColor:`${C.accent} transparent transparent transparent`}} />
+            </div>
+          ) : students.length === 0 ? (
+            <p className="text-center py-8 text-sm" style={{color:"#64748b"}}>No students in this batch</p>
+          ) : (
+            <>
+              {/* Already issued */}
+              {Array.from(issuedIds).length > 0 && students.filter(s => issuedIds.has(s.id)).map(s => (
+                <div key={s.id} className="flex items-center gap-3 p-2.5 rounded-xl opacity-50"
+                  style={{background:"rgba(16,185,129,0.06)",border:"1px solid rgba(16,185,129,0.15)"}}>
+                  <CheckCircle size={14} style={{color:"#34d399",flexShrink:0}} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-white truncate">{s.name}</p>
+                    <p className="text-xs truncate" style={{color:"#475569"}}>{s.careerId}</p>
+                  </div>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0" style={{background:"rgba(16,185,129,0.15)",color:"#34d399"}}>Issued</span>
+                </div>
+              ))}
+              {/* Available */}
+              {available.map(s => (
+                <label key={s.id} className="flex items-center gap-3 p-2.5 rounded-xl cursor-pointer transition"
+                  onMouseEnter={e=>(e.currentTarget.style.background="rgba(255,255,255,0.05)")}
+                  onMouseLeave={e=>(e.currentTarget.style.background="")}>
+                  <input type="checkbox" checked={selected.includes(s.id)}
+                    onChange={e => setSelected(prev => e.target.checked ? [...prev, s.id] : prev.filter(x => x !== s.id))}
+                    className="w-4 h-4 rounded" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-white truncate">{s.name}</p>
+                    <p className="text-xs truncate" style={{color:"#475569"}}>{s.careerId} · {s.department || s.email}</p>
+                  </div>
+                </label>
+              ))}
+            </>
+          )}
+        </div>
+
+        <div className="p-4 flex items-center justify-between flex-shrink-0" style={{borderTop:"1px solid rgba(255,255,255,0.08)"}}>
+          <p className="text-xs" style={{color:"#64748b"}}>
+            {selected.length > 0 ? `${selected.length} certificate${selected.length > 1 ? 's' : ''} will be issued` : 'Select students'}
+          </p>
+          <div className="flex gap-3">
+            <button onClick={onClose} className="px-4 py-2 text-sm rounded-lg text-gray-400 hover:bg-white/10 transition" style={{border:"1px solid rgba(255,255,255,0.1)"}}>Cancel</button>
+            <button onClick={handleIssue} disabled={loading || selected.length === 0}
+              className="px-5 py-2 text-sm font-bold text-white rounded-lg disabled:opacity-40 transition"
+              style={{background:`linear-gradient(135deg,${C.accent},${C.accent}99)`}}>
+              {loading ? 'Issuing...' : `Issue (${selected.length})`}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Status styles ─────────────────────────────────────────────────
 const STATUS_STYLE: Record<string, {background:string,color:string}> = {
   Active:    {background:'rgba(16,185,129,0.15)',color:'#34d399'},
   Completed: {background:'rgba(100,116,139,0.15)',color:'#94a3b8'},
   Upcoming:  {background:'rgba(59,130,246,0.15)',color:'#60a5fa'},
 };
 
+// ── Main Component ────────────────────────────────────────────────
 export function InstitutionBatches() {
-  const [batches, setBatches] = useState<InstituteBatch[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [modal, setModal] = useState<'create' | 'edit' | null>(null);
-  const [selected, setSelected] = useState<InstituteBatch | null>(null);
-  const [viewBatch, setViewBatch] = useState<InstituteBatch | null>(null);
-  const [batchStudents, setBatchStudents] = useState<InstitutionStudent[]>([]);
+  const [batches, setBatches]       = useState<InstituteBatch[]>([]);
+  const [loading, setLoading]       = useState(true);
+  const [modal, setModal]           = useState<'create' | 'edit' | null>(null);
+  const [selected, setSelected]     = useState<InstituteBatch | null>(null);
+  const [viewBatch, setViewBatch]   = useState<InstituteBatch | null>(null);
+  const [batchStudents, setBatchStudents]   = useState<any[]>([]);
   const [studentsLoading, setStudentsLoading] = useState(false);
-  const [allStudents, setAllStudents] = useState<InstitutionStudent[]>([]);
-  const [enrolledStudents, setEnrolledStudents] = useState<InstitutionStudent[]>([]);
-  const [courses, setCourses] = useState<any[]>([]);
-  const [selectedCourseId, setSelectedCourseId] = useState<string>('');
-  const [assignModal, setAssignModal] = useState(false);
+  const [allStudents, setAllStudents]       = useState<any[]>([]);
+  const [enrolledStudents, setEnrolledStudents] = useState<any[]>([]);
+  const [assignModal, setAssignModal]       = useState(false);
   const [assignSelected, setAssignSelected] = useState<number[]>([]);
+  const [certModal, setCertModal]           = useState<InstituteBatch | null>(null);
 
   const load = () => {
     setLoading(true);
-    institutionApi.getBatches().then(r => setBatches(r.data)).catch(() => toast.error('Failed to load batches')).finally(() => setLoading(false));
+    institutionApi.getBatches()
+      .then(r => setBatches(r.data))
+      .catch(() => toast.error('Failed to load batches'))
+      .finally(() => setLoading(false));
   };
   useEffect(() => { load(); }, []);
 
@@ -111,24 +305,22 @@ export function InstitutionBatches() {
 
   const openBatch = async (b: InstituteBatch) => {
     setViewBatch(b); setStudentsLoading(true);
-    try { const r = await institutionApi.getBatchStudents(b.id); setBatchStudents(r.data); }
-    catch { toast.error('Failed to load students'); }
+    try {
+      const r = await institutionApi.getBatchStudents(b.id);
+      setBatchStudents(r.data || []);
+    } catch { toast.error('Failed to load students'); }
     finally { setStudentsLoading(false); }
   };
 
   const openAssign = async () => {
     try {
-      const [allRes, batchRes, courseRes] = await Promise.all([
+      const [allRes, batchRes] = await Promise.all([
         institutionApi.getStudents({ limit: 200 }),
         institutionApi.getBatchStudents(viewBatch!.id),
-        institutionApi.getCourses(),
       ]);
-      const alreadyAssigned = new Set(batchRes.data.map((s: any) => s.id));
-      const available = allRes.data.filter((s: any) => !alreadyAssigned.has(s.id));
+      const enrolledIds = new Set(batchRes.data.map((s: any) => s.id));
       setEnrolledStudents(batchRes.data || []);
-      setAllStudents(available);
-      setCourses(courseRes.data || []);
-      setSelectedCourseId('');
+      setAllStudents(allRes.data.filter((s: any) => !enrolledIds.has(s.id)));
       setAssignSelected([]);
       setAssignModal(true);
     } catch { toast.error('Failed to load students'); }
@@ -137,36 +329,54 @@ export function InstitutionBatches() {
   const handleAssign = async () => {
     if (!viewBatch || assignSelected.length === 0) return;
     try {
-      await institutionApi.assignStudentsToBatch(viewBatch.id, assignSelected, selectedCourseId ? parseInt(selectedCourseId) : undefined);
-      toast.success('Students assigned' + (selectedCourseId ? ' to course' : ''));
+      await institutionApi.assignStudentsToBatch(viewBatch.id, assignSelected);
+      toast.success('Students assigned!');
       setAssignModal(false);
       openBatch(viewBatch);
-    } catch { toast.error('Failed to assign students'); }
+    } catch { toast.error('Failed to assign'); }
   };
 
-  // Select All / Deselect All
-  const toggleSelectAll = () => {
-    if (assignSelected.length === allStudents.length) {
-      setAssignSelected([]);
-    } else {
-      setAssignSelected(allStudents.map(s => s.id));
-    }
+  const toggleAll = () => {
+    setAssignSelected(assignSelected.length === allStudents.length ? [] : allStudents.map(s => s.id));
   };
+  const allSel  = allStudents.length > 0 && assignSelected.length === allStudents.length;
+  const someSel = assignSelected.length > 0 && assignSelected.length < allStudents.length;
 
-  const allSelected = allStudents.length > 0 && assignSelected.length === allStudents.length;
-  const someSelected = assignSelected.length > 0 && assignSelected.length < allStudents.length;
-
+  // ── Batch Detail View ──────────────────────────────────────────
   if (viewBatch) return (
     <div className="space-y-5">
       <div className="flex items-center gap-3">
-        <button onClick={() => setViewBatch(null)} className="p-2 rounded-lg hover:bg-white/10 text-gray-400 transition"><ArrowLeft size={18} /></button>
-        <div>
-          <h1 className="text-xl font-bold text-white">{viewBatch.name}</h1>
-          <p className="text-sm" style={{color:"#64748b"}}>{batchStudents.length} students enrolled</p>
-        </div>
-        <button onClick={openAssign} className="ml-auto flex items-center gap-2 px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
-          <Plus size={15} /> Assign Students
+        <button onClick={() => setViewBatch(null)} className="p-2 rounded-lg hover:bg-white/10 text-gray-400 transition">
+          <ArrowLeft size={18} />
         </button>
+        <div className="flex-1">
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-bold text-white">{viewBatch.name}</h1>
+            <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={STATUS_STYLE[(viewBatch as any).status] || {}}>
+              {(viewBatch as any).status}
+            </span>
+          </div>
+          <div className="flex items-center gap-3 mt-0.5">
+            {(viewBatch as any).course && (
+              <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={{background:"rgba(139,92,246,0.15)",color:"#c084fc"}}>
+                📚 {(viewBatch as any).course.name}
+              </span>
+            )}
+            <p className="text-sm" style={{color:"#64748b"}}>{batchStudents.length} students</p>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          {/* Issue Certificate button */}
+          <button onClick={() => setCertModal(viewBatch)}
+            className="flex items-center gap-1.5 px-3 py-2 text-sm font-bold rounded-xl transition text-white"
+            style={{background:"linear-gradient(135deg,#10b981,#059669)"}}>
+            <Award size={14} /> Issue Certificates
+          </button>
+          <button onClick={openAssign}
+            className="flex items-center gap-2 px-4 py-2 text-sm bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition">
+            <Plus size={15} /> Assign Students
+          </button>
+        </div>
       </div>
 
       <div className="rounded-xl overflow-x-auto" style={{background:"linear-gradient(135deg,rgba(15,23,42,0.95),rgba(20,30,55,0.95))",border:"1px solid rgba(255,255,255,0.1)"}}>
@@ -175,7 +385,7 @@ export function InstitutionBatches() {
             <tr className="text-left text-xs uppercase tracking-wide" style={{color:"#475569",borderBottom:"1px solid rgba(255,255,255,0.08)"}}>
               <th className="px-4 py-3">Career ID</th>
               <th className="px-4 py-3">Name</th>
-              <th className="px-4 py-3">Course</th>
+              <th className="px-4 py-3">Email</th>
               <th className="px-4 py-3">Department</th>
               <th className="px-4 py-3"></th>
             </tr>
@@ -184,16 +394,14 @@ export function InstitutionBatches() {
             {studentsLoading
               ? <tr><td colSpan={5} className="text-center py-10" style={{color:"#475569"}}>Loading...</td></tr>
               : batchStudents.length === 0
-              ? <tr><td colSpan={5} className="text-center py-10" style={{color:"#475569"}}>No students in this batch yet</td></tr>
+              ? <tr><td colSpan={5} className="text-center py-10" style={{color:"#475569"}}>No students yet. Click "Assign Students" to add.</td></tr>
               : batchStudents.map((s: any) => (
-                <tr key={s.id} className="transition" style={{borderBottom:"1px solid rgba(255,255,255,0.05)"}} onMouseEnter={e=>(e.currentTarget.style.background="rgba(255,255,255,0.04)")} onMouseLeave={e=>(e.currentTarget.style.background="")}>
+                <tr key={s.id} className="transition" style={{borderBottom:"1px solid rgba(255,255,255,0.05)"}}
+                  onMouseEnter={e=>(e.currentTarget.style.background="rgba(255,255,255,0.04)")}
+                  onMouseLeave={e=>(e.currentTarget.style.background="")}>
                   <td className="px-4 py-3"><span className="font-mono text-xs px-2 py-0.5 rounded" style={{background:"rgba(99,102,241,0.15)",color:"#818cf8"}}>{s.careerId}</span></td>
                   <td className="px-4 py-3 font-medium text-white">{s.name}</td>
-                  <td className="px-4 py-3">
-                    {s.course
-                      ? <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={{background:"rgba(139,92,246,0.15)",color:"#c084fc"}}>{s.course.name}</span>
-                      : <span style={{color:"#475569"}}>—</span>}
-                  </td>
+                  <td className="px-4 py-3" style={{color:"#64748b"}}>{s.email}</td>
                   <td className="px-4 py-3" style={{color:"#64748b"}}>{s.department || '—'}</td>
                   <td className="px-4 py-3 text-right">
                     <button onClick={async () => {
@@ -210,93 +418,69 @@ export function InstitutionBatches() {
 
       {/* Assign Modal */}
       {assignModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
           <div className="rounded-xl w-full max-w-lg max-h-[80vh] flex flex-col" style={{background:"linear-gradient(135deg,#0f1729,#0d1b35)",border:"1px solid rgba(255,255,255,0.1)",boxShadow:"0 25px 60px rgba(0,0,0,0.7)"}}>
             <div className="flex items-center justify-between px-5 py-4" style={{borderBottom:"1px solid rgba(255,255,255,0.08)"}}>
-              <h2 className="font-semibold text-white">Assign Students to Batch</h2>
+              <h2 className="font-semibold text-white">Assign Students</h2>
               <button onClick={() => setAssignModal(false)}><X size={18} className="text-gray-400" /></button>
             </div>
-            {/* Course selector */}
-            <div className="px-5 py-3" style={{borderBottom:"1px solid rgba(255,255,255,0.08)",background:"rgba(255,255,255,0.02)"}}>
-              <label className="block text-xs font-semibold uppercase tracking-wider mb-2" style={{color:"#64748b"}}>Select Course (optional)</label>
-              <select value={selectedCourseId} onChange={e => setSelectedCourseId(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg text-sm focus:outline-none dark-input">
-                <option value="">No specific course</option>
-                {courses.map((c: any) => (
-                  <option key={c.id} value={c.id}>{c.name}{c.duration ? ` — ${c.duration} ${c.durationUnit}` : ''}</option>
-                ))}
-              </select>
-              {selectedCourseId && (
-                <p className="text-xs mt-1.5 font-medium" style={{color:"#818cf8"}}>📚 Students will be linked to this course</p>
-              )}
-            </div>
-            {/* Course selector */}
-            <div className="px-5 py-3" style={{borderBottom:"1px solid rgba(255,255,255,0.08)",background:"rgba(255,255,255,0.02)"}}>
-              <label className="block text-xs font-semibold uppercase tracking-wider mb-2" style={{color:"#64748b"}}>
-                Select Course (optional)
-              </label>
-              <select value={selectedCourseId} onChange={e => setSelectedCourseId(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg text-sm focus:outline-none dark-input">
-                <option value="">No specific course</option>
-                {courses.map((c: any) => (
-                  <option key={c.id} value={c.id}>{c.name} {c.duration ? `— ${c.duration} ${c.durationUnit}` : ''}</option>
-                ))}
-              </select>
-              {selectedCourseId && (
-                <p className="text-xs mt-1.5 font-medium" style={{color:"#818cf8"}}>
-                  📚 Students will be linked to this course in the batch
-                </p>
-              )}
-            </div>
-
-            {/* Select All bar */}
             <div className="px-4 py-2.5 flex items-center justify-between" style={{borderBottom:"1px solid rgba(255,255,255,0.08)",background:"rgba(255,255,255,0.03)"}}>
-              <button onClick={toggleSelectAll}
-                className="flex items-center gap-2 text-sm font-medium text-indigo-400 hover:text-indigo-300 transition">
-                {allSelected
-                  ? <CheckSquare size={18} className="text-indigo-600" />
-                  : someSelected
-                  ? <CheckSquare size={18} className="text-indigo-400" />
-                  : <Square size={18} className="text-gray-400" />
-                }
-                {allSelected ? 'Deselect All' : 'Select All'}
+              <button onClick={toggleAll} className="flex items-center gap-2 text-sm font-medium text-indigo-400 hover:text-indigo-300 transition">
+                {allSel ? <CheckSquare size={16}/> : someSel ? <CheckSquare size={16} className="opacity-50"/> : <Square size={16} className="text-gray-500"/>}
+                {allSel ? 'Deselect All' : 'Select All'}
               </button>
-              <span className="text-xs" style={{color:"#64748b"}}>
-                {allStudents.length} available · {assignSelected.length} selected
-              </span>
+              <span className="text-xs" style={{color:"#64748b"}}>{allStudents.length} available · {assignSelected.length} selected</span>
             </div>
-
             <div className="flex-1 overflow-y-auto p-4 space-y-1">
-              {allStudents.length === 0
-                ? <p className="text-center text-gray-400 text-sm py-8">All students already assigned to this batch</p>
-                : allStudents.map(s => (
-                  <label key={s.id} className="flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition hover:bg-white/05">
-                    <input type="checkbox" checked={assignSelected.includes(s.id)}
-                      onChange={e => setAssignSelected(prev =>
-                        e.target.checked ? [...prev, s.id] : prev.filter(x => x !== s.id)
-                      )}
-                      className="w-4 h-4 rounded border-gray-300 text-indigo-600" />
-                    <div>
-                      <p className="text-sm font-medium text-white">{s.name}</p>
-                      <p className="text-xs" style={{color:"#64748b"}}>{s.careerId} · {s.email}</p>
+              {enrolledStudents.length > 0 && (
+                <div className="mb-3">
+                  <p className="text-[11px] font-bold uppercase tracking-wider mb-2" style={{color:"#34d399"}}>✅ Already in Batch ({enrolledStudents.length})</p>
+                  {enrolledStudents.map(s => (
+                    <div key={s.id} className="flex items-center gap-3 p-2.5 rounded-lg opacity-50 mb-1"
+                      style={{background:"rgba(16,185,129,0.06)",border:"1px solid rgba(16,185,129,0.15)"}}>
+                      <CheckCircle size={13} style={{color:"#34d399",flexShrink:0}} />
+                      <div><p className="text-sm font-medium text-white">{s.name}</p><p className="text-xs" style={{color:"#475569"}}>{s.careerId}</p></div>
                     </div>
+                  ))}
+                  {allStudents.length > 0 && <div className="my-3 border-t" style={{borderColor:"rgba(255,255,255,0.08)"}} />}
+                </div>
+              )}
+              {allStudents.length === 0
+                ? <p className="text-center text-sm py-4" style={{color:"#64748b"}}>All students already assigned</p>
+                : allStudents.map(s => (
+                  <label key={s.id} className="flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition"
+                    onMouseEnter={e=>(e.currentTarget.style.background="rgba(255,255,255,0.05)")}
+                    onMouseLeave={e=>(e.currentTarget.style.background="")}>
+                    <input type="checkbox" checked={assignSelected.includes(s.id)}
+                      onChange={e => setAssignSelected(prev => e.target.checked ? [...prev, s.id] : prev.filter(x => x !== s.id))}
+                      className="w-4 h-4 rounded" />
+                    <div><p className="text-sm font-medium text-white">{s.name}</p><p className="text-xs" style={{color:"#64748b"}}>{s.careerId} · {s.email}</p></div>
                   </label>
                 ))}
             </div>
-
             <div className="p-4 flex justify-end gap-3" style={{borderTop:"1px solid rgba(255,255,255,0.08)"}}>
-              <button onClick={() => setAssignModal(false)} className="px-4 py-2 text-sm rounded-lg transition text-gray-400 hover:bg-white/10" style={{border:"1px solid rgba(255,255,255,0.1)"}}>Cancel</button>
+              <button onClick={() => setAssignModal(false)} className="px-4 py-2 text-sm rounded-lg text-gray-400 hover:bg-white/10 transition" style={{border:"1px solid rgba(255,255,255,0.1)"}}>Cancel</button>
               <button onClick={handleAssign} disabled={assignSelected.length === 0}
                 className="px-5 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-40">
-                Assign {assignSelected.length > 0 ? `(${assignSelected.length})` : ''}
+                Assign ({assignSelected.length})
               </button>
             </div>
           </div>
         </div>
       )}
+
+      {/* Issue Certificate Modal */}
+      {certModal && (
+        <IssueCertFromBatchModal
+          batch={certModal}
+          onClose={() => setCertModal(null)}
+          onSaved={() => { setCertModal(null); }}
+        />
+      )}
     </div>
   );
 
+  // ── Batch List ─────────────────────────────────────────────────
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
@@ -311,18 +495,26 @@ export function InstitutionBatches() {
       </div>
 
       {loading
-        ? <div className="flex justify-center py-16"><div className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin" style={{borderColor:"#818cf8 transparent transparent transparent"}} /></div>
+        ? <div className="flex justify-center py-16"><div className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin" style={{borderColor:`${C.accent} transparent transparent transparent`}} /></div>
         : batches.length === 0
-        ? <div className="rounded-xl p-12 text-center" style={{background:"rgba(15,23,42,0.6)",border:"1px solid rgba(255,255,255,0.08)",color:"#475569"}}>No batches created yet</div>
+        ? <div className="rounded-xl p-12 text-center" style={{background:"rgba(15,23,42,0.6)",border:"1px solid rgba(255,255,255,0.08)",color:"#475569"}}>No batches yet. Create your first batch!</div>
         : <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {batches.map(b => (
-              <div key={b.id} className="rounded-xl p-5 transition hover:shadow-xl hover:-translate-y-0.5" style={{background:"linear-gradient(135deg,rgba(15,23,42,0.95),rgba(20,30,55,0.95))",border:"1px solid rgba(255,255,255,0.1)",backdropFilter:"blur(12px)"}}>
+              <div key={b.id} className="rounded-xl p-5 transition hover:shadow-xl hover:-translate-y-0.5"
+                style={{background:"linear-gradient(135deg,rgba(15,23,42,0.95),rgba(20,30,55,0.95))",border:"1px solid rgba(255,255,255,0.1)",backdropFilter:"blur(12px)"}}>
                 <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <h3 className="font-semibold text-white">{b.name}</h3>
-                    {b.trainerName && <p className="text-xs mt-0.5" style={{color:"#64748b"}}>Trainer: {b.trainerName}</p>}
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-white truncate">{b.name}</h3>
+                    {(b as any).course && (
+                      <span className="inline-flex items-center text-xs font-medium mt-1 px-2 py-0.5 rounded-full" style={{background:"rgba(139,92,246,0.15)",color:"#c084fc"}}>
+                        📚 {(b as any).course.name}
+                      </span>
+                    )}
+                    {b.trainerName && <p className="text-xs mt-1" style={{color:"#64748b"}}>👤 {b.trainerName}</p>}
                   </div>
-                  <span className={"text-xs px-2 py-0.5 rounded-full font-medium"} style={STATUS_STYLE[b.status] || {background:"rgba(100,116,139,0.15)",color:"#94a3b8"}}>{b.status}</span>
+                  <span className="text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ml-2" style={STATUS_STYLE[b.status] || {}}>
+                    {b.status}
+                  </span>
                 </div>
                 <div className="flex items-center gap-2 text-2xl font-bold mb-3" style={{color:"#818cf8"}}>
                   <Users size={20} className="text-indigo-400" />
@@ -333,12 +525,16 @@ export function InstitutionBatches() {
                 <div className="flex gap-2 pt-3" style={{borderTop:"1px solid rgba(255,255,255,0.07)"}}>
                   <button onClick={() => openBatch(b)}
                     className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium rounded-lg transition hover:bg-indigo-500/20" style={{color:"#818cf8"}}>
-                    <ChevronRight size={14} /> View Students
+                    <ChevronRight size={14}/> View
+                  </button>
+                  <button onClick={() => setCertModal(b)}
+                    className="flex items-center gap-1 py-1.5 px-2.5 text-xs font-medium rounded-lg transition hover:bg-emerald-500/20" style={{color:"#34d399"}}>
+                    <Award size={13}/> Cert
                   </button>
                   <button onClick={() => { setSelected(b); setModal('edit'); }}
-                    className="p-1.5 text-gray-500 hover:text-indigo-400 hover:bg-indigo-500/20 rounded-lg transition"><Pencil size={14} /></button>
+                    className="p-1.5 text-gray-500 hover:text-indigo-400 hover:bg-indigo-500/20 rounded-lg transition"><Pencil size={14}/></button>
                   <button onClick={() => handleDelete(b)}
-                    className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-500/20 rounded-lg transition"><Trash2 size={14} /></button>
+                    className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-500/20 rounded-lg transition"><Trash2 size={14}/></button>
                 </div>
               </div>
             ))}
@@ -350,6 +546,14 @@ export function InstitutionBatches() {
           batch={modal === 'edit' ? selected : null}
           onClose={() => setModal(null)}
           onSaved={() => { setModal(null); load(); }}
+        />
+      )}
+
+      {certModal && !viewBatch && (
+        <IssueCertFromBatchModal
+          batch={certModal}
+          onClose={() => setCertModal(null)}
+          onSaved={() => { setCertModal(null); }}
         />
       )}
     </div>
