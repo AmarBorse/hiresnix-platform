@@ -892,8 +892,8 @@ export function AdminIPlatform() {
 
       {/* ── GENERATE OFFER MODAL ───────────────────────────────── */}
       {offerModal && (
-        <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,0.75)",backdropFilter:"blur(4px)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:"16px"}}>
-          <div className="rounded-2xl w-full max-w-md shadow-2xl" style={{background:"linear-gradient(135deg,#0f1729,#0d1b35)",border:"1px solid rgba(255,255,255,0.1)",maxHeight:"90vh",overflowY:"auto"}}>
+        <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,0.75)",backdropFilter:"blur(4px)",zIndex:9999,display:"flex",alignItems:"flex-start",justifyContent:"center",padding:"16px",overflowY:"auto"}}>
+          <div className="rounded-2xl w-full max-w-md shadow-2xl" style={{background:"linear-gradient(135deg,#0f1729,#0d1b35)",border:"1px solid rgba(255,255,255,0.1)",marginTop:"24px",marginBottom:"24px"}}>
             <div className="p-5" style={{borderBottom:"1px solid rgba(255,255,255,0.08)"}}>
               <h3 className="font-black text-white text-base mb-0.5">Generate Offer Letter</h3>
               <p className="text-xs" style={{color:"#64748b"}}>Create a Hiresnix PDF offer letter for this candidate.</p>
