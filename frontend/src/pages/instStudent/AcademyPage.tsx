@@ -10,6 +10,132 @@ import {
   Sparkles, Globe, Trophy, Flame, Star
 } from 'lucide-react';
 
+
+// ── YouTube Video Map (curated free lectures) ─────────────────────
+const YT_VIDEOS: Record<string, string> = {
+  // Python
+  "What is Python?": "Y8Tko2YC5hA",
+  "Installing Python": "YYXdXT2l-Gg",
+  "Your First Program": "oxXAb8tJnQk",
+  "Python Syntax Basics": "kqtD5dpn9C8",
+  "Variables in Python": "cQT33yu9pY8",
+  "Numbers & Strings": "k9TUPpljBo",
+  "Booleans": "9OK32jb_TdI",
+  "Type Conversion": "HGOBQPFzWKo",
+  "Arithmetic Operators": "v5MR5JyNx_0",
+  "Comparison Operators": "7I9bw5within",
+  "Logical Operators": "ysKnOlKZQUM",
+  "Assignment Operators": "v5MR5JyNx_0",
+  "If Statement": "DZwmZ8Usvnk",
+  "If-Else Statement": "AWek49wXGzI",
+  "Elif Chains": "AWek49wXGzI",
+  "Nested Conditions": "AWek49wXGzI",
+  "While Loop": "6iF8Xb7Z3wQ",
+  "For Loop": "OnDr4J5BBOM",
+  "Break & Continue": "yCZBnjF4_tU",
+  "Loop Patterns": "OnDr4J5BBOM",
+  "Defining Functions": "9Os0IGs9u7E",
+  "Parameters & Arguments": "9Os0IGs9u7E",
+  "Return Values": "9Os0IGs9u7E",
+  "Default Parameters": "9Os0IGs9u7E",
+  "Lists": "Eaz5e6M33zE",
+  "Tuples": "bdgRT40UUBQ",
+  "Dictionaries": "daefaLgNkw0",
+  "Sets": "sBvaPopl4nE",
+  "Classes & Objects": "JeznW0oahkk",
+  "Methods": "JeznW0oahkk",
+  "Inheritance": "Cn7AkDb4pIU",
+  "__init__ Method": "JeznW0oahkk",
+  // JavaScript
+  "What is JavaScript?": "W6NZfCO5SIk",
+  "Variables (let/const)": "edlFjlzxkSI",
+  "Data Types": "qnDkYs2CnOA",
+  "Template Literals": "DG4obitDvUA",
+  "if/else Statements": "IsG4Xd6LlsM",
+  "Switch Case": "fM5qnyasuntil",
+  "For Loops": "s9wW2PpI-mE",
+  "While Loops": "v1Q7pkcpShs",
+  "Function Declaration": "xUI5Tsl2JpY",
+  "Arrow Functions": "h33Srr5J9nY",
+  "Callbacks": "GWq3vXe0xaA",
+  "Closures": "vKJpLAX4Ipw",
+  "Array Methods": "R8rmfD9Y5-0",
+  "Object Basics": "_js_NLAlIqI",
+  "Destructuring": "NIq3qLaHCIs",
+  "Spread Operator": "iLx4ma8ZqvQ",
+  "Selecting Elements": "0ik6X4DJKCc",
+  "Event Listeners": "XF1_MlZ5l6M",
+  "DOM Manipulation": "y17RuWkWdn8",
+  "Forms": "In0nB0ABaUk",
+  "Promises": "DHvZLI3Mk4E",
+  "async/await": "vn3tm0quoqE",
+  "fetch API": "drK3bge5eBw",
+  "Error Handling": "cFTFtuEQ-10",
+  // DSA
+  "Array Basics": "A37-3lflh8I",
+  "Two Pointers Technique": "On03HWe2tZM",
+  "Sliding Window": "p-ss2JNDHLo",
+  "Prefix Sum": "7pJo_rM0z_s",
+  "String Operations": "Mj_Pyh77sXE",
+  "Pattern Matching": "GTJr8OvyEVQ",
+  "Palindromes": "XI_GB8a4byI",
+  "Anagrams": "aMxHs68D4_8",
+  "Singly Linked List": "oiW79L8VYXk",
+  "Doubly Linked List": "e9NG_a0P8GE",
+  "Reversal": "D7y_hoT_YZI",
+  "Cycle Detection": "gBTe7lFR3vc",
+  "Stack Basics": "I5lq6sCuABE",
+  "Queue Basics": "nqXaPZi99JI",
+  "Min Stack": "WxTTbZB-4ro",
+  "Applications": "I5lq6sCuABE",
+  "Binary Trees": "fAAZixBzIAI",
+  "BST": "cySVml6e_Fc",
+  "Tree Traversals": "WLvU5pL4d3w",
+  "Height & Depth": "fAAZixBzIAI",
+  "Bubble Sort": "xli-hn4wrWA",
+  "Merge Sort": "TzeBrDU-JaY",
+  "Quick Sort": "Hoixgm4-P4M",
+  "Binary Search": "P3YID7pr48E",
+  // SQL
+  "What is SQL?": "HXV3zeQKqGY",
+  "SELECT Queries": "HXV3zeQKqGY",
+  "WHERE Clause": "HXV3zeQKqGY",
+  "ORDER BY & LIMIT": "HXV3zeQKqGY",
+  "INNER JOIN": "9yeOJ0ZMUYw",
+  "LEFT & RIGHT JOIN": "9yeOJ0ZMUYw",
+  "FULL OUTER JOIN": "9yeOJ0ZMUYw",
+  "Self Joins": "9yeOJ0ZMUYw",
+  "COUNT/SUM/AVG": "7cjTqE4GwFE",
+  "GROUP BY": "7cjTqE4GwFE",
+  "HAVING Clause": "7cjTqE4GwFE",
+  "Subqueries": "7cjTqE4GwFE",
+  "Window Functions": "Ww71knvVu_k",
+  "CTEs": "K74_FNs6ox8",
+  "Indexes": "fsG1XaZEa78",
+  "Transactions": "P80Js_qClUE",
+  // Web Dev
+  "HTML Basics": "UB1O30fR-EE",
+  "Forms & Inputs": "fNcJuPIZ2BE",
+  "Semantic HTML": "kGW8Al_cga4",
+  "Tables": "dS3H62ssQRU",
+  "Selectors": "1PnVor36_40",
+  "Box Model": "rIO5326FgPE",
+  "Flexbox": "K74_FNs6ax8",
+  "CSS Grid": "EiNiSFIPIQE",
+  "What is React?": "SqcY0GlETPk",
+  "Components": "Ke90Tje7VS0",
+  "Props": "m7OWXtbiXX8",
+  "State & useState": "O6P86uwfdR0",
+  "useEffect": "0ZJgIjIuY7U",
+  "Context API": "5LrDIWkK_Bc",
+  "React Router": "Law7wfdg_ls",
+  "API Calls": "T3Px88x_PsI",
+};
+
+function getYTId(lesson: string): string {
+  return YT_VIDEOS[lesson] || 'dQw4w9WgXcQ';
+}
+
 // ── APIs ──────────────────────────────────────────────────────────
 const GROQ = (import.meta as any).env.VITE_GROQ_API_KEY || '';
 
@@ -222,7 +348,7 @@ function LessonUI({ course, onBack }: { course: any; onBack: () => void }) {
   const [activeMod, setActiveMod] = useState(0);
   const [activeLesson, setActiveLesson] = useState(0);
   const [expandedMods, setExpandedMods] = useState<number[]>([0]);
-  const [tab, setTab] = useState<'teacher'|'code'|'backward'|'forward'|'notes'|'quiz'>('teacher');
+  const [tab, setTab] = useState<'video'|'teacher'|'code'|'backward'|'forward'|'notes'|'quiz'>('video');
   const [completed, setCompleted] = useState<Set<string>>(new Set());
   const [lang, setLang] = useState<Lang>('en-IN');
 
@@ -425,10 +551,12 @@ function LessonUI({ course, onBack }: { course: any; onBack: () => void }) {
 
   useEffect(() => {
     setTeacherText(''); setCodeText(''); setBackward(''); setForward(''); setNotes(''); setQuiz(null);
+    setTab('video');
     window.speechSynthesis?.cancel();
   }, [lesson]);
 
   useEffect(() => {
+    if (tab === 'video') return; // video loads via iframe
     if (tab === 'teacher' && !teacherText && !teacherLoading) loadTeacher();
     if (tab === 'code' && !codeText && !codeLoading) loadCode();
     if ((tab === 'backward' || tab === 'forward') && !backward && !traceLoading) loadTrace();
@@ -441,6 +569,7 @@ function LessonUI({ course, onBack }: { course: any; onBack: () => void }) {
   const QUICK_Q = [`Explain ${lesson} simply`, `Give me an example of ${lesson}`, `What are common mistakes in ${lesson}?`, `How is ${lesson} used in real projects?`];
 
   const TABS = [
+    { id: 'video', label: '🎬 Video Lecture' },
     { id: 'teacher', label: '🤖 AI Teacher' },
     { id: 'code', label: '⌨️ Code & Run' },
     { id: 'backward', label: '← Backward' },
@@ -565,6 +694,38 @@ function LessonUI({ course, onBack }: { course: any; onBack: () => void }) {
 
         {/* Content */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
+
+          {/* ── VIDEO LECTURE ── */}
+          {tab === 'video' && (
+            <div style={{ animation: 'fade-in 0.3s ease' }}>
+              <div style={{ borderRadius: '16px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.08)', marginBottom: '16px', background: '#000', position: 'relative', paddingTop: '56.25%' }}>
+                <iframe
+                  key={lesson}
+                  src={`https://www.youtube.com/embed/${getYTId(lesson)}?autoplay=0&rel=0&modestbranding=1&color=white`}
+                  title={lesson}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
+                />
+              </div>
+              <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.07)', padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div>
+                  <div style={{ color: '#fff', fontWeight: 700, fontSize: '14px', marginBottom: '3px' }}>{lesson}</div>
+                  <div style={{ color: '#64748b', fontSize: '12px' }}>🎬 Free video lecture • After watching, switch to AI Teacher for doubts</div>
+                </div>
+                <button onClick={() => setTab('teacher')}
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', borderRadius: '10px', border: 'none', background: course.accent, color: '#fff', fontSize: '12px', fontWeight: 700, cursor: 'pointer', flexShrink: 0 }}>
+                  Ask AI Teacher →
+                </button>
+              </div>
+              <div style={{ marginTop: '12px', padding: '12px 16px', borderRadius: '12px', background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.15)', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{ fontSize: '20px' }}>💡</span>
+                <div style={{ fontSize: '12px', color: '#94a3b8', lineHeight: 1.6 }}>
+                  <strong style={{ color: '#c7d2fe' }}>Pro Tip:</strong> Watch the video first, then use <strong style={{ color: course.accent }}>AI Teacher</strong> for explanations in Hindi/Marathi, <strong style={{ color: '#34d399' }}>Code & Run</strong> to practice, and <strong style={{ color: '#f59e0b' }}>Quiz</strong> to test yourself!
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* ── AI TEACHER ── */}
           {tab === 'teacher' && (
