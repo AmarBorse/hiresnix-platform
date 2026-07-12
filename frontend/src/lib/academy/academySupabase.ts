@@ -8,7 +8,7 @@ import type {
 
 export async function getPublishedCourses(): Promise<Course[]> {
   const { data, error } = await supabase
-    .from('courses')
+    .from('academy_courses')
     .select('*')
     .eq('is_published', true)
     .order('created_at', { ascending: false })
@@ -18,7 +18,7 @@ export async function getPublishedCourses(): Promise<Course[]> {
 
 export async function getCourseById(courseId: string): Promise<Course | null> {
   const { data, error } = await supabase
-    .from('courses')
+    .from('academy_courses')
     .select('*')
     .eq('id', courseId)
     .single()
@@ -30,7 +30,7 @@ export async function getCourseById(courseId: string): Promise<Course | null> {
 
 export async function getModulesWithLessons(courseId: string): Promise<Module[]> {
   const { data, error } = await supabase
-    .from('modules')
+    .from('academy_modules')
     .select(`
       *,
       lessons (
@@ -53,7 +53,7 @@ export async function getModulesWithLessons(courseId: string): Promise<Module[]>
 
 export async function getLessonById(lessonId: string): Promise<Lesson | null> {
   const { data, error } = await supabase
-    .from('lessons')
+    .from('academy_lessons')
     .select('*')
     .eq('id', lessonId)
     .single()
@@ -68,10 +68,10 @@ export async function getLessonProgressForCourse(
   courseId: string
 ): Promise<LessonProgress[]> {
   const { data, error } = await supabase
-    .from('lesson_progress')
-    .select('*, lessons!inner(module_id, modules!inner(course_id))')
+    .from('academy_lesson_progress')
+    .select('*, academy_lessons!inner(module_id, modules!inner(course_id))')
     .eq('user_id', userId)
-    .eq('lessons.modules.course_id', courseId)
+    .eq('academy_lessons.academy_modules.course_id', courseId)
   if (error) throw error
   return data ?? []
 }
@@ -81,7 +81,7 @@ export async function upsertLessonProgress(
   lessonId: string,
   status: LessonProgress['status']
 ): Promise<void> {
-  const { error } = await supabase.from('lesson_progress').upsert(
+  const { error } = await supabase.from('academy_lesson_progress').upsert(
     {
       user_id: userId,
       lesson_id: lessonId,
@@ -102,7 +102,7 @@ export async function getChatHistory(
   limit = 20
 ): Promise<ChatMessage[]> {
   const { data, error } = await supabase
-    .from('chat_history')
+    .from('academy_chat_history')
     .select('*')
     .eq('user_id', userId)
     .eq('lesson_id', lessonId)
@@ -116,7 +116,7 @@ export async function getChatHistory(
 export async function saveChatMessage(
   msg: Omit<ChatMessage, 'id' | 'created_at'>
 ): Promise<void> {
-  const { error } = await supabase.from('chat_history').insert(msg)
+  const { error } = await supabase.from('academy_chat_history').insert(msg)
   if (error) throw error
 }
 
@@ -125,7 +125,7 @@ export async function saveChatMessage(
 export async function saveQuizAttempt(
   attempt: Omit<QuizAttempt, 'id' | 'attempted_at'>
 ): Promise<void> {
-  const { error } = await supabase.from('quiz_attempts').insert(attempt)
+  const { error } = await supabase.from('academy_quiz_attempts').insert(attempt)
   if (error) throw error
 }
 
@@ -134,7 +134,7 @@ export async function getQuizAttempts(
   lessonId: string
 ): Promise<QuizAttempt[]> {
   const { data, error } = await supabase
-    .from('quiz_attempts')
+    .from('academy_quiz_attempts')
     .select('*')
     .eq('user_id', userId)
     .eq('lesson_id', lessonId)
@@ -150,7 +150,7 @@ export async function submitAssignment(
   lessonId: string,
   submissionText: string
 ): Promise<void> {
-  const { error } = await supabase.from('assignments').insert({
+  const { error } = await supabase.from('academy_assignments').insert({
     user_id: userId,
     lesson_id: lessonId,
     submission_text: submissionText,
@@ -164,7 +164,7 @@ export async function getAssignment(
   lessonId: string
 ): Promise<Assignment | null> {
   const { data, error } = await supabase
-    .from('assignments')
+    .from('academy_assignments')
     .select('*')
     .eq('user_id', userId)
     .eq('lesson_id', lessonId)
@@ -180,7 +180,7 @@ export async function getAssignment(
 export async function saveCodeSession(
   session: Omit<CodeSession, 'id' | 'saved_at'>
 ): Promise<void> {
-  const { error } = await supabase.from('code_sessions').insert(session)
+  const { error } = await supabase.from('academy_code_sessions').insert(session)
   if (error) throw error
 }
 
@@ -189,7 +189,7 @@ export async function getLatestCodeSession(
   lessonId: string
 ): Promise<CodeSession | null> {
   const { data, error } = await supabase
-    .from('code_sessions')
+    .from('academy_code_sessions')
     .select('*')
     .eq('user_id', userId)
     .eq('lesson_id', lessonId)
@@ -207,7 +207,7 @@ export async function getCertificate(
   courseId: string
 ): Promise<Certificate | null> {
   const { data, error } = await supabase
-    .from('certificates')
+    .from('academy_certificates')
     .select('*')
     .eq('user_id', userId)
     .eq('course_id', courseId)
@@ -218,7 +218,7 @@ export async function getCertificate(
 
 export async function getCertificateByHash(hash: string): Promise<Certificate | null> {
   const { data, error } = await supabase
-    .from('certificates')
+    .from('academy_certificates')
     .select('*')
     .eq('verify_hash', hash)
     .maybeSingle()
