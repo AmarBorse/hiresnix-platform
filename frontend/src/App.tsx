@@ -29,6 +29,13 @@ const InstStudentCourses      = lazy(() => import('./pages/instStudent/InstStude
 const InstStudentCertificates = lazy(() => import('./pages/instStudent/InstStudentCertificates').then(m => ({ default: m.InstStudentCertificates })));
 const InstStudentInternship   = lazy(() => import('./pages/instStudent/InstStudentInternship').then(m => ({ default: m.InstStudentInternship })));
 
+// Academy (shared between Student + InstStudent)
+const AcademyCatalog    = lazy(() => import('./pages/academy/AcademyCatalog'));
+const AcademyCourse     = lazy(() => import('./pages/academy/AcademyCourse'));
+const AcademyLesson     = lazy(() => import('./pages/academy/AcademyLesson'));
+const AcademyProgress   = lazy(() => import('./pages/academy/AcademyProgress'));
+const CertificateVerify = lazy(() => import('./pages/CertificateVerify'));
+
 const StudentDashboard    = lazy(() => import('./pages/student/StudentDashboard').then(m => ({ default: m.StudentDashboard })));
 const StudentJobs         = lazy(() => import('./pages/student/StudentJobs').then(m => ({ default: m.StudentJobs })));
 const StudentApplications = lazy(() => import('./pages/student/StudentApplications').then(m => ({ default: m.StudentApplications })));
@@ -37,6 +44,13 @@ const StudentResources    = lazy(() => import('./pages/student/StudentResources'
 const StudentCertificates = lazy(() => import('./pages/student/StudentCertificates').then(m => ({ default: m.StudentCertificates })));
 const StudentProfile      = lazy(() => import('./pages/student/StudentProfile').then(m => ({ default: m.StudentProfile })));
 const StudentMockInterview= lazy(() => import('./pages/student/StudentMockInterview').then(m => ({ default: m.StudentMockInterview })));
+
+// Academy
+const AcademyCatalog    = lazy(() => import('./pages/academy/AcademyCatalog'));
+const AcademyCourse     = lazy(() => import('./pages/academy/AcademyCourse'));
+const AcademyLesson     = lazy(() => import('./pages/academy/AcademyLesson'));
+const AcademyProgress   = lazy(() => import('./pages/academy/AcademyProgress'));
+const CertificateVerify = lazy(() => import('./pages/CertificateVerify'));
 
 const CompanyDashboard  = lazy(() => import('./pages/company/CompanyDashboard').then(m => ({ default: m.CompanyDashboard })));
 const CompanyJobs       = lazy(() => import('./pages/company/CompanyJobs').then(m => ({ default: m.CompanyJobs })));
@@ -145,7 +159,15 @@ export default function App() {
             <Route path="courses"      element={<InstStudentCourses />} />
             <Route path="certificates" element={<InstStudentCertificates />} />
             <Route path="internship"   element={<InstStudentInternship />} />
+            {/* AI Academy for InstStudent */}
+            <Route path="academy"                     element={<AcademyCatalog />} />
+            <Route path="academy/progress"            element={<AcademyProgress />} />
+            <Route path="academy/:courseId"           element={<AcademyCourse />} />
+            <Route path="academy/:courseId/:lessonId" element={<AcademyLesson />} />
           </Route>
+
+          {/* Certificate Verify — public */}
+          <Route path="/verify/:hash" element={<CertificateVerify />} />
 
           {/* Student */}
           <Route path="/student" element={<ProtectedRoute allowedRoles={['student']}><StudentLayout /></ProtectedRoute>}>
@@ -158,7 +180,15 @@ export default function App() {
             <Route path="mock-interview" element={<StudentMockInterview />} />
             <Route path="certificates"   element={<StudentCertificates />} />
             <Route path="profile"        element={<StudentProfile />} />
+            {/* Academy */}
+            <Route path="academy"                     element={<AcademyCatalog />} />
+            <Route path="academy/progress"            element={<AcademyProgress />} />
+            <Route path="academy/:courseId"           element={<AcademyCourse />} />
+            <Route path="academy/:courseId/:lessonId" element={<AcademyLesson />} />
           </Route>
+
+          {/* Certificate Verify — public */}
+          <Route path="/verify/:hash" element={<CertificateVerify />} />
 
           {/* Company */}
           <Route path="/company" element={<ProtectedRoute allowedRoles={['company']}><CompanyLayout /></ProtectedRoute>}>
