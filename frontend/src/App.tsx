@@ -29,12 +29,8 @@ const InstStudentCourses      = lazy(() => import('./pages/instStudent/InstStude
 const InstStudentCertificates = lazy(() => import('./pages/instStudent/InstStudentCertificates').then(m => ({ default: m.InstStudentCertificates })));
 const InstStudentInternship   = lazy(() => import('./pages/instStudent/InstStudentInternship').then(m => ({ default: m.InstStudentInternship })));
 
-// Academy (shared between Student + InstStudent)
-const AcademyCatalog    = lazy(() => import('./pages/academy/AcademyCatalog'));
-const AcademyCourse     = lazy(() => import('./pages/academy/AcademyCourse'));
-const AcademyLesson     = lazy(() => import('./pages/academy/AcademyLesson'));
-const AcademyProgress   = lazy(() => import('./pages/academy/AcademyProgress'));
-const CertificateVerify = lazy(() => import('./pages/CertificateVerify'));
+// AI Academy — single page module
+const AcademyPage = lazy(() => import('./pages/instStudent/AcademyPage').then(m => ({ default: m.AcademyPage })));
 
 const StudentDashboard    = lazy(() => import('./pages/student/StudentDashboard').then(m => ({ default: m.StudentDashboard })));
 const StudentJobs         = lazy(() => import('./pages/student/StudentJobs').then(m => ({ default: m.StudentJobs })));
@@ -154,15 +150,9 @@ export default function App() {
             <Route path="courses"      element={<InstStudentCourses />} />
             <Route path="certificates" element={<InstStudentCertificates />} />
             <Route path="internship"   element={<InstStudentInternship />} />
-            {/* AI Academy for InstStudent */}
-            <Route path="academy"                     element={<AcademyCatalog />} />
-            <Route path="academy/progress"            element={<AcademyProgress />} />
-            <Route path="academy/:courseId"           element={<AcademyCourse />} />
-            <Route path="academy/:courseId/:lessonId" element={<AcademyLesson />} />
+            {/* AI Academy */}
+            <Route path="academy" element={<AcademyPage />} />
           </Route>
-
-          {/* Certificate Verify — public */}
-          <Route path="/verify/:hash" element={<CertificateVerify />} />
 
           {/* Student */}
           <Route path="/student" element={<ProtectedRoute allowedRoles={['student']}><StudentLayout /></ProtectedRoute>}>
@@ -175,10 +165,9 @@ export default function App() {
             <Route path="mock-interview" element={<StudentMockInterview />} />
             <Route path="certificates"   element={<StudentCertificates />} />
             <Route path="profile"        element={<StudentProfile />} />
-            {/* Academy */}
+            {/* AI Academy */}
+            <Route path="academy" element={<AcademyPage />} />
           </Route>
-
-          {/* Certificate Verify — public */}
 
           {/* Company */}
           <Route path="/company" element={<ProtectedRoute allowedRoles={['company']}><CompanyLayout /></ProtectedRoute>}>
