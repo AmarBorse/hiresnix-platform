@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { getCertificateByHash } from '../../lib/academy/academySupabase'
-import { supabase } from '../../lib/supabaseClient'
-import type { Certificate } from '../../lib/academy/academyTypes'
+import { getCertificateByHash } from '../lib/academy/academySupabase'
+import { supabase } from '../lib/supabaseClient'
+import type { Certificate } from '../lib/academy/academyTypes'
 
 interface VerifyData extends Certificate {
   student_name: string
