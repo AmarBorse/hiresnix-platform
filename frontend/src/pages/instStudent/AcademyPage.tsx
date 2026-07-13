@@ -12,7 +12,8 @@ import {
 import { instStudentApi } from '../../api/instStudent';
 import { useInstStudentStore } from '../../store/useInstStudentStore';
 
-const GROQ = (import.meta as any).env.VITE_GROQ_API_KEY || '';
+const GEMINI_KEY = (import.meta as any).env.VITE_GEMINI_API_KEY || '';
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`;
 
 // ── Progress Storage (localStorage) ──────────────────────────────
 function getStorageKey(studentId: string, courseId: string) {
@@ -153,18 +154,41 @@ const YT: Record<string, string> = {
 
 function getYT(lesson: string) { return YT[lesson] || 'dQw4w9WgXcQ'; }
 
-// ── Groq API (streaming) ──────────────────────────────────────────
-async function groqStream(prompt: string, onChunk: (t: string) => void) {
+// ── Gemini API ────────────────────────────────────────────────────
+async function gemini(prompt: string): Promise<string> {
   try {
-    const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    const r = await fetch(GEMINI_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${GROQ}` },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
-        messages: [{ role: 'user', content: prompt }],
-        temperature: 0.7, max_tokens: 1500, stream: true,
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.7, maxOutputTokens: 2048 },
+        safetySettings: [
+          { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
+          { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
+        ],
       }),
     });
+    const d = await r.json();
+    if (d.error) throw new Error(d.error.message);
+    return d?.candidates?.[0]?.content?.parts?.[0]?.text || 'No response';
+  } catch (e: any) { return `Error: ${e.message}`; }
+}
+
+// Gemini streaming (simulate with chunked rendering)
+async function groqStream(prompt: string, onChunk: (t: string) => void) {
+  try {
+    const r = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent?alt=sse&key=${GEMINI_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.7, maxOutputTokens: 2048 },
+        }),
+      }
+    );
     const reader = r.body!.getReader();
     const dec = new TextDecoder();
     let full = '';
@@ -172,25 +196,20 @@ async function groqStream(prompt: string, onChunk: (t: string) => void) {
       const { done, value } = await reader.read();
       if (done) break;
       for (const line of dec.decode(value).split('\n')) {
-        if (!line.startsWith('data: ') || line.includes('[DONE]')) continue;
-        try { const d = JSON.parse(line.slice(6)); const t = d.choices?.[0]?.delta?.content||''; full += t; onChunk(full); } catch {}
+        if (!line.startsWith('data: ')) continue;
+        try {
+          const d = JSON.parse(line.slice(6));
+          const t = d?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+          if (t) { full += t; onChunk(full); }
+        } catch {}
       }
     }
     return full;
-  } catch { return 'Error connecting to AI. Please check your API key.'; }
+  } catch { return 'Error connecting to Gemini.'; }
 }
 
-async function groq(prompt: string): Promise<string> {
-  try {
-    const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${GROQ}` },
-      body: JSON.stringify({ model: 'llama-3.1-8b-instant', messages: [{ role: 'user', content: prompt }], temperature: 0.7, max_tokens: 2000 }),
-    });
-    const d = await r.json();
-    return d?.choices?.[0]?.message?.content || 'No response';
-  } catch { return 'Error. Please try again.'; }
-}
+// Alias for backward compatibility
+const groq = gemini;
 
 // ── Piston code runner ────────────────────────────────────────────
 const LANG_CONFIG: Record<string,{lang:string,ver:string,ext:string,starter:string}> = {
