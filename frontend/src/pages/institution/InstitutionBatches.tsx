@@ -478,9 +478,7 @@ export function InstitutionBatches() {
                     </div>
                   </div>
                   <button onClick={() => {
-                    const csv = 'Name,Email,Department,Roll No,Mobile,Year
-Rahul Sharma,rahul@example.com,Computer Science,CS001,9876543210,3rd Year
-';
+                    const csv = 'Name,Email,Department,Roll No,Mobile,Year\nRahul Sharma,rahul@example.com,Computer Science,CS001,9876543210,3rd Year\n';
                     const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
                     a.download = 'batch_import_template.csv'; a.click();
                   }} className="flex items-center gap-2 text-xs" style={{color:'#34d399'}}>
