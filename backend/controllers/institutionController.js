@@ -11,7 +11,7 @@ const {
 } = require('../models');
 const QRCode      = require('qrcode');
 const PDFDocument = require('pdfkit');
-const XLSX = require('xlsx');
+// xlsx loaded lazily in bulkImportStudents
 const path = require('path');
 const fs_cert = require('fs');
 
@@ -655,7 +655,9 @@ const bulkImportStudents = asyncHandler(async (req, res) => {
   const institutionId = getInstitutionId(req);
   if (!req.file) { res.status(400); throw new Error('No file uploaded'); }
 
-  // Parse file
+  // Parse file (lazy require to avoid startup crash)
+  let XLSX;
+  try { XLSX = require('xlsx'); } catch(e) { res.status(500); throw new Error('xlsx package not installed on server'); }
   const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
   const sheet = workbook.Sheets[workbook.SheetNames[0]];
   const rows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
