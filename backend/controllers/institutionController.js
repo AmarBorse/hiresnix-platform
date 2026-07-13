@@ -276,10 +276,17 @@ const assignStudentsToBatch = asyncHandler(async (req, res) => {
 // Returns students NOT already assigned to a batch with the same course
 const getAvailableStudentsForBatch = asyncHandler(async (req, res) => {
   const institutionId = getInstitutionId(req);
-  const batch = await Batch.findOne({
-    where: { id: req.params.id, institutionId },
-    include: [{ model: Course, as: 'course' }],
-  });
+
+  // Try with course include, fallback without (if courseId column not yet migrated)
+  let batch;
+  try {
+    batch = await Batch.findOne({
+      where: { id: req.params.id, institutionId },
+      include: [{ model: Course, as: 'course' }],
+    });
+  } catch(e) {
+    batch = await Batch.findOne({ where: { id: req.params.id, institutionId } });
+  }
   if (!batch) { res.status(404); throw new Error('Batch not found'); }
 
   // All students in this institution

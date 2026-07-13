@@ -276,22 +276,28 @@ const STATUS_STYLE: Record<string, {background:string,color:string}> = {
 
 // ── Main Component ────────────────────────────────────────────────
 // ── Manual Add Student to Batch ──────────────────────────────────
-function ManualAddForm({ batchId, onAdded }: { batchId?: number; onAdded: () => void }) {
+function ManualAddForm({ batchId, onAdded }: { batchId: number | undefined; onAdded: () => void }) {
   const [form, setForm] = useState({ name:'', email:'', mobile:'', department:'', rollNumber:'', year:'' });
   const [loading, setLoading] = useState(false);
   const f = (k: string) => (e: any) => setForm(p => ({...p, [k]: e.target.value}));
 
   const submit = async () => {
-    if (!form.name || !form.email || !batchId) { toast.error('Name, email & batch required'); return; }
+    if (!form.name.trim()) { toast.error('Name is required'); return; }
+    if (!form.email.trim()) { toast.error('Email is required'); return; }
+    if (!batchId || isNaN(Number(batchId))) { toast.error('Batch not found. Please close and reopen.'); return; }
     setLoading(true);
     try {
-      const result = await institutionApi.bulkImportToBatch(batchId, [form]);
-      if (result.summary.created > 0) toast.success(`✅ ${form.name} created & added to batch`);
-      else if (result.summary.assigned > 0) toast.success(`✅ ${form.name} added to batch`);
-      else if (result.summary.skipped > 0) toast.info(`⚠️ ${form.name} already in batch`);
+      const payload = [{ ...form, name: form.name.trim(), email: form.email.trim().toLowerCase() }];
+      const result = await institutionApi.bulkImportToBatch(Number(batchId), payload);
+      const s = result.summary;
+      if (s.created > 0) toast.success(`✅ ${form.name} created & added to batch!`);
+      else if (s.assigned > 0) toast.success(`✅ ${form.name} assigned to batch!`);
+      else if (s.skipped > 0) toast.warning(`⚠️ ${form.name} already in this batch`);
+      else toast.error(result.data?.errors?.[0]?.reason || 'Failed');
+      setForm({ name:'', email:'', mobile:'', department:'', rollNumber:'', year:'' });
       onAdded();
     } catch(err: any) {
-      toast.error(err.response?.data?.message || 'Failed to add');
+      toast.error(err.response?.data?.message || 'Failed to add student');
     } finally { setLoading(false); }
   };
 
