@@ -366,6 +366,7 @@ export function InstitutionBatches() {
   const [assignSelected, setAssignSelected] = useState<number[]>([]);
   const [certModal, setCertModal]           = useState<InstituteBatch | null>(null);
   const [batchImportModal, setBatchImportModal] = useState(false);
+  const [currentBatchId, setCurrentBatchId] = useState<number|undefined>(undefined);
   const [batchImportFile, setBatchImportFile]   = useState<File|null>(null);
   const [batchImporting, setBatchImporting]     = useState(false);
   const [batchImportResult, setBatchImportResult] = useState<any>(null);
@@ -493,7 +494,7 @@ export function InstitutionBatches() {
           </div>
         </div>
         <div className="flex gap-2 flex-wrap">
-          <button onClick={() => { setBatchImportModal(true); setBatchImportFile(null); setBatchImportResult(null); }}
+          <button onClick={() => { setBatchImportModal(true); setBatchImportFile(null); setBatchImportResult(null); setCurrentBatchId(viewBatch?.id); }}
             className="flex items-center gap-1.5 px-3 py-2 text-sm font-bold rounded-xl transition"
             style={{background:'rgba(245,158,11,0.15)',border:'1px solid rgba(245,158,11,0.3)',color:'#f59e0b'}}>
             <Upload size={14} /> Import CSV
@@ -604,7 +605,7 @@ export function InstitutionBatches() {
                   </div>
 
                   {/* Manual Add Form */}
-                  <ManualAddForm batchId={viewBatch?.id} onAdded={() => {
+                  <ManualAddForm batchId={currentBatchId} onAdded={() => {
                     setBatchImportModal(false);
                     if (viewBatch) openBatch(viewBatch);
                   }} />
