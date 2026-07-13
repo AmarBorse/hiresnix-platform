@@ -160,25 +160,7 @@ const getStudent = asyncHandler(async (req, res) => {
   res.json({ success: true, data: student });
 });
 
-const bulkImportStudents = asyncHandler(async (req, res) => {
-  const institutionId = getInstitutionId(req);
-  const { students } = req.body;
-  if (!Array.isArray(students) || students.length === 0) { res.status(400); throw new Error('No students provided'); }
-  const results = { created: 0, skipped: 0, errors: [], credentials: [] };
-  for (const s of students) {
-    try {
-      if (!s.name || !s.email) { results.errors.push({ row: s, reason: 'Name/email missing' }); continue; }
-      const exists = await InstitutionStudent.findOne({ where: { institutionId, email: s.email.trim().toLowerCase() } });
-      if (exists) { results.skipped++; continue; }
-      const careerId = await generateCareerId();
-      const pwd      = defaultPassword(careerId);
-      await InstitutionStudent.create({ ...s, email: s.email.trim().toLowerCase(), institutionId, careerId, password: pwd });
-      results.created++;
-      results.credentials.push({ name: s.name, careerId, defaultPassword: pwd });
-    } catch(e) { results.errors.push({ row: s, reason: e.message }); }
-  }
-  res.json({ success: true, data: results });
-});
+// bulkImportStudents moved to CSV/Excel version below
 
 // GET /api/institution/students/credentials — download credentials as JSON (frontend converts to Excel)
 const getStudentCredentials = asyncHandler(async (req, res) => {
