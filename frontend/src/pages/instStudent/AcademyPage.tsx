@@ -6,9 +6,11 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   ChevronRight, ChevronDown, CheckCircle, ArrowLeft,
   Send, Mic, MicOff, Volume2, VolumeX, Loader2, RefreshCw,
-  Code2, FileText, Zap, ArrowLeftRight, Terminal,
-  Sparkles, Trophy, Flame, Star, Play, BookOpen
+  FileText, Zap, ArrowLeftRight, Terminal,
+  Sparkles, Trophy, Flame, Star, Play, Lock, Award, Download
 } from 'lucide-react';
+import { instStudentApi } from '../../api/instStudent';
+import { useInstStudentStore } from '../../store/useInstStudentStore';
 
 const GROQ = (import.meta as any).env.VITE_GROQ_API_KEY || '';
 
@@ -31,7 +33,7 @@ const YT: Record<string, string> = {
   "Encapsulation": "JeznW0oahkk", "Polymorphism": "JeznW0oahkk",
   "Modules & Packages": "GxCXiSkm6no", "pip & Libraries": "U8OtBUFVEFo",
   "Recursion": "ngCos3cnxi8", "Decorators": "r7Dtus7N4pI",
-  "Generators": "bD05uGo_sVI", "Regular Expressions": "nxjwB8up2gA",
+  "Generators": "bD05uGo_sVI", "Regular Expressions": "K86ZkIY5FsM",
   "Build a Calculator": "4OX49nLNPEE", "Build a To-Do App": "DJGzR65BvqM",
   "Build a Quiz Game": "zehwgTB0vV8", "Build a Web Scraper": "XVv6mJpIp8M",
   "Final Python Project": "DLn3jOsNRVE",
@@ -175,6 +177,93 @@ async function runCode(language: string, code: string) {
 }
 
 // ── COURSES DATA ──────────────────────────────────────────────────
+// ── XP & Level System ────────────────────────────────────────────
+const LEVELS = [
+  { name: 'Beginner', min: 0, icon: '🌱', color: '#64748b' },
+  { name: 'Explorer', min: 100, icon: '🔍', color: '#3b82f6' },
+  { name: 'Learner', min: 300, icon: '📚', color: '#8b5cf6' },
+  { name: 'Coder', min: 600, icon: '💻', color: '#f59e0b' },
+  { name: 'Pro', min: 1000, icon: '🚀', color: '#10b981' },
+  { name: 'Expert', min: 1500, icon: '⭐', color: '#ec4899' },
+  { name: 'Master', min: 2500, icon: '👑', color: '#f59e0b' },
+];
+
+function getLevel(xp: number) {
+  for (let i = LEVELS.length - 1; i >= 0; i--) {
+    if (xp >= LEVELS[i].min) return LEVELS[i];
+  }
+  return LEVELS[0];
+}
+
+// ── Academy Certificate Generator ────────────────────────────────
+function generateCertPDF(studentName: string, courseName: string, completionDate: string) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 1200; canvas.height = 850;
+  const ctx = canvas.getContext('2d')!;
+
+  // Background
+  ctx.fillStyle = '#0f172a';
+  ctx.fillRect(0, 0, 1200, 850);
+
+  // Gold border
+  ctx.strokeStyle = '#f59e0b';
+  ctx.lineWidth = 6;
+  ctx.strokeRect(20, 20, 1160, 810);
+  ctx.strokeStyle = '#f59e0b33';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(30, 30, 1140, 790);
+
+  // Header
+  ctx.fillStyle = '#f59e0b';
+  ctx.font = 'bold 18px Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText('HIRESNIX AI ACADEMY', 600, 80);
+
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 48px Arial';
+  ctx.fillText('Certificate of Completion', 600, 160);
+
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = '20px Arial';
+  ctx.fillText('This is to certify that', 600, 230);
+
+  ctx.fillStyle = '#f59e0b';
+  ctx.font = 'bold 52px Arial';
+  ctx.fillText(studentName, 600, 310);
+
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = '20px Arial';
+  ctx.fillText('has successfully completed the course', 600, 370);
+
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 38px Arial';
+  ctx.fillText(courseName, 600, 440);
+
+  ctx.fillStyle = '#64748b';
+  ctx.font = '16px Arial';
+  ctx.fillText(`Completion Date: ${completionDate}`, 600, 500);
+
+  // Decorations
+  ctx.fillStyle = '#f59e0b22';
+  ctx.beginPath(); ctx.arc(150, 700, 80, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(1050, 700, 80, 0, Math.PI*2); ctx.fill();
+
+  ctx.fillStyle = '#f59e0b';
+  ctx.font = 'bold 40px Arial';
+  ctx.fillText('🏆', 600, 640);
+
+  ctx.fillStyle = '#334155';
+  ctx.font = '14px Arial';
+  const certNo = `HXAC-${Date.now().toString(36).toUpperCase()}`;
+  ctx.fillText(`Certificate No: ${certNo} | hiresnix.co.in`, 600, 800);
+
+  // Download
+  const link = document.createElement('a');
+  link.download = `Hiresnix_Academy_${courseName.replace(/\s+/g,'_')}_Certificate.png`;
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+}
+
 const COURSES = [
   {
     id:'python', title:'Python Programming', icon:'🐍', accent:'#6366f1', codeLanguage:'python',
@@ -350,6 +439,11 @@ function LessonPage({ course, onBack }: { course:any; onBack:()=>void }) {
   const [expanded, setExpanded] = useState<number[]>([0]);
   const [tab, setTab] = useState<'video'|'teacher'|'code'|'backward'|'forward'|'quiz'|'notes'>('video');
   const [completed, setCompleted] = useState<Set<string>>(new Set());
+  const [xp, setXp] = useState(0);
+  const [showXpGain, setShowXpGain] = useState<string|null>(null);
+  const [claimedCerts, setClaimedCerts] = useState<Set<string>>(new Set());
+  const [showCertModal, setShowCertModal] = useState<string|null>(null);
+  const { student } = useInstStudentStore();
 
   // Content
   const [teacherText, setTeacherText] = useState('');
@@ -536,7 +630,22 @@ function LessonPage({ course, onBack }: { course:any; onBack:()=>void }) {
 
   const markDone = () => {
     const key = `${activeMod}-${activeLesson}`;
-    setCompleted(prev => new Set([...prev, key]));
+    if (completed.has(key)) return;
+    setCompleted(prev => {
+      const next = new Set([...prev, key]);
+      // Check if course complete
+      const allKeys = course.modules.flatMap((m:any,mi:number)=>m.lessons.map((_:any,li:number)=>`${mi}-${li}`));
+      if (allKeys.every((k:string) => next.has(k))) {
+        setTimeout(() => setShowCertModal(course.id), 500);
+      }
+      return next;
+    });
+    // XP gain
+    const gain = quizScore > 0 ? 20 : 10;
+    setXp(x => x + gain);
+    setShowXpGain(`+${gain} XP`);
+    setTimeout(() => setShowXpGain(null), 2000);
+
     const mod = course.modules[activeMod];
     if (activeLesson < mod.lessons.length-1) selectLesson(activeMod, activeLesson+1);
     else if (activeMod < course.modules.length-1) { setExpanded(p=>[...p,activeMod+1]); selectLesson(activeMod+1,0); }
@@ -632,6 +741,46 @@ function LessonPage({ course, onBack }: { course:any; onBack:()=>void }) {
 
       {/* ═══ CENTER ══════════════════════════════════════════════════ */}
       <div style={{ display:'flex', flexDirection:'column', overflow:'hidden' }}>
+        {/* XP floating indicator */}
+        {showXpGain && (
+          <div style={{ position:'fixed', top:'80px', left:'50%', transform:'translateX(-50%)', zIndex:9999, background:'linear-gradient(135deg,#f59e0b,#f97316)', color:'#fff', fontWeight:900, fontSize:'18px', padding:'8px 20px', borderRadius:'20px', boxShadow:'0 8px 24px rgba(245,158,11,0.4)', animation:'fade-in 0.3s ease', pointerEvents:'none' }}>
+            {showXpGain} 🎉
+          </div>
+        )}
+
+        {/* Course Complete — Cert Modal */}
+        {showCertModal && (
+          <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.85)', zIndex:9999, display:'flex', alignItems:'center', justifyContent:'center', padding:'24px' }}>
+            <div style={{ background:'linear-gradient(135deg,#0f1729,#1a1040)', border:'1px solid rgba(245,158,11,0.4)', borderRadius:'24px', padding:'40px', maxWidth:'420px', width:'100%', textAlign:'center', boxShadow:'0 32px 80px rgba(245,158,11,0.2)' }}>
+              <div style={{ fontSize:'64px', marginBottom:'16px', animation:'float 2s ease infinite' }}>🏆</div>
+              <h2 style={{ color:'#fff', fontWeight:900, fontSize:'24px', margin:'0 0 8px' }}>Course Complete!</h2>
+              <p style={{ color:'#f59e0b', fontWeight:700, fontSize:'16px', margin:'0 0 4px' }}>{course.title}</p>
+              <p style={{ color:'#64748b', fontSize:'13px', margin:'0 0 24px' }}>Congratulations! You've completed all lessons.</p>
+              <div style={{ background:'rgba(245,158,11,0.08)', border:'1px solid rgba(245,158,11,0.2)', borderRadius:'12px', padding:'16px', marginBottom:'20px' }}>
+                <p style={{ color:'#94a3b8', fontSize:'12px', margin:'0 0 8px' }}>Your XP Earned</p>
+                <p style={{ color:'#f59e0b', fontSize:'32px', fontWeight:900, margin:0 }}>{xp} XP</p>
+                <p style={{ color:'#64748b', fontSize:'11px', margin:'4px 0 0' }}>Level: {getLevel(xp).icon} {getLevel(xp).name}</p>
+              </div>
+              <button
+                onClick={() => {
+                  generateCertPDF(
+                    student?.name || 'Student',
+                    course.title,
+                    new Date().toLocaleDateString('en-IN')
+                  );
+                  setClaimedCerts(prev => new Set([...prev, course.id]));
+                  setShowCertModal(null);
+                }}
+                style={{ width:'100%', padding:'14px', borderRadius:'12px', border:'none', background:'linear-gradient(135deg,#f59e0b,#f97316)', color:'#fff', fontSize:'15px', fontWeight:800, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:'8px', marginBottom:'10px' }}>
+                <Download size={18} /> Download Certificate
+              </button>
+              <button onClick={() => setShowCertModal(null)} style={{ width:'100%', padding:'10px', borderRadius:'12px', border:'1px solid rgba(255,255,255,0.1)', background:'none', color:'#64748b', fontSize:'13px', cursor:'pointer' }}>
+                Close
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Topbar */}
         <div style={{ padding:'10px 18px', borderBottom:'1px solid rgba(255,255,255,0.06)', display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0, background:'rgba(8,11,18,0.95)', backdropFilter:'blur(12px)' }}>
           <div>
@@ -643,6 +792,11 @@ function LessonPage({ course, onBack }: { course:any; onBack:()=>void }) {
               style={{ display:'flex', alignItems:'center', gap:'5px', padding:'6px 11px', borderRadius:'8px', border:'1px solid rgba(255,255,255,0.1)', background:'rgba(255,255,255,0.05)', color:muted?'#334155':ACC, fontSize:'11px', fontWeight:600, cursor:'pointer' }}>
               {muted?<VolumeX size={13}/>:<Volume2 size={13}/>} {muted?'Muted':'Sound'}
             </button>
+            {/* XP Badge */}
+            <div style={{ display:'flex', alignItems:'center', gap:'4px', padding:'5px 11px', borderRadius:'8px', background:`rgba(245,158,11,0.1)`, border:'1px solid rgba(245,158,11,0.2)' }}>
+              <span style={{ fontSize:'12px' }}>{getLevel(xp).icon}</span>
+              <span style={{ color:'#f59e0b', fontSize:'11px', fontWeight:700 }}>{xp} XP</span>
+            </div>
             <button onClick={markDone}
               style={{ display:'flex', alignItems:'center', gap:'5px', padding:'6px 14px', borderRadius:'8px', border:'none', background:`linear-gradient(135deg,${ACC},${ACC}99)`, color:'#fff', fontSize:'11px', fontWeight:700, cursor:'pointer' }}>
               <CheckCircle size={12}/> Mark Done
@@ -944,8 +1098,85 @@ function LessonPage({ course, onBack }: { course:any; onBack:()=>void }) {
   );
 }
 
+// ── Certificate Gate ─────────────────────────────────────────────
+function CertificateGate({ onUnlocked }: { onUnlocked: () => void }) {
+  const { student } = useInstStudentStore();
+  const [certs, setCerts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    instStudentApi.getCertificates()
+      .then(r => {
+        setCerts(r.data || []);
+        if ((r.data || []).length > 0) onUnlocked();
+      })
+      .catch(() => setCerts([]))
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return (
+    <div style={{ minHeight:'100vh', background:'#080b12', display:'flex', alignItems:'center', justifyContent:'center' }}>
+      <div style={{ textAlign:'center' }}>
+        <div style={{ width:32, height:32, border:'3px solid #6366f1', borderTopColor:'transparent', borderRadius:'50%', animation:'spin 0.8s linear infinite', margin:'0 auto 16px' }} />
+        <p style={{ color:'#64748b', fontFamily:'system-ui' }}>Checking access...</p>
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={{ minHeight:'100vh', background:'#080b12', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'system-ui,sans-serif', padding:'24px' }}>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}} @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}} @keyframes pulse{0%,100%{opacity:0.5}50%{opacity:1}}`}</style>
+      <div style={{ maxWidth:'480px', width:'100%', textAlign:'center' }}>
+        {/* Lock icon */}
+        <div style={{ width:100, height:100, borderRadius:'50%', background:'linear-gradient(135deg,rgba(99,102,241,0.2),rgba(139,92,246,0.1))', border:'2px solid rgba(99,102,241,0.3)', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 28px', animation:'float 3s ease infinite' }}>
+          <Lock size={40} style={{ color:'#6366f1' }} />
+        </div>
+
+        <h1 style={{ fontSize:'28px', fontWeight:900, color:'#fff', margin:'0 0 12px' }}>🔒 Academy Locked</h1>
+        <p style={{ color:'#64748b', fontSize:'15px', lineHeight:1.7, margin:'0 0 28px' }}>
+          AI Academy is only available to students who have <strong style={{ color:'#f59e0b' }}>completed their institution course</strong> and received a certificate.
+        </p>
+
+        {/* Requirements */}
+        <div style={{ background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'16px', padding:'20px', marginBottom:'24px', textAlign:'left' }}>
+          <p style={{ color:'#94a3b8', fontSize:'13px', fontWeight:700, marginBottom:'12px', textTransform:'uppercase', letterSpacing:'0.05em' }}>Requirements</p>
+          <div style={{ display:'flex', flexDirection:'column', gap:'10px' }}>
+            {[
+              ['✅ Enroll in a batch', 'Done — you are enrolled'],
+              ['📚 Complete the course', 'Attend all classes'],
+              ['🏆 Receive certificate', 'Institution admin issues it'],
+              ['🎓 Access AI Academy', 'Unlocks automatically!'],
+            ].map(([step, desc], i) => (
+              <div key={i} style={{ display:'flex', gap:'10px', alignItems:'flex-start' }}>
+                <span style={{ fontSize:'16px', flexShrink:0 }}>{step.split(' ')[0]}</span>
+                <div>
+                  <p style={{ color: i < 1 ? '#34d399' : '#94a3b8', fontSize:'13px', fontWeight:600, margin:0 }}>{step.slice(2)}</p>
+                  <p style={{ color:'#475569', fontSize:'11px', margin:0 }}>{desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <p style={{ color:'#334155', fontSize:'12px' }}>
+          Contact your institution admin if you believe you should have access.
+        </p>
+
+        {student && (
+          <p style={{ color:'#475569', fontSize:'12px', marginTop:'8px' }}>
+            Logged in as: <strong style={{ color:'#6366f1' }}>{student.careerId}</strong>
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function AcademyPage() {
+  const [unlocked, setUnlocked] = useState(false);
   const [course, setCourse] = useState<any>(null);
+
+  if (!unlocked) return <CertificateGate onUnlocked={() => setUnlocked(true)} />;
   if (course) return <LessonPage course={course} onBack={()=>setCourse(null)} />;
   return <Catalog onSelect={setCourse} />;
 }
