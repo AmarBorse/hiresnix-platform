@@ -275,6 +275,75 @@ const STATUS_STYLE: Record<string, {background:string,color:string}> = {
 };
 
 // ── Main Component ────────────────────────────────────────────────
+// ── Manual Add Student to Batch ──────────────────────────────────
+function ManualAddForm({ batchId, onAdded }: { batchId?: number; onAdded: () => void }) {
+  const [form, setForm] = useState({ name:'', email:'', mobile:'', department:'', rollNumber:'', year:'' });
+  const [loading, setLoading] = useState(false);
+  const f = (k: string) => (e: any) => setForm(p => ({...p, [k]: e.target.value}));
+
+  const submit = async () => {
+    if (!form.name || !form.email || !batchId) { toast.error('Name, email & batch required'); return; }
+    setLoading(true);
+    try {
+      const result = await institutionApi.bulkImportToBatch(batchId, [form]);
+      if (result.summary.created > 0) toast.success(`✅ ${form.name} created & added to batch`);
+      else if (result.summary.assigned > 0) toast.success(`✅ ${form.name} added to batch`);
+      else if (result.summary.skipped > 0) toast.info(`⚠️ ${form.name} already in batch`);
+      onAdded();
+    } catch(err: any) {
+      toast.error(err.response?.data?.message || 'Failed to add');
+    } finally { setLoading(false); }
+  };
+
+  return (
+    <div className="space-y-3 pt-1">
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <label className="text-xs font-semibold" style={{color:'#64748b'}}>Name *</label>
+          <input value={form.name} onChange={f('name')} placeholder="Full name"
+            className="w-full mt-1 px-3 py-2 rounded-xl text-sm dark-input focus:outline-none" />
+        </div>
+        <div>
+          <label className="text-xs font-semibold" style={{color:'#64748b'}}>Email *</label>
+          <input value={form.email} onChange={f('email')} placeholder="email@example.com" type="email"
+            className="w-full mt-1 px-3 py-2 rounded-xl text-sm dark-input focus:outline-none" />
+        </div>
+        <div>
+          <label className="text-xs font-semibold" style={{color:'#64748b'}}>Mobile</label>
+          <input value={form.mobile} onChange={f('mobile')} placeholder="9876543210"
+            className="w-full mt-1 px-3 py-2 rounded-xl text-sm dark-input focus:outline-none" />
+        </div>
+        <div>
+          <label className="text-xs font-semibold" style={{color:'#64748b'}}>Department</label>
+          <input value={form.department} onChange={f('department')} placeholder="Computer Science"
+            className="w-full mt-1 px-3 py-2 rounded-xl text-sm dark-input focus:outline-none" />
+        </div>
+        <div>
+          <label className="text-xs font-semibold" style={{color:'#64748b'}}>Roll No</label>
+          <input value={form.rollNumber} onChange={f('rollNumber')} placeholder="CS001"
+            className="w-full mt-1 px-3 py-2 rounded-xl text-sm dark-input focus:outline-none" />
+        </div>
+        <div>
+          <label className="text-xs font-semibold" style={{color:'#64748b'}}>Year</label>
+          <select value={form.year} onChange={f('year')}
+            className="w-full mt-1 px-3 py-2 rounded-xl text-sm dark-input focus:outline-none">
+            <option value="">Select year</option>
+            {['1st Year','2nd Year','3rd Year','4th Year'].map(y=>(
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+      <button onClick={submit} disabled={!form.name || !form.email || loading}
+        className="w-full py-2.5 text-sm font-bold rounded-xl text-white disabled:opacity-40 flex items-center justify-center gap-2 transition"
+        style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)'}}>
+        {loading ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"/> : null}
+        {loading ? 'Adding...' : '+ Add Student to Batch'}
+      </button>
+    </div>
+  );
+}
+
 export function InstitutionBatches() {
   const [batches, setBatches]       = useState<InstituteBatch[]>([]);
   const [loading, setLoading]       = useState(true);
@@ -321,32 +390,33 @@ export function InstitutionBatches() {
 
   const handleBatchImport = async () => {
     if (!batchImportFile || !viewBatch) return;
+    const currentBatch = viewBatch; // capture before async
     setBatchImporting(true);
-    try {
-      const reader = new FileReader();
-      reader.onload = async (ev) => {
-        try {
-          const wb = XLSX.read(ev.target?.result, { type: 'binary' });
-          const ws = wb.Sheets[wb.SheetNames[0]];
-          const rows: any[] = XLSX.utils.sheet_to_json(ws);
-          const students = rows.map(r => ({
-            name:       r['Name']       || r['name']       || '',
-            email:      r['Email']      || r['email']      || '',
-            mobile:     r['Mobile']     || r['mobile']     || '',
-            department: r['Department'] || r['department'] || r['Branch'] || '',
-            rollNumber: r['Roll No']    || r['rollNumber'] || r['Roll Number'] || '',
-            year:       r['Year']       || r['year']       || '',
-          })).filter((s: any) => s.name && s.email);
-          if (students.length === 0) { toast.error('No valid rows found'); setBatchImporting(false); return; }
-          const result = await institutionApi.bulkImportToBatch(viewBatch!.id, students);
-          setBatchImportResult(result);
-          openBatch(viewBatch!);
-        } catch(err: any) {
-          toast.error(err.response?.data?.message || 'Import failed');
-        } finally { setBatchImporting(false); }
-      };
-      reader.readAsBinaryString(batchImportFile);
-    } catch { setBatchImporting(false); }
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+      try {
+        const wb = XLSX.read(ev.target?.result, { type: 'binary' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const rows: any[] = XLSX.utils.sheet_to_json(ws);
+        const students = rows.map(r => ({
+          name:       (r['Name']       || r['name']       || '').toString().trim(),
+          email:      (r['Email']      || r['email']      || '').toString().trim(),
+          mobile:     (r['Mobile']     || r['mobile']     || '').toString().trim(),
+          department: (r['Department'] || r['department'] || r['Branch'] || '').toString().trim(),
+          rollNumber: (r['Roll No']    || r['rollNumber'] || r['Roll Number'] || '').toString().trim(),
+          year:       (r['Year']       || r['year']       || '').toString().trim(),
+        })).filter((s: any) => s.name && s.email);
+        if (students.length === 0) { toast.error('No valid rows found (Name & Email required)'); return; }
+        const result = await institutionApi.bulkImportToBatch(currentBatch.id, students);
+        setBatchImportResult(result);
+        // Refresh batch students
+        const batchRes = await institutionApi.getBatchStudents(currentBatch.id);
+        setBatchStudents(batchRes.data || []);
+      } catch(err: any) {
+        toast.error(err.response?.data?.message || 'Import failed');
+      } finally { setBatchImporting(false); }
+    };
+    reader.readAsBinaryString(batchImportFile);
   };
 
   const openAssign = async () => {
@@ -519,6 +589,19 @@ export function InstitutionBatches() {
                       {batchImporting ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"/> Importing...</> : <><Upload size={14}/> Import & Assign</>}
                     </button>
                   </div>
+
+                  {/* Divider */}
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 h-px" style={{background:'rgba(255,255,255,0.08)'}}/>
+                    <span className="text-xs" style={{color:'#334155'}}>or add manually</span>
+                    <div className="flex-1 h-px" style={{background:'rgba(255,255,255,0.08)'}}/>
+                  </div>
+
+                  {/* Manual Add Form */}
+                  <ManualAddForm batchId={viewBatch?.id} onAdded={() => {
+                    setBatchImportModal(false);
+                    if (viewBatch) openBatch(viewBatch);
+                  }} />
                 </>
               ) : (
                 <div className="space-y-4">
