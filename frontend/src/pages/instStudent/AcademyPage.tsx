@@ -981,18 +981,32 @@ function LessonPage({ course, onBack }: { course:any; onBack:()=>void }) {
           {/* VIDEO */}
           {tab==='video' && (
             <div style={{ animation:'fade-in 0.3s ease' }}>
+              {/* YouTube Search Results — always finds working videos */}
               <div style={{ borderRadius:'14px', overflow:'hidden', border:'1px solid rgba(255,255,255,0.08)', marginBottom:'14px', background:'#000', position:'relative', paddingTop:'56.25%' }}>
-                <iframe key={lesson} src={`https://www.youtube.com/embed/${getYT(lesson)}?rel=0&modestbranding=1`} title={lesson} allowFullScreen allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  style={{ position:'absolute', top:0, left:0, width:'100%', height:'100%', border:'none' }} />
+                <iframe
+                  key={lesson}
+                  src={`https://www.youtube.com/embed?listType=search&list=${encodeURIComponent(lesson + ' tutorial ' + course.title + ' programming')}&rel=0&modestbranding=1`}
+                  title={lesson}
+                  allowFullScreen
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  style={{ position:'absolute', top:0, left:0, width:'100%', height:'100%', border:'none' }}
+                />
               </div>
               <div style={{ background:'rgba(255,255,255,0.03)', borderRadius:'12px', border:'1px solid rgba(255,255,255,0.07)', padding:'14px 16px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:'12px' }}>
                 <div>
                   <div style={{ color:'#fff', fontWeight:700, fontSize:'13px', marginBottom:'3px' }}>{lesson}</div>
-                  <div style={{ color:'#334155', fontSize:'11px' }}>🎬 Free video · After watching, try AI Teacher for doubts in Hindi/Marathi</div>
+                  <div style={{ color:'#334155', fontSize:'11px' }}>🎬 YouTube Search · Best videos auto-loaded</div>
                 </div>
-                <button onClick={()=>setTab('teacher')} style={{ padding:'7px 14px', borderRadius:'9px', border:'none', background:ACC, color:'#fff', fontSize:'11px', fontWeight:700, cursor:'pointer', whiteSpace:'nowrap' }}>
-                  Ask AI →
-                </button>
+                <div style={{ display:'flex', gap:'8px', flexShrink:0 }}>
+                  <a href={`https://www.youtube.com/results?search_query=${encodeURIComponent(lesson + ' ' + course.title + ' tutorial')}`}
+                    target="_blank" rel="noopener noreferrer"
+                    style={{ padding:'7px 12px', borderRadius:'9px', border:'1px solid rgba(255,255,255,0.1)', background:'rgba(255,255,255,0.05)', color:'#94a3b8', fontSize:'11px', fontWeight:600, cursor:'pointer', textDecoration:'none', whiteSpace:'nowrap' }}>
+                    🔍 Search More
+                  </a>
+                  <button onClick={()=>setTab('teacher')} style={{ padding:'7px 14px', borderRadius:'9px', border:'none', background:ACC, color:'#fff', fontSize:'11px', fontWeight:700, cursor:'pointer', whiteSpace:'nowrap' }}>
+                    Ask AI →
+                  </button>
+                </div>
               </div>
               <div style={{ marginTop:'12px', padding:'12px 16px', borderRadius:'12px', background:'rgba(99,102,241,0.07)', border:'1px solid rgba(99,102,241,0.15)', fontSize:'12px', color:'#94a3b8', lineHeight:1.6 }}>
                 💡 <strong style={{ color:'#c7d2fe' }}>Learning Path:</strong> Watch Video → AI Teacher → Code & Run → Quiz (20 Qs) → Mark Done ✅
