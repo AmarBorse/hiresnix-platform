@@ -14,6 +14,52 @@ import { useInstStudentStore } from '../../store/useInstStudentStore';
 
 const GROQ = (import.meta as any).env.VITE_GROQ_API_KEY || '';
 
+// ── Progress Storage (localStorage) ──────────────────────────────
+function getStorageKey(studentId: string, courseId: string) {
+  return `hx_academy_${studentId}_${courseId}`;
+}
+
+function saveProgress(studentId: string, courseId: string, data: {
+  completed: string[], xp: number, claimedCert: boolean, enrolledAt: string, lastActive: string
+}) {
+  localStorage.setItem(getStorageKey(studentId, courseId), JSON.stringify(data));
+  // Also save enrolled courses list
+  const enrolledKey = `hx_academy_enrolled_${studentId}`;
+  const enrolled: string[] = JSON.parse(localStorage.getItem(enrolledKey) || '[]');
+  if (!enrolled.includes(courseId)) {
+    enrolled.push(courseId);
+    localStorage.setItem(enrolledKey, JSON.stringify(enrolled));
+  }
+}
+
+function loadProgress(studentId: string, courseId: string) {
+  const raw = localStorage.getItem(getStorageKey(studentId, courseId));
+  if (!raw) return null;
+  try { return JSON.parse(raw); } catch { return null; }
+}
+
+function getEnrolledCourses(studentId: string) {
+  const raw = localStorage.getItem(`hx_academy_enrolled_${studentId}`);
+  if (!raw) return [];
+  try { return JSON.parse(raw); } catch { return []; }
+}
+
+function getAllStudentProgress() {
+  // Get all academy progress from localStorage (for admin view)
+  const allProgress: any[] = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key?.startsWith('hx_academy_') && !key.includes('enrolled')) {
+      try {
+        const [,, studentId, courseId] = key.split('_');
+        const data = JSON.parse(localStorage.getItem(key) || '{}');
+        allProgress.push({ studentId, courseId, ...data });
+      } catch {}
+    }
+  }
+  return allProgress;
+}
+
 // ── YouTube Video Map ─────────────────────────────────────────────
 const YT: Record<string, string> = {
   // Python
@@ -361,7 +407,21 @@ type Msg = { role:'user'|'assistant'; content:string };
 // ── CATALOG ───────────────────────────────────────────────────────
 function Catalog({ onSelect }: { onSelect:(c:any)=>void }) {
   const [hov, setHov] = useState<string|null>(null);
+  const { student } = useInstStudentStore();
+  const studentId = student?.id?.toString() || student?.careerId || 'guest';
   const totalLessons = COURSES.reduce((a,c) => a + c.modules.reduce((b,m) => b + m.lessons.length, 0), 0);
+
+  // Load progress for all courses
+  const courseProgress = COURSES.reduce((acc, c) => {
+    const saved = loadProgress(studentId, c.id);
+    const totalL = c.modules.reduce((a,m) => a + m.lessons.length, 0);
+    const done = saved?.completed?.length || 0;
+    acc[c.id] = { done, total: totalL, pct: totalL > 0 ? Math.round((done/totalL)*100) : 0, started: done > 0, cert: saved?.claimedCert || false };
+    return acc;
+  }, {} as Record<string,{done:number,total:number,pct:number,started:boolean,cert:boolean}>);
+
+  const enrolledCount = Object.values(courseProgress).filter(p => p.started).length;
+  const completedCount = Object.values(courseProgress).filter(p => p.pct === 100).length;
   return (
     <div style={{ minHeight:'100vh', background:'#080b12', padding:'40px 32px', fontFamily:'system-ui,sans-serif' }}>
       <style>{`
@@ -392,6 +452,22 @@ function Catalog({ onSelect }: { onSelect:(c:any)=>void }) {
             ))}
           </div>
           <div style={{ marginTop:'16px', color:'#334155', fontSize:'13px' }}>{COURSES.length} Courses · {totalLessons}+ Lessons</div>
+          {enrolledCount > 0 && (
+            <div style={{ display:'flex', justifyContent:'center', gap:'20px', marginTop:'16px' }}>
+              <div style={{ padding:'10px 20px', borderRadius:'12px', background:'rgba(99,102,241,0.1)', border:'1px solid rgba(99,102,241,0.2)' }}>
+                <p style={{ color:'#818cf8', fontWeight:800, fontSize:'22px', margin:0 }}>{enrolledCount}</p>
+                <p style={{ color:'#475569', fontSize:'11px', margin:0 }}>Courses Started</p>
+              </div>
+              <div style={{ padding:'10px 20px', borderRadius:'12px', background:'rgba(16,185,129,0.1)', border:'1px solid rgba(16,185,129,0.2)' }}>
+                <p style={{ color:'#34d399', fontWeight:800, fontSize:'22px', margin:0 }}>{completedCount}</p>
+                <p style={{ color:'#475569', fontSize:'11px', margin:0 }}>Completed</p>
+              </div>
+              <div style={{ padding:'10px 20px', borderRadius:'12px', background:'rgba(245,158,11,0.1)', border:'1px solid rgba(245,158,11,0.2)' }}>
+                <p style={{ color:'#f59e0b', fontWeight:800, fontSize:'22px', margin:0 }}>{Object.values(courseProgress).filter(p=>p.cert).length}</p>
+                <p style={{ color:'#475569', fontSize:'11px', margin:0 }}>Certificates</p>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Grid */}
@@ -420,9 +496,30 @@ function Catalog({ onSelect }: { onSelect:(c:any)=>void }) {
                 ))}
                 {c.modules.length>3 && <div style={{ fontSize:'11px', color:'#1e293b', paddingLeft:'21px' }}>+{c.modules.length-3} more...</div>}
               </div>
+              {/* Progress bar if started */}
+              {courseProgress[c.id]?.started && (
+                <div style={{ marginBottom:'14px' }}>
+                  <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'4px' }}>
+                    <span style={{ fontSize:'10px', color:'#64748b' }}>Progress</span>
+                    <span style={{ fontSize:'10px', fontWeight:700, color:c.accent }}>{courseProgress[c.id].pct}%</span>
+                  </div>
+                  <div style={{ background:'rgba(255,255,255,0.06)', borderRadius:'3px', height:'4px', overflow:'hidden' }}>
+                    <div style={{ width:`${courseProgress[c.id].pct}%`, height:'100%', background:c.accent, transition:'width 0.5s' }} />
+                  </div>
+                  <div style={{ fontSize:'10px', color:'#334155', marginTop:'3px' }}>{courseProgress[c.id].done}/{courseProgress[c.id].total} lessons</div>
+                </div>
+              )}
               <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                <div style={{ display:'flex', gap:'3px' }}>{[...Array(5)].map((_,k)=><Star key={k} size={11} fill={c.accent} style={{ color:c.accent }} />)}</div>
-                <div style={{ display:'flex', alignItems:'center', gap:'5px', fontSize:'12px', fontWeight:700, color:c.accent }}>Start Learning <ChevronRight size={13} /></div>
+                <div style={{ display:'flex', gap:'3px' }}>
+                  {courseProgress[c.id]?.cert
+                    ? <span style={{ fontSize:'12px', fontWeight:700, color:'#f59e0b' }}>🏆 Certified!</span>
+                    : courseProgress[c.id]?.pct === 100
+                    ? <span style={{ fontSize:'12px', fontWeight:700, color:'#34d399' }}>✅ Complete</span>
+                    : [...Array(5)].map((_,k)=><Star key={k} size={11} fill={c.accent} style={{ color:c.accent }} />)}
+                </div>
+                <div style={{ display:'flex', alignItems:'center', gap:'5px', fontSize:'12px', fontWeight:700, color:c.accent }}>
+                  {courseProgress[c.id]?.started ? 'Continue' : 'Start'} <ChevronRight size={13} />
+                </div>
               </div>
             </div>
           ))}
@@ -438,12 +535,20 @@ function LessonPage({ course, onBack }: { course:any; onBack:()=>void }) {
   const [activeLesson, setActiveLesson] = useState(0);
   const [expanded, setExpanded] = useState<number[]>([0]);
   const [tab, setTab] = useState<'video'|'teacher'|'code'|'backward'|'forward'|'quiz'|'notes'>('video');
-  const [completed, setCompleted] = useState<Set<string>>(new Set());
-  const [xp, setXp] = useState(0);
-  const [showXpGain, setShowXpGain] = useState<string|null>(null);
-  const [claimedCerts, setClaimedCerts] = useState<Set<string>>(new Set());
-  const [showCertModal, setShowCertModal] = useState<string|null>(null);
   const { student } = useInstStudentStore();
+  const studentId = student?.id?.toString() || student?.careerId || 'guest';
+
+  // Load from localStorage
+  const savedProgress = loadProgress(studentId, course.id);
+  const [completed, setCompleted] = useState<Set<string>>(
+    new Set(savedProgress?.completed || [])
+  );
+  const [xp, setXp] = useState(savedProgress?.xp || 0);
+  const [showXpGain, setShowXpGain] = useState<string|null>(null);
+  const [claimedCerts, setClaimedCerts] = useState<Set<string>>(
+    savedProgress?.claimedCert ? new Set([course.id]) : new Set()
+  );
+  const [showCertModal, setShowCertModal] = useState<string|null>(null);
 
   // Content
   const [teacherText, setTeacherText] = useState('');
@@ -642,9 +747,19 @@ function LessonPage({ course, onBack }: { course:any; onBack:()=>void }) {
     });
     // XP gain
     const gain = quizScore > 0 ? 20 : 10;
-    setXp(x => x + gain);
+    const newXp = xp + gain;
+    setXp(newXp);
     setShowXpGain(`+${gain} XP`);
     setTimeout(() => setShowXpGain(null), 2000);
+    // Save to localStorage
+    const newCompleted = [...completed, key];
+    saveProgress(studentId, course.id, {
+      completed: newCompleted,
+      xp: newXp,
+      claimedCert: claimedCerts.has(course.id),
+      enrolledAt: savedProgress?.enrolledAt || new Date().toISOString(),
+      lastActive: new Date().toISOString(),
+    });
 
     const mod = course.modules[activeMod];
     if (activeLesson < mod.lessons.length-1) selectLesson(activeMod, activeLesson+1);
@@ -769,6 +884,13 @@ function LessonPage({ course, onBack }: { course:any; onBack:()=>void }) {
                     new Date().toLocaleDateString('en-IN')
                   );
                   setClaimedCerts(prev => new Set([...prev, course.id]));
+                  saveProgress(studentId, course.id, {
+                    completed: [...completed],
+                    xp,
+                    claimedCert: true,
+                    enrolledAt: savedProgress?.enrolledAt || new Date().toISOString(),
+                    lastActive: new Date().toISOString(),
+                  });
                   setShowCertModal(null);
                 }}
                 style={{ width:'100%', padding:'14px', borderRadius:'12px', border:'none', background:'linear-gradient(135deg,#f59e0b,#f97316)', color:'#fff', fontSize:'15px', fontWeight:800, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:'8px', marginBottom:'10px' }}>

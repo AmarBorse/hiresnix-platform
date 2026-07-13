@@ -4,6 +4,7 @@ import { Users, Layers, BookOpen, Award, ChevronRight, CheckCircle, X, ArrowLeft
 import { institutionApi } from '../../api/institution';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import { AcademyAdminView } from './AcademyAdminView';
 import { PORTAL_COLORS } from '../../components/layout/PortalTheme';
 
 const C = PORTAL_COLORS.institution;
@@ -180,6 +181,9 @@ export function InstitutionDashboard() {
           )}
         </div>
       </div>
+
+      {/* Academy Progress Section */}
+      <AcademyAdminView />
 
       {/* Completed Batches */}
       {(stats?.completedBatches || []).length > 0 && (
