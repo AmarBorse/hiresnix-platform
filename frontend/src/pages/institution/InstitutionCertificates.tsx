@@ -23,8 +23,18 @@ function IssueCertModal({ onClose, onSaved }: { onClose: () => void; onSaved: ()
   const [courseId, setCourseId]   = useState('');
   const [loading, setLoading]     = useState(false);
   const [dataLoading, setDataLoading] = useState(true);
+  const [batchIssueModal, setBatchIssueModal] = useState(false);
+  const [batches, setBatches] = useState<any[]>([]);
+  const [batchSelected, setBatchSelected] = useState('');
+  const [batchCertType, setBatchCertType] = useState('Course Completion');
+  const [batchIssuing, setBatchIssuing] = useState(false);
+  const [batchResult, setBatchResult] = useState<any>(null);
 
   const [issuedStudentIds, setIssuedStudentIds] = useState<Set<number>>(new Set());
+
+  useEffect(() => {
+    institutionApi.getBatches().then(r => setBatches(r.data || [])).catch(() => {});
+  }, []);
 
   useEffect(() => {
     Promise.all([

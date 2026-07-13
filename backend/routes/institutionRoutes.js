@@ -8,6 +8,8 @@ const { Institution } = require('../models');
 const ctrl = require('../controllers/institutionController');
 
 const r = express.Router();
+const multer = require('multer');
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
 
 const attachInstitution = asyncHandler(async (req, res, next) => {
   const inst = await Institution.findOne({ where: { userId: req.user.id } });

@@ -11,6 +11,7 @@ const {
 } = require('../models');
 const QRCode      = require('qrcode');
 const PDFDocument = require('pdfkit');
+const XLSX = require('xlsx');
 const path = require('path');
 const fs_cert = require('fs');
 
@@ -665,6 +666,137 @@ const getDashboardStats = asyncHandler(async (req, res) => {
   const completedBatches = batchesWithCount.filter(b => b.status === 'Completed');
   const recentBatches = batchesWithCount.filter(b => b.status !== 'Completed').slice(0, 5);
   res.json({ success: true, data: { totalStudents, totalBatches, totalCourses, totalCertificates, recentStudents, recentBatches, completedBatches } });
+});
+
+// ── Bulk Import Students from CSV/Excel ──────────────────────────
+const bulkImportStudents = asyncHandler(async (req, res) => {
+  const institutionId = getInstitutionId(req);
+  if (!req.file) { res.status(400); throw new Error('No file uploaded'); }
+
+  // Parse file
+  const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+  const sheet = workbook.Sheets[workbook.SheetNames[0]];
+  const rows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+
+  if (rows.length === 0) { res.status(400); throw new Error('File is empty'); }
+
+  const results = { created: [], skipped: [], errors: [] };
+
+  for (const row of rows) {
+    const name  = (row['Name'] || row['name'] || row['Student Name'] || '').toString().trim();
+    const email = (row['Email'] || row['email'] || '').toString().trim().toLowerCase();
+    const dept  = (row['Department'] || row['department'] || row['Branch'] || '').toString().trim();
+    const roll  = (row['Roll No'] || row['rollNumber'] || row['Roll Number'] || '').toString().trim();
+    const mobile= (row['Mobile'] || row['mobile'] || row['Phone'] || '').toString().trim();
+    const year  = (row['Year'] || row['year'] || '').toString().trim();
+
+    if (!name || !email) {
+      results.errors.push({ row: name || email || 'Unknown', reason: 'Name and email required' });
+      continue;
+    }
+
+    try {
+      const exists = await InstitutionStudent.findOne({ where: { institutionId, email } });
+      if (exists) {
+        results.skipped.push({ name, email, reason: 'Already exists', careerId: exists.careerId });
+        continue;
+      }
+
+      const careerId = await generateCareerId();
+      const pwd = defaultPassword(careerId);
+
+      const student = await InstitutionStudent.create({
+        institutionId, careerId, password: pwd,
+        name, email, mobile, department: dept, rollNumber: roll, year,
+        skills: [],
+      });
+
+      results.created.push({ name, email, careerId, defaultPassword: pwd, department: dept });
+    } catch (err) {
+      results.errors.push({ row: name, reason: err.message });
+    }
+  }
+
+  res.json({
+    success: true,
+    summary: {
+      total: rows.length,
+      created: results.created.length,
+      skipped: results.skipped.length,
+      errors: results.errors.length,
+    },
+    data: results,
+  });
+});
+
+// ── Issue Certificates by Batch ───────────────────────────────────
+const issueCertificatesByBatch = asyncHandler(async (req, res) => {
+  const institutionId = getInstitutionId(req);
+  const { batchId, type, courseId } = req.body;
+
+  if (!batchId || !type) { res.status(400); throw new Error('batchId and type required'); }
+
+  const inst = await Institution.findOne({ where: { userId: req.user.id } });
+  const batch = await Batch.findOne({
+    where: { id: batchId, institutionId },
+    include: [{ model: Course, as: 'course' }],
+  });
+  if (!batch) { res.status(404); throw new Error('Batch not found'); }
+
+  // Get all students in batch
+  const batchStudents = await BatchStudent.findAll({
+    where: { batchId: batch.id },
+    include: [{ model: InstitutionStudent, as: 'student' }],
+  });
+
+  if (batchStudents.length === 0) {
+    return res.json({ success: true, summary: { total: 0, issued: 0, skipped: 0 }, data: [] });
+  }
+
+  // Resolve course
+  let resolvedCourseId = courseId || batch.courseId || null;
+  let courseName = null;
+  if (resolvedCourseId) {
+    const course = await Course.findOne({ where: { id: resolvedCourseId, institutionId } });
+    if (course) courseName = course.name;
+  } else if (batch.course) {
+    resolvedCourseId = batch.course.id;
+    courseName = batch.course.name;
+  }
+
+  const results = [];
+  let issued = 0, skipped = 0;
+
+  for (const bs of batchStudents) {
+    const student = bs.student;
+    if (!student) continue;
+
+    // Check if already issued
+    const already = await InstitutionCertificate.findOne({
+      where: { institutionId, studentId: student.id, type, courseId: resolvedCourseId || null },
+    });
+
+    if (already) {
+      skipped++;
+      results.push({ name: student.name, careerId: student.careerId, status: 'skipped', reason: 'Already issued' });
+      continue;
+    }
+
+    await InstitutionCertificate.create({
+      institutionId, studentId: student.id,
+      courseId: resolvedCourseId || null, type,
+      studentName: student.name, courseName,
+      institutionName: inst.institutionName,
+    });
+    issued++;
+    results.push({ name: student.name, careerId: student.careerId, status: 'issued' });
+  }
+
+  res.json({
+    success: true,
+    summary: { total: batchStudents.length, issued, skipped },
+    data: results,
+  });
 });
 
 module.exports = {
