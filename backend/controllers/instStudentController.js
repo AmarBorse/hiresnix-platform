@@ -177,4 +177,83 @@ const changePassword = asyncHandler(async (req, res) => {
   res.json({ success: true, message: 'Password updated successfully' });
 });
 
+// ── Academy Progress ─────────────────────────────────────────────
+const saveAcademyProgress = asyncHandler(async (req, res) => {
+  const student = req.student;
+  const { courseId, completed, xp, claimedCert } = req.body;
+  if (!courseId) { res.status(400); throw new Error('courseId required'); }
+
+  const { sequelize } = require('../models');
+  await sequelize.query(`
+    INSERT INTO inst_academy_progress (student_id, career_id, course_id, completed, xp, claimed_cert, last_active)
+    VALUES (:studentId, :careerId, :courseId, :completed::jsonb, :xp, :claimedCert, NOW())
+    ON CONFLICT (student_id, course_id)
+    DO UPDATE SET
+      completed = :completed::jsonb,
+      xp = :xp,
+      claimed_cert = :claimedCert,
+      last_active = NOW()
+  `, {
+    replacements: {
+      studentId: student.id,
+      careerId: student.careerId,
+      courseId,
+      completed: JSON.stringify(completed || []),
+      xp: xp || 0,
+      claimedCert: claimedCert || false,
+    },
+    type: sequelize.QueryTypes.INSERT,
+  });
+
+  res.json({ success: true, message: 'Progress saved' });
+});
+
+const getAcademyProgress = asyncHandler(async (req, res) => {
+  const student = req.student;
+  const { sequelize } = require('../models');
+  const [rows] = await sequelize.query(
+    `SELECT * FROM inst_academy_progress WHERE student_id = :studentId`,
+    { replacements: { studentId: student.id }, type: sequelize.QueryTypes.SELECT }
+  );
+  res.json({ success: true, data: rows || [] });
+});
+
+// Admin: get all students academy progress
+const getAllAcademyProgress = asyncHandler(async (req, res) => {
+  const institutionId = req.institution?.id;
+  const { sequelize } = require('../models');
+
+  // Get all students of this institution with their academy progress
+  const rows = await sequelize.query(`
+    SELECT
+      ist.id as student_id,
+      ist."careerId",
+      ist.name,
+      ist.email,
+      ist.department,
+      COALESCE(
+        json_agg(
+          json_build_object(
+            'courseId', ap.course_id,
+            'completed', ap.completed,
+            'xp', ap.xp,
+            'claimedCert', ap.claimed_cert,
+            'lastActive', ap.last_active
+          )
+        ) FILTER (WHERE ap.course_id IS NOT NULL),
+        '[]'::json
+      ) as academy
+    FROM institution_students ist
+    LEFT JOIN inst_academy_progress ap ON ap.student_id = ist.id
+    WHERE ist."institutionId" = :institutionId
+    GROUP BY ist.id, ist."careerId", ist.name, ist.email, ist.department
+    ORDER BY ist.name
+  `, {
+    replacements: { institutionId },
+    type: sequelize.QueryTypes.SELECT,
+  });
+
+  res.json({ success: true, data: rows || [] });
+});
+
 module.exports = { login, getMe, getDashboard, getCertificates, changePassword, protectInstStudent };

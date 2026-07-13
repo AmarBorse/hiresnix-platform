@@ -76,6 +76,9 @@ export const instStudentApi = {
   getMe:           () => instClient.get('/inst-student/me').then(r => r.data),
   getDashboard:    () => instClient.get('/inst-student/dashboard').then(r => r.data),
   getCertificates: () => instClient.get('/inst-student/certificates').then(r => r.data),
+  saveAcademyProgress: (data: { courseId: string; completed: string[]; xp: number; claimedCert: boolean }) =>
+    instClient.post('/inst-student/academy/progress', data).then(r => r.data),
+  getAcademyProgress: () => instClient.get('/inst-student/academy/progress').then(r => r.data),
   changePassword:  (currentPassword: string, newPassword: string) =>
                      instClient.put('/inst-student/change-password', { currentPassword, newPassword }).then(r => r.data),
   downloadCertPdf: (certId: string) => `${apiBaseUrl}/institution/certificates/${certId}/download-pdf`,

@@ -538,8 +538,28 @@ function LessonPage({ course, onBack }: { course:any; onBack:()=>void }) {
   const { student } = useInstStudentStore();
   const studentId = student?.id?.toString() || student?.careerId || 'guest';
 
-  // Load from localStorage
+  // Load from localStorage (instant) + sync from backend
   const savedProgress = loadProgress(studentId, course.id);
+
+  // Sync from backend on mount
+  useEffect(() => {
+    instStudentApi.getAcademyProgress().then(r => {
+      const backendData = (r.data || []).find((p: any) => p.course_id === course.id);
+      if (backendData) {
+        const completed = backendData.completed || [];
+        const xp = backendData.xp || 0;
+        setCompleted(new Set(completed));
+        setXp(xp);
+        if (backendData.claimed_cert) setClaimedCerts(new Set([course.id]));
+        // Also update localStorage
+        saveProgress(studentId, course.id, {
+          completed, xp, claimedCert: backendData.claimed_cert || false,
+          enrolledAt: backendData.enrolled_at || new Date().toISOString(),
+          lastActive: new Date().toISOString(),
+        });
+      }
+    }).catch(() => {});
+  }, [course.id]);
   const [completed, setCompleted] = useState<Set<string>>(
     new Set(savedProgress?.completed || [])
   );
@@ -751,7 +771,7 @@ function LessonPage({ course, onBack }: { course:any; onBack:()=>void }) {
     setXp(newXp);
     setShowXpGain(`+${gain} XP`);
     setTimeout(() => setShowXpGain(null), 2000);
-    // Save to localStorage
+    // Save to localStorage + backend
     const newCompleted = [...completed, key];
     saveProgress(studentId, course.id, {
       completed: newCompleted,
@@ -760,6 +780,13 @@ function LessonPage({ course, onBack }: { course:any; onBack:()=>void }) {
       enrolledAt: savedProgress?.enrolledAt || new Date().toISOString(),
       lastActive: new Date().toISOString(),
     });
+    // Sync to backend (fire and forget)
+    instStudentApi.saveAcademyProgress({
+      courseId: course.id,
+      completed: newCompleted,
+      xp: newXp,
+      claimedCert: claimedCerts.has(course.id),
+    }).catch(() => {});
 
     const mod = course.modules[activeMod];
     if (activeLesson < mod.lessons.length-1) selectLesson(activeMod, activeLesson+1);
@@ -891,6 +918,12 @@ function LessonPage({ course, onBack }: { course:any; onBack:()=>void }) {
                     enrolledAt: savedProgress?.enrolledAt || new Date().toISOString(),
                     lastActive: new Date().toISOString(),
                   });
+                  instStudentApi.saveAcademyProgress({
+                    courseId: course.id,
+                    completed: [...completed],
+                    xp,
+                    claimedCert: true,
+                  }).catch(() => {});
                   setShowCertModal(null);
                 }}
                 style={{ width:'100%', padding:'14px', borderRadius:'12px', border:'none', background:'linear-gradient(135deg,#f59e0b,#f97316)', color:'#fff', fontSize:'15px', fontWeight:800, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:'8px', marginBottom:'10px' }}>
