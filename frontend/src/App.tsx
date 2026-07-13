@@ -165,8 +165,6 @@ export default function App() {
             <Route path="mock-interview" element={<StudentMockInterview />} />
             <Route path="certificates"   element={<StudentCertificates />} />
             <Route path="profile"        element={<StudentProfile />} />
-            {/* AI Academy */}
-            <Route path="academy" element={<AcademyPage />} />
           </Route>
 
           {/* Company */}
