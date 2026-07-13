@@ -12,6 +12,26 @@ const {
 const QRCode      = require('qrcode');
 const PDFDocument = require('pdfkit');
 const path = require('path');
+const fs_cert = require('fs');
+
+const getInstSigPath = (filename) => path.join(__dirname, '..', 'signatures', filename);
+
+function signatureLine(doc, name, title, x, y, imagePath = null, sizeMultiplier = 1) {
+  if (imagePath) {
+    try {
+      if (fs_cert.existsSync(imagePath)) {
+        const boxW = 100 * sizeMultiplier;
+        const boxH = 40 * sizeMultiplier;
+        const xOffset = (160 - boxW) / 2;
+        const yOffset = boxH - 12;
+        doc.image(imagePath, x + xOffset, y - yOffset, { fit: [boxW, boxH], align: 'center' });
+      }
+    } catch(err) { console.error('Sig error:', err.message); }
+  }
+  doc.moveTo(x, y).lineTo(x + 160, y).stroke('#334155');
+  doc.fillColor('#1e293b').fontSize(10).font('Helvetica-Bold').text(name, x, y+6, { width: 160, align: 'center' });
+  doc.fillColor('#64748b').fontSize(9).font('Helvetica').text(title, x, y+20, { width: 160, align: 'center' });
+}
 
 // ── Helpers ──────────────────────────────────────────────────────
 
