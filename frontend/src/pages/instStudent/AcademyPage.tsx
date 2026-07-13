@@ -12,8 +12,10 @@ import {
 import { instStudentApi } from '../../api/instStudent';
 import { useInstStudentStore } from '../../store/useInstStudentStore';
 
+const GROQ = (import.meta as any).env.VITE_GROQ_API_KEY || '';
 const GEMINI_KEY = (import.meta as any).env.VITE_GEMINI_API_KEY || '';
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`;
+// Always use Groq (Gemini quota exhausted)
+const USE_GEMINI = false;
 
 // ── Progress Storage (localStorage) ──────────────────────────────
 function getStorageKey(studentId: string, courseId: string) {
@@ -154,41 +156,77 @@ const YT: Record<string, string> = {
 
 function getYT(lesson: string) { return YT[lesson] || 'dQw4w9WgXcQ'; }
 
-// ── Gemini API ────────────────────────────────────────────────────
-async function gemini(prompt: string): Promise<string> {
-  try {
-    const r = await fetch(GEMINI_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.7, maxOutputTokens: 2048 },
-        safetySettings: [
-          { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
-          { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
-        ],
-      }),
-    });
-    const d = await r.json();
-    if (d.error) throw new Error(d.error.message);
-    return d?.candidates?.[0]?.content?.parts?.[0]?.text || 'No response';
-  } catch (e: any) { return `Error: ${e.message}`; }
+// ── AI API (Gemini if valid key, else Groq) ──────────────────────
+async function callGemini(prompt: string): Promise<string> {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`;
+  const r = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { temperature: 0.7, maxOutputTokens: 2048 },
+    }),
+  });
+  const d = await r.json();
+  if (d.error) throw new Error(d.error.message);
+  return d?.candidates?.[0]?.content?.parts?.[0]?.text || 'No response';
 }
 
-// Gemini streaming (simulate with chunked rendering)
-async function groqStream(prompt: string, onChunk: (t: string) => void) {
+async function callGroq(prompt: string): Promise<string> {
+  const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${GROQ}` },
+    body: JSON.stringify({ model: 'llama-3.1-8b-instant', messages: [{ role: 'user', content: prompt }], temperature: 0.7, max_tokens: 2000 }),
+  });
+  const d = await r.json();
+  return d?.choices?.[0]?.message?.content || 'No response';
+}
+
+async function groq(prompt: string): Promise<string> {
   try {
-    const r = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent?alt=sse&key=${GEMINI_KEY}`,
-      {
+    return USE_GEMINI ? await callGemini(prompt) : await callGroq(prompt);
+  } catch { 
+    try { return await callGroq(prompt); } catch { return 'Error. Please try again.'; }
+  }
+}
+
+async function groqStream(prompt: string, onChunk: (t: string) => void) {
+  if (USE_GEMINI) {
+    // Gemini streaming
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent?alt=sse&key=${GEMINI_KEY}`;
+      const r = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.7, maxOutputTokens: 2048 },
-        }),
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.7, maxOutputTokens: 2048 } }),
+      });
+      const reader = r.body!.getReader();
+      const dec = new TextDecoder();
+      let full = '';
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        for (const line of dec.decode(value).split('\n')) {
+          if (!line.startsWith('data: ')) continue;
+          try {
+            const d = JSON.parse(line.slice(6));
+            const t = d?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+            if (t) { full += t; onChunk(full); }
+          } catch {}
+        }
       }
-    );
+      return full;
+    } catch {
+      // fallback to Groq streaming
+    }
+  }
+  // Groq streaming
+  try {
+    const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${GROQ}` },
+      body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{ role: 'user', content: prompt }], temperature: 0.7, max_tokens: 1500, stream: true }),
+    });
     const reader = r.body!.getReader();
     const dec = new TextDecoder();
     let full = '';
@@ -196,20 +234,13 @@ async function groqStream(prompt: string, onChunk: (t: string) => void) {
       const { done, value } = await reader.read();
       if (done) break;
       for (const line of dec.decode(value).split('\n')) {
-        if (!line.startsWith('data: ')) continue;
-        try {
-          const d = JSON.parse(line.slice(6));
-          const t = d?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-          if (t) { full += t; onChunk(full); }
-        } catch {}
+        if (!line.startsWith('data: ') || line.includes('[DONE]')) continue;
+        try { const d = JSON.parse(line.slice(6)); const t = d.choices?.[0]?.delta?.content||''; full += t; onChunk(full); } catch {}
       }
     }
     return full;
-  } catch { return 'Error connecting to Gemini.'; }
+  } catch { return 'Error connecting to AI.'; }
 }
-
-// Alias for backward compatibility
-const groq = gemini;
 
 // ── Piston code runner ────────────────────────────────────────────
 const LANG_CONFIG: Record<string,{lang:string,ver:string,ext:string,starter:string}> = {
