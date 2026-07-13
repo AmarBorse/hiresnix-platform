@@ -583,7 +583,7 @@ const downloadCertificatePDF = asyncHandler(async (req, res) => {
   const sig1X = W/2 - 270;
   const sig2X = W/2 + 110;
   const sigW  = 150;
-  const sigImgH = 40;
+  const sigImgH = 58;
 
   // Director signature
   try {

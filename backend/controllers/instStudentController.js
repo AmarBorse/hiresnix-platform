@@ -275,17 +275,17 @@ const downloadAcademyCertificate = asyncHandler(async (req, res) => {
   const sig1X = W/2 - 270;
   const sig2X = W/2 + 110;
   const sigW  = 150;
-  const sigImgH = 40;
+  const sigImgH = 58;
 
   const dirSigPath = path.join(__dirname, '..', 'signatures', 'Director.png');
   const ceoSigPath = path.join(__dirname, '..', 'signatures', 'ceo.png');
 
-  try { if (fs.existsSync(dirSigPath)) doc.image(dirSigPath, sig1X+20, sigY-sigImgH-2, { height: sigImgH, fit: [sigW-20, sigImgH] }); } catch(e) {}
+  try { if (fs.existsSync(dirSigPath)) doc.image(dirSigPath, sig1X+10, sigY-sigImgH-4, { height: sigImgH, fit: [sigW, sigImgH] }); } catch(e) {}
   doc.moveTo(sig1X, sigY+2).lineTo(sig1X+sigW, sigY+2).lineWidth(0.8).stroke('#94a3b8');
   doc.fillColor(DARK).fontSize(10).font('Helvetica-Bold').text('Mr.Jayesh Badgujar', sig1X, sigY+7, { width: sigW, align: 'center' });
   doc.fillColor('#64748b').fontSize(8).font('Helvetica').text('Program Director', sig1X, sigY+21, { width: sigW, align: 'center' });
 
-  try { if (fs.existsSync(ceoSigPath)) doc.image(ceoSigPath, sig2X+20, sigY-sigImgH-2, { height: sigImgH, fit: [sigW-20, sigImgH] }); } catch(e) {}
+  try { if (fs.existsSync(ceoSigPath)) doc.image(ceoSigPath, sig2X+10, sigY-sigImgH-4, { height: sigImgH, fit: [sigW, sigImgH] }); } catch(e) {}
   doc.moveTo(sig2X, sigY+2).lineTo(sig2X+sigW, sigY+2).lineWidth(0.8).stroke('#94a3b8');
   doc.fillColor(DARK).fontSize(10).font('Helvetica-Bold').text('Mr.A S Borse', sig2X, sigY+7, { width: sigW, align: 'center' });
   doc.fillColor('#64748b').fontSize(8).font('Helvetica').text('Founder & CEO, Hiresnix', sig2X, sigY+21, { width: sigW, align: 'center' });
