@@ -40,7 +40,7 @@ r.delete('/batches/:id',                       ...withAuth, ctrl.deleteBatch);
 r.get('/batches/:id/students',                 ...withAuth, ctrl.getBatchStudents);
 r.post('/batches/:id/assign-students',         ...withAuth, ctrl.assignStudentsToBatch);
 r.delete('/batches/:id/students/:studentId',   ...withAuth, ctrl.removeStudentFromBatch);
-r.post('/batches/:id/bulk-import',             ...withAuth, upload.single('file'), ctrl.bulkImportToBatch);
+r.post('/batches/:id/bulk-import',             ...withAuth, ctrl.bulkImportToBatch);
 r.get('/batches/:id/available-students',       ...withAuth, ctrl.getAvailableStudentsForBatch);
 
 r.get('/courses',                      ...withAuth, ctrl.getCourses);

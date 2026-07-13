@@ -1,10 +1,10 @@
 // src/pages/institution/InstitutionStudents.tsx
 import React, { useEffect, useState, useRef } from 'react';
+import * as XLSX from 'xlsx';
 import { Plus, Search, Pencil, Trash2, Upload, X, Eye, Download, ChevronLeft, ChevronRight, FileDown } from 'lucide-react';
 import { toast } from 'sonner';
 import { institutionApi } from '../../api/institution';
 import { InstitutionStudent } from '../../types';
-import * as XLSX from 'xlsx';
 import { StudentModal } from './StudentModal';
 
 export function InstitutionStudents() {
@@ -42,17 +42,21 @@ export function InstitutionStudents() {
         const ws = wb.Sheets[wb.SheetNames[0]];
         const rows: any[] = XLSX.utils.sheet_to_json(ws);
         const students = rows.map(r => ({
-          name: r['Name'] || r['name'] || '',
-          email: r['Email'] || r['email'] || '',
-          mobile: r['Mobile'] || r['mobile'] || '',
-          department: r['Department'] || r['department'] || '',
-          rollNumber: r['Roll Number'] || r['rollNumber'] || '',
-          year: r['Year'] || r['year'] || '',
-        }));
-        const res = await institutionApi.bulkImport(students);
-        toast.success(`Imported: ${res.data.created} students. Skipped: ${res.data.skipped}`);
+          name:       r['Name']       || r['name']       || '',
+          email:      r['Email']      || r['email']      || '',
+          mobile:     r['Mobile']     || r['mobile']     || '',
+          department: r['Department'] || r['department'] || r['Branch'] || '',
+          rollNumber: r['Roll No']    || r['rollNumber'] || r['Roll Number'] || '',
+          year:       r['Year']       || r['year']       || '',
+        })).filter(s => s.name && s.email);
+        if (students.length === 0) { toast.error('No valid rows found in file'); return; }
+        const res = await institutionApi.bulkImportStudents(students);
+        const { created, skipped, errors } = res.summary;
+        toast.success(`✅ Created: ${created} · Skipped: ${skipped} · Errors: ${errors}`);
         load();
-      } catch { toast.error('Import failed'); }
+      } catch (err: any) {
+        toast.error(err.response?.data?.message || 'Import failed');
+      }
     };
     reader.readAsBinaryString(file);
     e.target.value = '';

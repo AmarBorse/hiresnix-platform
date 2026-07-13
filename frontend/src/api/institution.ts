@@ -42,14 +42,8 @@ export const institutionApi = {
   verifyCertificate:    (certId: string) => client.get(`/institution/certificates/verify/${certId}`).then(r => r.data),
   getStudentCredentials: () => client.get('/institution/student-credentials').then(r => r.data),
   getAcademyProgress:    () => client.get('/institution/academy/progress').then(r => r.data),
-  bulkImportToBatch: (batchId: number, file: File) => {
-    const fd = new FormData(); fd.append('file', file);
-    return client.post(`/institution/batches/${batchId}/bulk-import`, fd, { headers: { 'Content-Type': 'multipart/form-data' } }).then(r => r.data);
-  },
-  bulkImportStudents:    (file: File) => {
-    const fd = new FormData(); fd.append('file', file);
-    return client.post('/institution/students/bulk-import', fd, { headers: { 'Content-Type': 'multipart/form-data' } }).then(r => r.data);
-  },
+  bulkImportToBatch: (batchId: number, students: any[]) => client.post(`/institution/batches/${batchId}/bulk-import`, { students }).then(r => r.data),
+  bulkImportStudents:    (students: any[]) => client.post('/institution/students/bulk-import', { students }).then(r => r.data),
   issueCertificatesByBatch: (data: { batchId: number; type: string; courseId?: number }) =>
     client.post('/institution/certificates/bulk-batch', data).then(r => r.data),
 };

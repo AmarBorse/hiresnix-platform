@@ -654,29 +654,24 @@ const getDashboardStats = asyncHandler(async (req, res) => {
 const bulkImportToBatch = asyncHandler(async (req, res) => {
   const institutionId = getInstitutionId(req);
   const { batchId } = req.params;
-  if (!req.file) { res.status(400); throw new Error('No file uploaded'); }
 
   const batch = await Batch.findOne({ where: { id: batchId, institutionId } });
   if (!batch) { res.status(404); throw new Error('Batch not found'); }
 
-  let XLSX;
-  try { XLSX = require('xlsx'); } catch(e) { res.status(500); throw new Error('xlsx not installed'); }
-
-  const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
-  const sheet = workbook.Sheets[workbook.SheetNames[0]];
-  const rows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
-
-  if (rows.length === 0) { res.status(400); throw new Error('File is empty'); }
+  const { students } = req.body;
+  if (!Array.isArray(students) || students.length === 0) {
+    res.status(400); throw new Error('No students provided');
+  }
 
   const results = { created: [], assigned: [], skipped: [], errors: [] };
 
-  for (const row of rows) {
-    const name   = (row['Name'] || row['name'] || row['Student Name'] || '').toString().trim();
-    const email  = (row['Email'] || row['email'] || '').toString().trim().toLowerCase();
-    const dept   = (row['Department'] || row['department'] || row['Branch'] || '').toString().trim();
-    const roll   = (row['Roll No'] || row['rollNumber'] || row['Roll Number'] || '').toString().trim();
-    const mobile = (row['Mobile'] || row['mobile'] || row['Phone'] || '').toString().trim();
-    const year   = (row['Year'] || row['year'] || '').toString().trim();
+  for (const s of students) {
+    const name   = (s.name   || '').toString().trim();
+    const email  = (s.email  || '').toString().trim().toLowerCase();
+    const dept   = (s.department || s.dept || '').toString().trim();
+    const roll   = (s.rollNumber || s.roll || '').toString().trim();
+    const mobile = (s.mobile || '').toString().trim();
+    const year   = (s.year   || '').toString().trim();
 
     if (!name || !email) { results.errors.push({ name: name||'?', reason: 'Name & email required' }); continue; }
 
@@ -711,7 +706,7 @@ const bulkImportToBatch = asyncHandler(async (req, res) => {
   res.json({
     success: true,
     summary: {
-      total: rows.length,
+      total: students.length,
       created: results.created.length,
       assigned: results.assigned.length,
       skipped: results.skipped.length,
@@ -724,63 +719,48 @@ const bulkImportToBatch = asyncHandler(async (req, res) => {
 
 // ── Bulk Import Students from CSV/Excel ──────────────────────────
 const bulkImportStudents = asyncHandler(async (req, res) => {
+  // Frontend parses CSV/Excel and sends JSON array
   const institutionId = getInstitutionId(req);
-  if (!req.file) { res.status(400); throw new Error('No file uploaded'); }
-
-  // Parse file (lazy require to avoid startup crash)
-  let XLSX;
-  try { XLSX = require('xlsx'); } catch(e) { res.status(500); throw new Error('xlsx package not installed on server'); }
-  const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
-  const sheet = workbook.Sheets[workbook.SheetNames[0]];
-  const rows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
-
-  if (rows.length === 0) { res.status(400); throw new Error('File is empty'); }
+  const { students } = req.body;
+  if (!Array.isArray(students) || students.length === 0) {
+    res.status(400); throw new Error('No students provided');
+  }
 
   const results = { created: [], skipped: [], errors: [] };
 
-  for (const row of rows) {
-    const name  = (row['Name'] || row['name'] || row['Student Name'] || '').toString().trim();
-    const email = (row['Email'] || row['email'] || '').toString().trim().toLowerCase();
-    const dept  = (row['Department'] || row['department'] || row['Branch'] || '').toString().trim();
-    const roll  = (row['Roll No'] || row['rollNumber'] || row['Roll Number'] || '').toString().trim();
-    const mobile= (row['Mobile'] || row['mobile'] || row['Phone'] || '').toString().trim();
-    const year  = (row['Year'] || row['year'] || '').toString().trim();
+  for (const s of students) {
+    const name  = (s.name  || '').toString().trim();
+    const email = (s.email || '').toString().trim().toLowerCase();
+    const dept  = (s.department || s.dept || '').toString().trim();
+    const roll  = (s.rollNumber || s.roll || '').toString().trim();
+    const mobile= (s.mobile || '').toString().trim();
+    const year  = (s.year  || '').toString().trim();
 
     if (!name || !email) {
       results.errors.push({ row: name || email || 'Unknown', reason: 'Name and email required' });
       continue;
     }
-
     try {
       const exists = await InstitutionStudent.findOne({ where: { institutionId, email } });
       if (exists) {
         results.skipped.push({ name, email, reason: 'Already exists', careerId: exists.careerId });
         continue;
       }
-
       const careerId = await generateCareerId();
       const pwd = defaultPassword(careerId);
-
-      const student = await InstitutionStudent.create({
+      await InstitutionStudent.create({
         institutionId, careerId, password: pwd,
-        name, email, mobile, department: dept, rollNumber: roll, year,
-        skills: [],
+        name, email, mobile, department: dept, rollNumber: roll, year, skills: [],
       });
-
-      results.created.push({ name, email, careerId, defaultPassword: pwd, department: dept });
-    } catch (err) {
+      results.created.push({ name, email, careerId, defaultPassword: pwd });
+    } catch(err) {
       results.errors.push({ row: name, reason: err.message });
     }
   }
 
   res.json({
     success: true,
-    summary: {
-      total: rows.length,
-      created: results.created.length,
-      skipped: results.skipped.length,
-      errors: results.errors.length,
-    },
+    summary: { total: students.length, created: results.created.length, skipped: results.skipped.length, errors: results.errors.length },
     data: results,
   });
 });

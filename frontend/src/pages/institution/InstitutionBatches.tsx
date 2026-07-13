@@ -1,5 +1,6 @@
 // src/pages/institution/InstitutionBatches.tsx
 import React, { useEffect, useState } from 'react';
+import * as XLSX from 'xlsx';
 import { Plus, Pencil, Trash2, Users, X, ChevronRight, ArrowLeft, CheckSquare, Square, Award, CheckCircle, Upload, Download, FileSpreadsheet, Sparkles, Star } from 'lucide-react';
 import { toast } from 'sonner';
 import { institutionApi } from '../../api/institution';
@@ -322,12 +323,30 @@ export function InstitutionBatches() {
     if (!batchImportFile || !viewBatch) return;
     setBatchImporting(true);
     try {
-      const result = await institutionApi.bulkImportToBatch(viewBatch.id, batchImportFile);
-      setBatchImportResult(result);
-      openBatch(viewBatch);
-    } catch(err: any) {
-      toast.error(err.response?.data?.message || 'Import failed');
-    } finally { setBatchImporting(false); }
+      const reader = new FileReader();
+      reader.onload = async (ev) => {
+        try {
+          const wb = XLSX.read(ev.target?.result, { type: 'binary' });
+          const ws = wb.Sheets[wb.SheetNames[0]];
+          const rows: any[] = XLSX.utils.sheet_to_json(ws);
+          const students = rows.map(r => ({
+            name:       r['Name']       || r['name']       || '',
+            email:      r['Email']      || r['email']      || '',
+            mobile:     r['Mobile']     || r['mobile']     || '',
+            department: r['Department'] || r['department'] || r['Branch'] || '',
+            rollNumber: r['Roll No']    || r['rollNumber'] || r['Roll Number'] || '',
+            year:       r['Year']       || r['year']       || '',
+          })).filter((s: any) => s.name && s.email);
+          if (students.length === 0) { toast.error('No valid rows found'); setBatchImporting(false); return; }
+          const result = await institutionApi.bulkImportToBatch(viewBatch!.id, students);
+          setBatchImportResult(result);
+          openBatch(viewBatch!);
+        } catch(err: any) {
+          toast.error(err.response?.data?.message || 'Import failed');
+        } finally { setBatchImporting(false); }
+      };
+      reader.readAsBinaryString(batchImportFile);
+    } catch { setBatchImporting(false); }
   };
 
   const openAssign = async () => {
