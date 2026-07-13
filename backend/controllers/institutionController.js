@@ -858,7 +858,7 @@ const issueCertificatesByBatch = asyncHandler(async (req, res) => {
 module.exports = {
   getProfile, updateProfile,
   getStudents, createStudent, updateStudent, deleteStudent, getStudent,
-  bulkImportStudents, getStudentCredentials,
+  bulkImportStudents, bulkImportToBatch, getStudentCredentials,
   getBatches, createBatch, updateBatch, deleteBatch, getBatchStudents,
   assignStudentsToBatch, removeStudentFromBatch,
   getCourses, createCourse, updateCourse, deleteCourse, getCourseStudents, assignStudentsToCourse,
