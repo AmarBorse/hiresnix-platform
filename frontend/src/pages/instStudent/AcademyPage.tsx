@@ -1,639 +1,619 @@
 // src/pages/instStudent/AcademyPage.tsx
-// Hiresnix AI Academy — Premium Learning Experience
-// Free APIs: Groq (AI), Piston (code execution), Web Speech (voice)
+// Hiresnix AI Academy — Complete Edition
+// Free APIs: Groq (AI), Piston (code), Web Speech (voice), YouTube (video)
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
-  Play, ChevronRight, ChevronDown, CheckCircle, ArrowLeft,
+  ChevronRight, ChevronDown, CheckCircle, ArrowLeft,
   Send, Mic, MicOff, Volume2, VolumeX, Loader2, RefreshCw,
-  Code2, FileText, BookOpen, Zap, ArrowLeftRight, Terminal,
-  Sparkles, Globe, Trophy, Flame, Star
+  Code2, FileText, Zap, ArrowLeftRight, Terminal,
+  Sparkles, Trophy, Flame, Star, Play, BookOpen
 } from 'lucide-react';
 
-
-// ── YouTube Video Map (curated free lectures) ─────────────────────
-const YT_VIDEOS: Record<string, string> = {
-  // Python
-  "What is Python?": "Y8Tko2YC5hA",
-  "Installing Python": "YYXdXT2l-Gg",
-  "Your First Program": "oxXAb8tJnQk",
-  "Python Syntax Basics": "kqtD5dpn9C8",
-  "Variables in Python": "cQT33yu9pY8",
-  "Numbers & Strings": "k9TUPpljBo",
-  "Booleans": "9OK32jb_TdI",
-  "Type Conversion": "HGOBQPFzWKo",
-  "Arithmetic Operators": "v5MR5JyNx_0",
-  "Comparison Operators": "7I9bw5within",
-  "Logical Operators": "ysKnOlKZQUM",
-  "Assignment Operators": "v5MR5JyNx_0",
-  "If Statement": "DZwmZ8Usvnk",
-  "If-Else Statement": "AWek49wXGzI",
-  "Elif Chains": "AWek49wXGzI",
-  "Nested Conditions": "AWek49wXGzI",
-  "While Loop": "6iF8Xb7Z3wQ",
-  "For Loop": "OnDr4J5BBOM",
-  "Break & Continue": "yCZBnjF4_tU",
-  "Loop Patterns": "OnDr4J5BBOM",
-  "Defining Functions": "9Os0IGs9u7E",
-  "Parameters & Arguments": "9Os0IGs9u7E",
-  "Return Values": "9Os0IGs9u7E",
-  "Default Parameters": "9Os0IGs9u7E",
-  "Lists": "Eaz5e6M33zE",
-  "Tuples": "bdgRT40UUBQ",
-  "Dictionaries": "daefaLgNkw0",
-  "Sets": "sBvaPopl4nE",
-  "Classes & Objects": "JeznW0oahkk",
-  "Methods": "JeznW0oahkk",
-  "Inheritance": "Cn7AkDb4pIU",
-  "__init__ Method": "JeznW0oahkk",
-  // JavaScript
-  "What is JavaScript?": "W6NZfCO5SIk",
-  "Variables (let/const)": "edlFjlzxkSI",
-  "Data Types": "qnDkYs2CnOA",
-  "Template Literals": "DG4obitDvUA",
-  "if/else Statements": "IsG4Xd6LlsM",
-  "Switch Case": "fM5qnyasuntil",
-  "For Loops": "s9wW2PpI-mE",
-  "While Loops": "v1Q7pkcpShs",
-  "Function Declaration": "xUI5Tsl2JpY",
-  "Arrow Functions": "h33Srr5J9nY",
-  "Callbacks": "GWq3vXe0xaA",
-  "Closures": "vKJpLAX4Ipw",
-  "Array Methods": "R8rmfD9Y5-0",
-  "Object Basics": "_js_NLAlIqI",
-  "Destructuring": "NIq3qLaHCIs",
-  "Spread Operator": "iLx4ma8ZqvQ",
-  "Selecting Elements": "0ik6X4DJKCc",
-  "Event Listeners": "XF1_MlZ5l6M",
-  "DOM Manipulation": "y17RuWkWdn8",
-  "Forms": "In0nB0ABaUk",
-  "Promises": "DHvZLI3Mk4E",
-  "async/await": "vn3tm0quoqE",
-  "fetch API": "drK3bge5eBw",
-  "Error Handling": "cFTFtuEQ-10",
-  // DSA
-  "Array Basics": "A37-3lflh8I",
-  "Two Pointers Technique": "On03HWe2tZM",
-  "Sliding Window": "p-ss2JNDHLo",
-  "Prefix Sum": "7pJo_rM0z_s",
-  "String Operations": "Mj_Pyh77sXE",
-  "Pattern Matching": "GTJr8OvyEVQ",
-  "Palindromes": "XI_GB8a4byI",
-  "Anagrams": "aMxHs68D4_8",
-  "Singly Linked List": "oiW79L8VYXk",
-  "Doubly Linked List": "e9NG_a0P8GE",
-  "Reversal": "D7y_hoT_YZI",
-  "Cycle Detection": "gBTe7lFR3vc",
-  "Stack Basics": "I5lq6sCuABE",
-  "Queue Basics": "nqXaPZi99JI",
-  "Min Stack": "WxTTbZB-4ro",
-  "Applications": "I5lq6sCuABE",
-  "Binary Trees": "fAAZixBzIAI",
-  "BST": "cySVml6e_Fc",
-  "Tree Traversals": "WLvU5pL4d3w",
-  "Height & Depth": "fAAZixBzIAI",
-  "Bubble Sort": "xli-hn4wrWA",
-  "Merge Sort": "TzeBrDU-JaY",
-  "Quick Sort": "Hoixgm4-P4M",
-  "Binary Search": "P3YID7pr48E",
-  // SQL
-  "What is SQL?": "HXV3zeQKqGY",
-  "SELECT Queries": "HXV3zeQKqGY",
-  "WHERE Clause": "HXV3zeQKqGY",
-  "ORDER BY & LIMIT": "HXV3zeQKqGY",
-  "INNER JOIN": "9yeOJ0ZMUYw",
-  "LEFT & RIGHT JOIN": "9yeOJ0ZMUYw",
-  "FULL OUTER JOIN": "9yeOJ0ZMUYw",
-  "Self Joins": "9yeOJ0ZMUYw",
-  "COUNT/SUM/AVG": "7cjTqE4GwFE",
-  "GROUP BY": "7cjTqE4GwFE",
-  "HAVING Clause": "7cjTqE4GwFE",
-  "Subqueries": "7cjTqE4GwFE",
-  "Window Functions": "Ww71knvVu_k",
-  "CTEs": "K74_FNs6ox8",
-  "Indexes": "fsG1XaZEa78",
-  "Transactions": "P80Js_qClUE",
-  // Web Dev
-  "HTML Basics": "UB1O30fR-EE",
-  "Forms & Inputs": "fNcJuPIZ2BE",
-  "Semantic HTML": "kGW8Al_cga4",
-  "Tables": "dS3H62ssQRU",
-  "Selectors": "1PnVor36_40",
-  "Box Model": "rIO5326FgPE",
-  "Flexbox": "K74_FNs6ax8",
-  "CSS Grid": "EiNiSFIPIQE",
-  "What is React?": "SqcY0GlETPk",
-  "Components": "Ke90Tje7VS0",
-  "Props": "m7OWXtbiXX8",
-  "State & useState": "O6P86uwfdR0",
-  "useEffect": "0ZJgIjIuY7U",
-  "Context API": "5LrDIWkK_Bc",
-  "React Router": "Law7wfdg_ls",
-  "API Calls": "T3Px88x_PsI",
-};
-
-function getYTId(lesson: string): string {
-  return YT_VIDEOS[lesson] || 'dQw4w9WgXcQ';
-}
-
-// ── APIs ──────────────────────────────────────────────────────────
 const GROQ = (import.meta as any).env.VITE_GROQ_API_KEY || '';
 
-async function askGroq(messages: {role:string,content:string}[], system: string, stream = false) {
-  const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${GROQ}` },
-    body: JSON.stringify({
-      model: 'llama-3.3-70b-versatile',
-      messages: [{ role: 'system', content: system }, ...messages],
-      temperature: 0.7, max_tokens: 1200, stream,
-    }),
-  });
-  if (!stream) {
-    const d = await r.json();
-    return d?.choices?.[0]?.message?.content || 'Could not get response.';
-  }
-  return r;
+// ── YouTube Video Map ─────────────────────────────────────────────
+const YT: Record<string, string> = {
+  // Python
+  "What is Python?": "Y8Tko2YC5hA", "Setting Up Python": "YYXdXT2l-Gg",
+  "Your First Program": "oxXAb8tJnQk", "Variables & Data Types": "cQT33yu9pY8",
+  "Numbers & Strings": "k9TUPpljBo0", "Type Conversion": "HGOBQPFzWKo",
+  "Arithmetic Operators": "v5MR5JyNx_0", "Comparison Operators": "7I9bw5W9WIU",
+  "Logical Operators": "ysKnOlKZQUM", "If-Else Statements": "AWek49wXGzI",
+  "For Loops": "OnDr4J5BBOM", "While Loops": "6iF8Xb7Z3wQ",
+  "Break & Continue": "yCZBnjF4_tU", "Functions": "9Os0IGs9u7E",
+  "Parameters & Return": "9Os0IGs9u7E", "Lambda Functions": "25ovCm9jKfA",
+  "Lists": "Eaz5e6M33zE", "Tuples": "bdgRT40UUBQ",
+  "Dictionaries": "daefaLgNkw0", "Sets": "sBvaPopl4nE",
+  "List Comprehensions": "3dt4OGnU5sM", "String Methods": "zdMEn_hZ-KI",
+  "File Handling": "Uh2ebFW8OYM", "Exception Handling": "NIWwJbo-9_8",
+  "Classes & Objects": "JeznW0oahkk", "Inheritance": "Cn7AkDb4pIU",
+  "Encapsulation": "JeznW0oahkk", "Polymorphism": "JeznW0oahkk",
+  "Modules & Packages": "GxCXiSkm6no", "pip & Libraries": "U8OtBUFVEFo",
+  "Recursion": "ngCos3cnxi8", "Decorators": "r7Dtus7N4pI",
+  "Generators": "bD05uGo_sVI", "Regular Expressions": "nxjwB8up2gA",
+  "Build a Calculator": "4OX49nLNPEE", "Build a To-Do App": "DJGzR65BvqM",
+  "Build a Quiz Game": "zehwgTB0vV8", "Build a Web Scraper": "XVv6mJpIp8M",
+  "Final Python Project": "DLn3jOsNRVE",
+  // JavaScript
+  "What is JavaScript?": "W6NZfCO5SIk", "Variables (let/const/var)": "edlFjlzxkSI",
+  "JS Data Types": "qnDkYs2CnOA", "Template Literals": "DG4obitDvUA",
+  "JS Functions": "xUI5Tsl2JpY", "Arrow Functions": "h33Srr5J9nY",
+  "Arrays": "R8rmfD9Y5-0", "Objects": "_js_NLAlIqI",
+  "Destructuring": "NIq3qLaHCIs", "Spread & Rest": "iLx4ma8ZqvQ",
+  "DOM Manipulation": "y17RuWkWdn8", "Event Listeners": "XF1_MlZ5l6M",
+  "Fetch API": "drK3bge5eBw", "Promises": "DHvZLI3Mk4E",
+  "Async Await": "vn3tm0quoqE", "Error Handling": "cFTFtuEQ-10",
+  "ES6+ Features": "NCwa_xi0Uuc", "Local Storage": "AUOzvFzdIk4",
+  "Build a Todo App (JS)": "G0jO8kUrg-I", "Build a Weather App": "MIYQR-Ybrn4",
+  "Final JS Project": "3PHXvlpOkf4",
+  // Java
+  "What is Java?": "eIrMbAQSU34", "Java Setup & Hello World": "bm0OyhwFDuY",
+  "Java Variables": "EKzNKDhpbhQ", "Java Data Types": "EKzNKDhpbhQ",
+  "Java Operators": "Jb39YMrxbSQ", "Java If-Else": "HsDOeIiIVhQ",
+  "Java Loops": "efpFoHCKMN8", "Java Arrays": "xzjZy-dHHLw",
+  "Java Methods": "vvanI8NsuiQ", "Java OOP - Classes": "IUqKuGNasdM",
+  "Java Inheritance": "Zs342ePFvRI", "Java Polymorphism": "jhDUxynEQRI",
+  "Java Interfaces": "GhslBwrRVVE", "Java Exception Handling": "1XAfapkBQjk",
+  "Java Collections": "GdAon80-0GQ", "Java Generics": "XMvznsY02Mk",
+  "Java File I/O": "ScUJx4aToet", "Java Threads": "r_MbozD32NU",
+  "Java Streams": "Q93swyQbN80", "Java Lambda": "gpIUfj3KaOc",
+  "Build a Bank App": "Nk5YFa4MVNE", "Build a Student DB": "goFcQrFsivY",
+  "Final Java Project": "Nk5YFa4MVNE",
+  // C++
+  "What is C++?": "vLnPwxZdW4Y", "C++ Setup": "vLnPwxZdW4Y",
+  "C++ Variables": "Rub-JsjMhWY", "C++ Data Types": "Rub-JsjMhWY",
+  "C++ Operators": "E7F-xQlDiaw", "C++ If-Else": "ifElse7zCMw",
+  "C++ Loops": "c6N_gkqDsS8", "C++ Arrays": "zB9RI8_5ygM",
+  "C++ Functions": "-TkoO8Z07hI", "C++ Pointers": "DTssVzssPV0",
+  "C++ References": "IzoFn3dfsPA", "C++ OOP": "wN0x9eZLix4",
+  "C++ Inheritance": "X8nYM0wbdiM", "C++ Polymorphism": "oIr-ik3Bg3A",
+  "C++ STL": "LyGlTmaWEPs", "C++ File Handling": "EaHFhms1Shw",
+  "Build a Calculator (C++)": "BkBVnkl0NF4", "Final C++ Project": "BkBVnkl0NF4",
+  // DSA
+  "Arrays & Big O": "A37-3lflh8I", "Two Pointers": "On03HWe2tZM",
+  "Sliding Window": "p-ss2JNDHLo", "Prefix Sum": "7pJo_rM0z_s",
+  "Strings": "Mj_Pyh77sXE", "Linked List": "oiW79L8VYXk",
+  "Stack": "I5lq6sCuABE", "Queue": "nqXaPZi99JI",
+  "Binary Tree": "fAAZixBzIAI", "BST": "cySVml6e_Fc",
+  "Heap": "0wPlzMU-k00", "Graphs": "09_LlHjoEiY",
+  "Bubble Sort": "xli-hn4wrWA", "Merge Sort": "TzeBrDU-JaY",
+  "Quick Sort": "Hoixgm4-P4M", "Binary Search": "P3YID7pr48E",
+  "Dynamic Programming": "oBt53YbR9Kk", "Greedy Algorithms": "HzeK7g8cD0Y",
+  "Backtracking": "DKCbsiDBN3c",
+  // SQL
+  "What is SQL?": "HXV3zeQKqGY", "SELECT & FROM": "HXV3zeQKqGY",
+  "WHERE & AND/OR": "HXV3zeQKqGY", "ORDER BY & LIMIT": "HXV3zeQKqGY",
+  "INSERT UPDATE DELETE": "gbMSNAOHMV4", "JOINS": "9yeOJ0ZMUYw",
+  "GROUP BY & HAVING": "7cjTqE4GwFE", "Subqueries": "K1BKeugY5Xg",
+  "Window Functions": "Ww71knvVu_k", "Indexes": "fsG1XaZEa78",
+  "Views & CTEs": "K74_FNs6ox8", "Transactions": "P80Js_qClUE",
+  "Stored Procedures": "Sggdhd2PiNg", "SQL Project": "p3qvj9hO_Bo",
+  // Web Dev
+  "HTML Basics": "UB1O30fR-EE", "HTML Forms": "fNcJuPIZ2BE",
+  "Semantic HTML": "kGW8Al_cga4", "CSS Basics": "1PnVor36_40",
+  "Box Model": "rIO5326FgPE", "Flexbox": "JJSoEo8JSnc",
+  "CSS Grid": "EiNiSFIPIQE", "Responsive Design": "srvUrASNj0s",
+  "JavaScript for Web": "W6NZfCO5SIk", "DOM & Events": "y17RuWkWdn8",
+  "What is React?": "SqcY0GlETPk", "React Components": "Ke90Tje7VS0",
+  "React Props & State": "O6P86uwfdR0", "React Hooks": "cF2lQ_gZeA8",
+  "React Router": "Law7wfdg_ls", "API Integration": "T3Px88x_PsI",
+  "Node.js Basics": "TlB_eWDSMt4", "Express.js": "L72fhnn2tj0",
+  "MongoDB Basics": "ofme2o29wY8", "Build Full Stack App": "mrHNSanmqQ4",
+  "Deploy Your App": "l134cBALZGY",
+};
+
+function getYT(lesson: string) { return YT[lesson] || 'dQw4w9WgXcQ'; }
+
+// ── Groq API (streaming) ──────────────────────────────────────────
+async function groqStream(prompt: string, onChunk: (t: string) => void) {
+  try {
+    const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${GROQ}` },
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.7, max_tokens: 1500, stream: true,
+      }),
+    });
+    const reader = r.body!.getReader();
+    const dec = new TextDecoder();
+    let full = '';
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      for (const line of dec.decode(value).split('\n')) {
+        if (!line.startsWith('data: ') || line.includes('[DONE]')) continue;
+        try { const d = JSON.parse(line.slice(6)); const t = d.choices?.[0]?.delta?.content||''; full += t; onChunk(full); } catch {}
+      }
+    }
+    return full;
+  } catch { return 'Error connecting to AI. Please check your API key.'; }
 }
 
-async function runCode(language: string, code: string): Promise<{stdout:string,stderr:string}> {
-  const langMap: Record<string,{language:string,version:string}> = {
-    python: { language: 'python', version: '3.10.0' },
-    javascript: { language: 'javascript', version: '18.15.0' },
-    java: { language: 'java', version: '15.0.2' },
-    c: { language: 'c', version: '10.2.0' },
-    'c++': { language: 'c++', version: '10.2.0' },
-  };
-  const lang = langMap[language] || langMap.python;
+async function groq(prompt: string): Promise<string> {
+  try {
+    const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${GROQ}` },
+      body: JSON.stringify({ model: 'llama-3.1-8b-instant', messages: [{ role: 'user', content: prompt }], temperature: 0.7, max_tokens: 2000 }),
+    });
+    const d = await r.json();
+    return d?.choices?.[0]?.message?.content || 'No response';
+  } catch { return 'Error. Please try again.'; }
+}
+
+// ── Piston code runner ────────────────────────────────────────────
+const LANG_CONFIG: Record<string,{lang:string,ver:string,ext:string,starter:string}> = {
+  python:     { lang:'python',     ver:'3.10.0',  ext:'py',   starter:'# Write your Python code here\nprint("Hello World!")' },
+  javascript: { lang:'javascript', ver:'18.15.0', ext:'js',   starter:'// Write your JS code here\nconsole.log("Hello World!");' },
+  java:       { lang:'java',       ver:'15.0.2',  ext:'java', starter:'public class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello World!");\n    }\n}' },
+  'c++':      { lang:'c++',        ver:'10.2.0',  ext:'cpp',  starter:'#include<iostream>\nusing namespace std;\nint main(){\n    cout<<"Hello World!"<<endl;\n    return 0;\n}' },
+};
+
+async function runCode(language: string, code: string) {
+  const cfg = LANG_CONFIG[language] || LANG_CONFIG.python;
   try {
     const r = await fetch('https://emkc.org/api/v2/piston/execute', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ language: lang.language, version: lang.version, files: [{ content: code }] }),
+      body: JSON.stringify({
+        language: cfg.lang, version: cfg.ver,
+        files: [{ name: `main.${cfg.ext}`, content: code }],
+        stdin: '', args: [], run_timeout: 5000,
+      }),
     });
+    if (!r.ok) return { out: `HTTP Error: ${r.status}`, err: true };
     const d = await r.json();
-    return { stdout: d.run?.stdout || '', stderr: d.run?.stderr || '' };
-  } catch { return { stdout: '', stderr: 'Could not connect to code runner.' }; }
+    const stdout = d?.run?.stdout || '';
+    const stderr = d?.run?.stderr || d?.compile?.stderr || '';
+    return { out: stdout || stderr || '(no output)', err: !!stderr && !stdout };
+  } catch (e: any) {
+    return { out: `Network error: ${e.message}. Try again.`, err: true };
+  }
 }
 
-// ── Courses ───────────────────────────────────────────────────────
+// ── COURSES DATA ──────────────────────────────────────────────────
 const COURSES = [
   {
-    id: 'python', title: 'Python Programming', icon: '🐍',
-    accent: '#6366f1', bg: 'from-indigo-500/20 to-purple-500/10',
-    tag: 'Most Popular', tagColor: '#f59e0b',
-    modules: [
-      { title: 'Introduction to Python', lessons: ['What is Python?', 'Installing Python', 'Your First Program', 'Python Syntax Basics'] },
-      { title: 'Variables & Data Types', lessons: ['Variables in Python', 'Numbers & Strings', 'Booleans', 'Type Conversion'] },
-      { title: 'Operators', lessons: ['Arithmetic Operators', 'Comparison Operators', 'Logical Operators', 'Assignment Operators'] },
-      { title: 'Control Flow', lessons: ['If Statement', 'If-Else Statement', 'Elif Chains', 'Nested Conditions'] },
-      { title: 'Loops', lessons: ['While Loop', 'For Loop', 'Break & Continue', 'Loop Patterns'] },
-      { title: 'Functions', lessons: ['Defining Functions', 'Parameters & Arguments', 'Return Values', 'Default Parameters'] },
-      { title: 'Data Structures', lessons: ['Lists', 'Tuples', 'Dictionaries', 'Sets'] },
-      { title: 'OOP Basics', lessons: ['Classes & Objects', 'Methods', 'Inheritance', '__init__ Method'] },
+    id:'python', title:'Python Programming', icon:'🐍', accent:'#6366f1', codeLanguage:'python',
+    tag:'Most Popular', tagColor:'#f59e0b',
+    desc:'From absolute zero to building real projects',
+    modules:[
+      { title:'Getting Started', lessons:['What is Python?','Setting Up Python','Your First Program','Variables & Data Types','Type Conversion'] },
+      { title:'Operators & Control Flow', lessons:['Arithmetic Operators','Comparison Operators','Logical Operators','If-Else Statements','For Loops','While Loops','Break & Continue'] },
+      { title:'Functions', lessons:['Functions','Parameters & Return','Lambda Functions','Recursion','Decorators'] },
+      { title:'Data Structures', lessons:['Lists','Tuples','Dictionaries','Sets','List Comprehensions','String Methods'] },
+      { title:'File & Error Handling', lessons:['File Handling','Exception Handling','Modules & Packages','pip & Libraries'] },
+      { title:'Object-Oriented Python', lessons:['Classes & Objects','Inheritance','Encapsulation','Polymorphism','Generators'] },
+      { title:'Advanced Topics', lessons:['Regular Expressions'] },
+      { title:'Build Real Projects', lessons:['Build a Calculator','Build a To-Do App','Build a Quiz Game','Build a Web Scraper','Final Python Project'] },
     ],
-    codeLanguage: 'python',
   },
   {
-    id: 'js', title: 'JavaScript', icon: '⚡',
-    accent: '#f59e0b', bg: 'from-amber-500/20 to-orange-500/10',
-    tag: 'Web Dev', tagColor: '#10b981',
-    modules: [
-      { title: 'JS Basics', lessons: ['What is JavaScript?', 'Variables (let/const)', 'Data Types', 'Template Literals'] },
-      { title: 'Control Flow', lessons: ['if/else Statements', 'Switch Case', 'For Loops', 'While Loops'] },
-      { title: 'Functions', lessons: ['Function Declaration', 'Arrow Functions', 'Callbacks', 'Closures'] },
-      { title: 'Arrays & Objects', lessons: ['Array Methods', 'Object Basics', 'Destructuring', 'Spread Operator'] },
-      { title: 'DOM & Events', lessons: ['Selecting Elements', 'Event Listeners', 'DOM Manipulation', 'Forms'] },
-      { title: 'Async JS', lessons: ['Promises', 'async/await', 'fetch API', 'Error Handling'] },
+    id:'javascript', title:'JavaScript', icon:'⚡', accent:'#f59e0b', codeLanguage:'javascript',
+    tag:'Web Dev', tagColor:'#10b981',
+    desc:'Master JS from basics to modern ES6+ features',
+    modules:[
+      { title:'JS Fundamentals', lessons:['What is JavaScript?','Variables (let/const/var)','JS Data Types','Template Literals','JS Functions','Arrow Functions'] },
+      { title:'Data & Control', lessons:['Arrays','Objects','Destructuring','Spread & Rest','Error Handling'] },
+      { title:'Browser & DOM', lessons:['DOM Manipulation','Event Listeners','Local Storage'] },
+      { title:'Async JavaScript', lessons:['Fetch API','Promises','Async Await'] },
+      { title:'Modern JavaScript', lessons:['ES6+ Features'] },
+      { title:'Build Real Projects', lessons:['Build a Todo App (JS)','Build a Weather App','Final JS Project'] },
     ],
-    codeLanguage: 'javascript',
   },
   {
-    id: 'dsa', title: 'Data Structures & Algorithms', icon: '🧠',
-    accent: '#8b5cf6', bg: 'from-violet-500/20 to-pink-500/10',
-    tag: 'Interview Prep', tagColor: '#ec4899',
-    modules: [
-      { title: 'Arrays', lessons: ['Array Basics', 'Two Pointers Technique', 'Sliding Window', 'Prefix Sum'] },
-      { title: 'Strings', lessons: ['String Operations', 'Pattern Matching', 'Palindromes', 'Anagrams'] },
-      { title: 'Linked Lists', lessons: ['Singly Linked List', 'Doubly Linked List', 'Reversal', 'Cycle Detection'] },
-      { title: 'Stacks & Queues', lessons: ['Stack Basics', 'Queue Basics', 'Min Stack', 'Applications'] },
-      { title: 'Trees', lessons: ['Binary Trees', 'BST', 'Tree Traversals', 'Height & Depth'] },
-      { title: 'Sorting', lessons: ['Bubble Sort', 'Merge Sort', 'Quick Sort', 'Binary Search'] },
+    id:'java', title:'Java', icon:'☕', accent:'#ef4444', codeLanguage:'java',
+    tag:'Industry Standard', tagColor:'#6366f1',
+    desc:'Core Java to OOP and advanced concepts',
+    modules:[
+      { title:'Java Basics', lessons:['What is Java?','Java Setup & Hello World','Java Variables','Java Data Types','Java Operators'] },
+      { title:'Control Flow', lessons:['Java If-Else','Java Loops','Java Arrays','Java Methods'] },
+      { title:'Object-Oriented Java', lessons:['Java OOP - Classes','Java Inheritance','Java Polymorphism','Java Interfaces','Java Exception Handling'] },
+      { title:'Advanced Java', lessons:['Java Collections','Java Generics','Java File I/O','Java Threads','Java Streams','Java Lambda'] },
+      { title:'Build Real Projects', lessons:['Build a Bank App','Build a Student DB','Final Java Project'] },
     ],
-    codeLanguage: 'python',
   },
   {
-    id: 'sql', title: 'SQL & Databases', icon: '🗄️',
-    accent: '#10b981', bg: 'from-emerald-500/20 to-teal-500/10',
-    tag: 'Data Skills', tagColor: '#6366f1',
-    modules: [
-      { title: 'SQL Basics', lessons: ['What is SQL?', 'SELECT Queries', 'WHERE Clause', 'ORDER BY & LIMIT'] },
-      { title: 'Joins', lessons: ['INNER JOIN', 'LEFT & RIGHT JOIN', 'FULL OUTER JOIN', 'Self Joins'] },
-      { title: 'Aggregations', lessons: ['COUNT/SUM/AVG', 'GROUP BY', 'HAVING Clause', 'Subqueries'] },
-      { title: 'Advanced SQL', lessons: ['Window Functions', 'CTEs', 'Indexes', 'Transactions'] },
+    id:'cpp', title:'C++', icon:'⚙️', accent:'#06b6d4', codeLanguage:'c++',
+    tag:'Performance', tagColor:'#8b5cf6',
+    desc:'C++ from scratch to OOP and STL',
+    modules:[
+      { title:'C++ Basics', lessons:['What is C++?','C++ Setup','C++ Variables','C++ Data Types','C++ Operators'] },
+      { title:'Control Flow', lessons:['C++ If-Else','C++ Loops','C++ Arrays','C++ Functions'] },
+      { title:'Memory & Pointers', lessons:['C++ Pointers','C++ References'] },
+      { title:'OOP in C++', lessons:['C++ OOP','C++ Inheritance','C++ Polymorphism','C++ STL','C++ File Handling'] },
+      { title:'Build Real Projects', lessons:['Build a Calculator (C++)','Final C++ Project'] },
     ],
-    codeLanguage: 'python',
   },
   {
-    id: 'webdev', title: 'Web Development', icon: '🌐',
-    accent: '#ec4899', bg: 'from-pink-500/20 to-rose-500/10',
-    tag: 'Full Stack', tagColor: '#f59e0b',
-    modules: [
-      { title: 'HTML', lessons: ['HTML Basics', 'Forms & Inputs', 'Semantic HTML', 'Tables'] },
-      { title: 'CSS', lessons: ['Selectors', 'Box Model', 'Flexbox', 'CSS Grid'] },
-      { title: 'React Basics', lessons: ['What is React?', 'Components', 'Props', 'State & useState'] },
-      { title: 'React Advanced', lessons: ['useEffect', 'Context API', 'React Router', 'API Calls'] },
+    id:'dsa', title:'DSA', icon:'🧠', accent:'#8b5cf6', codeLanguage:'python',
+    tag:'Interview Prep', tagColor:'#ec4899',
+    desc:'Data Structures & Algorithms from basic to advanced',
+    modules:[
+      { title:'Array Techniques', lessons:['Arrays & Big O','Two Pointers','Sliding Window','Prefix Sum'] },
+      { title:'Strings & Linked Lists', lessons:['Strings','Linked List'] },
+      { title:'Stack, Queue & Trees', lessons:['Stack','Queue','Binary Tree','BST','Heap'] },
+      { title:'Graphs', lessons:['Graphs'] },
+      { title:'Sorting & Searching', lessons:['Bubble Sort','Merge Sort','Quick Sort','Binary Search'] },
+      { title:'Advanced Algorithms', lessons:['Dynamic Programming','Greedy Algorithms','Backtracking'] },
     ],
-    codeLanguage: 'javascript',
+  },
+  {
+    id:'sql', title:'SQL & Databases', icon:'🗄️', accent:'#10b981', codeLanguage:'python',
+    tag:'Data Skills', tagColor:'#6366f1',
+    desc:'SQL basics to advanced queries and real projects',
+    modules:[
+      { title:'SQL Basics', lessons:['What is SQL?','SELECT & FROM','WHERE & AND/OR','ORDER BY & LIMIT','INSERT UPDATE DELETE'] },
+      { title:'Joins & Aggregations', lessons:['JOINS','GROUP BY & HAVING','Subqueries'] },
+      { title:'Advanced SQL', lessons:['Window Functions','Indexes','Views & CTEs','Transactions','Stored Procedures'] },
+      { title:'Build Real Projects', lessons:['SQL Project'] },
+    ],
+  },
+  {
+    id:'webdev', title:'Full Stack Web Dev', icon:'🌐', accent:'#ec4899', codeLanguage:'javascript',
+    tag:'Full Stack', tagColor:'#f59e0b',
+    desc:'HTML to React to Node.js — full stack developer',
+    modules:[
+      { title:'HTML', lessons:['HTML Basics','HTML Forms','Semantic HTML'] },
+      { title:'CSS', lessons:['CSS Basics','Box Model','Flexbox','CSS Grid','Responsive Design'] },
+      { title:'JavaScript for Web', lessons:['JavaScript for Web','DOM & Events'] },
+      { title:'React.js', lessons:['What is React?','React Components','React Props & State','React Hooks','React Router','API Integration'] },
+      { title:'Backend - Node.js', lessons:['Node.js Basics','Express.js','MongoDB Basics'] },
+      { title:'Build & Deploy', lessons:['Build Full Stack App','Deploy Your App'] },
+    ],
   },
 ];
 
-type Msg = { role: 'user' | 'assistant'; content: string };
-type Lang = 'en-IN' | 'hi-IN' | 'mr-IN';
-
-const LANG_NAMES: Record<Lang,string> = { 'en-IN': 'English', 'hi-IN': 'Hindi', 'mr-IN': 'Marathi' };
+type Msg = { role:'user'|'assistant'; content:string };
 
 // ── CATALOG ───────────────────────────────────────────────────────
-function Catalog({ onSelect }: { onSelect: (c: any) => void }) {
-  const [hovered, setHovered] = useState<string|null>(null);
+function Catalog({ onSelect }: { onSelect:(c:any)=>void }) {
+  const [hov, setHov] = useState<string|null>(null);
+  const totalLessons = COURSES.reduce((a,c) => a + c.modules.reduce((b,m) => b + m.lessons.length, 0), 0);
   return (
-    <div style={{ minHeight: '100vh', background: '#0a0d14', padding: '40px 32px', fontFamily: 'system-ui,sans-serif' }}>
+    <div style={{ minHeight:'100vh', background:'#080b12', padding:'40px 32px', fontFamily:'system-ui,sans-serif' }}>
       <style>{`
-        @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
-        @keyframes glow { 0%,100%{opacity:0.5} 50%{opacity:1} }
-        @keyframes slide-up { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
-        .course-card { transition: all 0.25s cubic-bezier(0.4,0,0.2,1); }
-        .course-card:hover { transform: translateY(-6px) scale(1.01); }
+        @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+        @keyframes slide-up{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes glow-pulse{0%,100%{opacity:0.4}50%{opacity:0.8}}
+        .ccard{transition:all 0.25s cubic-bezier(.4,0,.2,1)!important}
+        .ccard:hover{transform:translateY(-6px) scale(1.01)!important}
       `}</style>
 
-      {/* Hero */}
-      <div style={{ textAlign: 'center', marginBottom: '48px', animation: 'slide-up 0.6s ease both' }}>
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 16px', borderRadius: '20px', background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)', marginBottom: '20px' }}>
-          <Sparkles size={14} style={{ color: '#818cf8' }} />
-          <span style={{ color: '#818cf8', fontSize: '13px', fontWeight: 700 }}>AI-Powered Learning</span>
+      <div style={{ maxWidth:'1200px', margin:'0 auto' }}>
+        {/* Hero */}
+        <div style={{ textAlign:'center', marginBottom:'52px', animation:'slide-up 0.5s ease both' }}>
+          <div style={{ display:'inline-flex', alignItems:'center', gap:'8px', padding:'5px 16px', borderRadius:'20px', background:'rgba(99,102,241,0.12)', border:'1px solid rgba(99,102,241,0.25)', marginBottom:'20px' }}>
+            <Sparkles size={13} style={{ color:'#818cf8' }} />
+            <span style={{ color:'#818cf8', fontSize:'12px', fontWeight:700 }}>100% Free · AI-Powered</span>
+          </div>
+          <h1 style={{ fontSize:'52px', fontWeight:900, color:'#fff', margin:'0 0 12px', letterSpacing:'-0.03em', lineHeight:1.05 }}>
+            🎓 Hiresnix<br />
+            <span style={{ background:'linear-gradient(135deg,#6366f1,#ec4899,#f59e0b)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>AI Academy</span>
+          </h1>
+          <p style={{ color:'#64748b', fontSize:'18px', margin:'0 0 28px' }}>Your personal AI teacher — Basic to Project Building</p>
+          <div style={{ display:'flex', justifyContent:'center', gap:'28px', flexWrap:'wrap' }}>
+            {[['🎬','Video Lectures'],['🤖','AI Teacher'],['⌨️','Live Code'],['❓','20 Quizzes'],['📊','Progress Track'],['🏆','Certificates']].map(([i,l])=>(
+              <div key={l} style={{ display:'flex', alignItems:'center', gap:'6px', color:'#475569', fontSize:'13px', fontWeight:600 }}>
+                <span style={{ fontSize:'16px' }}>{i}</span>{l}
+              </div>
+            ))}
+          </div>
+          <div style={{ marginTop:'16px', color:'#334155', fontSize:'13px' }}>{COURSES.length} Courses · {totalLessons}+ Lessons</div>
         </div>
-        <h1 style={{ fontSize: '48px', fontWeight: 900, color: '#fff', margin: '0 0 12px', letterSpacing: '-0.03em', lineHeight: 1.1 }}>
-          🎓 Hiresnix<br />
-          <span style={{ background: 'linear-gradient(135deg,#6366f1,#ec4899)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>AI Academy</span>
-        </h1>
-        <p style={{ color: '#64748b', fontSize: '18px', marginBottom: '28px' }}>Your personal AI teacher — learn at your pace, in your language</p>
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '24px' }}>
-          {[['🔥', 'Live AI Teaching'], ['🎯', 'Quiz & Practice'], ['🖥️', 'Run Code Live'], ['🏆', 'Earn Certificate']].map(([icon, label]) => (
-            <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#475569', fontSize: '13px', fontWeight: 600 }}>
-              <span>{icon}</span> {label}
+
+        {/* Grid */}
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(320px,1fr))', gap:'20px' }}>
+          {COURSES.map((c, i) => (
+            <div key={c.id} className="ccard" onClick={() => onSelect(c)}
+              onMouseEnter={() => setHov(c.id)} onMouseLeave={() => setHov(null)}
+              style={{ background: hov===c.id ? 'linear-gradient(135deg,rgba(20,25,50,0.98),rgba(15,20,40,0.98))' : 'linear-gradient(135deg,rgba(13,17,28,0.98),rgba(11,15,23,0.98))', border:`1px solid ${hov===c.id ? c.accent+'44':'rgba(255,255,255,0.07)'}`, borderRadius:'20px', padding:'26px', cursor:'pointer', animation:`slide-up 0.5s ease ${i*0.07}s both`, boxShadow: hov===c.id ? `0 20px 60px ${c.accent}1a`:undefined, position:'relative', overflow:'hidden' }}>
+              <div style={{ position:'absolute', top:-40, right:-40, width:100, height:100, borderRadius:'50%', background:c.accent, opacity: hov===c.id ? 0.07:0.02, filter:'blur(30px)', transition:'opacity 0.3s' }} />
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'14px' }}>
+                <span style={{ fontSize:'38px', animation: hov===c.id ? 'float 2s ease infinite':undefined }}>{c.icon}</span>
+                <span style={{ fontSize:'10px', fontWeight:800, padding:'3px 10px', borderRadius:'20px', background:`${c.tagColor}1a`, color:c.tagColor, letterSpacing:'0.05em', textTransform:'uppercase' }}>{c.tag}</span>
+              </div>
+              <h2 style={{ fontSize:'19px', fontWeight:800, color:'#fff', margin:'0 0 6px' }}>{c.title}</h2>
+              <p style={{ fontSize:'12px', color:'#475569', margin:'0 0 14px', lineHeight:1.5 }}>{c.desc}</p>
+              <div style={{ display:'flex', gap:'12px', marginBottom:'16px' }}>
+                <span style={{ fontSize:'11px', color:'#334155' }}>📚 {c.modules.length} Modules</span>
+                <span style={{ fontSize:'11px', color:'#334155' }}>📖 {c.modules.reduce((a,m)=>a+m.lessons.length,0)} Lessons</span>
+              </div>
+              <div style={{ display:'flex', flexDirection:'column', gap:'4px', marginBottom:'18px' }}>
+                {c.modules.slice(0,3).map((m,j) => (
+                  <div key={j} style={{ display:'flex', alignItems:'center', gap:'7px', fontSize:'11px', color:'#475569' }}>
+                    <div style={{ width:14, height:14, borderRadius:'4px', background:`${c.accent}1a`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'8px', color:c.accent, fontWeight:800, flexShrink:0 }}>{j+1}</div>
+                    {m.title}
+                  </div>
+                ))}
+                {c.modules.length>3 && <div style={{ fontSize:'11px', color:'#1e293b', paddingLeft:'21px' }}>+{c.modules.length-3} more...</div>}
+              </div>
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                <div style={{ display:'flex', gap:'3px' }}>{[...Array(5)].map((_,k)=><Star key={k} size={11} fill={c.accent} style={{ color:c.accent }} />)}</div>
+                <div style={{ display:'flex', alignItems:'center', gap:'5px', fontSize:'12px', fontWeight:700, color:c.accent }}>Start Learning <ChevronRight size={13} /></div>
+              </div>
             </div>
           ))}
         </div>
-      </div>
-
-      {/* Course grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(320px,1fr))', gap: '20px', maxWidth: '1100px', margin: '0 auto' }}>
-        {COURSES.map((c, i) => (
-          <div key={c.id} className="course-card"
-            onClick={() => onSelect(c)}
-            onMouseEnter={() => setHovered(c.id)}
-            onMouseLeave={() => setHovered(null)}
-            style={{
-              background: hovered === c.id
-                ? `linear-gradient(135deg,rgba(15,23,42,0.98),rgba(20,30,60,0.98))`
-                : 'linear-gradient(135deg,rgba(15,23,42,0.95),rgba(15,23,42,0.95))',
-              border: `1px solid ${hovered === c.id ? c.accent+'44' : 'rgba(255,255,255,0.07)'}`,
-              borderRadius: '20px', padding: '28px', cursor: 'pointer',
-              animation: `slide-up 0.5s ease ${i*0.08}s both`,
-              boxShadow: hovered === c.id ? `0 20px 60px ${c.accent}22` : 'none',
-              position: 'relative', overflow: 'hidden',
-            }}>
-            {/* Glow blob */}
-            <div style={{ position: 'absolute', top: -40, right: -40, width: 120, height: 120, borderRadius: '50%', background: c.accent, opacity: hovered === c.id ? 0.08 : 0.03, transition: 'opacity 0.3s', filter: 'blur(30px)' }} />
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
-              <div style={{ fontSize: '40px', animation: hovered === c.id ? 'float 2s ease infinite' : 'none' }}>{c.icon}</div>
-              <span style={{ fontSize: '10px', fontWeight: 800, padding: '3px 10px', borderRadius: '20px', background: `${c.tagColor}22`, color: c.tagColor, letterSpacing: '0.05em', textTransform: 'uppercase' }}>{c.tag}</span>
-            </div>
-
-            <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#fff', marginBottom: '8px' }}>{c.title}</h2>
-            <div style={{ display: 'flex', gap: '12px', marginBottom: '20px' }}>
-              <span style={{ fontSize: '12px', color: '#64748b' }}>📚 {c.modules.length} Modules</span>
-              <span style={{ fontSize: '12px', color: '#64748b' }}>📖 {c.modules.reduce((a,m)=>a+m.lessons.length,0)} Lessons</span>
-            </div>
-
-            {/* Module preview */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '20px' }}>
-              {c.modules.slice(0,3).map((m,i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#475569' }}>
-                  <div style={{ width: 16, height: 16, borderRadius: '4px', background: `${c.accent}22`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '9px', color: c.accent, fontWeight: 800, flexShrink: 0 }}>{i+1}</div>
-                  {m.title}
-                </div>
-              ))}
-              {c.modules.length > 3 && <div style={{ fontSize: '11px', color: '#334155', paddingLeft: '24px' }}>+{c.modules.length-3} more modules</div>}
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', gap: '4px' }}>
-                {[...Array(5)].map((_,i) => <Star key={i} size={12} fill={c.accent} style={{ color: c.accent }} />)}
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 700, color: c.accent }}>
-                Start Learning <ChevronRight size={14} />
-              </div>
-            </div>
-          </div>
-        ))}
       </div>
     </div>
   );
 }
 
-// ── MAIN LESSON UI ────────────────────────────────────────────────
-function LessonUI({ course, onBack }: { course: any; onBack: () => void }) {
+// ── LESSON PAGE ───────────────────────────────────────────────────
+function LessonPage({ course, onBack }: { course:any; onBack:()=>void }) {
   const [activeMod, setActiveMod] = useState(0);
   const [activeLesson, setActiveLesson] = useState(0);
-  const [expandedMods, setExpandedMods] = useState<number[]>([0]);
-  const [tab, setTab] = useState<'video'|'teacher'|'code'|'backward'|'forward'|'notes'|'quiz'>('video');
+  const [expanded, setExpanded] = useState<number[]>([0]);
+  const [tab, setTab] = useState<'video'|'teacher'|'code'|'backward'|'forward'|'quiz'|'notes'>('video');
   const [completed, setCompleted] = useState<Set<string>>(new Set());
-  const [lang, setLang] = useState<Lang>('en-IN');
 
-  // Content states
+  // Content
   const [teacherText, setTeacherText] = useState('');
   const [teacherLoading, setTeacherLoading] = useState(false);
   const [codeText, setCodeText] = useState('');
   const [codeLoading, setCodeLoading] = useState(false);
   const [userCode, setUserCode] = useState('');
-  const [codeOutput, setCodeOutput] = useState('');
+  const [codeOut, setCodeOut] = useState('');
+  const [codeErr, setCodeErr] = useState(false);
   const [runLoading, setRunLoading] = useState(false);
   const [backward, setBackward] = useState('');
   const [forward, setForward] = useState('');
   const [traceLoading, setTraceLoading] = useState(false);
   const [notes, setNotes] = useState('');
   const [notesLoading, setNotesLoading] = useState(false);
-  const [quiz, setQuiz] = useState<any>(null);
+
+  // Quiz — 20 questions
+  const [quizAll, setQuizAll] = useState<any[]>([]);
+  const [quizIdx, setQuizIdx] = useState(0);
   const [quizLoading, setQuizLoading] = useState(false);
   const [selectedAns, setSelectedAns] = useState<number|null>(null);
-  const [score, setScore] = useState(0);
-  const [quizCount, setQuizCount] = useState(0);
+  const [quizScore, setQuizScore] = useState(0);
+  const [quizDone, setQuizDone] = useState(false);
 
   // Mentor
-  const [mentorMsgs, setMentorMsgs] = useState<Msg[]>([
-    { role: 'assistant', content: `Hi! 👋 I'm your AI Mentor. Ask me anything!` }
-  ]);
+  const [mentorMsgs, setMentorMsgs] = useState<Msg[]>([{ role:'assistant', content:`Hi! 👋 I'm your AI Mentor. Ask me anything about ${course.title}!` }]);
   const [mentorInput, setMentorInput] = useState('');
   const [mentorLoading, setMentorLoading] = useState(false);
 
-  // Voice/Audio
+  // Voice
   const [muted, setMuted] = useState(false);
   const [micOn, setMicOn] = useState(false);
   const [speaking, setSpeaking] = useState(false);
-  const [waveBars, setWaveBars] = useState<number[]>(Array(20).fill(4));
+  const [waveBars, setWaveBars] = useState<number[]>(Array(16).fill(4));
   const micRef = useRef<any>(null);
-  const micActive = useRef(false);
+  const waveRef = useRef<any>(null);
   const msgEndRef = useRef<HTMLDivElement>(null);
-  const waveInterval = useRef<any>(null);
+  const voicesLoadedRef = useRef(false);
 
   const lesson = course.modules[activeMod]?.lessons[activeLesson] || '';
-  const totalLessons = course.modules.reduce((a: number, m: any) => a + m.lessons.length, 0);
-  const doneCount = completed.size;
-  const progress = Math.round((doneCount / totalLessons) * 100);
-  const langLabel = LANG_NAMES[lang];
+  const totalL = course.modules.reduce((a:number,m:any)=>a+m.lessons.length,0);
+  const progress = Math.round((completed.size/totalL)*100);
 
-  const SYSTEM = `You are Alex, a friendly AI teacher at Hiresnix Academy teaching "${course.title}". Lesson: "${lesson}". IMPORTANT: Respond in ${langLabel}. Use simple language. For Hindi/Marathi, mix technical terms in English but explain in the local language.`;
+  // ── Load voices properly ────────────────────────────────────────
+  useEffect(() => {
+    const loadVoices = () => { window.speechSynthesis.getVoices(); voicesLoadedRef.current = true; };
+    loadVoices();
+    window.speechSynthesis.onvoiceschanged = loadVoices;
+    return () => { window.speechSynthesis.onvoiceschanged = null; };
+  }, []);
 
-  // Wave animation
   const startWave = () => {
-    waveInterval.current = setInterval(() => {
-      setWaveBars(Array(20).fill(0).map(() => Math.random() * 28 + 4));
-    }, 120);
+    clearInterval(waveRef.current);
+    waveRef.current = setInterval(() => setWaveBars(Array(16).fill(0).map(()=>Math.random()*28+4)), 100);
   };
-  const stopWave = () => {
-    clearInterval(waveInterval.current);
-    setWaveBars(Array(20).fill(4));
-  };
+  const stopWave = () => { clearInterval(waveRef.current); setWaveBars(Array(16).fill(4)); };
 
   const speak = useCallback((text: string) => {
-    if (muted || !window.speechSynthesis) return;
+    if (muted || typeof window === 'undefined' || !window.speechSynthesis) return;
     window.speechSynthesis.cancel();
-    const clean = text.replace(/```[\s\S]*?```/g, ' code example ').replace(/[#*`]/g, '').slice(0, 500);
-    const u = new SpeechSynthesisUtterance(clean);
-    u.lang = lang; u.rate = 0.88; u.pitch = 1.05;
-    const voices = window.speechSynthesis.getVoices();
-    const pref = voices.find(v => v.lang === lang) || voices.find(v => v.lang.startsWith(lang.split('-')[0]));
-    if (pref) u.voice = pref;
-    u.onstart = () => { setSpeaking(true); startWave(); };
-    u.onend = () => { setSpeaking(false); stopWave(); };
-    u.onerror = () => { setSpeaking(false); stopWave(); };
-    window.speechSynthesis.speak(u);
-  }, [muted, lang]);
+    const clean = text.replace(/```[\s\S]*?```/g,' ').replace(/[#*`_]/g,'').slice(0,600);
+    const trySpeak = () => {
+      const u = new SpeechSynthesisUtterance(clean);
+      u.lang = 'en-US'; u.rate = 0.88; u.pitch = 1.05; u.volume = 1;
+      const voices = window.speechSynthesis.getVoices();
+      // Pick best English voice
+      const preferred = voices.find(v=>v.lang==='en-US' && v.name.includes('Google'))
+        || voices.find(v=>v.lang==='en-US')
+        || voices.find(v=>v.lang.startsWith('en'))
+        || voices[0];
+      if (preferred) u.voice = preferred;
+      u.onstart = () => { setSpeaking(true); startWave(); };
+      u.onend = () => { setSpeaking(false); stopWave(); };
+      u.onerror = () => { setSpeaking(false); stopWave(); };
+      window.speechSynthesis.speak(u);
+    };
+    // Wait for voices if not loaded
+    if (window.speechSynthesis.getVoices().length > 0) trySpeak();
+    else setTimeout(trySpeak, 500);
+  }, [muted]);
 
-  // Streaming AI teacher
+  const toggleMic = () => {
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) { alert('Voice input requires Chrome browser'); return; }
+    if (micOn) { micRef.current?.abort(); setMicOn(false); return; }
+    setMicOn(true);
+    const r = new SR();
+    r.lang = 'en-US'; r.continuous = false; r.interimResults = false;
+    r.onresult = (e:any) => { sendMentor(e.results[0][0].transcript); };
+    r.onend = () => setMicOn(false);
+    r.onerror = () => setMicOn(false);
+    micRef.current = r; r.start();
+  };
+
+  // ── Load functions ──────────────────────────────────────────────
   const loadTeacher = useCallback(async () => {
     setTeacherLoading(true); setTeacherText('');
     window.speechSynthesis?.cancel();
-    try {
-      const res = await askGroq([], `${SYSTEM}\n\nTeach "${lesson}" clearly:\n1. Simple definition\n2. Real-world analogy\n3. Key concepts (3-4 points)\n4. A quick tip\n\nBe engaging and conversational. Keep it under 250 words.`, true) as Response;
-      const reader = res.body!.getReader();
-      const decoder = new TextDecoder();
-      let full = '';
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        const chunk = decoder.decode(value);
-        const lines = chunk.split('\n').filter(l => l.startsWith('data: '));
-        for (const line of lines) {
-          const data = line.slice(6);
-          if (data === '[DONE]') break;
-          try {
-            const j = JSON.parse(data);
-            const delta = j.choices?.[0]?.delta?.content || '';
-            full += delta;
-            setTeacherText(full);
-          } catch {}
-        }
-      }
-      speak(full);
-    } catch { setTeacherText('Could not load lesson. Please try again.'); }
+    let full = '';
+    await groqStream(
+      `You are Alex, a friendly teacher at Hiresnix Academy. Teach "${lesson}" from ${course.title} clearly in Simple English.\n\n1. Simple definition (1-2 sentences)\n2. Real-world analogy (relatable example)\n3. Key points (3-4 bullet points)\n4. Quick tip for beginners\n\nBe conversational, encouraging, and clear. Max 200 words.`,
+      (t) => { setTeacherText(t); full = t; }
+    );
+    speak(full);
     setTeacherLoading(false);
-  }, [lesson, lang]);
+  }, [lesson, course.title]);
 
   const loadCode = useCallback(async () => {
-    setCodeLoading(true); setCodeText(''); setUserCode(''); setCodeOutput('');
-    const res = await askGroq([], `${SYSTEM}\n\nCreate a clear ${course.codeLanguage} code example for "${lesson}".\n\nFormat exactly:\n\`\`\`${course.codeLanguage}\n# Your code here with comments\n\`\`\`\n\nOutput:\n\`\`\`\nexpected output here\n\`\`\`\n\n**Line by line explanation** (in ${langLabel}):`);
+    setCodeLoading(true); setCodeText(''); setCodeOut(''); setCodeErr(false);
+    const cfg = LANG_CONFIG[course.codeLanguage] || LANG_CONFIG.python;
+    setUserCode(cfg.starter);
+    const res = await groq(
+      `Create a clear ${course.codeLanguage} code example for "${lesson}" in Simple English.\n\nFormat:\n\`\`\`${course.codeLanguage}\n# well-commented code here\n\`\`\`\n\nSimple explanation: what each part does (2-3 sentences max).`
+    );
     setCodeText(res);
-    // Extract code for playground
-    const match = res.match(/```(?:\w+)?\n([\s\S]*?)```/);
-    if (match) setUserCode(match[1].trim());
+    // Extract code block
+    const m = res.match(/```(?:\w+)?\n([\s\S]*?)```/);
+    if (m) setUserCode(m[1].trim());
     setCodeLoading(false);
-  }, [lesson, lang]);
+  }, [lesson, course.codeLanguage]);
 
   const loadTrace = useCallback(async () => {
     setTraceLoading(true); setBackward(''); setForward('');
     const [bwd, fwd] = await Promise.all([
-      askGroq([], `${SYSTEM}\n\nBACKWARD TRACING for "${lesson}" (in ${langLabel}):\nShow how to trace from OUTPUT back to INPUT. Use arrows: output ← step ← input. Show each reverse step clearly with variable states.`),
-      askGroq([], `${SYSTEM}\n\nFORWARD TRACING for "${lesson}" (in ${langLabel}):\nShow step-by-step execution from start to end. Format each step:\nStep N → [line/operation] → [variable states] → [what happens next]`),
+      groq(`BACKWARD TRACING for "${lesson}" in ${course.title}.\nSimple English. Show how to trace from OUTPUT back to INPUT.\nUse format:\nResult ← Step 3 ← Step 2 ← Input\nExplain each reverse step simply.`),
+      groq(`FORWARD TRACING for "${lesson}" in ${course.title}.\nSimple English. Show step-by-step execution.\nFormat:\nStep 1 → [action] → [result]\nStep 2 → [action] → [result]\nMake it easy for beginners.`),
     ]);
     setBackward(bwd); setForward(fwd);
     setTraceLoading(false);
-  }, [lesson, lang]);
+  }, [lesson]);
 
   const loadNotes = useCallback(async () => {
     setNotesLoading(true); setNotes('');
-    const res = await askGroq([], `${SYSTEM}\n\nCreate study notes for "${lesson}" in ${langLabel}:\n\n## 📌 Key Concepts\n## 💻 Syntax\n## 📝 Examples\n## ⚠️ Common Mistakes\n## ⚡ Quick Summary`);
+    const res = await groq(`Study notes for "${lesson}" in ${course.title}. Simple English.\n\n📌 Key Concepts\n💻 Syntax / Format\n✅ Examples\n⚠️ Common Mistakes\n⚡ Quick Summary\n\nBe concise and beginner-friendly.`);
     setNotes(res); setNotesLoading(false);
-  }, [lesson, lang]);
+  }, [lesson]);
 
+  // ── Quiz: generate 20 questions ─────────────────────────────────
   const loadQuiz = useCallback(async () => {
-    setQuizLoading(true); setQuiz(null); setSelectedAns(null);
-    const res = await askGroq([], `Generate a quiz question about "${lesson}" in ${langLabel}.\nReturn ONLY valid JSON (no markdown):\n{"question":"...","options":["A","B","C","D"],"correct":0,"explanation":"...","fun_fact":"..."}`);
+    setQuizLoading(true); setQuizAll([]); setQuizIdx(0); setSelectedAns(null); setQuizScore(0); setQuizDone(false);
+    const res = await groq(
+      `Generate 20 multiple choice quiz questions about "${lesson}" in ${course.title}. Simple English.\n\nReturn ONLY a valid JSON array (no markdown, no explanation):\n[\n  {"q":"question","opts":["A","B","C","D"],"ans":0,"exp":"brief explanation"},\n  ...\n]\n\nMix easy (5), medium (10), hard (5) questions. Make sure options are distinct.`
+    );
     try {
-      const clean = res.replace(/```json?|```/g, '').trim();
-      setQuiz(JSON.parse(clean));
+      const clean = res.replace(/```json?|```/g,'').trim();
+      // Find JSON array
+      const start = clean.indexOf('['); const end = clean.lastIndexOf(']');
+      const parsed = JSON.parse(clean.slice(start, end+1));
+      setQuizAll(parsed.slice(0,20));
     } catch {
-      setQuiz({ question: `What is the main purpose of ${lesson}?`, options: ['Option A', 'Option B', 'Option C', 'Option D'], correct: 0, explanation: 'Try again for a better question.', fun_fact: '' });
+      // Fallback: single question
+      setQuizAll([{ q:`What is the main purpose of ${lesson}?`, opts:['Store data','Run loops','Define functions','Import modules'], ans:0, exp:`${lesson} is a fundamental concept in ${course.title}.` }]);
     }
     setQuizLoading(false);
-  }, [lesson, lang]);
-
-  const runUserCode = async () => {
-    setRunLoading(true); setCodeOutput('');
-    const result = await runCode(course.codeLanguage, userCode);
-    setCodeOutput(result.stdout || result.stderr || 'No output');
-    setRunLoading(false);
-  };
+  }, [lesson, course.title]);
 
   const sendMentor = async (text?: string) => {
-    const q = text || mentorInput.trim();
-    if (!q) return;
+    const q = text || mentorInput.trim(); if (!q) return;
     setMentorInput('');
-    const userMsg: Msg = { role: 'user', content: q };
+    const userMsg: Msg = { role:'user', content:q };
     const newMsgs = [...mentorMsgs, userMsg];
     setMentorMsgs(newMsgs);
     setMentorLoading(true);
-    const res = await askGroq(
-      newMsgs.map(m => ({ role: m.role, content: m.content })),
-      `You are a supportive AI Mentor for ${course.title}. Current lesson: "${lesson}". Respond in ${langLabel}. Be encouraging, clear, and concise.`
-    );
-    setMentorMsgs([...newMsgs, { role: 'assistant', content: res }]);
-    speak(res.slice(0, 200));
+    const res = await groq(`You are a helpful AI Mentor for ${course.title}. Current lesson: "${lesson}". Simple English.\nStudent asks: ${q}\nBe clear, short, encouraging. Max 100 words.`);
+    setMentorMsgs([...newMsgs, { role:'assistant', content:res }]);
+    speak(res.slice(0,200));
     setMentorLoading(false);
-    setTimeout(() => msgEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+    setTimeout(()=>msgEndRef.current?.scrollIntoView({behavior:'smooth'}),100);
   };
 
-  const toggleMic = () => {
-    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SR) { alert('Use Chrome browser for voice'); return; }
-    if (micOn) {
-      micActive.current = false; micRef.current?.abort(); setMicOn(false);
-    } else {
-      micActive.current = true; setMicOn(true);
-      const r = new SR(); r.lang = lang; r.continuous = false; r.interimResults = false;
-      r.onresult = (e: any) => { sendMentor(e.results[0][0].transcript); };
-      r.onend = () => { micActive.current = false; setMicOn(false); };
-      r.onerror = () => { micActive.current = false; setMicOn(false); };
-      micRef.current = r; r.start();
-    }
+  const runUserCode = async () => {
+    setRunLoading(true); setCodeOut('Running...'); setCodeErr(false);
+    const result = await runCode(course.codeLanguage, userCode);
+    setCodeOut(result.out); setCodeErr(result.err);
+    setRunLoading(false);
   };
 
-  const selectLesson = (mi: number, li: number) => {
-    setActiveMod(mi); setActiveLesson(li); setTab('teacher');
-    setTeacherText(''); setCodeText(''); setBackward(''); setForward(''); setNotes(''); setQuiz(null);
-    window.speechSynthesis?.cancel();
+  const selectLesson = (mi:number, li:number) => {
+    setActiveMod(mi); setActiveLesson(li); setTab('video');
+    setTeacherText(''); setCodeText(''); setBackward(''); setForward(''); setNotes('');
+    setQuizAll([]); setQuizIdx(0); setSelectedAns(null); setQuizScore(0); setQuizDone(false);
+    setCodeOut(''); window.speechSynthesis?.cancel();
   };
 
   const markDone = () => {
     const key = `${activeMod}-${activeLesson}`;
-    if (!completed.has(key)) setCompleted(prev => new Set([...prev, key]));
+    setCompleted(prev => new Set([...prev, key]));
     const mod = course.modules[activeMod];
-    if (activeLesson < mod.lessons.length - 1) selectLesson(activeMod, activeLesson + 1);
-    else if (activeMod < course.modules.length - 1) {
-      setExpandedMods(p => [...p, activeMod + 1]);
-      selectLesson(activeMod + 1, 0);
-    }
+    if (activeLesson < mod.lessons.length-1) selectLesson(activeMod, activeLesson+1);
+    else if (activeMod < course.modules.length-1) { setExpanded(p=>[...p,activeMod+1]); selectLesson(activeMod+1,0); }
   };
 
-  const isDone = (mi: number, li: number) => completed.has(`${mi}-${li}`);
+  const isDone = (mi:number,li:number) => completed.has(`${mi}-${li}`);
 
   useEffect(() => {
-    setTeacherText(''); setCodeText(''); setBackward(''); setForward(''); setNotes(''); setQuiz(null);
-    setTab('video');
-    window.speechSynthesis?.cancel();
-  }, [lesson]);
-
-  useEffect(() => {
-    if (tab === 'video') return; // video loads via iframe
-    if (tab === 'teacher' && !teacherText && !teacherLoading) loadTeacher();
-    if (tab === 'code' && !codeText && !codeLoading) loadCode();
-    if ((tab === 'backward' || tab === 'forward') && !backward && !traceLoading) loadTrace();
-    if (tab === 'notes' && !notes && !notesLoading) loadNotes();
-    if (tab === 'quiz' && !quiz && !quizLoading) loadQuiz();
+    if (tab==='teacher' && !teacherText && !teacherLoading) loadTeacher();
+    if (tab==='code' && !codeText && !codeLoading) loadCode();
+    if ((tab==='backward'||tab==='forward') && !backward && !traceLoading) loadTrace();
+    if (tab==='notes' && !notes && !notesLoading) loadNotes();
+    if (tab==='quiz' && quizAll.length===0 && !quizLoading) loadQuiz();
   }, [tab]);
 
-  useEffect(() => { return () => window.speechSynthesis?.cancel(); }, []);
+  useEffect(()=>{ return ()=>{ window.speechSynthesis?.cancel(); clearInterval(waveRef.current); }; },[]);
 
-  const QUICK_Q = [`Explain ${lesson} simply`, `Give me an example of ${lesson}`, `What are common mistakes in ${lesson}?`, `How is ${lesson} used in real projects?`];
-
+  const curQuiz = quizAll[quizIdx];
   const TABS = [
-    { id: 'video', label: '🎬 Video Lecture' },
-    { id: 'teacher', label: '🤖 AI Teacher' },
-    { id: 'code', label: '⌨️ Code & Run' },
-    { id: 'backward', label: '← Backward' },
-    { id: 'forward', label: '→ Forward' },
-    { id: 'quiz', label: '❓ Quiz' },
-    { id: 'notes', label: '📝 Notes' },
+    {id:'video',label:'🎬 Video'},{id:'teacher',label:'🤖 AI Teacher'},
+    {id:'code',label:'⌨️ Code & Run'},{id:'backward',label:'← Backward'},
+    {id:'forward',label:'→ Forward'},{id:'quiz',label:`❓ Quiz${quizAll.length>0?` (${quizIdx}/${quizAll.length})`:'(20 Qs)'}`},
+    {id:'notes',label:'📝 Notes'},
   ];
+  const QUICK = [`Explain ${lesson} simply`,`Example of ${lesson}?`,`Common mistakes in ${lesson}?`,`Real use of ${lesson}?`];
+
+  const ACC = course.accent;
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '240px 1fr 290px', height: '100vh', background: '#080b12', fontFamily: 'system-ui,sans-serif', overflow: 'hidden' }}>
+    <div style={{ display:'grid', gridTemplateColumns:'230px 1fr 280px', height:'100vh', background:'#080b12', fontFamily:'system-ui,sans-serif', overflow:'hidden' }}>
       <style>{`
-        @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
-        @keyframes pulse-ring{0%{transform:scale(1);opacity:0.5}100%{transform:scale(1.4);opacity:0}}
+        @keyframes pulse-ring{0%{transform:scale(1);opacity:0.6}100%{transform:scale(1.5);opacity:0}}
         @keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
         @keyframes fade-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-        @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
-        .lesson-btn:hover{background:rgba(255,255,255,0.06)!important;color:#e2e8f0!important}
-        .tab-btn:hover{background:rgba(255,255,255,0.08)!important}
-        .quick-q:hover{background:rgba(255,255,255,0.07)!important;border-color:rgba(255,255,255,0.15)!important}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        .lbtn:hover{background:rgba(255,255,255,0.07)!important;color:#e2e8f0!important}
+        .tbtn:hover{background:rgba(255,255,255,0.09)!important}
+        .qq:hover{background:rgba(255,255,255,0.07)!important}
         *::-webkit-scrollbar{width:3px}*::-webkit-scrollbar-track{background:transparent}*::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:2px}
-        .typing-cursor::after{content:'|';animation:blink 1s infinite;color:${course.accent}}
-        @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
-        textarea{color-scheme:dark}
-        .run-btn:hover{opacity:0.85!important}
+        textarea{color-scheme:dark;resize:vertical}
       `}</style>
 
-      {/* ══ LEFT SIDEBAR ══════════════════════════════════════════ */}
-      <div style={{ background: 'linear-gradient(180deg,#0b0f1a 0%,#080b12 100%)', borderRight: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        {/* Header */}
-        <div style={{ padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-          <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: '5px', color: '#475569', fontSize: '11px', background: 'none', border: 'none', cursor: 'pointer', marginBottom: '12px', padding: 0 }}>
-            <ArrowLeft size={13} /> Back to courses
+      {/* ═══ LEFT SIDEBAR ═══════════════════════════════════════════ */}
+      <div style={{ background:'#0b0f1a', borderRight:'1px solid rgba(255,255,255,0.06)', display:'flex', flexDirection:'column', overflow:'hidden' }}>
+        <div style={{ padding:'12px 14px', borderBottom:'1px solid rgba(255,255,255,0.06)' }}>
+          <button onClick={onBack} style={{ display:'flex', alignItems:'center', gap:'5px', color:'#334155', fontSize:'11px', background:'none', border:'none', cursor:'pointer', marginBottom:'10px', padding:0 }}>
+            <ArrowLeft size={12} /> All Courses
           </button>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-            <div style={{ fontSize: '24px', animation: 'float 3s ease infinite' }}>{course.icon}</div>
+          <div style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'8px' }}>
+            <span style={{ fontSize:'22px' }}>{course.icon}</span>
             <div>
-              <div style={{ color: '#fff', fontWeight: 800, fontSize: '13px', lineHeight: 1.2 }}>{course.title}</div>
-              <div style={{ color: course.accent, fontSize: '10px', fontWeight: 700, marginTop: '2px' }}>{progress}% Complete</div>
+              <div style={{ color:'#fff', fontWeight:800, fontSize:'12px' }}>{course.title}</div>
+              <div style={{ color:ACC, fontSize:'10px', fontWeight:700 }}>{progress}% Complete</div>
             </div>
           </div>
-          {/* Progress */}
-          <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: '4px', height: '5px', overflow: 'hidden' }}>
-            <div style={{ width: `${progress}%`, height: '100%', background: `linear-gradient(90deg,${course.accent},${course.accent}bb)`, borderRadius: '4px', transition: 'width 0.6s ease' }} />
+          <div style={{ background:'rgba(255,255,255,0.06)', borderRadius:'3px', height:'4px', overflow:'hidden' }}>
+            <div style={{ width:`${progress}%`, height:'100%', background:`linear-gradient(90deg,${ACC},${ACC}99)`, transition:'width 0.6s' }} />
           </div>
         </div>
 
-        {/* Modules list */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '8px' }}>
-          {course.modules.map((mod: any, mi: number) => (
+        <div style={{ flex:1, overflowY:'auto', padding:'6px' }}>
+          {course.modules.map((mod:any, mi:number)=>(
             <div key={mi}>
-              <button onClick={() => setExpandedMods(p => p.includes(mi) ? p.filter(x=>x!==mi) : [...p,mi])}
-                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 10px', borderRadius: '8px', background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', fontSize: '11px', fontWeight: 700, textAlign: 'left', marginBottom: '2px' }}>
-                <span style={{ color: course.accent, fontSize: '10px' }}>{expandedMods.includes(mi) ? '▼' : '▶'}</span>
-                <span style={{ flex: 1 }}>{mi+1}. {mod.title}</span>
-                <span style={{ fontSize: '10px', color: '#334155' }}>{mod.lessons.filter((_:any,li:number)=>isDone(mi,li)).length}/{mod.lessons.length}</span>
+              <button onClick={()=>setExpanded(p=>p.includes(mi)?p.filter(x=>x!==mi):[...p,mi])}
+                style={{ width:'100%', display:'flex', alignItems:'center', gap:'6px', padding:'7px 10px', borderRadius:'7px', background:'none', border:'none', cursor:'pointer', color:'#475569', fontSize:'11px', fontWeight:700, textAlign:'left' }}>
+                <span style={{ color:ACC, fontSize:'9px' }}>{expanded.includes(mi)?'▼':'▶'}</span>
+                <span style={{ flex:1 }}>{mi+1}. {mod.title}</span>
+                <span style={{ fontSize:'10px', color:'#1e293b' }}>{mod.lessons.filter((_:any,li:number)=>isDone(mi,li)).length}/{mod.lessons.length}</span>
               </button>
-              {expandedMods.includes(mi) && mod.lessons.map((ls: string, li: number) => {
-                const active = activeMod === mi && activeLesson === li;
-                const done = isDone(mi, li);
+              {expanded.includes(mi) && mod.lessons.map((ls:string, li:number)=>{
+                const act = activeMod===mi && activeLesson===li;
+                const done = isDone(mi,li);
                 return (
-                  <button key={li} onClick={() => selectLesson(mi, li)} className="lesson-btn"
-                    style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 8px 6px 22px', borderRadius: '7px', border: 'none', cursor: 'pointer', textAlign: 'left', fontSize: '11px', marginBottom: '1px', transition: 'all 0.15s', background: active ? `${course.accent}18` : 'none', color: active ? course.accent : done ? '#34d399' : '#475569', borderLeft: active ? `2px solid ${course.accent}` : '2px solid transparent' }}>
-                    {done ? <CheckCircle size={11} style={{ color: '#34d399', flexShrink: 0 }} /> : <div style={{ width: 11, height: 11, borderRadius: '50%', border: `1.5px solid ${active ? course.accent : 'rgba(255,255,255,0.12)'}`, flexShrink: 0 }} />}
-                    <span style={{ flex: 1, lineHeight: 1.3 }}>{ls}</span>
+                  <button key={li} className="lbtn" onClick={()=>selectLesson(mi,li)}
+                    style={{ width:'100%', display:'flex', alignItems:'center', gap:'7px', padding:'6px 8px 6px 20px', borderRadius:'6px', border:'none', cursor:'pointer', textAlign:'left', fontSize:'11px', marginBottom:'1px', transition:'all 0.15s', background: act?`${ACC}18`:'transparent', color: act?ACC:done?'#34d399':'#334155', borderLeft: act?`2px solid ${ACC}`:'2px solid transparent' }}>
+                    {done ? <CheckCircle size={10} style={{ color:'#34d399', flexShrink:0 }} /> : <div style={{ width:10,height:10,borderRadius:'50%',border:`1.5px solid ${act?ACC:'rgba(255,255,255,0.1)'}`,flexShrink:0 }} />}
+                    <span style={{ flex:1, lineHeight:1.35 }}>{ls}</span>
                   </button>
                 );
               })}
@@ -641,420 +621,322 @@ function LessonUI({ course, onBack }: { course: any; onBack: () => void }) {
           ))}
         </div>
 
-        {/* Bottom stats */}
-        <div style={{ padding: '14px 16px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: '#f59e0b' }}>
-              <Flame size={12} /> {doneCount} lessons done
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: '#818cf8' }}>
-              <Trophy size={12} /> {score} pts
-            </div>
+        <div style={{ padding:'12px 14px', borderTop:'1px solid rgba(255,255,255,0.06)' }}>
+          <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'4px' }}>
+            <span style={{ display:'flex', alignItems:'center', gap:'3px', fontSize:'11px', color:'#f59e0b' }}><Flame size={11}/> {completed.size} done</span>
+            <span style={{ display:'flex', alignItems:'center', gap:'3px', fontSize:'11px', color:'#818cf8' }}><Trophy size={11}/> {quizScore} pts</span>
           </div>
-          <div style={{ fontSize: '10px', color: '#334155', textAlign: 'center' }}>Keep going! You're doing great 🚀</div>
+          <div style={{ fontSize:'10px', color:'#1e293b', textAlign:'center' }}>You're doing great! 🚀</div>
         </div>
       </div>
 
-      {/* ══ CENTER ════════════════════════════════════════════════ */}
-      <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', background: '#080b12' }}>
-        {/* Top bar */}
-        <div style={{ padding: '12px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, background: 'rgba(11,15,26,0.8)', backdropFilter: 'blur(12px)' }}>
+      {/* ═══ CENTER ══════════════════════════════════════════════════ */}
+      <div style={{ display:'flex', flexDirection:'column', overflow:'hidden' }}>
+        {/* Topbar */}
+        <div style={{ padding:'10px 18px', borderBottom:'1px solid rgba(255,255,255,0.06)', display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0, background:'rgba(8,11,18,0.95)', backdropFilter:'blur(12px)' }}>
           <div>
-            <div style={{ color: '#fff', fontWeight: 800, fontSize: '16px' }}>{lesson}</div>
-            <div style={{ color: '#334155', fontSize: '11px', marginTop: '2px' }}>{course.modules[activeMod]?.title}</div>
+            <div style={{ color:'#fff', fontWeight:800, fontSize:'15px' }}>{lesson}</div>
+            <div style={{ color:'#334155', fontSize:'11px', marginTop:'1px' }}>{course.modules[activeMod]?.title}</div>
           </div>
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            {/* Lang selector */}
-            <select value={lang} onChange={e => { setLang(e.target.value as Lang); setTeacherText(''); setNotes(''); setBackward(''); setForward(''); setQuiz(null); }}
-              style={{ padding: '6px 10px', borderRadius: '9px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#94a3b8', fontSize: '12px', cursor: 'pointer', outline: 'none' }}>
-              <option value="en-IN">🇬🇧 English</option>
-              <option value="hi-IN">🇮🇳 Hindi</option>
-              <option value="mr-IN">🏛️ Marathi</option>
-            </select>
-            <button onClick={() => { setMuted(m=>!m); window.speechSynthesis?.cancel(); setSpeaking(false); stopWave(); }}
-              style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '6px 12px', borderRadius: '9px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: muted ? '#334155' : course.accent, fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
-              {muted ? <VolumeX size={13} /> : <Volume2 size={13} />}
+          <div style={{ display:'flex', gap:'7px', alignItems:'center' }}>
+            <button onClick={()=>{setMuted(m=>!m);window.speechSynthesis?.cancel();setSpeaking(false);stopWave();}}
+              style={{ display:'flex', alignItems:'center', gap:'5px', padding:'6px 11px', borderRadius:'8px', border:'1px solid rgba(255,255,255,0.1)', background:'rgba(255,255,255,0.05)', color:muted?'#334155':ACC, fontSize:'11px', fontWeight:600, cursor:'pointer' }}>
+              {muted?<VolumeX size={13}/>:<Volume2 size={13}/>} {muted?'Muted':'Sound'}
             </button>
             <button onClick={markDone}
-              style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 14px', borderRadius: '9px', border: 'none', background: `linear-gradient(135deg,${course.accent},${course.accent}99)`, color: '#fff', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>
-              <CheckCircle size={13} /> Mark Done
+              style={{ display:'flex', alignItems:'center', gap:'5px', padding:'6px 14px', borderRadius:'8px', border:'none', background:`linear-gradient(135deg,${ACC},${ACC}99)`, color:'#fff', fontSize:'11px', fontWeight:700, cursor:'pointer' }}>
+              <CheckCircle size={12}/> Mark Done
             </button>
           </div>
         </div>
 
         {/* Tabs */}
-        <div style={{ display: 'flex', gap: '2px', padding: '10px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0, background: 'rgba(11,15,26,0.5)' }}>
-          {TABS.map(t => (
-            <button key={t.id} className="tab-btn" onClick={() => setTab(t.id as any)}
-              style={{ padding: '6px 13px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '12px', fontWeight: 600, transition: 'all 0.15s', background: tab === t.id ? course.accent : 'rgba(255,255,255,0.04)', color: tab === t.id ? '#fff' : '#475569' }}>
+        <div style={{ display:'flex', gap:'2px', padding:'8px 18px', borderBottom:'1px solid rgba(255,255,255,0.06)', flexShrink:0, overflowX:'auto' }}>
+          {TABS.map(t=>(
+            <button key={t.id} className="tbtn" onClick={()=>setTab(t.id as any)}
+              style={{ padding:'5px 12px', borderRadius:'7px', border:'none', cursor:'pointer', fontSize:'11px', fontWeight:600, transition:'all 0.15s', background:tab===t.id?ACC:'rgba(255,255,255,0.04)', color:tab===t.id?'#fff':'#475569', whiteSpace:'nowrap', flexShrink:0 }}>
               {t.label}
             </button>
           ))}
         </div>
 
         {/* Content */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
+        <div style={{ flex:1, overflowY:'auto', padding:'18px' }}>
 
-          {/* ── VIDEO LECTURE ── */}
-          {tab === 'video' && (
-            <div style={{ animation: 'fade-in 0.3s ease' }}>
-              <div style={{ borderRadius: '16px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.08)', marginBottom: '16px', background: '#000', position: 'relative', paddingTop: '56.25%' }}>
-                <iframe
-                  key={lesson}
-                  src={`https://www.youtube.com/embed/${getYTId(lesson)}?autoplay=0&rel=0&modestbranding=1&color=white`}
-                  title={lesson}
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                  style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
-                />
+          {/* VIDEO */}
+          {tab==='video' && (
+            <div style={{ animation:'fade-in 0.3s ease' }}>
+              <div style={{ borderRadius:'14px', overflow:'hidden', border:'1px solid rgba(255,255,255,0.08)', marginBottom:'14px', background:'#000', position:'relative', paddingTop:'56.25%' }}>
+                <iframe key={lesson} src={`https://www.youtube.com/embed/${getYT(lesson)}?rel=0&modestbranding=1`} title={lesson} allowFullScreen allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  style={{ position:'absolute', top:0, left:0, width:'100%', height:'100%', border:'none' }} />
               </div>
-              <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.07)', padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ background:'rgba(255,255,255,0.03)', borderRadius:'12px', border:'1px solid rgba(255,255,255,0.07)', padding:'14px 16px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:'12px' }}>
                 <div>
-                  <div style={{ color: '#fff', fontWeight: 700, fontSize: '14px', marginBottom: '3px' }}>{lesson}</div>
-                  <div style={{ color: '#64748b', fontSize: '12px' }}>🎬 Free video lecture • After watching, switch to AI Teacher for doubts</div>
+                  <div style={{ color:'#fff', fontWeight:700, fontSize:'13px', marginBottom:'3px' }}>{lesson}</div>
+                  <div style={{ color:'#334155', fontSize:'11px' }}>🎬 Free video · After watching, try AI Teacher for doubts in Hindi/Marathi</div>
                 </div>
-                <button onClick={() => setTab('teacher')}
-                  style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', borderRadius: '10px', border: 'none', background: course.accent, color: '#fff', fontSize: '12px', fontWeight: 700, cursor: 'pointer', flexShrink: 0 }}>
-                  Ask AI Teacher →
+                <button onClick={()=>setTab('teacher')} style={{ padding:'7px 14px', borderRadius:'9px', border:'none', background:ACC, color:'#fff', fontSize:'11px', fontWeight:700, cursor:'pointer', whiteSpace:'nowrap' }}>
+                  Ask AI →
                 </button>
               </div>
-              <div style={{ marginTop: '12px', padding: '12px 16px', borderRadius: '12px', background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.15)', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <span style={{ fontSize: '20px' }}>💡</span>
-                <div style={{ fontSize: '12px', color: '#94a3b8', lineHeight: 1.6 }}>
-                  <strong style={{ color: '#c7d2fe' }}>Pro Tip:</strong> Watch the video first, then use <strong style={{ color: course.accent }}>AI Teacher</strong> for explanations in Hindi/Marathi, <strong style={{ color: '#34d399' }}>Code & Run</strong> to practice, and <strong style={{ color: '#f59e0b' }}>Quiz</strong> to test yourself!
-                </div>
+              <div style={{ marginTop:'12px', padding:'12px 16px', borderRadius:'12px', background:'rgba(99,102,241,0.07)', border:'1px solid rgba(99,102,241,0.15)', fontSize:'12px', color:'#94a3b8', lineHeight:1.6 }}>
+                💡 <strong style={{ color:'#c7d2fe' }}>Learning Path:</strong> Watch Video → AI Teacher → Code & Run → Quiz (20 Qs) → Mark Done ✅
               </div>
             </div>
           )}
 
-          {/* ── AI TEACHER ── */}
-          {tab === 'teacher' && (
-            <div style={{ animation: 'fade-in 0.3s ease' }}>
-              <div style={{ background: 'linear-gradient(135deg,rgba(15,23,42,0.98),rgba(20,25,50,0.98))', borderRadius: '18px', border: `1px solid ${course.accent}33`, padding: '24px', marginBottom: '16px', position: 'relative', overflow: 'hidden' }}>
-                {/* Glow */}
-                <div style={{ position: 'absolute', top: -60, right: -60, width: 150, height: 150, borderRadius: '50%', background: course.accent, opacity: 0.05, filter: 'blur(40px)' }} />
-                <div style={{ display: 'flex', gap: '16px' }}>
-                  {/* Avatar */}
-                  <div style={{ position: 'relative', flexShrink: 0 }}>
-                    <div style={{ width: 64, height: 64, borderRadius: '50%', background: `linear-gradient(135deg,${course.accent},${course.accent}88)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px', border: `2px solid ${course.accent}66`, boxShadow: speaking ? `0 0 24px ${course.accent}88` : 'none', transition: 'box-shadow 0.3s' }}>
-                      🤖
-                    </div>
+          {/* AI TEACHER */}
+          {tab==='teacher' && (
+            <div style={{ animation:'fade-in 0.3s ease' }}>
+              <div style={{ background:`linear-gradient(135deg,rgba(15,23,42,0.98),rgba(20,25,50,0.98))`, borderRadius:'16px', border:`1px solid ${ACC}33`, padding:'22px', marginBottom:'14px', position:'relative', overflow:'hidden' }}>
+                <div style={{ position:'absolute', top:-50, right:-50, width:120, height:120, borderRadius:'50%', background:ACC, opacity:0.04, filter:'blur(40px)' }} />
+                <div style={{ display:'flex', gap:'14px' }}>
+                  <div style={{ position:'relative', flexShrink:0 }}>
+                    <div style={{ width:58, height:58, borderRadius:'50%', background:`linear-gradient(135deg,${ACC},${ACC}88)`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'26px', border:`2px solid ${ACC}55`, boxShadow:speaking?`0 0 20px ${ACC}88`:undefined, transition:'box-shadow 0.3s' }}>🤖</div>
                     {speaking && <>
-                      <div style={{ position: 'absolute', inset: -4, borderRadius: '50%', border: `2px solid ${course.accent}44`, animation: 'pulse-ring 1s ease-out infinite' }} />
-                      <div style={{ position: 'absolute', inset: -8, borderRadius: '50%', border: `1px solid ${course.accent}22`, animation: 'pulse-ring 1s ease-out 0.3s infinite' }} />
+                      <div style={{ position:'absolute', inset:-4, borderRadius:'50%', border:`2px solid ${ACC}44`, animation:'pulse-ring 1s ease-out infinite' }} />
+                      <div style={{ position:'absolute', inset:-8, borderRadius:'50%', border:`1px solid ${ACC}22`, animation:'pulse-ring 1s ease-out 0.3s infinite' }} />
                     </>}
                   </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-                      <span style={{ color: course.accent, fontSize: '12px', fontWeight: 800, letterSpacing: '0.05em' }}>ALEX · AI TEACHER</span>
-                      {speaking && <span style={{ background: `${course.accent}22`, color: course.accent, fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '10px' }}>🔊 Speaking...</span>}
-                      {teacherLoading && <span style={{ color: '#475569', fontSize: '11px' }}>Thinking...</span>}
+                  <div style={{ flex:1 }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'10px' }}>
+                      <span style={{ color:ACC, fontSize:'11px', fontWeight:800, letterSpacing:'0.05em' }}>ALEX · AI TEACHER</span>
+                      {speaking && <span style={{ background:`${ACC}22`, color:ACC, fontSize:'10px', fontWeight:700, padding:'2px 8px', borderRadius:'10px' }}>🔊 Speaking</span>}
                     </div>
-                    <div style={{ color: '#cbd5e1', fontSize: '14px', lineHeight: 1.75, whiteSpace: 'pre-wrap' }} className={teacherLoading ? 'typing-cursor' : ''}>
-                      {teacherLoading && !teacherText ? (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#334155' }}>
-                          <Loader2 size={16} className="animate-spin" style={{ color: course.accent }} />
-                          <span>Alex is preparing your lesson in {langLabel}...</span>
-                        </div>
-                      ) : teacherText}
-                    </div>
+                    {teacherLoading && !teacherText
+                      ? <div style={{ display:'flex', alignItems:'center', gap:'8px', color:'#334155', fontSize:'13px' }}><div style={{ width:16,height:16,border:`2px solid ${ACC}`,borderTopColor:'transparent',borderRadius:'50%',animation:'spin 0.8s linear infinite' }}/> Preparing lesson...</div>
+                      : <div style={{ color:'#cbd5e1', fontSize:'13px', lineHeight:1.8, whiteSpace:'pre-wrap' }}>{teacherText}</div>
+                    }
                   </div>
                 </div>
               </div>
-
-              {/* Sound wave */}
               {speaking && (
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '3px', height: '40px', marginBottom: '16px' }}>
-                  {waveBars.map((h, i) => (
-                    <div key={i} style={{ width: '3px', background: `${course.accent}`, borderRadius: '2px', height: `${h}px`, transition: 'height 0.12s ease', opacity: 0.7 + (i%3)*0.1 }} />
-                  ))}
+                <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'3px', height:'36px', marginBottom:'14px' }}>
+                  {waveBars.map((h,i)=><div key={i} style={{ width:'3px', background:ACC, borderRadius:'2px', height:`${h}px`, transition:'height 0.1s', opacity:0.6+i%3*0.13 }} />)}
                 </div>
               )}
-
-              <button onClick={loadTeacher} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', borderRadius: '10px', border: `1px solid ${course.accent}33`, background: `${course.accent}11`, color: course.accent, fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
-                <RefreshCw size={12} /> Re-explain in {langLabel}
+              <button onClick={loadTeacher} style={{ display:'flex', alignItems:'center', gap:'6px', padding:'7px 14px', borderRadius:'9px', border:`1px solid ${ACC}33`, background:`${ACC}0d`, color:ACC, fontSize:'11px', fontWeight:600, cursor:'pointer' }}>
+                <RefreshCw size={12}/> Re-explain
               </button>
             </div>
           )}
 
-          {/* ── CODE & RUN ── */}
-          {tab === 'code' && (
-            <div style={{ animation: 'fade-in 0.3s ease', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {codeLoading ? (
-                <div style={{ textAlign: 'center', padding: '48px', color: '#334155' }}>
-                  <Loader2 size={28} className="animate-spin" style={{ color: course.accent, margin: '0 auto 12px', display: 'block' }} />
-                  <div style={{ fontSize: '14px' }}>Generating code example in {course.codeLanguage}...</div>
-                </div>
-              ) : (
-                <>
-                  {/* AI generated explanation */}
-                  <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.07)', padding: '16px', fontSize: '13px', color: '#94a3b8', lineHeight: 1.7, whiteSpace: 'pre-wrap', maxHeight: '200px', overflowY: 'auto' }}>
-                    {codeText}
-                  </div>
-
-                  {/* Live playground */}
-                  <div style={{ background: '#0d1117', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.08)', overflow: 'hidden' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px', background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <Terminal size={13} style={{ color: course.accent }} />
-                        <span style={{ color: '#64748b', fontSize: '12px', fontFamily: 'monospace' }}>▶ Live Code Playground — {course.codeLanguage}</span>
+          {/* CODE & RUN */}
+          {tab==='code' && (
+            <div style={{ animation:'fade-in 0.3s ease', display:'flex', flexDirection:'column', gap:'14px' }}>
+              {codeLoading
+                ? <div style={{ textAlign:'center', padding:'40px', color:'#334155' }}><div style={{ width:24,height:24,border:`2px solid ${ACC}`,borderTopColor:'transparent',borderRadius:'50%',animation:'spin 0.8s linear infinite',margin:'0 auto 12px' }}/> Generating {course.codeLanguage} example...</div>
+                : <>
+                  {codeText && <div style={{ background:'rgba(255,255,255,0.03)', borderRadius:'12px', border:'1px solid rgba(255,255,255,0.07)', padding:'14px 16px', fontSize:'12px', color:'#64748b', lineHeight:1.7, whiteSpace:'pre-wrap', maxHeight:'150px', overflowY:'auto' }}>{codeText}</div>}
+                  <div style={{ background:'#0d1117', borderRadius:'14px', border:'1px solid rgba(255,255,255,0.08)', overflow:'hidden' }}>
+                    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 16px', background:'rgba(255,255,255,0.03)', borderBottom:'1px solid rgba(255,255,255,0.06)' }}>
+                      <div style={{ display:'flex', alignItems:'center', gap:'7px' }}>
+                        <Terminal size={12} style={{ color:ACC }}/>
+                        <span style={{ color:'#475569', fontSize:'12px', fontFamily:'monospace' }}>{course.codeLanguage} · Live Playground</span>
                       </div>
-                      <button className="run-btn" onClick={runUserCode} disabled={runLoading}
-                        style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 14px', borderRadius: '8px', border: 'none', background: '#10b981', color: '#fff', fontSize: '12px', fontWeight: 700, cursor: 'pointer', opacity: runLoading ? 0.6 : 1 }}>
-                        {runLoading ? <Loader2 size={12} className="animate-spin" /> : <Play size={12} fill="#fff" />}
-                        {runLoading ? 'Running...' : 'Run Code'}
+                      <button onClick={runUserCode} disabled={runLoading}
+                        style={{ display:'flex', alignItems:'center', gap:'5px', padding:'5px 14px', borderRadius:'7px', border:'none', background:'#10b981', color:'#fff', fontSize:'11px', fontWeight:700, cursor:'pointer', opacity:runLoading?0.6:1 }}>
+                        {runLoading?<div style={{ width:11,height:11,border:'2px solid #fff',borderTopColor:'transparent',borderRadius:'50%',animation:'spin 0.8s linear infinite' }}/>:<Play size={11} fill="#fff"/>}
+                        {runLoading?'Running...':'▶ Run Code'}
                       </button>
                     </div>
-                    <textarea value={userCode} onChange={e => setUserCode(e.target.value)}
+                    <textarea value={userCode} onChange={e=>setUserCode(e.target.value)}
                       spellCheck={false}
-                      style={{ width: '100%', minHeight: '180px', background: 'transparent', border: 'none', padding: '16px', fontFamily: "'Fira Code',monospace", fontSize: '13px', color: '#e2e8f0', outline: 'none', resize: 'vertical', lineHeight: 1.7 }}
-                      placeholder={`Write your ${course.codeLanguage} code here...`} />
-                    {codeOutput && (
-                      <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', padding: '12px 16px' }}>
-                        <div style={{ fontSize: '11px', fontWeight: 700, color: '#34d399', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <Terminal size={11} /> OUTPUT
-                        </div>
-                        <pre style={{ margin: 0, fontFamily: 'monospace', fontSize: '13px', color: codeOutput.includes('Error') || codeOutput.includes('error') ? '#f87171' : '#a7f3d0', lineHeight: 1.6 }}>{codeOutput}</pre>
+                      style={{ width:'100%', minHeight:'180px', background:'transparent', border:'none', padding:'14px 16px', fontFamily:'"Fira Code",monospace', fontSize:'12px', color:'#e2e8f0', outline:'none', lineHeight:1.75, boxSizing:'border-box' }}
+                      placeholder={`Write ${course.codeLanguage} code here...`} />
+                    {codeOut && (
+                      <div style={{ borderTop:'1px solid rgba(255,255,255,0.06)', padding:'12px 16px' }}>
+                        <div style={{ fontSize:'10px', fontWeight:700, color:'#34d399', marginBottom:'5px', letterSpacing:'0.05em' }}>▶ OUTPUT</div>
+                        <pre style={{ margin:0, fontFamily:'monospace', fontSize:'12px', color:codeErr?'#f87171':'#a7f3d0', lineHeight:1.6, whiteSpace:'pre-wrap' }}>{codeOut}</pre>
                       </div>
                     )}
                   </div>
-                  <button onClick={loadCode} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 14px', borderRadius: '9px', border: '1px solid rgba(255,255,255,0.08)', background: 'none', color: '#475569', fontSize: '12px', cursor: 'pointer', alignSelf: 'flex-start' }}>
-                    <RefreshCw size={12} /> New Example
+                  <button onClick={loadCode} style={{ display:'flex', alignItems:'center', gap:'5px', padding:'6px 13px', borderRadius:'8px', border:'1px solid rgba(255,255,255,0.08)', background:'none', color:'#334155', fontSize:'11px', cursor:'pointer', alignSelf:'flex-start' }}>
+                    <RefreshCw size={11}/> New Example
                   </button>
-                </>
-              )}
+                </>}
             </div>
           )}
 
-          {/* ── BACKWARD TRACING ── */}
-          {tab === 'backward' && (
-            <div style={{ animation: 'fade-in 0.3s ease' }}>
-              {traceLoading ? (
-                <div style={{ textAlign: 'center', padding: '48px', color: '#334155' }}>
-                  <Loader2 size={28} className="animate-spin" style={{ color: '#f87171', margin: '0 auto 12px', display: 'block' }} />
-                  Analyzing backward trace in {langLabel}...
-                </div>
-              ) : (
-                <div style={{ background: 'linear-gradient(135deg,rgba(239,68,68,0.05),rgba(15,23,42,0.98))', borderRadius: '16px', border: '1px solid rgba(239,68,68,0.2)', padding: '24px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '18px' }}>
-                    <div style={{ width: 36, height: 36, borderRadius: '10px', background: 'rgba(239,68,68,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <ArrowLeftRight size={16} style={{ color: '#f87171' }} />
-                    </div>
-                    <div>
-                      <div style={{ color: '#f87171', fontWeight: 800, fontSize: '14px' }}>← Backward Tracing</div>
-                      <div style={{ color: '#64748b', fontSize: '11px' }}>How the output was produced — traced in reverse</div>
-                    </div>
+          {/* BACKWARD */}
+          {tab==='backward' && (
+            <div style={{ animation:'fade-in 0.3s ease' }}>
+              {traceLoading
+                ? <div style={{ textAlign:'center', padding:'40px', color:'#334155' }}><div style={{ width:22,height:22,border:'2px solid #f87171',borderTopColor:'transparent',borderRadius:'50%',animation:'spin 0.8s linear infinite',margin:'0 auto 12px' }}/> Analyzing backward trace...</div>
+                : <div style={{ background:'rgba(239,68,68,0.05)', borderRadius:'14px', border:'1px solid rgba(239,68,68,0.18)', padding:'22px' }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:'9px', marginBottom:'16px' }}>
+                    <div style={{ width:34,height:34,borderRadius:'9px',background:'rgba(239,68,68,0.12)',display:'flex',alignItems:'center',justifyContent:'center' }}><ArrowLeftRight size={15} style={{ color:'#f87171' }}/></div>
+                    <div><div style={{ color:'#f87171', fontWeight:800, fontSize:'13px' }}>← Backward Tracing</div><div style={{ color:'#334155', fontSize:'10px' }}>How output was produced — traced in reverse</div></div>
                   </div>
-                  <div style={{ color: '#e2e8f0', fontSize: '13px', lineHeight: 1.8, whiteSpace: 'pre-wrap' }}>{backward}</div>
-                  <button onClick={loadTrace} style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '16px', padding: '7px 14px', borderRadius: '8px', border: '1px solid rgba(248,113,113,0.3)', background: 'rgba(239,68,68,0.08)', color: '#f87171', fontSize: '12px', cursor: 'pointer' }}>
-                    <RefreshCw size={12} /> Regenerate
-                  </button>
-                </div>
-              )}
+                  <div style={{ color:'#e2e8f0', fontSize:'12px', lineHeight:1.85, whiteSpace:'pre-wrap' }}>{backward}</div>
+                  <button onClick={loadTrace} style={{ display:'flex', alignItems:'center', gap:'5px', marginTop:'14px', padding:'6px 12px', borderRadius:'7px', border:'1px solid rgba(248,113,113,0.25)', background:'rgba(239,68,68,0.07)', color:'#f87171', fontSize:'11px', cursor:'pointer' }}><RefreshCw size={11}/> Regenerate</button>
+                </div>}
             </div>
           )}
 
-          {/* ── FORWARD TRACING ── */}
-          {tab === 'forward' && (
-            <div style={{ animation: 'fade-in 0.3s ease' }}>
-              {traceLoading ? (
-                <div style={{ textAlign: 'center', padding: '48px', color: '#334155' }}>
-                  <Loader2 size={28} className="animate-spin" style={{ color: '#34d399', margin: '0 auto 12px', display: 'block' }} />
-                  Analyzing forward execution in {langLabel}...
-                </div>
-              ) : (
-                <div style={{ background: 'linear-gradient(135deg,rgba(16,185,129,0.05),rgba(15,23,42,0.98))', borderRadius: '16px', border: '1px solid rgba(16,185,129,0.2)', padding: '24px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '18px' }}>
-                    <div style={{ width: 36, height: 36, borderRadius: '10px', background: 'rgba(16,185,129,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <Zap size={16} style={{ color: '#34d399' }} />
-                    </div>
-                    <div>
-                      <div style={{ color: '#34d399', fontWeight: 800, fontSize: '14px' }}>→ Forward Tracing</div>
-                      <div style={{ color: '#64748b', fontSize: '11px' }}>Step-by-step execution from start to end</div>
-                    </div>
+          {/* FORWARD */}
+          {tab==='forward' && (
+            <div style={{ animation:'fade-in 0.3s ease' }}>
+              {traceLoading
+                ? <div style={{ textAlign:'center', padding:'40px', color:'#334155' }}><div style={{ width:22,height:22,border:'2px solid #34d399',borderTopColor:'transparent',borderRadius:'50%',animation:'spin 0.8s linear infinite',margin:'0 auto 12px' }}/> Analyzing forward execution...</div>
+                : <div style={{ background:'rgba(16,185,129,0.04)', borderRadius:'14px', border:'1px solid rgba(16,185,129,0.18)', padding:'22px' }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:'9px', marginBottom:'16px' }}>
+                    <div style={{ width:34,height:34,borderRadius:'9px',background:'rgba(16,185,129,0.12)',display:'flex',alignItems:'center',justifyContent:'center' }}><Zap size={15} style={{ color:'#34d399' }}/></div>
+                    <div><div style={{ color:'#34d399', fontWeight:800, fontSize:'13px' }}>→ Forward Tracing</div><div style={{ color:'#334155', fontSize:'10px' }}>Step-by-step execution from start to end</div></div>
                   </div>
-                  <div style={{ color: '#e2e8f0', fontSize: '13px', lineHeight: 1.8, whiteSpace: 'pre-wrap' }}>{forward}</div>
-                  <button onClick={loadTrace} style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '16px', padding: '7px 14px', borderRadius: '8px', border: '1px solid rgba(52,211,153,0.3)', background: 'rgba(16,185,129,0.08)', color: '#34d399', fontSize: '12px', cursor: 'pointer' }}>
-                    <RefreshCw size={12} /> Regenerate
-                  </button>
-                </div>
-              )}
+                  <div style={{ color:'#e2e8f0', fontSize:'12px', lineHeight:1.85, whiteSpace:'pre-wrap' }}>{forward}</div>
+                  <button onClick={loadTrace} style={{ display:'flex', alignItems:'center', gap:'5px', marginTop:'14px', padding:'6px 12px', borderRadius:'7px', border:'1px solid rgba(52,211,153,0.25)', background:'rgba(16,185,129,0.07)', color:'#34d399', fontSize:'11px', cursor:'pointer' }}><RefreshCw size={11}/> Regenerate</button>
+                </div>}
             </div>
           )}
 
-          {/* ── QUIZ ── */}
-          {tab === 'quiz' && (
-            <div style={{ animation: 'fade-in 0.3s ease' }}>
-              {quizLoading ? (
-                <div style={{ textAlign: 'center', padding: '48px', color: '#334155' }}>
-                  <div style={{ fontSize: '36px', marginBottom: '12px', animation: 'float 1.5s ease infinite' }}>🎯</div>
-                  <Loader2 size={24} className="animate-spin" style={{ color: course.accent, margin: '0 auto 12px', display: 'block' }} />
-                  Generating quiz in {langLabel}...
+          {/* QUIZ — 20 questions */}
+          {tab==='quiz' && (
+            <div style={{ animation:'fade-in 0.3s ease' }}>
+              {quizLoading
+                ? <div style={{ textAlign:'center', padding:'40px' }}><div style={{ fontSize:'36px', marginBottom:'12px' }}>🎯</div><div style={{ width:22,height:22,border:`2px solid ${ACC}`,borderTopColor:'transparent',borderRadius:'50%',animation:'spin 0.8s linear infinite',margin:'0 auto 12px' }}/><div style={{ color:'#334155', fontSize:'13px' }}>Generating 20 quiz questions...</div></div>
+                : quizDone
+                ? <div style={{ textAlign:'center', padding:'40px', background:'rgba(255,255,255,0.03)', borderRadius:'16px', border:'1px solid rgba(255,255,255,0.08)' }}>
+                  <div style={{ fontSize:'48px', marginBottom:'12px' }}>🏆</div>
+                  <div style={{ color:'#fff', fontWeight:800, fontSize:'22px', marginBottom:'6px' }}>Quiz Complete!</div>
+                  <div style={{ color:ACC, fontSize:'32px', fontWeight:900, margin:'16px 0' }}>{quizScore}/{quizAll.length*10} pts</div>
+                  <div style={{ color:'#64748b', fontSize:'13px', marginBottom:'24px' }}>{quizScore>=quizAll.length*8?'Excellent! 🌟':quizScore>=quizAll.length*6?'Good job! 👍':'Keep practicing! 💪'}</div>
+                  <button onClick={loadQuiz} style={{ padding:'10px 24px', borderRadius:'12px', border:'none', background:ACC, color:'#fff', fontSize:'13px', fontWeight:700, cursor:'pointer' }}>Retake Quiz</button>
                 </div>
-              ) : quiz ? (
-                <div>
-                  {/* Score bar */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <Trophy size={16} style={{ color: '#f59e0b' }} />
-                      <span style={{ color: '#f59e0b', fontWeight: 700, fontSize: '14px' }}>Score: {score} pts</span>
-                    </div>
-                    <div style={{ color: '#475569', fontSize: '12px' }}>{quizCount} questions answered</div>
-                  </div>
-
-                  <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.08)', padding: '24px', marginBottom: '16px' }}>
-                    <div style={{ fontSize: '15px', fontWeight: 700, color: '#fff', marginBottom: '20px', lineHeight: 1.5 }}>{quiz.question}</div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      {quiz.options.map((opt: string, i: number) => {
-                        const isCorrect = i === quiz.correct;
-                        const isSelected = selectedAns === i;
-                        const revealed = selectedAns !== null;
-                        return (
-                          <button key={i} onClick={() => { if (selectedAns !== null) return; setSelectedAns(i); if (isCorrect) { setScore(s => s+10); } setQuizCount(c => c+1); }}
-                            style={{
-                              display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', borderRadius: '12px', border: revealed ? (isCorrect ? '1px solid rgba(52,211,153,0.6)' : isSelected ? '1px solid rgba(248,113,113,0.6)' : '1px solid rgba(255,255,255,0.06)') : '1px solid rgba(255,255,255,0.08)',
-                              background: revealed ? (isCorrect ? 'rgba(16,185,129,0.12)' : isSelected ? 'rgba(239,68,68,0.1)' : 'rgba(255,255,255,0.02)') : 'rgba(255,255,255,0.04)',
-                              color: revealed ? (isCorrect ? '#34d399' : isSelected ? '#f87171' : '#475569') : '#94a3b8',
-                              cursor: revealed ? 'default' : 'pointer', textAlign: 'left', fontSize: '13px', fontWeight: 500, transition: 'all 0.2s',
-                            }}>
-                            <span style={{ width: 24, height: 24, borderRadius: '50%', border: `2px solid ${revealed ? (isCorrect ? '#34d399' : isSelected ? '#f87171' : 'rgba(255,255,255,0.15)') : 'rgba(255,255,255,0.2)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 800, flexShrink: 0, color: revealed ? (isCorrect ? '#34d399' : isSelected ? '#f87171' : '#334155') : '#64748b' }}>
-                              {String.fromCharCode(65+i)}
-                            </span>
-                            {opt}
-                            {revealed && isCorrect && <CheckCircle size={14} style={{ color: '#34d399', marginLeft: 'auto' }} />}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {selectedAns !== null && (
-                    <div style={{ animation: 'fade-in 0.3s ease' }}>
-                      <div style={{ background: selectedAns === quiz.correct ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)', borderRadius: '12px', border: `1px solid ${selectedAns === quiz.correct ? 'rgba(52,211,153,0.3)' : 'rgba(248,113,113,0.3)'}`, padding: '16px', marginBottom: '12px' }}>
-                        <div style={{ fontWeight: 700, marginBottom: '6px', color: selectedAns === quiz.correct ? '#34d399' : '#f87171' }}>
-                          {selectedAns === quiz.correct ? '✅ Correct! +10 points' : '❌ Not quite!'}
-                        </div>
-                        <div style={{ fontSize: '13px', color: '#94a3b8', lineHeight: 1.6 }}>{quiz.explanation}</div>
-                        {quiz.fun_fact && <div style={{ fontSize: '12px', color: '#64748b', marginTop: '8px', fontStyle: 'italic' }}>💡 {quiz.fun_fact}</div>}
+                : curQuiz && (
+                  <div>
+                    {/* Progress */}
+                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'16px' }}>
+                      <div style={{ display:'flex', alignItems:'center', gap:'7px' }}>
+                        <Trophy size={14} style={{ color:'#f59e0b' }}/><span style={{ color:'#f59e0b', fontWeight:700, fontSize:'13px' }}>Score: {quizScore} pts</span>
                       </div>
-                      <button onClick={loadQuiz} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: 'none', background: `linear-gradient(135deg,${course.accent},${course.accent}99)`, color: '#fff', fontSize: '14px', fontWeight: 700, cursor: 'pointer' }}>
-                        Next Question →
-                      </button>
+                      <span style={{ color:'#334155', fontSize:'12px' }}>Question {quizIdx+1} of {quizAll.length}</span>
                     </div>
-                  )}
-                </div>
-              ) : null}
+                    <div style={{ background:'rgba(255,255,255,0.05)', borderRadius:'4px', height:'4px', overflow:'hidden', marginBottom:'20px' }}>
+                      <div style={{ width:`${((quizIdx)/quizAll.length)*100}%`, height:'100%', background:ACC, transition:'width 0.4s' }} />
+                    </div>
+
+                    <div style={{ background:'rgba(255,255,255,0.03)', borderRadius:'14px', border:'1px solid rgba(255,255,255,0.08)', padding:'22px', marginBottom:'14px' }}>
+                      <div style={{ fontSize:'14px', fontWeight:700, color:'#fff', marginBottom:'18px', lineHeight:1.55 }}>{curQuiz.q}</div>
+                      <div style={{ display:'flex', flexDirection:'column', gap:'8px' }}>
+                        {curQuiz.opts?.map((opt:string, i:number)=>{
+                          const rev = selectedAns!==null;
+                          const correct = i===curQuiz.ans;
+                          const sel = selectedAns===i;
+                          return (
+                            <button key={i} onClick={()=>{ if(selectedAns!==null) return; setSelectedAns(i); if(correct) setQuizScore(s=>s+10); }}
+                              style={{ display:'flex', alignItems:'center', gap:'10px', padding:'11px 14px', borderRadius:'10px', border:rev?(correct?'1px solid rgba(52,211,153,0.5)':sel?'1px solid rgba(248,113,113,0.5)':'1px solid rgba(255,255,255,0.06)'):'1px solid rgba(255,255,255,0.08)', background:rev?(correct?'rgba(16,185,129,0.1)':sel?'rgba(239,68,68,0.09)':'rgba(255,255,255,0.02)'):'rgba(255,255,255,0.04)', color:rev?(correct?'#34d399':sel?'#f87171':'#334155'):'#94a3b8', cursor:rev?'default':'pointer', textAlign:'left', fontSize:'12px', fontWeight:500, transition:'all 0.15s' }}>
+                              <span style={{ width:22,height:22,borderRadius:'50%',border:`2px solid ${rev?(correct?'#34d399':sel?'#f87171':'rgba(255,255,255,0.1)'):'rgba(255,255,255,0.2)'}`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'10px',fontWeight:800,flexShrink:0,color:rev?(correct?'#34d399':sel?'#f87171':'#334155'):'#475569' }}>{String.fromCharCode(65+i)}</span>
+                              {opt}
+                              {rev && correct && <CheckCircle size={13} style={{ color:'#34d399', marginLeft:'auto' }}/>}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {selectedAns!==null && (
+                      <div style={{ animation:'fade-in 0.3s ease' }}>
+                        <div style={{ background:selectedAns===curQuiz.ans?'rgba(16,185,129,0.07)':'rgba(239,68,68,0.07)', borderRadius:'12px', border:`1px solid ${selectedAns===curQuiz.ans?'rgba(52,211,153,0.25)':'rgba(248,113,113,0.25)'}`, padding:'14px 16px', marginBottom:'12px' }}>
+                          <div style={{ fontWeight:700, marginBottom:'5px', color:selectedAns===curQuiz.ans?'#34d399':'#f87171' }}>{selectedAns===curQuiz.ans?'✅ Correct! +10 pts':'❌ Not quite!'}</div>
+                          <div style={{ fontSize:'12px', color:'#94a3b8', lineHeight:1.6 }}>{curQuiz.exp}</div>
+                        </div>
+                        <button onClick={()=>{ if(quizIdx+1>=quizAll.length) setQuizDone(true); else { setQuizIdx(i=>i+1); setSelectedAns(null); } }}
+                          style={{ width:'100%', padding:'11px', borderRadius:'11px', border:'none', background:`linear-gradient(135deg,${ACC},${ACC}99)`, color:'#fff', fontSize:'13px', fontWeight:700, cursor:'pointer' }}>
+                          {quizIdx+1>=quizAll.length?'🏆 See Results':'Next Question →'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )
+              }
             </div>
           )}
 
-          {/* ── NOTES ── */}
-          {tab === 'notes' && (
-            <div style={{ animation: 'fade-in 0.3s ease' }}>
-              {notesLoading ? (
-                <div style={{ textAlign: 'center', padding: '48px', color: '#334155' }}>
-                  <Loader2 size={28} className="animate-spin" style={{ color: course.accent, margin: '0 auto 12px', display: 'block' }} />
-                  Generating study notes in {langLabel}...
-                </div>
-              ) : (
-                <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.07)', padding: '24px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <FileText size={16} style={{ color: course.accent }} />
-                      <span style={{ color: '#fff', fontWeight: 800, fontSize: '14px' }}>Study Notes — {lesson}</span>
-                    </div>
-                    <button onClick={loadNotes} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '5px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'none', color: '#475569', fontSize: '11px', cursor: 'pointer' }}>
-                      <RefreshCw size={11} /> Refresh
-                    </button>
+          {/* NOTES */}
+          {tab==='notes' && (
+            <div style={{ animation:'fade-in 0.3s ease' }}>
+              {notesLoading
+                ? <div style={{ textAlign:'center', padding:'40px' }}><div style={{ width:22,height:22,border:`2px solid ${ACC}`,borderTopColor:'transparent',borderRadius:'50%',animation:'spin 0.8s linear infinite',margin:'0 auto 12px' }}/><div style={{ color:'#334155', fontSize:'13px' }}>Generating notes...</div></div>
+                : <div style={{ background:'rgba(255,255,255,0.02)', borderRadius:'14px', border:'1px solid rgba(255,255,255,0.07)', padding:'22px' }}>
+                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'16px' }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:'7px' }}><FileText size={14} style={{ color:ACC }}/><span style={{ color:'#fff', fontWeight:800, fontSize:'13px' }}>Notes — {lesson}</span></div>
+                    <button onClick={loadNotes} style={{ display:'flex', alignItems:'center', gap:'4px', padding:'5px 11px', borderRadius:'7px', border:'1px solid rgba(255,255,255,0.09)', background:'none', color:'#334155', fontSize:'11px', cursor:'pointer' }}><RefreshCw size={10}/> Refresh</button>
                   </div>
-                  <div style={{ color: '#cbd5e1', fontSize: '13px', lineHeight: 1.9, whiteSpace: 'pre-wrap' }}>{notes}</div>
+                  <div style={{ color:'#cbd5e1', fontSize:'12px', lineHeight:1.9, whiteSpace:'pre-wrap' }}>{notes}</div>
                 </div>
-              )}
+              }
             </div>
           )}
         </div>
       </div>
 
-      {/* ══ RIGHT SIDEBAR — AI MENTOR ══════════════════════════════ */}
-      <div style={{ background: 'linear-gradient(180deg,#0b0f1a 0%,#080b12 100%)', borderLeft: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        {/* Header */}
-        <div style={{ padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{ position: 'relative' }}>
-            <div style={{ width: 38, height: 38, borderRadius: '50%', background: `linear-gradient(135deg,${course.accent},${course.accent}88)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', boxShadow: `0 0 14px ${course.accent}44` }}>🤖</div>
-            <div style={{ position: 'absolute', bottom: 0, right: 0, width: 10, height: 10, borderRadius: '50%', background: '#34d399', border: '2px solid #0b0f1a' }} />
+      {/* ═══ RIGHT SIDEBAR — AI MENTOR ═══════════════════════════════ */}
+      <div style={{ background:'#0b0f1a', borderLeft:'1px solid rgba(255,255,255,0.06)', display:'flex', flexDirection:'column', overflow:'hidden' }}>
+        <div style={{ padding:'12px 14px', borderBottom:'1px solid rgba(255,255,255,0.06)', display:'flex', alignItems:'center', gap:'9px' }}>
+          <div style={{ position:'relative' }}>
+            <div style={{ width:36,height:36,borderRadius:'50%',background:`linear-gradient(135deg,${ACC},${ACC}88)`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'16px',boxShadow:`0 0 12px ${ACC}44` }}>🤖</div>
+            <div style={{ position:'absolute', bottom:0, right:0, width:9, height:9, borderRadius:'50%', background:'#34d399', border:'2px solid #0b0f1a' }} />
           </div>
           <div>
-            <div style={{ color: '#fff', fontWeight: 800, fontSize: '13px' }}>AI Mentor</div>
-            <div style={{ color: '#34d399', fontSize: '10px', fontWeight: 600 }}>● Online · {langLabel}</div>
+            <div style={{ color:'#fff', fontWeight:800, fontSize:'12px' }}>AI Mentor</div>
+            <div style={{ color:'#34d399', fontSize:'10px' }}>● Online</div>
           </div>
         </div>
 
-        {/* Quick questions */}
-        <div style={{ padding: '10px 12px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-          <div style={{ fontSize: '10px', color: '#334155', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '7px' }}>Quick Questions</div>
-          {QUICK_Q.map((q, i) => (
-            <button key={i} className="quick-q" onClick={() => sendMentor(q)}
-              style={{ width: '100%', padding: '7px 10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.03)', color: '#64748b', fontSize: '11px', cursor: 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px', transition: 'all 0.15s', lineHeight: 1.4 }}>
-              <span>{q}</span>
-              <ChevronRight size={10} style={{ flexShrink: 0, marginLeft: '4px', color: '#334155' }} />
+        {/* Quick */}
+        <div style={{ padding:'10px 12px', borderBottom:'1px solid rgba(255,255,255,0.06)' }}>
+          <div style={{ fontSize:'10px', color:'#1e293b', fontWeight:700, letterSpacing:'0.06em', textTransform:'uppercase', marginBottom:'6px' }}>Quick Questions</div>
+          {QUICK.map((q,i)=>(
+            <button key={i} className="qq" onClick={()=>sendMentor(q)}
+              style={{ width:'100%', padding:'6px 9px', borderRadius:'7px', border:'1px solid rgba(255,255,255,0.06)', background:'rgba(255,255,255,0.03)', color:'#475569', fontSize:'10px', cursor:'pointer', textAlign:'left', display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'3px', transition:'all 0.15s', lineHeight:1.4 }}>
+              <span>{q}</span><ChevronRight size={9} style={{ flexShrink:0, marginLeft:'4px', color:'#1e293b' }}/>
             </button>
           ))}
         </div>
 
         {/* Voice */}
-        <div style={{ padding: '10px 12px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-          <div style={{ fontSize: '10px', color: '#334155', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '8px' }}>Voice ({langLabel})</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '2px', height: '24px' }}>
-              {Array.from({length:14}).map((_,i) => (
-                <div key={i} style={{ flex: 1, background: micOn ? course.accent : 'rgba(255,255,255,0.07)', borderRadius: '2px', height: micOn ? `${Math.random()*18+4}px` : '3px', transition: 'height 0.12s ease', opacity: 0.7 }} />
-              ))}
+        <div style={{ padding:'10px 12px', borderBottom:'1px solid rgba(255,255,255,0.06)' }}>
+          <div style={{ fontSize:'10px', color:'#1e293b', fontWeight:700, letterSpacing:'0.06em', textTransform:'uppercase', marginBottom:'7px' }}>Voice (English)</div>
+          <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
+            <div style={{ flex:1, display:'flex', alignItems:'center', gap:'2px', height:'22px' }}>
+              {waveBars.slice(0,8).map((h,i)=><div key={i} style={{ flex:1, background:speaking?ACC:'rgba(255,255,255,0.07)', borderRadius:'2px', height:`${speaking?h:3}px`, transition:'height 0.1s' }} />)}
             </div>
             <button onClick={toggleMic}
-              style={{ width: 42, height: 42, borderRadius: '50%', border: 'none', background: micOn ? 'linear-gradient(135deg,#ef4444,#dc2626)' : `linear-gradient(135deg,${course.accent},${course.accent}99)`, color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: micOn ? '0 0 16px rgba(239,68,68,0.5)' : `0 0 12px ${course.accent}44` }}>
-              {micOn ? <MicOff size={16} /> : <Mic size={16} />}
+              style={{ width:40,height:40,borderRadius:'50%',border:'none',background:micOn?'linear-gradient(135deg,#ef4444,#dc2626)':`linear-gradient(135deg,${ACC},${ACC}99)`,color:'#fff',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,boxShadow:micOn?'0 0 14px rgba(239,68,68,0.5)':`0 0 10px ${ACC}44` }}>
+              {micOn?<MicOff size={15}/>:<Mic size={15}/>}
             </button>
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '2px', height: '24px' }}>
-              {Array.from({length:14}).map((_,i) => (
-                <div key={i} style={{ flex: 1, background: speaking ? course.accent : 'rgba(255,255,255,0.07)', borderRadius: '2px', height: speaking ? `${waveBars[i]||4}px` : '3px', transition: 'height 0.12s ease', opacity: 0.7 }} />
-              ))}
+            <div style={{ flex:1, display:'flex', alignItems:'center', gap:'2px', height:'22px' }}>
+              {waveBars.slice(8,16).map((h,i)=><div key={i} style={{ flex:1, background:speaking?ACC:'rgba(255,255,255,0.07)', borderRadius:'2px', height:`${speaking?h:3}px`, transition:'height 0.1s' }} />)}
             </div>
           </div>
-          <div style={{ textAlign: 'center', fontSize: '10px', color: '#334155', marginTop: '5px' }}>
-            {micOn ? '🎤 Listening...' : 'Tap mic to speak'}
-          </div>
+          <div style={{ textAlign:'center', fontSize:'10px', color:'#1e293b', marginTop:'4px' }}>{micOn?'🎤 Listening...':'Tap mic to speak'}</div>
         </div>
 
         {/* Chat */}
-        <div style={{ fontSize: '10px', color: '#334155', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', padding: '8px 12px 4px' }}>Chat</div>
-        <div style={{ flex: 1, overflowY: 'auto', padding: '0 10px 8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          {mentorMsgs.map((m, i) => (
-            <div key={i} style={{ display: 'flex', justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start', animation: 'fade-in 0.3s ease' }}>
-              <div style={{
-                maxWidth: '86%', padding: '9px 12px', borderRadius: m.role === 'user' ? '14px 14px 2px 14px' : '14px 14px 14px 2px',
-                fontSize: '12px', lineHeight: 1.55,
-                background: m.role === 'user' ? `linear-gradient(135deg,${course.accent},${course.accent}99)` : 'rgba(255,255,255,0.06)',
-                color: m.role === 'user' ? '#fff' : '#cbd5e1',
-                border: m.role === 'assistant' ? '1px solid rgba(255,255,255,0.06)' : 'none',
-              }}>{m.content}</div>
+        <div style={{ fontSize:'10px', color:'#1e293b', fontWeight:700, letterSpacing:'0.06em', textTransform:'uppercase', padding:'8px 12px 3px' }}>Chat</div>
+        <div style={{ flex:1, overflowY:'auto', padding:'0 10px 6px', display:'flex', flexDirection:'column', gap:'7px' }}>
+          {mentorMsgs.map((m,i)=>(
+            <div key={i} style={{ display:'flex', justifyContent:m.role==='user'?'flex-end':'flex-start', animation:'fade-in 0.3s ease' }}>
+              <div style={{ maxWidth:'88%', padding:'8px 11px', borderRadius:m.role==='user'?'13px 13px 2px 13px':'13px 13px 13px 2px', fontSize:'11px', lineHeight:1.55, background:m.role==='user'?`linear-gradient(135deg,${ACC},${ACC}99)`:'rgba(255,255,255,0.06)', color:m.role==='user'?'#fff':'#cbd5e1', border:m.role==='assistant'?'1px solid rgba(255,255,255,0.06)':undefined }}>
+                {m.content}
+              </div>
             </div>
           ))}
           {mentorLoading && (
-            <div style={{ display: 'flex', gap: '4px', padding: '10px 12px', width: 'fit-content', borderRadius: '14px', background: 'rgba(255,255,255,0.05)' }}>
-              {[0,1,2].map(i => <div key={i} style={{ width: 6, height: 6, borderRadius: '50%', background: '#475569', animation: `bounce 0.8s ${i*0.15}s infinite ease-in-out` }} />)}
+            <div style={{ display:'flex', gap:'4px', padding:'8px 11px', width:'fit-content', borderRadius:'13px', background:'rgba(255,255,255,0.05)' }}>
+              {[0,1,2].map(i=><div key={i} style={{ width:5,height:5,borderRadius:'50%',background:'#475569',animation:`bounce 0.8s ${i*0.15}s infinite` }} />)}
             </div>
           )}
           <div ref={msgEndRef} />
         </div>
 
-        {/* Input */}
-        <div style={{ padding: '10px 12px', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', gap: '6px' }}>
-          <input value={mentorInput} onChange={e => setMentorInput(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMentor()}
-            placeholder={`Ask in ${langLabel}...`}
-            style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: '10px', padding: '8px 12px', color: '#fff', fontSize: '12px', outline: 'none' }} />
-          <button onClick={() => sendMentor()} disabled={!mentorInput.trim() || mentorLoading}
-            style={{ width: 34, height: 34, borderRadius: '10px', border: 'none', background: mentorInput.trim() ? course.accent : 'rgba(255,255,255,0.06)', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: (!mentorInput.trim() || mentorLoading) ? 0.4 : 1, transition: 'all 0.2s', flexShrink: 0 }}>
-            <Send size={14} />
+        <div style={{ padding:'10px 12px', borderTop:'1px solid rgba(255,255,255,0.06)', display:'flex', gap:'6px' }}>
+          <input value={mentorInput} onChange={e=>setMentorInput(e.target.value)} onKeyDown={e=>e.key==='Enter'&&!e.shiftKey&&sendMentor()}
+            placeholder="Ask anything..." style={{ flex:1, background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.09)', borderRadius:'9px', padding:'7px 11px', color:'#fff', fontSize:'11px', outline:'none' }} />
+          <button onClick={()=>sendMentor()} disabled={!mentorInput.trim()||mentorLoading}
+            style={{ width:32,height:32,borderRadius:'9px',border:'none',background:mentorInput.trim()?ACC:'rgba(255,255,255,0.05)',color:'#fff',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',opacity:(!mentorInput.trim()||mentorLoading)?0.4:1,transition:'all 0.2s',flexShrink:0 }}>
+            <Send size={13}/>
           </button>
         </div>
       </div>
@@ -1062,9 +944,8 @@ function LessonUI({ course, onBack }: { course: any; onBack: () => void }) {
   );
 }
 
-// ── Export ────────────────────────────────────────────────────────
 export function AcademyPage() {
   const [course, setCourse] = useState<any>(null);
-  if (course) return <LessonUI course={course} onBack={() => setCourse(null)} />;
+  if (course) return <LessonPage course={course} onBack={()=>setCourse(null)} />;
   return <Catalog onSelect={setCourse} />;
 }
