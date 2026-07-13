@@ -661,8 +661,9 @@ const getDashboardStats = asyncHandler(async (req, res) => {
 // ── Bulk Import Students directly into a Batch ───────────────────
 const bulkImportToBatch = asyncHandler(async (req, res) => {
   const institutionId = getInstitutionId(req);
-  const { batchId } = req.params;
+  const batchId = req.params.id || req.params.batchId;
 
+  if (!batchId) { res.status(400); throw new Error('Batch ID required'); }
   const batch = await Batch.findOne({ where: { id: batchId, institutionId } });
   if (!batch) { res.status(404); throw new Error('Batch not found'); }
 
