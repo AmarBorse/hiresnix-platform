@@ -2,7 +2,11 @@
  * controllers/instStudentController.js
  * Institution Student Portal — Login + Dashboard
  */
-const asyncHandler = require('express-async-handler');
+const asyncHandler  = require('express-async-handler');
+const PDFDocument   = require('pdfkit');
+const QRCode        = require('qrcode');
+const path          = require('path');
+const fs            = require('fs');
 const jwt          = require('jsonwebtoken');
 const bcrypt       = require('bcryptjs');
 const crypto       = require('crypto');
@@ -177,6 +181,123 @@ const changePassword = asyncHandler(async (req, res) => {
   res.json({ success: true, message: 'Password updated successfully' });
 });
 
+// ── Academy Certificate PDF ──────────────────────────────────────
+const downloadAcademyCertificate = asyncHandler(async (req, res) => {
+  const student = req.student;
+  const { courseId } = req.params;
+
+  const COURSE_NAMES = {
+    python: 'Python Programming', javascript: 'JavaScript',
+    java: 'Java', cpp: 'C++', dsa: 'Data Structures & Algorithms',
+    sql: 'SQL & Databases', webdev: 'Full Stack Web Development',
+  };
+
+  const courseName = COURSE_NAMES[courseId] || courseId;
+  const certNo = `HXAC-${student.careerId}-${courseId.toUpperCase()}-${Date.now().toString(36).toUpperCase()}`;
+  const verifyUrl = `${process.env.CLIENT_URL || 'https://hiresnix.co.in'}/verify-academy/${certNo}`;
+  const issuedDate = new Date().toLocaleDateString('en-IN', { day:'numeric', month:'long', year:'numeric' });
+
+  const qrDataUrl = await QRCode.toDataURL(verifyUrl, { width: 120, margin: 1 });
+  const qrBuffer  = Buffer.from(qrDataUrl.split(',')[1], 'base64');
+
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename="Academy_${courseName.replace(/\s+/g,'_')}_${student.careerId}.pdf"`);
+
+  const W = 841.89, H = 595.28;
+  const doc = new PDFDocument({ size: 'A4', layout: 'landscape', margin: 0 });
+  doc.pipe(res);
+
+  const GOLD = '#d4af37';
+  const DARK = '#0f172a';
+  const ACCENT = '#6366f1';
+
+  // ── Outer border ──────────────────────────────────────────────
+  doc.rect(20, 20, W-40, H-40).lineWidth(3).stroke(GOLD);
+  doc.rect(26, 26, W-52, H-52).lineWidth(1).stroke(GOLD);
+
+  // ── Dark Header ───────────────────────────────────────────────
+  doc.rect(20, 20, W-40, 90).fill(DARK);
+
+  // Logo area
+  doc.fillColor('#ffffff').fontSize(22).font('Helvetica-Bold').text('Hiresnix', 50, 35);
+  doc.fillColor('#94a3b8').fontSize(9).font('Helvetica').text('Empowering Future Professionals', 50, 62);
+
+  // Right header text
+  doc.fillColor('#818cf8').fontSize(11).font('Helvetica-Bold')
+     .text('AI ACADEMY — CERTIFICATE OF COMPLETION', 0, 52, { align: 'right', width: W-50 });
+
+  // Gold diamonds
+  const diamond = (x, y, s) => doc.moveTo(x,y-s).lineTo(x+s,y).lineTo(x,y+s).lineTo(x-s,y).fillColor(GOLD).fill();
+  diamond(35, 70, 6); diamond(W-35, 70, 6);
+
+  // ── Title ─────────────────────────────────────────────────────
+  doc.fillColor(DARK).fontSize(34).font('Helvetica-Bold')
+     .text('Certificate of Completion', 0, 130, { align: 'center' });
+
+  // Gold divider
+  doc.rect(W/2-120, 178, 240, 2).fill(GOLD);
+
+  // ── Body ──────────────────────────────────────────────────────
+  doc.fillColor('#475569').fontSize(13).font('Helvetica')
+     .text('This is to certify that', 0, 196, { align: 'center' });
+
+  doc.fillColor(DARK).fontSize(30).font('Helvetica-Bold')
+     .text(student.name, 0, 218, { align: 'center' });
+
+  doc.fillColor('#475569').fontSize(13).font('Helvetica')
+     .text('has successfully completed the AI Academy course in', 0, 262, { align: 'center' });
+
+  doc.fillColor(ACCENT).fontSize(18).font('Helvetica-Bold')
+     .text(courseName, 0, 286, { align: 'center' });
+
+  doc.fillColor('#475569').fontSize(12).font('Helvetica')
+     .text(`at Hiresnix AI Academy  |  Issued on ${issuedDate}`, 0, 316, { align: 'center' });
+
+  doc.fillColor('#94a3b8').fontSize(9).font('Helvetica')
+     .text(`Certificate No: ${certNo}`, 0, 338, { align: 'center' });
+
+  doc.fillColor('#334155').fontSize(9).font('Helvetica')
+     .text(`Career ID: ${student.careerId}`, 0, 352, { align: 'center' });
+
+  // ── QR Code ───────────────────────────────────────────────────
+  const qrSize = 75;
+  const qrX = W/2 - qrSize/2;
+  const qrY = H - 170;
+  doc.roundedRect(qrX-9, qrY-9, qrSize+18, qrSize+36, 6).fillAndStroke('#ffffff', GOLD);
+  doc.image(qrBuffer, qrX, qrY, { width: qrSize });
+  doc.fillColor('#1e293b').fontSize(7).font('Helvetica-Bold')
+     .text('Scan to Verify', qrX-4, qrY+qrSize+4, { width: qrSize+8, align: 'center' });
+  doc.fillColor('#64748b').fontSize(5.5).font('Helvetica')
+     .text(certNo, qrX-4, qrY+qrSize+15, { width: qrSize+8, align: 'center' });
+
+  // ── Signatures ────────────────────────────────────────────────
+  const sigY = H - 130;
+  const sig1X = W/2 - 270;
+  const sig2X = W/2 + 110;
+  const sigW  = 150;
+  const sigImgH = 40;
+
+  const dirSigPath = path.join(__dirname, '..', 'signatures', 'Director.png');
+  const ceoSigPath = path.join(__dirname, '..', 'signatures', 'ceo.png');
+
+  try { if (fs.existsSync(dirSigPath)) doc.image(dirSigPath, sig1X+20, sigY-sigImgH-2, { height: sigImgH, fit: [sigW-20, sigImgH] }); } catch(e) {}
+  doc.moveTo(sig1X, sigY+2).lineTo(sig1X+sigW, sigY+2).lineWidth(0.8).stroke('#94a3b8');
+  doc.fillColor(DARK).fontSize(10).font('Helvetica-Bold').text('Mr.Jayesh Badgujar', sig1X, sigY+7, { width: sigW, align: 'center' });
+  doc.fillColor('#64748b').fontSize(8).font('Helvetica').text('Program Director', sig1X, sigY+21, { width: sigW, align: 'center' });
+
+  try { if (fs.existsSync(ceoSigPath)) doc.image(ceoSigPath, sig2X+20, sigY-sigImgH-2, { height: sigImgH, fit: [sigW-20, sigImgH] }); } catch(e) {}
+  doc.moveTo(sig2X, sigY+2).lineTo(sig2X+sigW, sigY+2).lineWidth(0.8).stroke('#94a3b8');
+  doc.fillColor(DARK).fontSize(10).font('Helvetica-Bold').text('Mr.A S Borse', sig2X, sigY+7, { width: sigW, align: 'center' });
+  doc.fillColor('#64748b').fontSize(8).font('Helvetica').text('Founder & CEO, Hiresnix', sig2X, sigY+21, { width: sigW, align: 'center' });
+
+  // ── Dark Footer ───────────────────────────────────────────────
+  doc.rect(20, H-58, W-40, 38).fill(DARK);
+  doc.fillColor('#94a3b8').fontSize(8).font('Helvetica')
+     .text('support@hiresnix.co.in  |  www.hiresnix.co.in  |  Shirpur, Maharashtra, India', 0, H-45, { align: 'center' });
+
+  doc.end();
+});
+
 // ── Academy Progress ─────────────────────────────────────────────
 const saveAcademyProgress = asyncHandler(async (req, res) => {
   const student = req.student;
@@ -256,4 +377,4 @@ const getAllAcademyProgress = asyncHandler(async (req, res) => {
   res.json({ success: true, data: rows || [] });
 });
 
-module.exports = { login, getMe, getDashboard, getCertificates, changePassword, protectInstStudent, saveAcademyProgress, getAcademyProgress, getAllAcademyProgress };
+module.exports = { login, getMe, getDashboard, getCertificates, changePassword, protectInstStudent, saveAcademyProgress, getAcademyProgress, getAllAcademyProgress, downloadAcademyCertificate };

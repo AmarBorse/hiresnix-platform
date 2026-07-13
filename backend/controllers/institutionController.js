@@ -11,6 +11,7 @@ const {
 } = require('../models');
 const QRCode      = require('qrcode');
 const PDFDocument = require('pdfkit');
+const path = require('path');
 
 // ── Helpers ──────────────────────────────────────────────────────
 
@@ -577,23 +578,38 @@ const downloadCertificatePDF = asyncHandler(async (req, res) => {
   doc.fillColor('#64748b').fontSize(5.5).font('Helvetica')
      .text(cert.certificateId, qrX-4, qrY+qrSize+15, { width: qrSize+8, align: 'center' });
 
-  // ── Signatures ────────────────────────────────────────────────
-  const sigY = H - 125;
-  const sig1X = W/2 - 260;
-  const sig2X = W/2 + 100;
+  // ── Signatures with images ────────────────────────────────────
+  const sigY = H - 130;
+  const sig1X = W/2 - 270;
+  const sig2X = W/2 + 110;
   const sigW  = 150;
+  const sigImgH = 40;
 
-  doc.moveTo(sig1X, sigY+35).lineTo(sig1X+sigW, sigY+35).lineWidth(1).stroke('#94a3b8');
+  // Director signature
+  try {
+    const dirSigPath = path.join(__dirname, '..', 'signatures', 'Director.png');
+    if (require('fs').existsSync(dirSigPath)) {
+      doc.image(dirSigPath, sig1X + 20, sigY - sigImgH - 2, { height: sigImgH, fit: [sigW - 20, sigImgH] });
+    }
+  } catch(e) {}
+  doc.moveTo(sig1X, sigY+2).lineTo(sig1X+sigW, sigY+2).lineWidth(0.8).stroke('#94a3b8');
   doc.fillColor('#0f172a').fontSize(10).font('Helvetica-Bold')
-     .text('Mr.Jayesh Badgujar', sig1X, sigY+40, { width: sigW, align: 'center' });
+     .text('Mr.Jayesh Badgujar', sig1X, sigY+7, { width: sigW, align: 'center' });
   doc.fillColor('#64748b').fontSize(8).font('Helvetica')
-     .text('Program Director', sig1X, sigY+54, { width: sigW, align: 'center' });
+     .text('Program Director', sig1X, sigY+21, { width: sigW, align: 'center' });
 
-  doc.moveTo(sig2X, sigY+35).lineTo(sig2X+sigW, sigY+35).lineWidth(1).stroke('#94a3b8');
+  // CEO signature
+  try {
+    const ceoSigPath = path.join(__dirname, '..', 'signatures', 'ceo.png');
+    if (require('fs').existsSync(ceoSigPath)) {
+      doc.image(ceoSigPath, sig2X + 20, sigY - sigImgH - 2, { height: sigImgH, fit: [sigW - 20, sigImgH] });
+    }
+  } catch(e) {}
+  doc.moveTo(sig2X, sigY+2).lineTo(sig2X+sigW, sigY+2).lineWidth(0.8).stroke('#94a3b8');
   doc.fillColor('#0f172a').fontSize(10).font('Helvetica-Bold')
-     .text('Mr.A S Borse', sig2X, sigY+40, { width: sigW, align: 'center' });
+     .text('Mr.A S Borse', sig2X, sigY+7, { width: sigW, align: 'center' });
   doc.fillColor('#64748b').fontSize(8).font('Helvetica')
-     .text(`Founder & CEO, ${COMPANY.name}`, sig2X, sigY+54, { width: sigW, align: 'center' });
+     .text(`Founder & CEO, ${COMPANY.name}`, sig2X, sigY+21, { width: sigW, align: 'center' });
 
   // ── Dark Footer ───────────────────────────────────────────────
   doc.rect(20, H-60, W-40, 40).fill('#0f172a');

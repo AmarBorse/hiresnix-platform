@@ -241,73 +241,28 @@ function getLevel(xp: number) {
   return LEVELS[0];
 }
 
-// ── Academy Certificate Generator ────────────────────────────────
-function generateCertPDF(studentName: string, courseName: string, completionDate: string) {
-  const canvas = document.createElement('canvas');
-  canvas.width = 1200; canvas.height = 850;
-  const ctx = canvas.getContext('2d')!;
-
-  // Background
-  ctx.fillStyle = '#0f172a';
-  ctx.fillRect(0, 0, 1200, 850);
-
-  // Gold border
-  ctx.strokeStyle = '#f59e0b';
-  ctx.lineWidth = 6;
-  ctx.strokeRect(20, 20, 1160, 810);
-  ctx.strokeStyle = '#f59e0b33';
-  ctx.lineWidth = 2;
-  ctx.strokeRect(30, 30, 1140, 790);
-
-  // Header
-  ctx.fillStyle = '#f59e0b';
-  ctx.font = 'bold 18px Arial';
-  ctx.textAlign = 'center';
-  ctx.fillText('HIRESNIX AI ACADEMY', 600, 80);
-
-  ctx.fillStyle = '#fff';
-  ctx.font = 'bold 48px Arial';
-  ctx.fillText('Certificate of Completion', 600, 160);
-
-  ctx.fillStyle = '#94a3b8';
-  ctx.font = '20px Arial';
-  ctx.fillText('This is to certify that', 600, 230);
-
-  ctx.fillStyle = '#f59e0b';
-  ctx.font = 'bold 52px Arial';
-  ctx.fillText(studentName, 600, 310);
-
-  ctx.fillStyle = '#94a3b8';
-  ctx.font = '20px Arial';
-  ctx.fillText('has successfully completed the course', 600, 370);
-
-  ctx.fillStyle = '#fff';
-  ctx.font = 'bold 38px Arial';
-  ctx.fillText(courseName, 600, 440);
-
-  ctx.fillStyle = '#64748b';
-  ctx.font = '16px Arial';
-  ctx.fillText(`Completion Date: ${completionDate}`, 600, 500);
-
-  // Decorations
-  ctx.fillStyle = '#f59e0b22';
-  ctx.beginPath(); ctx.arc(150, 700, 80, 0, Math.PI*2); ctx.fill();
-  ctx.beginPath(); ctx.arc(1050, 700, 80, 0, Math.PI*2); ctx.fill();
-
-  ctx.fillStyle = '#f59e0b';
-  ctx.font = 'bold 40px Arial';
-  ctx.fillText('🏆', 600, 640);
-
-  ctx.fillStyle = '#334155';
-  ctx.font = '14px Arial';
-  const certNo = `HXAC-${Date.now().toString(36).toUpperCase()}`;
-  ctx.fillText(`Certificate No: ${certNo} | hiresnix.co.in`, 600, 800);
-
-  // Download
-  const link = document.createElement('a');
-  link.download = `Hiresnix_Academy_${courseName.replace(/\s+/g,'_')}_Certificate.png`;
-  link.href = canvas.toDataURL('image/png');
-  link.click();
+// ── Academy Certificate — Download from backend ──────────────────
+function generateCertPDF(studentName: string, courseName: string, completionDate: string, courseId: string) {
+  const apiBase = (import.meta as any).env.VITE_API_URL || 'https://hirenix-backend.onrender.com/api';
+  const token = localStorage.getItem('hx_inst_student_token') || '';
+  const url = `${apiBase}/inst-student/academy/certificate/${courseId}`;
+  // Open in new tab for PDF download
+  const a = document.createElement('a');
+  a.href = url;
+  a.target = '_blank';
+  a.rel = 'noopener noreferrer';
+  // Add auth header via fetch blob
+  fetch(url, { headers: { Authorization: `Bearer ${token}` } })
+    .then(r => r.blob())
+    .then(blob => {
+      const blobUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = `Hiresnix_Academy_${courseName.replace(/\s+/g,'_')}_Certificate.pdf`;
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
+    })
+    .catch(() => alert('Certificate download failed. Please try again.'));
 }
 
 const COURSES = [
@@ -908,7 +863,8 @@ function LessonPage({ course, onBack }: { course:any; onBack:()=>void }) {
                   generateCertPDF(
                     student?.name || 'Student',
                     course.title,
-                    new Date().toLocaleDateString('en-IN')
+                    new Date().toLocaleDateString('en-IN'),
+                    course.id
                   );
                   setClaimedCerts(prev => new Set([...prev, course.id]));
                   saveProgress(studentId, course.id, {
