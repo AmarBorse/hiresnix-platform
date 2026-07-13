@@ -256,4 +256,4 @@ const getAllAcademyProgress = asyncHandler(async (req, res) => {
   res.json({ success: true, data: rows || [] });
 });
 
-module.exports = { login, getMe, getDashboard, getCertificates, changePassword, protectInstStudent };
+module.exports = { login, getMe, getDashboard, getCertificates, changePassword, protectInstStudent, saveAcademyProgress, getAcademyProgress, getAllAcademyProgress };
