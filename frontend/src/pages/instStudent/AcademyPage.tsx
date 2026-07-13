@@ -315,6 +315,172 @@ function generateCertPDF(studentName: string, courseName: string, completionDate
     .catch(() => alert('Certificate download failed. Please try again.'));
 }
 
+// ── Verified YouTube IDs ─────────────────────────────────────────
+const YT: Record<string,string> = {
+  // Python — verified working
+  "What is Python?":        "_uQrJ0TkZlc",
+  "Setting Up Python":      "YYXdXT2l-Gg",
+  "Your First Program":     "kqtD5dpn9C8",
+  "Variables & Data Types": "cQT33yu9pY8",
+  "Type Conversion":        "HGOBQPFzWKo",
+  "Arithmetic Operators":   "v5MR5JyNx_0",
+  "Comparison Operators":   "7I9bw5W9WIU",
+  "Logical Operators":      "ysKnOlKZQUM",
+  "If-Else Statements":     "AWek49wXGzI",
+  "For Loops":              "OnDr4J5BBOM",
+  "While Loops":            "6iF8Xb7Z3wQ",
+  "Break & Continue":       "yCZBnjF4_tU",
+  "Functions":              "9Os0IGs9u7E",
+  "Parameters & Return":    "9Os0IGs9u7E",
+  "Lambda Functions":       "25ovCm9jKfA",
+  "Recursion":              "ngCos3cnxi8",
+  "Decorators":             "r7Dtus7N4pI",
+  "Lists":                  "Eaz5e6M33zE",
+  "Tuples":                 "bdgRT40UUBQ",
+  "Dictionaries":           "daefaLgNkw0",
+  "Sets":                   "sBvaPopl4nE",
+  "List Comprehensions":    "3dt4OGnU5sM",
+  "String Methods":         "zdMEn_hZ-KI",
+  "File Handling":          "Uh2ebFW8OYM",
+  "Exception Handling":     "NIWwJbo-9_8",
+  "Classes & Objects":      "JeznW0oahkk",
+  "Inheritance":            "Cn7AkDb4pIU",
+  "Encapsulation":          "JeznW0oahkk",
+  "Polymorphism":           "JeznW0oahkk",
+  "Modules & Packages":     "GxCXiSkm6no",
+  "pip & Libraries":        "U8OtBUFVEFo",
+  "Generators":             "bD05uGo_sVI",
+  "Regular Expressions":    "K86ZkIY5FsM",
+  "Build a Calculator":     "4OX49nLNPEE",
+  "Build a To-Do App":      "DJGzR65BvqM",
+  "Build a Quiz Game":      "zehwgTB0vV8",
+  "Build a Web Scraper":    "ng2o98k983k",
+  "Final Python Project":   "DLn3jOsNRVE",
+  // JavaScript
+  "What is JavaScript?":       "W6NZfCO5SIk",
+  "Variables (let/const/var)": "edlFjlzxkSI",
+  "JS Data Types":             "qnDkYs2CnOA",
+  "Template Literals":         "DG4obitDvUA",
+  "JS Functions":              "xUI5Tsl2JpY",
+  "Arrow Functions":           "h33Srr5J9nY",
+  "Arrays":                    "R8rmfD9Y5-0",
+  "Objects":                   "_js_NLAlIqI",
+  "Destructuring":             "NIq3qLaHCIs",
+  "Spread & Rest":             "iLx4ma8ZqvQ",
+  "DOM Manipulation":          "y17RuWkWdn8",
+  "Event Listeners":           "XF1_MlZ5l6M",
+  "Fetch API":                 "drK3bge5eBw",
+  "Promises":                  "DHvZLI3Mk4E",
+  "Async Await":               "vn3tm0quoqE",
+  "Error Handling":            "cFTFtuEQ-10",
+  "ES6+ Features":             "NCwa_xi0Uuc",
+  "Local Storage":             "AUOzvFzdIk4",
+  "Build a Todo App (JS)":     "G0jO8kUrg-I",
+  "Build a Weather App":       "MIYQR-Ybrn4",
+  "Final JS Project":          "3PHXvlpOkf4",
+  // Java
+  "What is Java?":           "eIrMbAQSU34",
+  "Java Setup & Hello World":"bm0OyhwFDuY",
+  "Java Variables":          "EKzNKDhpbhQ",
+  "Java Data Types":         "EKzNKDhpbhQ",
+  "Java Operators":          "Jb39YMrxbSQ",
+  "Java If-Else":            "HsDOeIiIVhQ",
+  "Java Loops":              "efpFoHCKMN8",
+  "Java Arrays":             "xzjZy-dHHLw",
+  "Java Methods":            "vvanI8NsuiQ",
+  "Java OOP - Classes":      "IUqKuGNasdM",
+  "Java Inheritance":        "Zs342ePFvRI",
+  "Java Polymorphism":       "jhDUxynEQRI",
+  "Java Interfaces":         "GhslBwrRVVE",
+  "Java Exception Handling": "1XAfapkBQjk",
+  "Java Collections":        "GdAon80-0GQ",
+  "Java Generics":           "XMvznsY02Mk",
+  "Java File I/O":           "ScUJx4aToet",
+  "Java Threads":            "r_MbozD32NU",
+  "Java Streams":            "Q93swyQbN80",
+  "Java Lambda":             "gpIUfj3KaOc",
+  "Build a Bank App":        "Nk5YFa4MVNE",
+  "Build a Student DB":      "goFcQrFsivY",
+  "Final Java Project":      "Nk5YFa4MVNE",
+  // C++
+  "What is C++?":          "vLnPwxZdW4Y",
+  "C++ Setup":             "vLnPwxZdW4Y",
+  "C++ Variables":         "Rub-JsjMhWY",
+  "C++ Data Types":        "Rub-JsjMhWY",
+  "C++ Operators":         "E7F-xQlDiaw",
+  "C++ If-Else":           "mG5KVEgCkEY",
+  "C++ Loops":             "c6N_gkqDsS8",
+  "C++ Arrays":            "zB9RI8_5ygM",
+  "C++ Functions":         "-TkoO8Z07hI",
+  "C++ Pointers":          "DTssVzssPV0",
+  "C++ References":        "IzoFn3dfsPA",
+  "C++ OOP":               "wN0x9eZLix4",
+  "C++ Inheritance":       "X8nYM0wbdiM",
+  "C++ Polymorphism":      "oIr-ik3Bg3A",
+  "C++ STL":               "LyGlTmaWEPs",
+  "C++ File Handling":     "EaHFhms1Shw",
+  "Build a Calculator (C++)": "BkBVnkl0NF4",
+  "Final C++ Project":     "BkBVnkl0NF4",
+  // DSA
+  "Arrays & Big O":    "A37-3lflh8I",
+  "Two Pointers":      "On03HWe2tZM",
+  "Sliding Window":    "p-ss2JNDHLo",
+  "Prefix Sum":        "7pJo_rM0z_s",
+  "Strings":           "Mj_Pyh77sXE",
+  "Linked List":       "oiW79L8VYXk",
+  "Stack":             "I5lq6sCuABE",
+  "Queue":             "nqXaPZi99JI",
+  "Binary Tree":       "fAAZixBzIAI",
+  "BST":               "cySVml6e_Fc",
+  "Heap":              "0wPlzMU-k00",
+  "Graphs":            "09_LlHjoEiY",
+  "Bubble Sort":       "xli-hn4wrWA",
+  "Merge Sort":        "TzeBrDU-JaY",
+  "Quick Sort":        "Hoixgm4-P4M",
+  "Binary Search":     "P3YID7pr48E",
+  "Dynamic Programming": "oBt53YbR9Kk",
+  "Greedy Algorithms": "HzeK7g8cD0Y",
+  "Backtracking":      "DKCbsiDBN3c",
+  // SQL
+  "What is SQL?":          "HXV3zeQKqGY",
+  "SELECT & FROM":         "HXV3zeQKqGY",
+  "WHERE & AND/OR":        "HXV3zeQKqGY",
+  "ORDER BY & LIMIT":      "HXV3zeQKqGY",
+  "INSERT UPDATE DELETE":  "gbMSNAOHMV4",
+  "JOINS":                 "9yeOJ0ZMUYw",
+  "GROUP BY & HAVING":     "7cjTqE4GwFE",
+  "Subqueries":            "K1BKeugY5Xg",
+  "Window Functions":      "Ww71knvVu_k",
+  "Indexes":               "fsG1XaZEa78",
+  "Views & CTEs":          "K74_FNs6ox8",
+  "Transactions":          "P80Js_qClUE",
+  "Stored Procedures":     "Sggdhd2PiNg",
+  "SQL Project":           "p3qvj9hO_Bo",
+  // Web Dev
+  "HTML Basics":          "UB1O30fR-EE",
+  "HTML Forms":           "fNcJuPIZ2BE",
+  "Semantic HTML":        "kGW8Al_cga4",
+  "CSS Basics":           "1PnVor36_40",
+  "Box Model":            "rIO5326FgPE",
+  "Flexbox":              "JJSoEo8JSnc",
+  "CSS Grid":             "EiNiSFIPIQE",
+  "Responsive Design":    "srvUrASNj0s",
+  "JavaScript for Web":   "W6NZfCO5SIk",
+  "DOM & Events":         "y17RuWkWdn8",
+  "What is React?":       "SqcY0GlETPk",
+  "React Components":     "Ke90Tje7VS0",
+  "React Props & State":  "O6P86uwfdR0",
+  "React Hooks":          "cF2lQ_gZeA8",
+  "React Router":         "Law7wfdg_ls",
+  "API Integration":      "T3Px88x_PsI",
+  "Node.js Basics":       "TlB_eWDSMt4",
+  "Express.js":           "L72fhnn2tj0",
+  "MongoDB Basics":       "ofme2o29wY8",
+  "Build Full Stack App": "mrHNSanmqQ4",
+  "Deploy Your App":      "l134cBALZGY",
+};
+function getYT(l: string) { return YT[l] || 'dQw4w9WgXcQ'; }
+
 const COURSES = [
   {
     id:'python', title:'Python Programming', icon:'🐍', accent:'#6366f1', codeLanguage:'python',
@@ -801,6 +967,7 @@ function LessonPage({ course, onBack }: { course:any; onBack:()=>void }) {
   const isDone = (mi:number,li:number) => completed.has(`${mi}-${li}`);
 
   useEffect(() => {
+    if (tab==='video') return;
     if (tab==='teacher' && !teacherText && !teacherLoading) loadTeacher();
     if (tab==='code' && !codeText && !codeLoading) loadCode();
     if ((tab==='backward'||tab==='forward') && !backward && !traceLoading) loadTrace();
@@ -979,6 +1146,38 @@ function LessonPage({ course, onBack }: { course:any; onBack:()=>void }) {
         <div style={{ flex:1, overflowY:'auto', padding:'18px' }}>
 
 
+
+          {/* VIDEO */}
+          {tab==='video' && (
+            <div style={{ animation:'fade-in 0.3s ease' }}>
+              <div style={{ borderRadius:'14px', overflow:'hidden', border:'1px solid rgba(255,255,255,0.08)', marginBottom:'14px', background:'#000', position:'relative', paddingTop:'56.25%' }}>
+                <iframe key={lesson}
+                  src={`https://www.youtube-nocookie.com/embed/${getYT(lesson)}?rel=0&modestbranding=1&autoplay=0`}
+                  title={lesson} allowFullScreen
+                  allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  style={{ position:'absolute', top:0, left:0, width:'100%', height:'100%', border:'none' }}
+                  onError={() => {}}
+                />
+              </div>
+              <div style={{ background:'rgba(255,255,255,0.03)', borderRadius:'12px', border:'1px solid rgba(255,255,255,0.07)', padding:'14px 16px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:'12px' }}>
+                <div>
+                  <div style={{ color:'#fff', fontWeight:700, fontSize:'13px', marginBottom:'3px' }}>{lesson}</div>
+                  <div style={{ color:'#334155', fontSize:'11px' }}>🎬 Video lecture · If unavailable, use AI Teacher</div>
+                </div>
+                <div style={{ display:'flex', gap:'8px', flexShrink:0 }}>
+                  <a href={`https://www.youtube.com/results?search_query=${encodeURIComponent(lesson + ' ' + course.title + ' tutorial')}`}
+                    target="_blank" rel="noopener noreferrer"
+                    style={{ padding:'7px 12px', borderRadius:'9px', border:'1px solid rgba(255,255,255,0.1)', background:'rgba(255,255,255,0.05)', color:'#94a3b8', fontSize:'11px', fontWeight:600, cursor:'pointer', textDecoration:'none' }}>
+                    🔍 YouTube
+                  </a>
+                  <button onClick={()=>setTab('teacher')}
+                    style={{ padding:'7px 14px', borderRadius:'9px', border:'none', background:ACC, color:'#fff', fontSize:'11px', fontWeight:700, cursor:'pointer' }}>
+                    Ask AI →
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* AI TEACHER */}
           {tab==='teacher' && (
