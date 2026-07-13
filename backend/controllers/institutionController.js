@@ -650,6 +650,78 @@ const getDashboardStats = asyncHandler(async (req, res) => {
   res.json({ success: true, data: { totalStudents, totalBatches, totalCourses, totalCertificates, recentStudents, recentBatches, completedBatches } });
 });
 
+// ── Bulk Import Students directly into a Batch ───────────────────
+const bulkImportToBatch = asyncHandler(async (req, res) => {
+  const institutionId = getInstitutionId(req);
+  const { batchId } = req.params;
+  if (!req.file) { res.status(400); throw new Error('No file uploaded'); }
+
+  const batch = await Batch.findOne({ where: { id: batchId, institutionId } });
+  if (!batch) { res.status(404); throw new Error('Batch not found'); }
+
+  let XLSX;
+  try { XLSX = require('xlsx'); } catch(e) { res.status(500); throw new Error('xlsx not installed'); }
+
+  const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+  const sheet = workbook.Sheets[workbook.SheetNames[0]];
+  const rows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+
+  if (rows.length === 0) { res.status(400); throw new Error('File is empty'); }
+
+  const results = { created: [], assigned: [], skipped: [], errors: [] };
+
+  for (const row of rows) {
+    const name   = (row['Name'] || row['name'] || row['Student Name'] || '').toString().trim();
+    const email  = (row['Email'] || row['email'] || '').toString().trim().toLowerCase();
+    const dept   = (row['Department'] || row['department'] || row['Branch'] || '').toString().trim();
+    const roll   = (row['Roll No'] || row['rollNumber'] || row['Roll Number'] || '').toString().trim();
+    const mobile = (row['Mobile'] || row['mobile'] || row['Phone'] || '').toString().trim();
+    const year   = (row['Year'] || row['year'] || '').toString().trim();
+
+    if (!name || !email) { results.errors.push({ name: name||'?', reason: 'Name & email required' }); continue; }
+
+    try {
+      let student = await InstitutionStudent.findOne({ where: { institutionId, email } });
+      let isNew = false;
+
+      if (!student) {
+        const careerId = await generateCareerId();
+        const pwd = defaultPassword(careerId);
+        student = await InstitutionStudent.create({
+          institutionId, careerId, password: pwd,
+          name, email, mobile, department: dept, rollNumber: roll, year, skills: [],
+        });
+        results.created.push({ name, email, careerId, defaultPassword: pwd });
+        isNew = true;
+      }
+
+      // Assign to batch if not already
+      const alreadyIn = await BatchStudent.findOne({ where: { batchId: batch.id, studentId: student.id } });
+      if (alreadyIn) {
+        results.skipped.push({ name, careerId: student.careerId, reason: 'Already in batch' });
+      } else {
+        await BatchStudent.create({ batchId: batch.id, studentId: student.id });
+        if (!isNew) results.assigned.push({ name, careerId: student.careerId });
+      }
+    } catch(err) {
+      results.errors.push({ name, reason: err.message });
+    }
+  }
+
+  res.json({
+    success: true,
+    summary: {
+      total: rows.length,
+      created: results.created.length,
+      assigned: results.assigned.length,
+      skipped: results.skipped.length,
+      errors: results.errors.length,
+    },
+    data: results,
+    batch: { id: batch.id, name: batch.name },
+  });
+});
+
 // ── Bulk Import Students from CSV/Excel ──────────────────────────
 const bulkImportStudents = asyncHandler(async (req, res) => {
   const institutionId = getInstitutionId(req);

@@ -1,6 +1,6 @@
 // src/pages/institution/InstitutionBatches.tsx
 import React, { useEffect, useState } from 'react';
-import { Plus, Pencil, Trash2, Users, X, ChevronRight, ArrowLeft, CheckSquare, Square, Award, CheckCircle } from 'lucide-react';
+import { Plus, Pencil, Trash2, Users, X, ChevronRight, ArrowLeft, CheckSquare, Square, Award, CheckCircle, Upload, Download, FileSpreadsheet, Sparkles, Star } from 'lucide-react';
 import { toast } from 'sonner';
 import { institutionApi } from '../../api/institution';
 import { InstituteBatch, InstitutionStudent } from '../../types';
@@ -289,6 +289,10 @@ export function InstitutionBatches() {
   const [assignModal, setAssignModal]       = useState(false);
   const [assignSelected, setAssignSelected] = useState<number[]>([]);
   const [certModal, setCertModal]           = useState<InstituteBatch | null>(null);
+  const [batchImportModal, setBatchImportModal] = useState(false);
+  const [batchImportFile, setBatchImportFile]   = useState<File|null>(null);
+  const [batchImporting, setBatchImporting]     = useState(false);
+  const [batchImportResult, setBatchImportResult] = useState<any>(null);
 
   const load = () => {
     setLoading(true);
@@ -312,6 +316,18 @@ export function InstitutionBatches() {
       setBatchStudents(r.data || []);
     } catch { toast.error('Failed to load students'); }
     finally { setStudentsLoading(false); }
+  };
+
+  const handleBatchImport = async () => {
+    if (!batchImportFile || !viewBatch) return;
+    setBatchImporting(true);
+    try {
+      const result = await institutionApi.bulkImportToBatch(viewBatch.id, batchImportFile);
+      setBatchImportResult(result);
+      openBatch(viewBatch);
+    } catch(err: any) {
+      toast.error(err.response?.data?.message || 'Import failed');
+    } finally { setBatchImporting(false); }
   };
 
   const openAssign = async () => {
@@ -381,8 +397,12 @@ export function InstitutionBatches() {
             <p className="text-sm" style={{color:"#64748b"}}>{batchStudents.length} students</p>
           </div>
         </div>
-        <div className="flex gap-2">
-          {/* Issue Certificate button */}
+        <div className="flex gap-2 flex-wrap">
+          <button onClick={() => { setBatchImportModal(true); setBatchImportFile(null); setBatchImportResult(null); }}
+            className="flex items-center gap-1.5 px-3 py-2 text-sm font-bold rounded-xl transition"
+            style={{background:'rgba(245,158,11,0.15)',border:'1px solid rgba(245,158,11,0.3)',color:'#f59e0b'}}>
+            <Upload size={14} /> Import CSV
+          </button>
           <button onClick={() => setCertModal(viewBatch)}
             className="flex items-center gap-1.5 px-3 py-2 text-sm font-bold rounded-xl transition text-white"
             style={{background:"linear-gradient(135deg,#10b981,#059669)"}}>
@@ -431,6 +451,93 @@ export function InstitutionBatches() {
           </tbody>
         </table>
       </div>
+
+      {/* Batch Import Modal */}
+      {batchImportModal && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center p-4 bg-black/70 overflow-y-auto" style={{backdropFilter:'blur(4px)'}}>
+          <div className="rounded-2xl w-full max-w-lg mt-8" style={{background:'linear-gradient(135deg,#0f1729,#0d1b35)',border:'1px solid rgba(255,255,255,0.1)',boxShadow:'0 25px 60px rgba(0,0,0,0.7)'}}>
+            <div className="flex items-center justify-between px-5 py-4" style={{borderBottom:'1px solid rgba(255,255,255,0.08)'}}>
+              <div className="flex items-center gap-2">
+                <FileSpreadsheet size={16} style={{color:'#f59e0b'}} />
+                <div>
+                  <h2 className="font-bold text-white">Import Students to Batch</h2>
+                  <p className="text-xs mt-0.5" style={{color:'#64748b'}}>{viewBatch?.name} — Students will be created & auto-assigned</p>
+                </div>
+              </div>
+              <button onClick={() => setBatchImportModal(false)}><X size={18} className="text-gray-400" /></button>
+            </div>
+            <div className="p-5 space-y-4">
+              {!batchImportResult ? (
+                <>
+                  <div className="rounded-xl p-3 text-xs" style={{background:'rgba(245,158,11,0.08)',border:'1px solid rgba(245,158,11,0.2)',color:'#94a3b8'}}>
+                    <p className="font-bold mb-1" style={{color:'#f59e0b'}}>CSV Columns:</p>
+                    <div className="grid grid-cols-3 gap-1">
+                      {['Name *','Email *','Department','Roll No','Mobile','Year'].map(c=>(
+                        <span key={c} className="font-mono" style={{color:'#c7d2fe'}}>{c}</span>
+                      ))}
+                    </div>
+                  </div>
+                  <button onClick={() => {
+                    const csv = 'Name,Email,Department,Roll No,Mobile,Year
+Rahul Sharma,rahul@example.com,Computer Science,CS001,9876543210,3rd Year
+';
+                    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+                    a.download = 'batch_import_template.csv'; a.click();
+                  }} className="flex items-center gap-2 text-xs" style={{color:'#34d399'}}>
+                    <Download size={12}/> Download Template
+                  </button>
+                  <label className="flex flex-col items-center justify-center p-8 rounded-xl cursor-pointer" style={{border:`2px dashed ${batchImportFile?'rgba(245,158,11,0.5)':'rgba(255,255,255,0.12)'}`,background:'rgba(255,255,255,0.02)'}}>
+                    <Upload size={28} className="mb-2" style={{color:batchImportFile?'#f59e0b':'#475569'}} />
+                    <p className="text-sm font-semibold" style={{color:batchImportFile?'#f59e0b':'#64748b'}}>
+                      {batchImportFile ? batchImportFile.name : 'Click to upload CSV / Excel'}
+                    </p>
+                    <p className="text-xs mt-1" style={{color:'#334155'}}>.csv, .xlsx, .xls</p>
+                    <input type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={e=>setBatchImportFile(e.target.files?.[0]||null)} />
+                  </label>
+                  <div className="flex gap-3">
+                    <button onClick={()=>setBatchImportModal(false)} className="flex-1 py-2.5 text-sm rounded-xl text-gray-400 hover:bg-white/10" style={{border:'1px solid rgba(255,255,255,0.1)'}}>Cancel</button>
+                    <button onClick={handleBatchImport} disabled={!batchImportFile||batchImporting}
+                      className="flex-1 py-2.5 text-sm font-bold rounded-xl text-white disabled:opacity-40 flex items-center justify-center gap-2"
+                      style={{background:'linear-gradient(135deg,#f59e0b,#d97706)'}}>
+                      {batchImporting ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"/> Importing...</> : <><Upload size={14}/> Import & Assign</>}
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-4 gap-2">
+                    {[
+                      {l:'Total', v:batchImportResult.summary.total, c:'#94a3b8'},
+                      {l:'Created', v:batchImportResult.summary.created, c:'#34d399'},
+                      {l:'Assigned', v:batchImportResult.summary.assigned, c:'#818cf8'},
+                      {l:'Skipped', v:batchImportResult.summary.skipped, c:'#f59e0b'},
+                    ].map(s=>(
+                      <div key={s.l} className="rounded-xl p-3 text-center" style={{background:'rgba(255,255,255,0.04)'}}>
+                        <p className="text-xl font-black" style={{color:s.c}}>{s.v}</p>
+                        <p className="text-xs" style={{color:'#475569'}}>{s.l}</p>
+                      </div>
+                    ))}
+                  </div>
+                  {batchImportResult.data.created.length > 0 && (
+                    <div className="rounded-xl overflow-hidden" style={{border:'1px solid rgba(52,211,153,0.2)'}}>
+                      <div className="px-3 py-2 text-xs font-bold" style={{background:'rgba(16,185,129,0.08)',color:'#34d399'}}>✅ New Students (save passwords!)</div>
+                      <div className="max-h-40 overflow-y-auto">
+                        {batchImportResult.data.created.map((s:any)=>(
+                          <div key={s.careerId} className="flex items-center justify-between px-3 py-2 text-xs" style={{borderBottom:'1px solid rgba(255,255,255,0.04)'}}>
+                            <div><span className="text-white">{s.name}</span> <span className="font-mono ml-1" style={{color:'#818cf8'}}>{s.careerId}</span></div>
+                            <span className="font-mono px-2 py-0.5 rounded" style={{background:'rgba(245,158,11,0.15)',color:'#fbbf24'}}>{s.defaultPassword}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  <button onClick={()=>{setBatchImportResult(null);setBatchImportFile(null);}} className="w-full py-2.5 text-sm font-bold rounded-xl text-white" style={{background:'#6366f1'}}>Done</button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Assign Modal */}
       {assignModal && (
@@ -534,47 +641,145 @@ export function InstitutionBatches() {
         ? <div className="flex justify-center py-16"><div className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin" style={{borderColor:`${C.accent} transparent transparent transparent`}} /></div>
         : batches.length === 0
         ? <div className="rounded-xl p-12 text-center" style={{background:"rgba(15,23,42,0.6)",border:"1px solid rgba(255,255,255,0.08)",color:"#475569"}}>No batches yet. Create your first batch!</div>
-        : <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {batches.map(b => (
-              <div key={b.id} className="rounded-xl p-5 transition hover:shadow-xl hover:-translate-y-0.5"
-                style={{background:"linear-gradient(135deg,rgba(15,23,42,0.95),rgba(20,30,55,0.95))",border:"1px solid rgba(255,255,255,0.1)",backdropFilter:"blur(12px)"}}>
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-white truncate">{b.name}</h3>
-                    {(b as any).course && (
-                      <span className="inline-flex items-center text-xs font-medium mt-1 px-2 py-0.5 rounded-full" style={{background:"rgba(139,92,246,0.15)",color:"#c084fc"}}>
-                        📚 {(b as any).course.name}
-                      </span>
-                    )}
-                    {b.trainerName && <p className="text-xs mt-1" style={{color:"#64748b"}}>👤 {b.trainerName}</p>}
+        : (() => {
+            const activeBatches = batches.filter(b => b.status !== 'Completed');
+            const completedBatches = batches.filter(b => b.status === 'Completed');
+            return (
+              <div className="space-y-6">
+                {/* Active & Upcoming Batches */}
+                {activeBatches.length > 0 && (
+                  <div>
+                    <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block"></span>
+                      Active & Upcoming ({activeBatches.length})
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {activeBatches.map(b => (
+                        <div key={b.id} className="rounded-xl p-5 transition hover:shadow-xl hover:-translate-y-0.5"
+                          style={{background:"linear-gradient(135deg,rgba(15,23,42,0.95),rgba(20,30,55,0.95))",border:"1px solid rgba(255,255,255,0.1)",backdropFilter:"blur(12px)"}}>
+                          <div className="flex items-start justify-between mb-3">
+                            <div className="flex-1 min-w-0">
+                              <h3 className="font-semibold text-white truncate">{b.name}</h3>
+                              {(b as any).course && (
+                                <span className="inline-flex items-center text-xs font-medium mt-1 px-2 py-0.5 rounded-full" style={{background:"rgba(139,92,246,0.15)",color:"#c084fc"}}>
+                                  📚 {(b as any).course.name}
+                                </span>
+                              )}
+                              {b.trainerName && <p className="text-xs mt-1" style={{color:"#64748b"}}>👤 {b.trainerName}</p>}
+                            </div>
+                            <span className="text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ml-2" style={STATUS_STYLE[b.status] || {}}>
+                              {b.status}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 text-2xl font-bold mb-3" style={{color:"#818cf8"}}>
+                            <Users size={20} className="text-indigo-400" />
+                            {(b as any).studentCount ?? 0}
+                            <span className="text-sm font-normal text-gray-400">students</span>
+                          </div>
+                          {b.startDate && <p className="text-xs mb-3" style={{color:"#64748b"}}>{b.startDate} → {b.endDate || 'ongoing'}</p>}
+                          <div className="flex gap-2 pt-3" style={{borderTop:"1px solid rgba(255,255,255,0.07)"}}>
+                            <button onClick={() => openBatch(b)} className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium rounded-lg transition hover:bg-indigo-500/20" style={{color:"#818cf8"}}>
+                              <ChevronRight size={14}/> View
+                            </button>
+                            <button onClick={() => setCertModal(b)} className="flex items-center gap-1 py-1.5 px-2.5 text-xs font-medium rounded-lg transition hover:bg-emerald-500/20" style={{color:"#34d399"}}>
+                              <Award size={13}/> Cert
+                            </button>
+                            <button onClick={() => { setSelected(b); setModal('edit'); }} className="p-1.5 text-gray-500 hover:text-indigo-400 hover:bg-indigo-500/20 rounded-lg transition"><Pencil size={14}/></button>
+                            <button onClick={() => handleDelete(b)} className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-500/20 rounded-lg transition"><Trash2 size={14}/></button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  <span className="text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ml-2" style={STATUS_STYLE[b.status] || {}}>
-                    {b.status}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2 text-2xl font-bold mb-3" style={{color:"#818cf8"}}>
-                  <Users size={20} className="text-indigo-400" />
-                  {(b as any).studentCount ?? 0}
-                  <span className="text-sm font-normal text-gray-400">students</span>
-                </div>
-                {b.startDate && <p className="text-xs mb-3" style={{color:"#64748b"}}>{b.startDate} → {b.endDate || 'ongoing'}</p>}
-                <div className="flex gap-2 pt-3" style={{borderTop:"1px solid rgba(255,255,255,0.07)"}}>
-                  <button onClick={() => openBatch(b)}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium rounded-lg transition hover:bg-indigo-500/20" style={{color:"#818cf8"}}>
-                    <ChevronRight size={14}/> View
-                  </button>
-                  <button onClick={() => setCertModal(b)}
-                    className="flex items-center gap-1 py-1.5 px-2.5 text-xs font-medium rounded-lg transition hover:bg-emerald-500/20" style={{color:"#34d399"}}>
-                    <Award size={13}/> Cert
-                  </button>
-                  <button onClick={() => { setSelected(b); setModal('edit'); }}
-                    className="p-1.5 text-gray-500 hover:text-indigo-400 hover:bg-indigo-500/20 rounded-lg transition"><Pencil size={14}/></button>
-                  <button onClick={() => handleDelete(b)}
-                    className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-500/20 rounded-lg transition"><Trash2 size={14}/></button>
-                </div>
+                )}
+
+                {/* ── Completed Batches Glass Cards ── */}
+                {completedBatches.length > 0 && (
+                  <div>
+                    <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
+                      <CheckCircle size={14} style={{color:'#34d399'}} />
+                      Completed Batches ({completedBatches.length})
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {completedBatches.map(b => (
+                        <div key={b.id} className="rounded-2xl overflow-hidden transition hover:shadow-2xl hover:-translate-y-1"
+                          style={{
+                            background:'linear-gradient(135deg,rgba(16,185,129,0.08) 0%,rgba(15,23,42,0.98) 40%,rgba(15,23,42,0.98) 100%)',
+                            border:'1px solid rgba(52,211,153,0.25)',
+                            backdropFilter:'blur(20px)',
+                            boxShadow:'0 8px 32px rgba(16,185,129,0.1)',
+                          }}>
+                          {/* Green shimmer header */}
+                          <div className="px-5 pt-5 pb-3 relative overflow-hidden">
+                            <div style={{position:'absolute',top:-30,right:-30,width:80,height:80,borderRadius:'50%',background:'#10b981',opacity:0.08,filter:'blur(20px)'}} />
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{background:'rgba(52,211,153,0.15)',color:'#34d399'}}>✅ Completed</span>
+                                  {(b as any).course && (
+                                    <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={{background:'rgba(139,92,246,0.15)',color:'#c084fc'}}>
+                                      📚 {(b as any).course.name}
+                                    </span>
+                                  )}
+                                </div>
+                                <h3 className="font-black text-white text-base">{b.name}</h3>
+                                {b.trainerName && <p className="text-xs mt-0.5" style={{color:'#64748b'}}>👤 {b.trainerName}</p>}
+                              </div>
+                              <div className="flex flex-col items-center ml-3">
+                                <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl"
+                                  style={{background:'linear-gradient(135deg,rgba(16,185,129,0.2),rgba(16,185,129,0.05)',border:'1px solid rgba(52,211,153,0.3)'}}>
+                                  🏆
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Stats row */}
+                          <div className="grid grid-cols-3 gap-px mx-4 mb-4 rounded-xl overflow-hidden" style={{background:'rgba(255,255,255,0.05)'}}>
+                            {[
+                              {label:'Students', value:(b as any).studentCount ?? 0, icon:'👥'},
+                              {label:'Duration', value:b.startDate && b.endDate ? `${Math.ceil((new Date(b.endDate).getTime()-new Date(b.startDate).getTime())/(1000*60*60*24*30))}m` : '—', icon:'📅'},
+                              {label:'Trainer', value:b.trainerName ? b.trainerName.split(' ')[0] : '—', icon:'👤'},
+                            ].map((stat,i)=>(
+                              <div key={i} className="py-3 text-center" style={{background:'rgba(15,23,42,0.6)'}}>
+                                <p className="text-base font-black text-white">{stat.value}</p>
+                                <p className="text-xs mt-0.5" style={{color:'#475569'}}>{stat.label}</p>
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* Dates */}
+                          {b.startDate && (
+                            <div className="mx-4 mb-3 px-3 py-2 rounded-lg text-xs" style={{background:'rgba(255,255,255,0.03)',color:'#475569'}}>
+                              🗓 {b.startDate} → {b.endDate || '—'}
+                            </div>
+                          )}
+
+                          {/* Actions */}
+                          <div className="flex gap-2 px-4 pb-4">
+                            <button onClick={() => openBatch(b)}
+                              className="flex-1 py-2 text-xs font-bold rounded-xl transition flex items-center justify-center gap-1"
+                              style={{background:'rgba(52,211,153,0.12)',border:'1px solid rgba(52,211,153,0.25)',color:'#34d399'}}>
+                              <Users size={12}/> View Students
+                            </button>
+                            <button onClick={() => setCertModal(b)}
+                              className="flex-1 py-2 text-xs font-bold rounded-xl transition flex items-center justify-center gap-1 text-white"
+                              style={{background:'linear-gradient(135deg,#10b981,#059669)'}}>
+                              <Award size={12}/> Issue Certs
+                            </button>
+                            <button onClick={() => { setSelected(b); setModal('edit'); }}
+                              className="p-2 rounded-xl transition hover:bg-white/10 text-gray-500 hover:text-indigo-400">
+                              <Pencil size={13}/>
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
-            ))}
-          </div>
+            );
+          })()
       }
 
       {modal && (

@@ -42,6 +42,10 @@ export const institutionApi = {
   verifyCertificate:    (certId: string) => client.get(`/institution/certificates/verify/${certId}`).then(r => r.data),
   getStudentCredentials: () => client.get('/institution/student-credentials').then(r => r.data),
   getAcademyProgress:    () => client.get('/institution/academy/progress').then(r => r.data),
+  bulkImportToBatch: (batchId: number, file: File) => {
+    const fd = new FormData(); fd.append('file', file);
+    return client.post(`/institution/batches/${batchId}/bulk-import`, fd, { headers: { 'Content-Type': 'multipart/form-data' } }).then(r => r.data);
+  },
   bulkImportStudents:    (file: File) => {
     const fd = new FormData(); fd.append('file', file);
     return client.post('/institution/students/bulk-import', fd, { headers: { 'Content-Type': 'multipart/form-data' } }).then(r => r.data);
