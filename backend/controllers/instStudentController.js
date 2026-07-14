@@ -190,9 +190,13 @@ const downloadAcademyCertificate = asyncHandler(async (req, res) => {
     python: 'Python Programming', javascript: 'JavaScript',
     java: 'Java', cpp: 'C++', dsa: 'Data Structures & Algorithms',
     sql: 'SQL & Databases', webdev: 'Full Stack Web Development',
+    react: 'React.js', nodejs: 'Node.js', datascience: 'Data Science',
+    ml: 'Machine Learning', git: 'Git & Version Control',
+    docker: 'Docker & DevOps', cybersecurity: 'Cybersecurity',
+    flutter: 'Flutter Development', c: 'C Programming',
   };
 
-  const courseName = COURSE_NAMES[courseId] || courseId;
+  const courseName = COURSE_NAMES[courseId] || courseId.charAt(0).toUpperCase() + courseId.slice(1);
   const certNo = `HXAC-${student.careerId}-${courseId.toUpperCase()}-${Date.now().toString(36).toUpperCase()}`;
   const verifyUrl = `${process.env.CLIENT_URL || 'https://hiresnix.co.in'}/verify-academy/${certNo}`;
   const issuedDate = new Date().toLocaleDateString('en-IN', { day:'numeric', month:'long', year:'numeric' });
@@ -206,105 +210,108 @@ const downloadAcademyCertificate = asyncHandler(async (req, res) => {
   const W = 841.89, H = 595.28;
   const doc = new PDFDocument({ size: 'A4', layout: 'landscape', margin: 0 });
   doc.pipe(res);
-
   doc.on('error', (err) => { console.error('Academy PDF error:', err); });
 
-  const GOLD = '#d4af37';
-  const DARK = '#0f172a';
-  const ACCENT = '#6366f1';
+  const NAVY   = '#0d1b2a';
+  const GOLD   = '#f5a623';
+  const WHITE  = '#ffffff';
+  const LGREY  = '#94a3b8';
 
-  // ── Outer border ──────────────────────────────────────────────
-  doc.rect(20, 20, W-40, H-40).lineWidth(3).stroke(GOLD);
-  doc.rect(26, 26, W-52, H-52).lineWidth(1).stroke(GOLD);
+  // ── Full dark background ──────────────────────────────────────
+  doc.rect(0, 0, W, H).fill(NAVY);
 
-  // ── Dark Header ───────────────────────────────────────────────
-  doc.rect(20, 20, W-40, 90).fill(DARK);
+  // ── Corner decorations ────────────────────────────────────────
+  const corner = (x, y, flip) => {
+    const s = 40;
+    doc.moveTo(x, y).lineTo(x + (flip ? -s : s), y).lineWidth(3).stroke(GOLD);
+    doc.moveTo(x, y).lineTo(x, y + (flip ? -s : s)).lineWidth(3).stroke(GOLD);
+  };
+  corner(28, 28, false); corner(W-28, 28, true);
+  corner(28, H-28, false); corner(W-28, H-28, true);
 
-  // Logo area
-  doc.fillColor('#ffffff').fontSize(22).font('Helvetica-Bold').text('Hiresnix', 50, 35);
-  doc.fillColor('#94a3b8').fontSize(9).font('Helvetica').text('Empowering Future Professionals', 50, 62);
+  // ── Outer gold border ─────────────────────────────────────────
+  doc.rect(20, 20, W-40, H-40).lineWidth(2.5).stroke(GOLD);
+  doc.rect(28, 28, W-56, H-56).lineWidth(0.8).stroke(GOLD);
 
-  // Right header text
-  doc.fillColor('#818cf8').fontSize(11).font('Helvetica-Bold')
-     .text('AI ACADEMY — CERTIFICATE OF COMPLETION', 0, 52, { align: 'right', width: W-50 });
-
-  // Gold diamonds
-  const diamond = (x, y, s) => doc.moveTo(x,y-s).lineTo(x+s,y).lineTo(x,y+s).lineTo(x-s,y).fillColor(GOLD).fill();
-  diamond(35, 70, 6); diamond(W-35, 70, 6);
+  // ── Top label ─────────────────────────────────────────────────
+  doc.fillColor(GOLD).fontSize(10).font('Helvetica-Bold')
+     .text('HIRESNIX AI ACADEMY', 0, 48, { align: 'center', characterSpacing: 2 });
 
   // ── Title ─────────────────────────────────────────────────────
-  doc.fillColor(DARK).fontSize(34).font('Helvetica-Bold')
-     .text('Certificate of Completion', 0, 130, { align: 'center' });
+  doc.fillColor(WHITE).fontSize(38).font('Helvetica-Bold')
+     .text('Certificate of Completion', 0, 72, { align: 'center' });
 
-  // Gold divider
-  doc.rect(W/2-120, 178, 240, 2).fill(GOLD);
+  // Gold divider line
+  doc.moveTo(W/2 - 140, 122).lineTo(W/2 + 140, 122).lineWidth(1.5).stroke(GOLD);
 
   // ── Body ──────────────────────────────────────────────────────
-  doc.fillColor('#475569').fontSize(13).font('Helvetica')
-     .text('This is to certify that', 0, 196, { align: 'center' });
+  doc.fillColor(LGREY).fontSize(12).font('Helvetica')
+     .text('This is to certify that', 0, 140, { align: 'center' });
 
-  doc.fillColor(DARK).fontSize(30).font('Helvetica-Bold')
-     .text(student.name, 0, 218, { align: 'center' });
+  doc.fillColor(GOLD).fontSize(34).font('Helvetica-Bold')
+     .text(student.name, 0, 162, { align: 'center' });
 
-  doc.fillColor('#475569').fontSize(13).font('Helvetica')
-     .text('has successfully completed the AI Academy course in', 0, 262, { align: 'center' });
+  // Underline under name
+  const nameWidth = Math.min(student.name.length * 18, 400);
+  doc.moveTo(W/2 - nameWidth/2, 204).lineTo(W/2 + nameWidth/2, 204).lineWidth(0.8).stroke(GOLD);
 
-  doc.fillColor(ACCENT).fontSize(18).font('Helvetica-Bold')
-     .text(courseName, 0, 286, { align: 'center' });
+  doc.fillColor(LGREY).fontSize(12).font('Helvetica')
+     .text('has successfully completed the AI Academy course in', 0, 216, { align: 'center' });
 
-  doc.fillColor('#475569').fontSize(12).font('Helvetica')
-     .text(`at Hiresnix AI Academy  |  Issued on ${issuedDate}`, 0, 316, { align: 'center' });
+  doc.fillColor(WHITE).fontSize(22).font('Helvetica-Bold')
+     .text(courseName, 0, 240, { align: 'center' });
 
-  doc.fillColor('#94a3b8').fontSize(9).font('Helvetica')
-     .text(`Certificate No: ${certNo}`, 0, 338, { align: 'center' });
+  doc.fillColor(LGREY).fontSize(10.5).font('Helvetica')
+     .text(`Issued on ${issuedDate}  ·  Hiresnix AI Academy, Shirpur, Maharashtra`, 0, 274, { align: 'center' });
 
-  doc.fillColor('#334155').fontSize(9).font('Helvetica')
-     .text(`Career ID: ${student.careerId}`, 0, 352, { align: 'center' });
+  doc.fillColor('#4a5568').fontSize(8).font('Helvetica')
+     .text(`Certificate No: ${certNo}`, 0, 294, { align: 'center' });
+  doc.fillColor('#4a5568').fontSize(8).font('Helvetica')
+     .text(`Career ID: ${student.careerId}`, 0, 307, { align: 'center' });
 
   // ── QR Code ───────────────────────────────────────────────────
-  const qrSize = 75;
+  const qrSize = 68;
   const qrX = W/2 - qrSize/2;
-  const qrY = H - 170;
-  doc.roundedRect(qrX-9, qrY-9, qrSize+18, qrSize+36, 6).fillAndStroke('#ffffff', GOLD);
+  const qrY = H - 168;
+  // QR white bg only (no visible box border on dark)
+  doc.roundedRect(qrX - 6, qrY - 6, qrSize + 12, qrSize + 28, 5)
+     .fillAndStroke('#ffffff', GOLD);
   doc.image(qrBuffer, qrX, qrY, { width: qrSize });
-  doc.fillColor('#1e293b').fontSize(7).font('Helvetica-Bold')
-     .text('Scan to Verify', qrX-4, qrY+qrSize+4, { width: qrSize+8, align: 'center' });
-  doc.fillColor('#64748b').fontSize(5.5).font('Helvetica')
-     .text(certNo, qrX-4, qrY+qrSize+15, { width: qrSize+8, align: 'center' });
+  doc.fillColor('#1e293b').fontSize(6.5).font('Helvetica-Bold')
+     .text('Scan to Verify', qrX - 4, qrY + qrSize + 3, { width: qrSize + 8, align: 'center' });
 
-  // ── Signatures ───────────────────────────────────────────────
-  const sigLineY2 = H - 115;
+  // ── Signatures ────────────────────────────────────────────────
+  const sigLineY2 = H - 96;
   const sigBlockW = 160;
-  const sigImgW2  = 140;
-  const sigImgH2  = 52;
 
   const sigFn = (doc2, name, title, company, blockX, imgPath, imgW, imgH, yOffset = -6) => {
     try {
       if (fs.existsSync(imgPath)) {
         const imgX = blockX + Math.floor((sigBlockW - imgW) / 2);
         const imgY = sigLineY2 - imgH + yOffset;
+        // Draw image directly — no white background box
         doc2.image(imgPath, imgX, imgY, { width: imgW, height: imgH });
       }
     } catch(e) {}
-    doc2.moveTo(blockX, sigLineY2).lineTo(blockX + sigBlockW, sigLineY2).lineWidth(0.8).stroke('#334155');
-    doc2.fillColor('#1e293b').fontSize(10).font('Helvetica-Bold')
+    doc2.moveTo(blockX, sigLineY2).lineTo(blockX + sigBlockW, sigLineY2).lineWidth(0.8).stroke('#475569');
+    doc2.fillColor(WHITE).fontSize(10).font('Helvetica-Bold')
         .text(name, blockX, sigLineY2 + 7, { width: sigBlockW, align: 'center' });
-    doc2.fillColor('#64748b').fontSize(8.5).font('Helvetica')
+    doc2.fillColor(LGREY).fontSize(8.5).font('Helvetica')
         .text(title, blockX, sigLineY2 + 22, { width: sigBlockW, align: 'center' });
-    doc2.fillColor('#94a3b8').fontSize(7.5).font('Helvetica')
+    doc2.fillColor('#4a5568').fontSize(7.5).font('Helvetica')
         .text(company, blockX, sigLineY2 + 35, { width: sigBlockW, align: 'center' });
   };
-  // Director — normal size
+
   sigFn(doc, 'Mr. Jayesh Badgujar', 'Program Director', 'Hiresnix',
         (W/2)-260, path.join(__dirname,'..','signatures','Director.png'), 130, 48);
-  // CEO — bigger size, properly centered
   sigFn(doc, 'Mr. A S Borse', 'Founder & CEO', 'Hiresnix',
         (W/2)+100, path.join(__dirname,'..','signatures','ceo.png'), 155, 58, 2);
 
-  // ── Dark Footer ───────────────────────────────────────────────
-  doc.rect(20, H-58, W-40, 38).fill(DARK);
-  doc.fillColor('#94a3b8').fontSize(8).font('Helvetica')
-     .text('support@hiresnix.co.in  |  www.hiresnix.co.in  |  Shirpur, Maharashtra, India', 0, H-45, { align: 'center' });
+  // ── Footer ────────────────────────────────────────────────────
+  doc.moveTo(40, H-36).lineTo(W-40, H-36).lineWidth(0.5).stroke('#2d3748');
+  doc.fillColor('#4a5568').fontSize(7.5).font('Helvetica')
+     .text('support@hiresnix.co.in  ·  www.hiresnix.co.in  ·  Shirpur, Maharashtra, India',
+           0, H - 30, { align: 'center' });
 
   doc.end();
 });
