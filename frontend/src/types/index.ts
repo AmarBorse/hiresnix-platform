@@ -1,6 +1,6 @@
 // src/types/index.ts
 
-export type Role = 'student' | 'company' | 'admin' | 'institution';
+export type Role = 'student' | 'company' | 'admin' | 'institution' | 'inst_student';
 
 export interface AuthUser {
   id: number;

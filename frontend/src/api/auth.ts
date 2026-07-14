@@ -9,7 +9,7 @@ interface RegisterPayload {
   companyName?: string; industry?: string;
   institutionName?: string; type?: string;
 }
-interface AuthResponse { success: boolean; token: string; user: AuthUser; }
+interface AuthResponse { success: boolean; token: string; instStudentToken?: string; user: AuthUser & { careerId?: string }; }
 interface RegisterResponse extends Partial<AuthResponse> { pendingApproval?: boolean; message?: string; }
 
 export const authApi = {
