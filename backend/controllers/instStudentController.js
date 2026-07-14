@@ -276,24 +276,29 @@ const downloadAcademyCertificate = asyncHandler(async (req, res) => {
   const sigImgW2  = 140;
   const sigImgH2  = 52;
 
-  const sigFn = (doc2, name, title, company, x, imgPath) => {
+  const sigFn = (doc2, name, title, company, blockX, imgPath, imgW, imgH) => {
     try {
       if (fs.existsSync(imgPath)) {
-        doc2.image(imgPath, x + (sigBlockW - sigImgW2) / 2, sigLineY2 - sigImgH2 - 4, {
-          width: sigImgW2, height: sigImgH2, fit: [sigImgW2, sigImgH2], align: 'center'
-        });
+        // Manually center image within block
+        const imgX = blockX + Math.floor((sigBlockW - imgW) / 2);
+        const imgY = sigLineY2 - imgH - 6;
+        doc2.image(imgPath, imgX, imgY, { width: imgW, height: imgH });
       }
     } catch(e) {}
-    doc2.moveTo(x, sigLineY2).lineTo(x + sigBlockW, sigLineY2).lineWidth(0.8).stroke('#334155');
+    doc2.moveTo(blockX, sigLineY2).lineTo(blockX + sigBlockW, sigLineY2).lineWidth(0.8).stroke('#334155');
     doc2.fillColor('#1e293b').fontSize(10).font('Helvetica-Bold')
-        .text(name, x, sigLineY2 + 7, { width: sigBlockW, align: 'center' });
+        .text(name, blockX, sigLineY2 + 7, { width: sigBlockW, align: 'center' });
     doc2.fillColor('#64748b').fontSize(8.5).font('Helvetica')
-        .text(title, x, sigLineY2 + 22, { width: sigBlockW, align: 'center' });
+        .text(title, blockX, sigLineY2 + 22, { width: sigBlockW, align: 'center' });
     doc2.fillColor('#94a3b8').fontSize(7.5).font('Helvetica')
-        .text(company, x, sigLineY2 + 35, { width: sigBlockW, align: 'center' });
+        .text(company, blockX, sigLineY2 + 35, { width: sigBlockW, align: 'center' });
   };
-  sigFn(doc, 'Mr. Jayesh Badgujar', 'Program Director', 'Hiresnix', (W/2)-260, path.join(__dirname,'..','signatures','Director.png'));
-  sigFn(doc, 'Mr. A S Borse', 'Founder & CEO', 'Hiresnix', (W/2)+100, path.join(__dirname,'..','signatures','ceo.png'));
+  // Director — normal size
+  sigFn(doc, 'Mr. Jayesh Badgujar', 'Program Director', 'Hiresnix',
+        (W/2)-260, path.join(__dirname,'..','signatures','Director.png'), 130, 48);
+  // CEO — bigger size, properly centered
+  sigFn(doc, 'Mr. A S Borse', 'Founder & CEO', 'Hiresnix',
+        (W/2)+100, path.join(__dirname,'..','signatures','ceo.png'), 155, 58);
 
   // ── Dark Footer ───────────────────────────────────────────────
   doc.rect(20, H-58, W-40, 38).fill(DARK);

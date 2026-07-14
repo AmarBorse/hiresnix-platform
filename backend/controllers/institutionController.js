@@ -601,10 +601,9 @@ const downloadCertificatePDF = asyncHandler(async (req, res) => {
   try {
     const dirSigPath = path.join(__dirname, '..', 'signatures', 'Director.png');
     if (require('fs').existsSync(dirSigPath)) {
-      // Center image within block, sitting just above the line
-      doc.image(dirSigPath, sig1X + (sigW - sigImgW) / 2, sigLineY - sigImgH - 4, {
-        width: sigImgW, height: sigImgH, fit: [sigImgW, sigImgH], align: 'center'
-      });
+      const dImgW = 130, dImgH = 48;
+      const dImgX = sig1X + Math.floor((sigW - dImgW) / 2);
+      doc.image(dirSigPath, dImgX, sigLineY - dImgH - 6, { width: dImgW, height: dImgH });
     }
   } catch(e) {}
   doc.moveTo(sig1X, sigLineY).lineTo(sig1X + sigW, sigLineY).lineWidth(0.8).stroke('#94a3b8');
@@ -615,13 +614,13 @@ const downloadCertificatePDF = asyncHandler(async (req, res) => {
   doc.fillColor('#94a3b8').fontSize(7.5).font('Helvetica')
      .text('Hiresnix', sig1X, sigLineY + 35, { width: sigW, align: 'center' });
 
-  // ── CEO (right) ──
+  // ── CEO (right) — bigger size ──
   try {
     const ceoSigPath = path.join(__dirname, '..', 'signatures', 'ceo.png');
     if (require('fs').existsSync(ceoSigPath)) {
-      doc.image(ceoSigPath, sig2X + (sigW - sigImgW) / 2, sigLineY - sigImgH - 4, {
-        width: sigImgW, height: sigImgH, fit: [sigImgW, sigImgH], align: 'center'
-      });
+      const cImgW = 155, cImgH = 58;
+      const cImgX = sig2X + Math.floor((sigW - cImgW) / 2);
+      doc.image(ceoSigPath, cImgX, sigLineY - cImgH - 6, { width: cImgW, height: cImgH });
     }
   } catch(e) {}
   doc.moveTo(sig2X, sigLineY).lineTo(sig2X + sigW, sigLineY).lineWidth(0.8).stroke('#94a3b8');
@@ -630,7 +629,7 @@ const downloadCertificatePDF = asyncHandler(async (req, res) => {
   doc.fillColor('#64748b').fontSize(8.5).font('Helvetica')
      .text('Founder & CEO', sig2X, sigLineY + 22, { width: sigW, align: 'center' });
   doc.fillColor('#94a3b8').fontSize(7.5).font('Helvetica')
-     .text(`Hiresnix`, sig2X, sigLineY + 35, { width: sigW, align: 'center' });
+     .text('Hiresnix', sig2X, sigLineY + 35, { width: sigW, align: 'center' });
 
   // ── Dark Footer ───────────────────────────────────────────────
   doc.rect(20, H-60, W-40, 40).fill('#0f172a');
