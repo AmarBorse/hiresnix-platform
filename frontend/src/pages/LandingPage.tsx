@@ -174,17 +174,6 @@ export function LandingPage() {
 
   const PRODUCTS = [
     {
-      icon: '🎓',
-      tag: 'Platform',
-      title: 'Internship Platform',
-      subtitle: 'Hiresnix Internship',
-      desc: 'Project-based internship programs connecting students with real-world tech experience, certificates, and career outcomes.',
-      features: ['16+ Domains', 'Certificate & LOR', 'Job Portal', 'Admin Dashboard'],
-      gradient: 'linear-gradient(135deg,rgba(59,130,246,0.15),rgba(99,102,241,0.08))',
-      border: 'rgba(59,130,246,0.3)',
-      accent: '#60a5fa',
-    },
-    {
       icon: '🧠',
       tag: 'AI Product',
       title: 'AI Academy',
@@ -205,17 +194,6 @@ export function LandingPage() {
       gradient: 'linear-gradient(135deg,rgba(16,185,129,0.12),rgba(5,150,105,0.06))',
       border: 'rgba(16,185,129,0.3)',
       accent: '#34d399',
-    },
-    {
-      icon: '🎯',
-      tag: 'AI Tool',
-      title: 'AI Mock Interview',
-      subtitle: 'Interview Prep',
-      desc: 'Realistic AI-driven technical and HR interview practice with voice interaction and detailed performance feedback.',
-      features: ['Technical Rounds', 'HR Interviews', 'Voice Input/Output', 'AI Feedback'],
-      gradient: 'linear-gradient(135deg,rgba(245,158,11,0.12),rgba(217,119,6,0.06))',
-      border: 'rgba(245,158,11,0.25)',
-      accent: '#fbbf24',
     },
   ];
 
@@ -636,7 +614,7 @@ export function LandingPage() {
           <div>
             <h4 className="lp-font-d" style={{ fontWeight: 700, fontSize: '0.85rem', marginBottom: '1.1rem', color: '#e8edf5' }}>Products</h4>
             <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-              {['Internship Platform', 'AI Academy', 'Institution Portal', 'AI Mock Interview'].map(l => (
+              {['AI Academy', 'Institution Portal'].map(l => (
                 <li key={l}><a href="#products" style={{ color: '#6b7a99', textDecoration: 'none', fontSize: '0.82rem', transition: 'color 0.2s' }} onMouseEnter={e => (e.currentTarget.style.color = '#e8edf5')} onMouseLeave={e => (e.currentTarget.style.color = '#6b7a99')}>{l}</a></li>
               ))}
             </ul>
