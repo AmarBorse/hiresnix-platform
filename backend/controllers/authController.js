@@ -4,7 +4,7 @@
  */
 
 const asyncHandler = require('express-async-handler');
-const { User, Student, Company, Institution, InstitutionStudent } = require('../models');
+const { User, Student, Company, Institution } = require('../models');
 const { sequelize } = require('../config/db');
 const { updateUserPassword } = require('../utils/passwords');
 
@@ -66,38 +66,6 @@ const login = asyncHandler(async (req, res) => {
   if (!email || !password) { res.status(400); throw new Error('Provide email and password'); }
 
   const cleanEmail = email.trim().toLowerCase();
-
-  // ── First check InstitutionStudent table ──────────────────────
-  const instStudent = await InstitutionStudent.findOne({
-    where: sequelize.where(sequelize.fn('LOWER', sequelize.col('email')), cleanEmail),
-  });
-  if (instStudent) {
-    const passwordMatch = await instStudent.matchPassword(password);
-    if (!passwordMatch) { res.status(401); throw new Error('Invalid credentials'); }
-    // Generate JWT for inst_student
-    const jwt = require('jsonwebtoken');
-    const token = jwt.sign(
-      { id: instStudent.id, role: 'inst_student', institutionId: instStudent.institutionId },
-      process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRE || '7d' }
-    );
-    // Store token in localStorage key expected by inst-student portal
-    return res.json({
-      success: true,
-      token,
-      instStudentToken: token,
-      user: {
-        id: instStudent.id,
-        name: instStudent.name,
-        email: instStudent.email,
-        role: 'inst_student',
-        careerId: instStudent.careerId,
-        isApproved: true,
-      },
-    });
-  }
-
-  // ── Then check main User table ────────────────────────────────
   const user = await User.findOne({ where: sequelize.where(sequelize.fn('LOWER', sequelize.col('email')), cleanEmail) });
   if (!user || !(await user.matchPassword(password))) {
     res.status(401); throw new Error('Invalid credentials');

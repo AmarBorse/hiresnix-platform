@@ -34,7 +34,6 @@ export function AuthPage() {
   const roleRedirect: Record<string, string> = {
     student: '/student/dashboard', company: '/company/dashboard',
     admin: '/admin/dashboard', institution: '/institution/dashboard',
-    inst_student: '/inst-student/dashboard',
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -50,13 +49,6 @@ export function AuthPage() {
     setLoading(true);
     try {
       const res = await authApi.login({ ...loginForm, email: cleanEmail });
-      // Institution student — save token to inst-student localStorage key
-      if (res.user.role === 'inst_student' && res.instStudentToken) {
-        localStorage.setItem('hx_inst_student_token', res.instStudentToken);
-        toast.success(`Welcome back, ${res.user.name}!`);
-        navigate('/inst-student/dashboard');
-        return;
-      }
       setAuth(res.user, res.token);
       toast.success(`Welcome back, ${res.user.name}!`);
       navigate(roleRedirect[res.user.role] || '/');
