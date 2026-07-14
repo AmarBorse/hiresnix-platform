@@ -1,390 +1,865 @@
 /**
- * controllers/instStudentController.js
- * Institution Student Portal — Login + Dashboard
+ * controllers/institutionController.js
+ * All Institution Portal logic
  */
-const asyncHandler  = require('express-async-handler');
-const PDFDocument   = require('pdfkit');
-const QRCode        = require('qrcode');
-const path          = require('path');
-const fs            = require('fs');
-const jwt          = require('jsonwebtoken');
-const bcrypt       = require('bcryptjs');
-const crypto       = require('crypto');
+const asyncHandler = require('express-async-handler');
 const { Op }       = require('sequelize');
+const { sequelize } = require('../config/db');
 const {
-  InstitutionStudent, Institution,
+  User, Institution, InstitutionStudent,
   Batch, BatchStudent, Course, CourseStudent, InstitutionCertificate,
-  User,
 } = require('../models');
+const QRCode      = require('qrcode');
+const PDFDocument = require('pdfkit');
+// xlsx loaded lazily in bulkImportStudents
+const path = require('path');
+const fs_cert = require('fs');
 
-// ── JWT for institution students ─────────────────────────────────
-function signToken(student) {
-  return jwt.sign(
-    { id: student.id, role: 'inst_student', institutionId: student.institutionId },
-    process.env.JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRE || '7d' }
-  );
+const getInstSigPath = (filename) => path.join(__dirname, '..', 'signatures', filename);
+
+function signatureLine(doc, name, title, x, y, imagePath = null, sizeMultiplier = 1) {
+  if (imagePath) {
+    try {
+      if (fs_cert.existsSync(imagePath)) {
+        const boxW = 100 * sizeMultiplier;
+        const boxH = 40 * sizeMultiplier;
+        const xOffset = (160 - boxW) / 2;
+        const yOffset = boxH - 12;
+        doc.image(imagePath, x + xOffset, y - yOffset, { fit: [boxW, boxH], align: 'center' });
+      }
+    } catch(err) { console.error('Sig error:', err.message); }
+  }
+  doc.moveTo(x, y).lineTo(x + 160, y).stroke('#334155');
+  doc.fillColor('#1e293b').fontSize(10).font('Helvetica-Bold').text(name, x, y+6, { width: 160, align: 'center' });
+  doc.fillColor('#64748b').fontSize(9).font('Helvetica').text(title, x, y+20, { width: 160, align: 'center' });
 }
 
-// ── Middleware: protect inst student routes ───────────────────────
-const protectInstStudent = asyncHandler(async (req, res, next) => {
-  let token;
-  if (req.headers.authorization?.startsWith('Bearer')) {
-    token = req.headers.authorization.split(' ')[1];
+// ── Helpers ──────────────────────────────────────────────────────
+
+async function generateCareerId() {
+  const year = new Date().getFullYear();
+  const last = await InstitutionStudent.findOne({
+    where: { careerId: { [Op.like]: `HX-${year}-%` } },
+    order: [['createdAt', 'DESC']],
+  });
+  let seq = 1;
+  if (last?.careerId) {
+    const parts = last.careerId.split('-');
+    seq = parseInt(parts[2], 10) + 1;
   }
-  if (!token) { res.status(401); throw new Error('Not authorized'); }
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    if (decoded.role !== 'inst_student') { res.status(401); throw new Error('Invalid token type'); }
-    const student = await InstitutionStudent.findByPk(decoded.id, {
-      attributes: { exclude: ['password'] },
-      include: [{ model: Institution, as: 'institution', attributes: ['institutionName','city','state','isPartner','logo'] }],
-    });
-    if (!student) { res.status(401); throw new Error('Student not found'); }
-    req.instStudent = student;
-    next();
-  } catch (err) {
-    res.status(401); throw new Error('Token invalid or expired');
-  }
+  return `HX-${year}-${String(seq).padStart(6, '0')}`;
+}
+
+// Default password: HX@ + last 6 of careerId  e.g. HX@000001
+function defaultPassword(careerId) {
+  return `HX@${careerId.split('-')[2]}`;
+}
+
+function getInstitutionId(req) { return req.institutionId; }
+
+// ── Profile ───────────────────────────────────────────────────────
+
+const getProfile = asyncHandler(async (req, res) => {
+  const inst = await Institution.findOne({
+    where: { userId: req.user.id },
+    include: [{ model: User, as: 'user', attributes: ['name','email','isApproved','createdAt'] }],
+  });
+  if (!inst) { res.status(404); throw new Error('Institution not found'); }
+  res.json({ success: true, data: inst });
 });
 
-// ── POST /api/inst-student/login ─────────────────────────────────
-const login = asyncHandler(async (req, res) => {
-  const { careerId, password } = req.body;
-  if (!careerId || !password) { res.status(400); throw new Error('Career ID and password required'); }
+const updateProfile = asyncHandler(async (req, res) => {
+  const inst = await Institution.findOne({ where: { userId: req.user.id } });
+  if (!inst) { res.status(404); throw new Error('Institution not found'); }
+  const allowed = ['institutionName','type','affiliatedTo','address','city','state','pincode',
+                   'website','phone','description','contactName','contactEmail','contactPhone'];
+  const updates = {};
+  allowed.forEach(f => { if (req.body[f] !== undefined) updates[f] = req.body[f]; });
+  await inst.update(updates);
+  res.json({ success: true, data: inst });
+});
 
-  const student = await InstitutionStudent.findOne({
-    where: { careerId: careerId.trim().toUpperCase() },
-    include: [{ model: Institution, as: 'institution', attributes: ['institutionName','isVerified','id'] }],
+// ── Students ──────────────────────────────────────────────────────
+
+const getStudents = asyncHandler(async (req, res) => {
+  const institutionId = getInstitutionId(req);
+  const { search, page = 1, limit = 20 } = req.query;
+  const where = { institutionId };
+  if (search) {
+    where[Op.or] = [
+      { name:    { [Op.iLike]: `%${search}%` } },
+      { email:   { [Op.iLike]: `%${search}%` } },
+      { mobile:  { [Op.iLike]: `%${search}%` } },
+      { careerId:{ [Op.iLike]: `%${search}%` } },
+    ];
+  }
+  const { count, rows } = await InstitutionStudent.findAndCountAll({
+    where, attributes: { exclude: ['password'] },
+    order: [['createdAt','DESC']],
+    limit: parseInt(limit), offset: (parseInt(page)-1)*parseInt(limit),
+  });
+  res.json({ success: true, total: count, data: rows });
+});
+
+const createStudent = asyncHandler(async (req, res) => {
+  const institutionId = getInstitutionId(req);
+  const { name, email, mobile, dob, gender, address, department, rollNumber, year, skills } = req.body;
+  if (!name || !email) { res.status(400); throw new Error('Name and email are required'); }
+
+  const exists = await InstitutionStudent.findOne({ where: { institutionId, email } });
+  if (exists) { res.status(400); throw new Error('Student with this email already exists'); }
+
+  const careerId = await generateCareerId();
+  const pwd      = defaultPassword(careerId);  // plain text for response only
+
+  const student = await InstitutionStudent.create({
+    institutionId, careerId,
+    password: pwd,   // will be hashed by beforeCreate hook
+    name, email, mobile, dob, gender, address, department, rollNumber, year,
+    skills: skills ? (Array.isArray(skills) ? skills : skills.split(',').map(s => s.trim())) : [],
   });
 
-  if (!student || !student.password) {
-    res.status(401); throw new Error('Invalid Career ID or password');
-  }
-
-  const match = await student.matchPassword(password);
-  if (!match) { res.status(401); throw new Error('Invalid Career ID or password'); }
-
-  // ── Auto-create or find linked Hiresnix User account ──────────
-  // Email format: careerId@inst.hiresnix.co.in (unique, internal)
-  const syntheticEmail = `${student.careerId.toLowerCase()}@inst.hiresnix.co.in`;
-  let hiresnixUser = null;
-  let hiresnixToken = null;
-
-  try {
-    // Try to find existing linked user
-    hiresnixUser = await User.findOne({ where: { email: syntheticEmail } });
-
-    if (!hiresnixUser) {
-      // Create new Hiresnix User for this inst student
-      const tempPassword = crypto.randomBytes(16).toString('hex'); // random internal password
-      hiresnixUser = await User.create({
-        name: student.name,
-        email: syntheticEmail,
-        password: tempPassword,
-        role: 'student',
-        isActive: true,
-        isApproved: true,
-      });
-
-      // Also create Student profile entry so internship APIs work
-      const { Student } = require('../models');
-      await Student.findOrCreate({
-        where: { userId: hiresnixUser.id },
-        defaults: {
-          userId: hiresnixUser.id,
-          isProfileComplete: false,
-        },
-      });
-    }
-
-    hiresnixToken = hiresnixUser.getSignedJwtToken();
-  } catch (err) {
-    // If user creation fails, still allow inst portal login
-    console.error('Hiresnix user link failed:', err.message);
-  }
-
-  // Update last login
-  await student.update({ lastLogin: new Date() });
-
-  const token = signToken(student);
-  res.json({
+  // Return plain password once (so admin can note it)
+  res.status(201).json({
     success: true,
-    token,
-    hiresnixToken,  // null if linking failed — frontend handles gracefully
-    hiresnixUserId: hiresnixUser?.id || null,
-    student: {
-      id: student.id,
-      careerId: student.careerId,
-      name: student.name,
-      email: student.email,
-      institutionId: student.institutionId,
-      institutionName: student.institution?.institutionName,
-    },
+    data: { ...student.toJSON(), password: undefined, defaultPassword: pwd },
   });
 });
 
-// ── GET /api/inst-student/me ─────────────────────────────────────
-const getMe = asyncHandler(async (req, res) => {
-  const student = await InstitutionStudent.findByPk(req.instStudent.id, {
+const updateStudent = asyncHandler(async (req, res) => {
+  const institutionId = getInstitutionId(req);
+  const student = await InstitutionStudent.findOne({ where: { id: req.params.id, institutionId } });
+  if (!student) { res.status(404); throw new Error('Student not found'); }
+  const allowed = ['name','mobile','dob','gender','address','department','rollNumber','year','skills','isInternshipEligible'];
+  const updates = {};
+  allowed.forEach(f => { if (req.body[f] !== undefined) updates[f] = req.body[f]; });
+  await student.update(updates);
+  res.json({ success: true, data: { ...student.toJSON(), password: undefined } });
+});
+
+const deleteStudent = asyncHandler(async (req, res) => {
+  const institutionId = getInstitutionId(req);
+  const student = await InstitutionStudent.findOne({ where: { id: req.params.id, institutionId } });
+  if (!student) { res.status(404); throw new Error('Student not found'); }
+  await student.destroy();
+  res.json({ success: true, message: 'Student deleted' });
+});
+
+const getStudent = asyncHandler(async (req, res) => {
+  const institutionId = getInstitutionId(req);
+  const student = await InstitutionStudent.findOne({
+    where: { id: req.params.id, institutionId },
     attributes: { exclude: ['password'] },
     include: [
-      { model: Institution, as: 'institution', attributes: ['institutionName','city','state','isPartner','logo','website'] },
+      { model: Batch,  as: 'batches',  through: { attributes: [] } },
+      { model: Course, as: 'courses',  through: { attributes: ['status','enrolledAt'] } },
+      { model: InstitutionCertificate, as: 'certificates' },
     ],
   });
+  if (!student) { res.status(404); throw new Error('Student not found'); }
   res.json({ success: true, data: student });
 });
 
-// ── GET /api/inst-student/dashboard ─────────────────────────────
-const getDashboard = asyncHandler(async (req, res) => {
-  const sid = req.instStudent.id;
+// bulkImportStudents moved to CSV/Excel version below
 
-  const [batches, courses, certificates] = await Promise.all([
-    // My batches
-    Batch.findAll({
-      include: [{ model: InstitutionStudent, as: 'students', where: { id: sid }, through: { attributes: [] }, required: true }],
-    }),
-    // My courses
-    Course.findAll({
-      include: [{ model: InstitutionStudent, as: 'students', where: { id: sid }, through: { attributes: ['status','enrolledAt','completedAt'] }, required: true }],
-    }),
-    // My certificates
-    InstitutionCertificate.findAll({
-      where: { studentId: sid, isValid: true },
-      order: [['issuedAt','DESC']],
-    }),
-  ]);
-
-  res.json({ success: true, data: { batches, courses, certificates } });
-});
-
-// ── GET /api/inst-student/certificates ──────────────────────────
-const getCertificates = asyncHandler(async (req, res) => {
-  const certs = await InstitutionCertificate.findAll({
-    where: { studentId: req.instStudent.id, isValid: true },
-    include: [{ model: Course, as: 'course', attributes: ['name'] }],
-    order: [['issuedAt','DESC']],
+// GET /api/institution/students/credentials — download credentials as JSON (frontend converts to Excel)
+const getStudentCredentials = asyncHandler(async (req, res) => {
+  const institutionId = getInstitutionId(req);
+  const students = await InstitutionStudent.findAll({
+    where: { institutionId },
+    attributes: ['careerId','name','email','mobile','department','rollNumber'],
+    order: [['createdAt','ASC']],
   });
-  res.json({ success: true, data: certs });
+  // Return with default passwords (derived from careerId)
+  const data = students.map(s => ({
+    'Career ID':        s.careerId,
+    'Name':             s.name,
+    'Email':            s.email,
+    'Mobile':           s.mobile || '',
+    'Department':       s.department || '',
+    'Roll Number':      s.rollNumber || '',
+    'Default Password': defaultPassword(s.careerId),
+    'Login URL':        `${process.env.CLIENT_URL || 'https://hiresnix.co.in'}/inst-login`,
+  }));
+  res.json({ success: true, data });
 });
 
-// ── PUT /api/inst-student/change-password ────────────────────────
-const changePassword = asyncHandler(async (req, res) => {
-  const { currentPassword, newPassword } = req.body;
-  if (!newPassword || newPassword.length < 6) {
-    res.status(400); throw new Error('New password must be at least 6 characters');
+// ── Batches ───────────────────────────────────────────────────────
+
+const getBatches = asyncHandler(async (req, res) => {
+  const institutionId = getInstitutionId(req);
+  const batches = await Batch.findAll({
+    where: { institutionId },
+    include: [{ model: Course, as: 'course', attributes: ['id','name','duration','durationUnit'] }],
+    order: [['createdAt','DESC']],
+  });
+  const batchesWithCount = await Promise.all(batches.map(async (b) => {
+    const count = await BatchStudent.count({ where: { batchId: b.id } });
+    return { ...b.toJSON(), studentCount: count };
+  }));
+  res.json({ success: true, data: batchesWithCount });
+});
+
+const createBatch = asyncHandler(async (req, res) => {
+  const institutionId = getInstitutionId(req);
+  const { name, description, startDate, endDate, trainerName, trainerEmail, status, courseId } = req.body;
+  if (!name) { res.status(400); throw new Error('Batch name is required'); }
+  const batch = await Batch.create({ institutionId, name, description, startDate, endDate, trainerName, trainerEmail, status, courseId: courseId || null });
+  res.status(201).json({ success: true, data: batch });
+});
+
+const updateBatch = asyncHandler(async (req, res) => {
+  const institutionId = getInstitutionId(req);
+  const batch = await Batch.findOne({ where: { id: req.params.id, institutionId } });
+  if (!batch) { res.status(404); throw new Error('Batch not found'); }
+  const allowed = ['name','description','startDate','endDate','trainerName','trainerEmail','status'];
+  const updates = {};
+  allowed.forEach(f => { if (req.body[f] !== undefined) updates[f] = req.body[f]; });
+  await batch.update(updates);
+  res.json({ success: true, data: batch });
+});
+
+const deleteBatch = asyncHandler(async (req, res) => {
+  const institutionId = getInstitutionId(req);
+  const batch = await Batch.findOne({ where: { id: req.params.id, institutionId } });
+  if (!batch) { res.status(404); throw new Error('Batch not found'); }
+  await batch.destroy();
+  res.json({ success: true, message: 'Batch deleted' });
+});
+
+const getBatchStudents = asyncHandler(async (req, res) => {
+  const institutionId = getInstitutionId(req);
+  const batch = await Batch.findOne({ where: { id: req.params.id, institutionId } });
+  if (!batch) { res.status(404); throw new Error('Batch not found'); }
+
+  // Get students with their course info via BatchStudent
+  const batchStudents = await BatchStudent.findAll({
+    where: { batchId: batch.id },
+    include: [
+      { model: InstitutionStudent, as: 'student', attributes: { exclude: ['password'] } },
+    ],
+  });
+
+  const students = batchStudents.map(bs => bs.student?.toJSON()).filter(Boolean);
+
+  res.json({ success: true, data: students, batch });
+});
+
+const assignStudentsToBatch = asyncHandler(async (req, res) => {
+  const institutionId = getInstitutionId(req);
+  const { studentIds, courseId } = req.body;
+  const batch = await Batch.findOne({ where: { id: req.params.id, institutionId } });
+  if (!batch) { res.status(404); throw new Error('Batch not found'); }
+
+  // Validate course belongs to this institution
+  let validCourse = null;
+  if (courseId) {
+    validCourse = await Course.findOne({ where: { id: courseId, institutionId } });
   }
-  const student = await InstitutionStudent.findByPk(req.instStudent.id);
-  const match = await student.matchPassword(currentPassword);
-  if (!match) { res.status(401); throw new Error('Current password is incorrect'); }
-  await student.update({ password: newPassword });
-  res.json({ success: true, message: 'Password updated successfully' });
+
+  for (const sid of studentIds) {
+    const st = await InstitutionStudent.findOne({ where: { id: sid, institutionId } });
+    if (st) {
+      const [bs, created] = await BatchStudent.findOrCreate({
+        where: { batchId: batch.id, studentId: sid },
+        defaults: { courseId: validCourse?.id || null },
+      });
+      // Update courseId if already exists and courseId provided
+      if (!created && validCourse && !bs.courseId) {
+        await bs.update({ courseId: validCourse.id });
+      }
+    }
+  }
+  res.json({ success: true, message: 'Students assigned to batch' });
 });
 
-// ── Academy Certificate PDF ──────────────────────────────────────
-const downloadAcademyCertificate = asyncHandler(async (req, res) => {
-  const student = req.student;
-  const { courseId } = req.params;
+// Returns students NOT already assigned to a batch with the same course
+const getAvailableStudentsForBatch = asyncHandler(async (req, res) => {
+  const institutionId = getInstitutionId(req);
 
-  const COURSE_NAMES = {
-    python: 'Python Programming', javascript: 'JavaScript',
-    java: 'Java', cpp: 'C++', dsa: 'Data Structures & Algorithms',
-    sql: 'SQL & Databases', webdev: 'Full Stack Web Development',
-  };
+  // Try with course include, fallback without (if courseId column not yet migrated)
+  let batch;
+  try {
+    batch = await Batch.findOne({
+      where: { id: req.params.id, institutionId },
+      include: [{ model: Course, as: 'course' }],
+    });
+  } catch(e) {
+    batch = await Batch.findOne({ where: { id: req.params.id, institutionId } });
+  }
+  if (!batch) { res.status(404); throw new Error('Batch not found'); }
 
-  const courseName = COURSE_NAMES[courseId] || courseId;
-  const certNo = `HXAC-${student.careerId}-${courseId.toUpperCase()}-${Date.now().toString(36).toUpperCase()}`;
-  const verifyUrl = `${process.env.CLIENT_URL || 'https://hiresnix.co.in'}/verify-academy/${certNo}`;
-  const issuedDate = new Date().toLocaleDateString('en-IN', { day:'numeric', month:'long', year:'numeric' });
+  // All students in this institution
+  const allStudents = await InstitutionStudent.findAll({
+    where: { institutionId },
+    attributes: { exclude: ['password'] },
+  });
 
+  // Students already in THIS batch
+  const inThisBatch = await BatchStudent.findAll({ where: { batchId: batch.id } });
+  const inThisBatchIds = new Set(inThisBatch.map(bs => bs.studentId));
+
+  // If batch has a course, find students who:
+  // 1. Already in another batch with same course
+  // 2. Already have a certificate for this course
+  let sameCourseStudentIds = new Set();
+  const batchCourseId = batch.courseId || batch.dataValues?.courseId || null;
+  if (batchCourseId && batchCourseId !== 'undefined' && batchCourseId !== undefined) {
+    // Find all other batches with same course
+    const sameCoursBatches = await Batch.findAll({
+      where: { institutionId, courseId: batchCourseId, id: { [Op.ne]: batch.id } },
+    });
+    if (sameCoursBatches.length > 0) {
+      const sameBatchIds = sameCoursBatches.map(b => b.id);
+      const enrolled = await BatchStudent.findAll({
+        where: { batchId: { [Op.in]: sameBatchIds } },
+      });
+      enrolled.forEach(e => sameCourseStudentIds.add(e.studentId));
+    }
+
+    // Also block students who already have a certificate for this course
+    const certifiedStudents = await InstitutionCertificate.findAll({
+      where: { institutionId, courseId: batchCourseId },
+      attributes: ['studentId'],
+    });
+    certifiedStudents.forEach(c => sameCourseStudentIds.add(c.studentId));
+  }
+
+  const available  = allStudents.filter(s => !inThisBatchIds.has(s.id) && !sameCourseStudentIds.has(s.id));
+  const alreadyIn  = allStudents.filter(s => inThisBatchIds.has(s.id));
+  const sameCourseDuplicate = allStudents.filter(s => !inThisBatchIds.has(s.id) && sameCourseStudentIds.has(s.id));
+
+  res.json({
+    success: true,
+    data: available,
+    alreadyInBatch: alreadyIn,
+    alreadyInSameCourse: sameCourseDuplicate,
+    batchCourse: batch.course || null,
+  });
+});
+
+const removeStudentFromBatch = asyncHandler(async (req, res) => {
+  const institutionId = getInstitutionId(req);
+  const batch = await Batch.findOne({ where: { id: req.params.id, institutionId } });
+  if (!batch) { res.status(404); throw new Error('Batch not found'); }
+  await BatchStudent.destroy({ where: { batchId: batch.id, studentId: req.params.studentId } });
+  res.json({ success: true, message: 'Student removed from batch' });
+});
+
+// ── Courses ───────────────────────────────────────────────────────
+
+const getCourses = asyncHandler(async (req, res) => {
+  const institutionId = getInstitutionId(req);
+  const courses = await Course.findAll({ where: { institutionId }, order: [['createdAt','DESC']] });
+  res.json({ success: true, data: courses });
+});
+
+const createCourse = asyncHandler(async (req, res) => {
+  const institutionId = getInstitutionId(req);
+  const { name, description, duration, durationUnit, status } = req.body;
+  if (!name) { res.status(400); throw new Error('Course name is required'); }
+  const course = await Course.create({ institutionId, name, description, duration, durationUnit, status });
+  res.status(201).json({ success: true, data: course });
+});
+
+const updateCourse = asyncHandler(async (req, res) => {
+  const institutionId = getInstitutionId(req);
+  const course = await Course.findOne({ where: { id: req.params.id, institutionId } });
+  if (!course) { res.status(404); throw new Error('Course not found'); }
+  const allowed = ['name','description','duration','durationUnit','status'];
+  const updates = {};
+  allowed.forEach(f => { if (req.body[f] !== undefined) updates[f] = req.body[f]; });
+  await course.update(updates);
+  res.json({ success: true, data: course });
+});
+
+const deleteCourse = asyncHandler(async (req, res) => {
+  const institutionId = getInstitutionId(req);
+  const course = await Course.findOne({ where: { id: req.params.id, institutionId } });
+  if (!course) { res.status(404); throw new Error('Course not found'); }
+  await course.destroy();
+  res.json({ success: true, message: 'Course deleted' });
+});
+
+const getCourseStudents = asyncHandler(async (req, res) => {
+  const institutionId = getInstitutionId(req);
+  const course = await Course.findOne({ where: { id: req.params.id, institutionId } });
+  if (!course) { res.status(404); throw new Error('Course not found'); }
+  const enrolled = await CourseStudent.findAll({
+    where: { courseId: course.id },
+    include: [{ model: InstitutionStudent, as: 'student', attributes: { exclude: ['password'] } }],
+  });
+  const students = enrolled.map(e => e.student?.toJSON()).filter(Boolean);
+  res.json({ success: true, data: students });
+});
+
+const assignStudentsToCourse = asyncHandler(async (req, res) => {
+  const institutionId = getInstitutionId(req);
+  const { studentIds } = req.body;
+  const course = await Course.findOne({ where: { id: req.params.id, institutionId } });
+  if (!course) { res.status(404); throw new Error('Course not found'); }
+  for (const sid of studentIds) {
+    const st = await InstitutionStudent.findOne({ where: { id: sid, institutionId } });
+    if (st) await CourseStudent.findOrCreate({ where: { courseId: course.id, studentId: sid } });
+  }
+  res.json({ success: true, message: 'Students assigned to course' });
+});
+
+// ── Certificates ──────────────────────────────────────────────────
+
+const getCertificates = asyncHandler(async (req, res) => {
+  const institutionId = getInstitutionId(req);
+  const { page = 1, limit = 20 } = req.query;
+  const { count, rows } = await InstitutionCertificate.findAndCountAll({
+    where: { institutionId },
+    include: [
+      { model: InstitutionStudent, as: 'student', attributes: ['name','email','careerId'] },
+      { model: Course,             as: 'course',  attributes: ['name'] },
+    ],
+    order: [['issuedAt','DESC']],
+    limit: parseInt(limit), offset: (parseInt(page)-1)*parseInt(limit),
+  });
+  res.json({ success: true, total: count, data: rows });
+});
+
+const issueCertificate = asyncHandler(async (req, res) => {
+  const institutionId = getInstitutionId(req);
+  const inst = await Institution.findOne({ where: { userId: req.user.id } });
+  const { studentId, courseId, batchId, type } = req.body;
+  if (!studentId || !type) { res.status(400); throw new Error('studentId and type are required'); }
+  const student = await InstitutionStudent.findOne({ where: { id: studentId, institutionId } });
+  if (!student) { res.status(404); throw new Error('Student not found'); }
+
+  // Resolve courseId from batch if not provided directly
+  let resolvedCourseId = courseId || null;
+  let courseName = null;
+
+  if (batchId && !resolvedCourseId) {
+    const batch = await Batch.findOne({
+      where: { id: batchId, institutionId },
+      include: [{ model: Course, as: 'course' }],
+    });
+    if (batch?.course) {
+      resolvedCourseId = batch.course.id;
+      courseName = batch.course.name;
+    }
+  }
+
+  if (!courseName && resolvedCourseId) {
+    const course = await Course.findOne({ where: { id: resolvedCourseId, institutionId } });
+    if (course) courseName = course.name;
+  }
+
+  // Skip if already issued same type + course
+  const alreadyIssued = await InstitutionCertificate.findOne({
+    where: { institutionId, studentId, type, courseId: resolvedCourseId || null },
+  });
+  if (alreadyIssued) {
+    return res.status(200).json({ success: true, skipped: true, message: 'Certificate already issued', data: alreadyIssued });
+  }
+
+  const cert = await InstitutionCertificate.create({
+    institutionId, studentId, courseId: resolvedCourseId || null, type,
+    studentName: student.name, courseName,
+    institutionName: inst.institutionName,
+  });
+  res.status(201).json({ success: true, data: cert });
+});
+
+const verifyCertificate = asyncHandler(async (req, res) => {
+  const cert = await InstitutionCertificate.findOne({
+    where: { certificateId: req.params.certId },
+    include: [
+      { model: InstitutionStudent, as: 'student', attributes: ['name','email','careerId','department'] },
+      { model: Institution,        as: 'institution', attributes: ['institutionName','city','state'] },
+    ],
+  });
+  if (!cert) { res.status(404); throw new Error('Certificate not found'); }
+  res.json({ success: true, valid: cert.isValid, data: cert });
+});
+
+const downloadCertificatePDF = asyncHandler(async (req, res) => {
+  const cert = await InstitutionCertificate.findOne({
+    where: { certificateId: req.params.certId },
+    include: [{ model: Institution, as: 'institution', attributes: ['institutionName','city','state'] }],
+  });
+  if (!cert) { res.status(404); throw new Error('Certificate not found'); }
+
+  const verifyUrl = `${process.env.CLIENT_URL || 'https://hiresnix.co.in'}/verify/${cert.certificateId}`;
   const qrDataUrl = await QRCode.toDataURL(verifyUrl, { width: 120, margin: 1 });
   const qrBuffer  = Buffer.from(qrDataUrl.split(',')[1], 'base64');
 
   res.setHeader('Content-Type', 'application/pdf');
-  res.setHeader('Content-Disposition', `attachment; filename="Academy_${courseName.replace(/\s+/g,'_')}_${student.careerId}.pdf"`);
+  res.setHeader('Content-Disposition', `attachment; filename="${cert.certificateId}.pdf"`);
 
-  const W = 841.89, H = 595.28;
+  const W = 841.89;
+  const H = 595.28;
   const doc = new PDFDocument({ size: 'A4', layout: 'landscape', margin: 0 });
   doc.pipe(res);
 
-  const GOLD = '#d4af37';
-  const DARK = '#0f172a';
-  const ACCENT = '#6366f1';
+  const COMPANY = {
+    name: 'Hiresnix',
+    tagline: 'Empowering Future Professionals',
+    email: 'support@hiresnix.co.in',
+    website: 'www.hiresnix.co.in',
+    address: 'Pune, Maharashtra, India',
+    colors: {
+      accent:    '#d4af37',
+      primary:   '#1e40af',
+      highlight: '#60a5fa',
+    }
+  };
 
-  // ── Outer border ──────────────────────────────────────────────
-  doc.rect(20, 20, W-40, H-40).lineWidth(3).stroke(GOLD);
-  doc.rect(26, 26, W-52, H-52).lineWidth(1).stroke(GOLD);
+  // ── Gold border ───────────────────────────────────────────────
+  doc.rect(20, 20, W-40, H-40).lineWidth(3).stroke(COMPANY.colors.accent);
+  doc.rect(26, 26, W-52, H-52).lineWidth(1).stroke(COMPANY.colors.accent);
 
   // ── Dark Header ───────────────────────────────────────────────
-  doc.rect(20, 20, W-40, 90).fill(DARK);
+  doc.rect(20, 20, W-40, 90).fill('#0f172a');
 
-  // Logo area
-  doc.fillColor('#ffffff').fontSize(22).font('Helvetica-Bold').text('Hiresnix', 50, 35);
-  doc.fillColor('#94a3b8').fontSize(9).font('Helvetica').text('Empowering Future Professionals', 50, 62);
+  // Company name
+  doc.fillColor('#ffffff').fontSize(22).font('Helvetica-Bold')
+     .text(COMPANY.name, 50, 35);
+  doc.fillColor('#94a3b8').fontSize(9).font('Helvetica')
+     .text(COMPANY.tagline, 50, 62);
 
-  // Right header text
-  doc.fillColor('#818cf8').fontSize(11).font('Helvetica-Bold')
-     .text('AI ACADEMY — CERTIFICATE OF COMPLETION', 0, 52, { align: 'right', width: W-50 });
+  // Certificate type top right
+  const certTypeHeader = cert.type === 'Skill Assessment'
+    ? 'CERTIFICATE OF SKILL ASSESSMENT'
+    : cert.type === 'Course Completion'
+    ? 'CERTIFICATE OF COURSE COMPLETION'
+    : `CERTIFICATE OF ${cert.type.toUpperCase()}`;
+  doc.fillColor(COMPANY.colors.highlight).fontSize(11).font('Helvetica-Bold')
+     .text(certTypeHeader, 0, 52, { align: 'right', width: W-50 });
 
   // Gold diamonds
-  const diamond = (x, y, s) => doc.moveTo(x,y-s).lineTo(x+s,y).lineTo(x,y+s).lineTo(x-s,y).fillColor(GOLD).fill();
-  diamond(35, 70, 6); diamond(W-35, 70, 6);
+  const drawDiamond = (x, y, size) => {
+    doc.moveTo(x, y-size).lineTo(x+size, y).lineTo(x, y+size).lineTo(x-size, y)
+       .fillColor(COMPANY.colors.accent).fill();
+  };
+  drawDiamond(35, 70, 6);
+  drawDiamond(W-35, 70, 6);
 
   // ── Title ─────────────────────────────────────────────────────
-  doc.fillColor(DARK).fontSize(34).font('Helvetica-Bold')
-     .text('Certificate of Completion', 0, 130, { align: 'center' });
+  const titleText = cert.type === 'Skill Assessment'
+    ? 'Certificate of Skill Assessment'
+    : cert.type === 'Course Completion'
+    ? 'Certificate of Course Completion'
+    : `Certificate of ${cert.type}`;
+
+  doc.fillColor('#0f172a').fontSize(32).font('Helvetica-Bold')
+     .text(titleText, 0, 135, { align: 'center' });
 
   // Gold divider
-  doc.rect(W/2-120, 178, 240, 2).fill(GOLD);
+  doc.rect(W/2-100, 180, 200, 2).fill(COMPANY.colors.accent);
 
   // ── Body ──────────────────────────────────────────────────────
   doc.fillColor('#475569').fontSize(13).font('Helvetica')
-     .text('This is to certify that', 0, 196, { align: 'center' });
+     .text('This is to certify that', 0, 200, { align: 'center' });
 
-  doc.fillColor(DARK).fontSize(30).font('Helvetica-Bold')
-     .text(student.name, 0, 218, { align: 'center' });
+  doc.fillColor('#0f172a').fontSize(28).font('Helvetica-Bold')
+     .text(cert.studentName, 0, 222, { align: 'center' });
+
+  const bodyText = cert.courseName
+    ? `has successfully completed the ${cert.type} in ${cert.courseName}`
+    : `has successfully completed the ${cert.type}`;
 
   doc.fillColor('#475569').fontSize(13).font('Helvetica')
-     .text('has successfully completed the AI Academy course in', 0, 262, { align: 'center' });
+     .text(bodyText, 0, 268, { align: 'center' });
 
-  doc.fillColor(ACCENT).fontSize(18).font('Helvetica-Bold')
-     .text(courseName, 0, 286, { align: 'center' });
+  doc.fillColor(COMPANY.colors.primary).fontSize(16).font('Helvetica-Bold')
+     .text(`at ${cert.institutionName || COMPANY.name}`, 0, 293, { align: 'center' });
 
+  const issuedDate = new Date(cert.issuedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
   doc.fillColor('#475569').fontSize(12).font('Helvetica')
-     .text(`at Hiresnix AI Academy  |  Issued on ${issuedDate}`, 0, 316, { align: 'center' });
+     .text(`Issued on ${issuedDate}`, 0, 320, { align: 'center' });
 
   doc.fillColor('#94a3b8').fontSize(9).font('Helvetica')
-     .text(`Certificate No: ${certNo}`, 0, 338, { align: 'center' });
-
-  doc.fillColor('#334155').fontSize(9).font('Helvetica')
-     .text(`Career ID: ${student.careerId}`, 0, 352, { align: 'center' });
+     .text(`Certificate No: ${cert.certificateId}`, 0, 342, { align: 'center' });
 
   // ── QR Code ───────────────────────────────────────────────────
   const qrSize = 75;
   const qrX = W/2 - qrSize/2;
-  const qrY = H - 170;
-  doc.roundedRect(qrX-9, qrY-9, qrSize+18, qrSize+36, 6).fillAndStroke('#ffffff', GOLD);
+  const qrY = H - 168;
+  doc.roundedRect(qrX-9, qrY-9, qrSize+18, qrSize+34, 6)
+     .fillAndStroke('#ffffff', COMPANY.colors.accent);
   doc.image(qrBuffer, qrX, qrY, { width: qrSize });
   doc.fillColor('#1e293b').fontSize(7).font('Helvetica-Bold')
-     .text('Scan to Verify', qrX-4, qrY+qrSize+4, { width: qrSize+8, align: 'center' });
+     .text('Scan to Verify', qrX, qrY+qrSize+4, { width: qrSize, align: 'center' });
   doc.fillColor('#64748b').fontSize(5.5).font('Helvetica')
-     .text(certNo, qrX-4, qrY+qrSize+15, { width: qrSize+8, align: 'center' });
+     .text(cert.certificateId, qrX-4, qrY+qrSize+15, { width: qrSize+8, align: 'center' });
 
-  // ── Signatures ───────────────────────────────────────────────
-  const sigLineY2 = H - 100;
-  const sigBlockW = 160;
-  const sigImgW2  = 140;
-  const sigImgH2  = 52;
+  // ── Signatures with images ────────────────────────────────────
+  const sigLineY = H - 100;   // horizontal line Y
+  const sig1X    = W/2 - 260; // left block start X
+  const sig2X    = W/2 + 100; // right block start X
+  const sigW     = 160;        // block width
+  const sigImgH  = 52;         // signature image height
+  const sigImgW  = 140;        // signature image max width
 
-  const sigFn = (doc2, name, title, company, blockX, imgPath, imgW, imgH) => {
-    try {
-      if (fs.existsSync(imgPath)) {
-        // Manually center image within block
-        const imgX = blockX + Math.floor((sigBlockW - imgW) / 2);
-        const imgY = sigLineY2 - imgH - 6;
-        doc2.image(imgPath, imgX, imgY, { width: imgW, height: imgH });
-      }
-    } catch(e) {}
-    doc2.moveTo(blockX, sigLineY2).lineTo(blockX + sigBlockW, sigLineY2).lineWidth(0.8).stroke('#334155');
-    doc2.fillColor('#1e293b').fontSize(10).font('Helvetica-Bold')
-        .text(name, blockX, sigLineY2 + 7, { width: sigBlockW, align: 'center' });
-    doc2.fillColor('#64748b').fontSize(8.5).font('Helvetica')
-        .text(title, blockX, sigLineY2 + 22, { width: sigBlockW, align: 'center' });
-    doc2.fillColor('#94a3b8').fontSize(7.5).font('Helvetica')
-        .text(company, blockX, sigLineY2 + 35, { width: sigBlockW, align: 'center' });
-  };
-  // Director — normal size
-  sigFn(doc, 'Mr. Jayesh Badgujar', 'Program Director', 'Hiresnix',
-        (W/2)-260, path.join(__dirname,'..','signatures','Director.png'), 130, 48);
-  // CEO — bigger size, properly centered
-  sigFn(doc, 'Mr. A S Borse', 'Founder & CEO', 'Hiresnix',
-        (W/2)+100, path.join(__dirname,'..','signatures','ceo.png'), 155, 58);
+  // ── Director (left) ──
+  try {
+    const dirSigPath = path.join(__dirname, '..', 'signatures', 'Director.png');
+    if (require('fs').existsSync(dirSigPath)) {
+      const dImgW = 130, dImgH = 48;
+      const dImgX = sig1X + Math.floor((sigW - dImgW) / 2);
+      doc.image(dirSigPath, dImgX, sigLineY - dImgH - 6, { width: dImgW, height: dImgH });
+    }
+  } catch(e) {}
+  doc.moveTo(sig1X, sigLineY).lineTo(sig1X + sigW, sigLineY).lineWidth(0.8).stroke('#94a3b8');
+  doc.fillColor('#0f172a').fontSize(10).font('Helvetica-Bold')
+     .text('Mr. Jayesh Badgujar', sig1X, sigLineY + 7, { width: sigW, align: 'center' });
+  doc.fillColor('#64748b').fontSize(8.5).font('Helvetica')
+     .text('Program Director', sig1X, sigLineY + 22, { width: sigW, align: 'center' });
+  doc.fillColor('#94a3b8').fontSize(7.5).font('Helvetica')
+     .text('Hiresnix', sig1X, sigLineY + 35, { width: sigW, align: 'center' });
+
+  // ── CEO (right) — bigger size ──
+  try {
+    const ceoSigPath = path.join(__dirname, '..', 'signatures', 'ceo.png');
+    if (require('fs').existsSync(ceoSigPath)) {
+      const cImgW = 155, cImgH = 58;
+      const cImgX = sig2X + Math.floor((sigW - cImgW) / 2);
+      doc.image(ceoSigPath, cImgX, sigLineY - cImgH + 2, { width: cImgW, height: cImgH });
+    }
+  } catch(e) {}
+  doc.moveTo(sig2X, sigLineY).lineTo(sig2X + sigW, sigLineY).lineWidth(0.8).stroke('#94a3b8');
+  doc.fillColor('#0f172a').fontSize(10).font('Helvetica-Bold')
+     .text('Mr. A S Borse', sig2X, sigLineY + 7, { width: sigW, align: 'center' });
+  doc.fillColor('#64748b').fontSize(8.5).font('Helvetica')
+     .text('Founder & CEO', sig2X, sigLineY + 22, { width: sigW, align: 'center' });
+  doc.fillColor('#94a3b8').fontSize(7.5).font('Helvetica')
+     .text('Hiresnix', sig2X, sigLineY + 35, { width: sigW, align: 'center' });
 
   // ── Dark Footer ───────────────────────────────────────────────
-  doc.rect(20, H-58, W-40, 38).fill(DARK);
+  doc.rect(20, H-60, W-40, 40).fill('#0f172a');
   doc.fillColor('#94a3b8').fontSize(8).font('Helvetica')
-     .text('support@hiresnix.co.in  |  www.hiresnix.co.in  |  Shirpur, Maharashtra, India', 0, H-45, { align: 'center' });
+     .text(`${COMPANY.email}  |  ${COMPANY.website}  |  ${COMPANY.address}`, 0, H-47, { align: 'center' });
 
   doc.end();
 });
 
-// ── Academy Progress ─────────────────────────────────────────────
-const saveAcademyProgress = asyncHandler(async (req, res) => {
-  const student = req.student;
-  const { courseId, completed, xp, claimedCert } = req.body;
-  if (!courseId) { res.status(400); throw new Error('courseId required'); }
+// ── Dashboard Stats ───────────────────────────────────────────────
 
-  const { sequelize } = require('../models');
-  await sequelize.query(`
-    INSERT INTO inst_academy_progress (student_id, career_id, course_id, completed, xp, claimed_cert, last_active)
-    VALUES (:studentId, :careerId, :courseId, :completed::jsonb, :xp, :claimedCert, NOW())
-    ON CONFLICT (student_id, course_id)
-    DO UPDATE SET
-      completed = :completed::jsonb,
-      xp = :xp,
-      claimed_cert = :claimedCert,
-      last_active = NOW()
-  `, {
-    replacements: {
-      studentId: student.id,
-      careerId: student.careerId,
-      courseId,
-      completed: JSON.stringify(completed || []),
-      xp: xp || 0,
-      claimedCert: claimedCert || false,
+const getDashboardStats = asyncHandler(async (req, res) => {
+  const institutionId = getInstitutionId(req);
+  const [totalStudents, totalBatches, totalCourses, totalCertificates] = await Promise.all([
+    InstitutionStudent.count({ where: { institutionId } }),
+    Batch.count({ where: { institutionId } }),
+    Course.count({ where: { institutionId } }),
+    InstitutionCertificate.count({ where: { institutionId } }),
+  ]);
+  const recentStudents = await InstitutionStudent.findAll({
+    where: { institutionId }, attributes: { exclude: ['password'] },
+    order: [['createdAt','DESC']], limit: 5,
+  });
+  const batches = await Batch.findAll({
+    where: { institutionId },
+    include: [{ model: Course, as: 'course', attributes: ['id','name'] }],
+    order: [['createdAt','DESC']], limit: 10,
+  });
+  const batchesWithCount = await Promise.all(batches.map(async b => {
+    const count = await BatchStudent.count({ where: { batchId: b.id } });
+    return { ...b.toJSON(), studentCount: count };
+  }));
+  const completedBatches = batchesWithCount.filter(b => b.status === 'Completed');
+  const recentBatches = batchesWithCount.filter(b => b.status !== 'Completed').slice(0, 5);
+  res.json({ success: true, data: { totalStudents, totalBatches, totalCourses, totalCertificates, recentStudents, recentBatches, completedBatches } });
+});
+
+// ── Bulk Import Students directly into a Batch ───────────────────
+const bulkImportToBatch = asyncHandler(async (req, res) => {
+  const institutionId = getInstitutionId(req);
+  const batchId = req.params.id || req.params.batchId;
+
+  if (!batchId) { res.status(400); throw new Error('Batch ID required'); }
+  const batch = await Batch.findOne({ where: { id: batchId, institutionId } });
+  if (!batch) { res.status(404); throw new Error('Batch not found'); }
+
+  const { students } = req.body;
+  if (!Array.isArray(students) || students.length === 0) {
+    res.status(400); throw new Error('No students provided');
+  }
+
+  const results = { created: [], assigned: [], skipped: [], errors: [] };
+
+  for (const s of students) {
+    const name   = (s.name   || '').toString().trim();
+    const email  = (s.email  || '').toString().trim().toLowerCase();
+    const dept   = (s.department || s.dept || '').toString().trim();
+    const roll   = (s.rollNumber || s.roll || '').toString().trim();
+    const mobile = (s.mobile || '').toString().trim();
+    const year   = (s.year   || '').toString().trim();
+
+    if (!name || !email) { results.errors.push({ name: name||'?', reason: 'Name & email required' }); continue; }
+
+    try {
+      let student = await InstitutionStudent.findOne({ where: { institutionId, email } });
+      let isNew = false;
+
+      if (!student) {
+        const careerId = await generateCareerId();
+        const pwd = defaultPassword(careerId);
+        student = await InstitutionStudent.create({
+          institutionId, careerId, password: pwd,
+          name, email, mobile, department: dept, rollNumber: roll, year, skills: [],
+        });
+        results.created.push({ name, email, careerId, defaultPassword: pwd });
+        isNew = true;
+      }
+
+      // Assign to batch if not already
+      const alreadyIn = await BatchStudent.findOne({ where: { batchId: batch.id, studentId: student.id } });
+      if (alreadyIn) {
+        results.skipped.push({ name, careerId: student.careerId, reason: 'Already in batch' });
+      } else {
+        await BatchStudent.create({ batchId: batch.id, studentId: student.id });
+        if (!isNew) results.assigned.push({ name, careerId: student.careerId });
+      }
+    } catch(err) {
+      results.errors.push({ name, reason: err.message });
+    }
+  }
+
+  res.json({
+    success: true,
+    summary: {
+      total: students.length,
+      created: results.created.length,
+      assigned: results.assigned.length,
+      skipped: results.skipped.length,
+      errors: results.errors.length,
     },
-    type: sequelize.QueryTypes.INSERT,
+    data: results,
+    batch: { id: batch.id, name: batch.name },
+  });
+});
+
+// ── Bulk Import Students from CSV/Excel ──────────────────────────
+const bulkImportStudents = asyncHandler(async (req, res) => {
+  // Frontend parses CSV/Excel and sends JSON array
+  const institutionId = getInstitutionId(req);
+  const { students } = req.body;
+  if (!Array.isArray(students) || students.length === 0) {
+    res.status(400); throw new Error('No students provided');
+  }
+
+  const results = { created: [], skipped: [], errors: [] };
+
+  for (const s of students) {
+    const name  = (s.name  || '').toString().trim();
+    const email = (s.email || '').toString().trim().toLowerCase();
+    const dept  = (s.department || s.dept || '').toString().trim();
+    const roll  = (s.rollNumber || s.roll || '').toString().trim();
+    const mobile= (s.mobile || '').toString().trim();
+    const year  = (s.year  || '').toString().trim();
+
+    if (!name || !email) {
+      results.errors.push({ row: name || email || 'Unknown', reason: 'Name and email required' });
+      continue;
+    }
+    try {
+      const exists = await InstitutionStudent.findOne({ where: { institutionId, email } });
+      if (exists) {
+        results.skipped.push({ name, email, reason: 'Already exists', careerId: exists.careerId });
+        continue;
+      }
+      const careerId = await generateCareerId();
+      const pwd = defaultPassword(careerId);
+      await InstitutionStudent.create({
+        institutionId, careerId, password: pwd,
+        name, email, mobile, department: dept, rollNumber: roll, year, skills: [],
+      });
+      results.created.push({ name, email, careerId, defaultPassword: pwd });
+    } catch(err) {
+      results.errors.push({ row: name, reason: err.message });
+    }
+  }
+
+  res.json({
+    success: true,
+    summary: { total: students.length, created: results.created.length, skipped: results.skipped.length, errors: results.errors.length },
+    data: results,
+  });
+});
+
+// ── Issue Certificates by Batch ───────────────────────────────────
+const issueCertificatesByBatch = asyncHandler(async (req, res) => {
+  const institutionId = getInstitutionId(req);
+  const { batchId, type, courseId } = req.body;
+
+  if (!batchId || !type) { res.status(400); throw new Error('batchId and type required'); }
+
+  const inst = await Institution.findOne({ where: { userId: req.user.id } });
+  const batch = await Batch.findOne({
+    where: { id: batchId, institutionId },
+    include: [{ model: Course, as: 'course' }],
+  });
+  if (!batch) { res.status(404); throw new Error('Batch not found'); }
+
+  // Get all students in batch
+  const batchStudents = await BatchStudent.findAll({
+    where: { batchId: batch.id },
+    include: [{ model: InstitutionStudent, as: 'student' }],
   });
 
-  res.json({ success: true, message: 'Progress saved' });
-});
+  if (batchStudents.length === 0) {
+    return res.json({ success: true, summary: { total: 0, issued: 0, skipped: 0 }, data: [] });
+  }
 
-const getAcademyProgress = asyncHandler(async (req, res) => {
-  const student = req.student;
-  const { sequelize } = require('../models');
-  const [rows] = await sequelize.query(
-    `SELECT * FROM inst_academy_progress WHERE student_id = :studentId`,
-    { replacements: { studentId: student.id }, type: sequelize.QueryTypes.SELECT }
-  );
-  res.json({ success: true, data: rows || [] });
-});
+  // Resolve course
+  let resolvedCourseId = courseId || batch.courseId || null;
+  let courseName = null;
+  if (resolvedCourseId) {
+    const course = await Course.findOne({ where: { id: resolvedCourseId, institutionId } });
+    if (course) courseName = course.name;
+  } else if (batch.course) {
+    resolvedCourseId = batch.course.id;
+    courseName = batch.course.name;
+  }
 
-// Admin: get all students academy progress
-const getAllAcademyProgress = asyncHandler(async (req, res) => {
-  const institutionId = req.institution?.id;
-  const { sequelize } = require('../models');
+  const results = [];
+  let issued = 0, skipped = 0;
 
-  // Get all students of this institution with their academy progress
-  const rows = await sequelize.query(`
-    SELECT
-      ist.id as student_id,
-      ist."careerId",
-      ist.name,
-      ist.email,
-      ist.department,
-      COALESCE(
-        json_agg(
-          json_build_object(
-            'courseId', ap.course_id,
-            'completed', ap.completed,
-            'xp', ap.xp,
-            'claimedCert', ap.claimed_cert,
-            'lastActive', ap.last_active
-          )
-        ) FILTER (WHERE ap.course_id IS NOT NULL),
-        '[]'::json
-      ) as academy
-    FROM institution_students ist
-    LEFT JOIN inst_academy_progress ap ON ap.student_id = ist.id
-    WHERE ist."institutionId" = :institutionId
-    GROUP BY ist.id, ist."careerId", ist.name, ist.email, ist.department
-    ORDER BY ist.name
-  `, {
-    replacements: { institutionId },
-    type: sequelize.QueryTypes.SELECT,
+  for (const bs of batchStudents) {
+    const student = bs.student;
+    if (!student) continue;
+
+    // Check if already issued
+    const already = await InstitutionCertificate.findOne({
+      where: { institutionId, studentId: student.id, type, courseId: resolvedCourseId || null },
+    });
+
+    if (already) {
+      skipped++;
+      results.push({ name: student.name, careerId: student.careerId, status: 'skipped', reason: 'Already issued' });
+      continue;
+    }
+
+    await InstitutionCertificate.create({
+      institutionId, studentId: student.id,
+      courseId: resolvedCourseId || null, type,
+      studentName: student.name, courseName,
+      institutionName: inst.institutionName,
+    });
+    issued++;
+    results.push({ name: student.name, careerId: student.careerId, status: 'issued' });
+  }
+
+  res.json({
+    success: true,
+    summary: { total: batchStudents.length, issued, skipped },
+    data: results,
   });
-
-  res.json({ success: true, data: rows || [] });
 });
 
-module.exports = { login, getMe, getDashboard, getCertificates, changePassword, protectInstStudent, saveAcademyProgress, getAcademyProgress, getAllAcademyProgress, downloadAcademyCertificate };
+module.exports = {
+  getProfile, updateProfile,
+  getStudents, createStudent, updateStudent, deleteStudent, getStudent,
+  bulkImportStudents, bulkImportToBatch, getStudentCredentials,
+  getBatches, createBatch, updateBatch, deleteBatch, getBatchStudents,
+  assignStudentsToBatch, removeStudentFromBatch, getAvailableStudentsForBatch,
+  getCourses, createCourse, updateCourse, deleteCourse, getCourseStudents, assignStudentsToCourse,
+  getCertificates, issueCertificate, verifyCertificate, downloadCertificatePDF,
+  getDashboardStats,
+};

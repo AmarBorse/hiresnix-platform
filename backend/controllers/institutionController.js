@@ -620,7 +620,7 @@ const downloadCertificatePDF = asyncHandler(async (req, res) => {
     if (require('fs').existsSync(ceoSigPath)) {
       const cImgW = 155, cImgH = 58;
       const cImgX = sig2X + Math.floor((sigW - cImgW) / 2);
-      doc.image(ceoSigPath, cImgX, sigLineY - cImgH - 6, { width: cImgW, height: cImgH });
+      doc.image(ceoSigPath, cImgX, sigLineY - cImgH + 2, { width: cImgW, height: cImgH });
     }
   } catch(e) {}
   doc.moveTo(sig2X, sigLineY).lineTo(sig2X + sigW, sigLineY).lineWidth(0.8).stroke('#94a3b8');
