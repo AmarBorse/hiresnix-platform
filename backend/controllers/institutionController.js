@@ -485,7 +485,9 @@ const downloadCertificatePDF = asyncHandler(async (req, res) => {
   });
   if (!cert) { res.status(404); throw new Error('Certificate not found'); }
 
-  const verifyUrl = `${process.env.CLIENT_URL || 'https://hiresnix.co.in'}/verify/${cert.certificateId}`;
+  const verifyUrl = cert.type === 'Skill Assessment'
+    ? `https://www.hiresnix.co.in/verification/skill-assessment?id=${cert.certificateId}`
+    : `${process.env.CLIENT_URL || 'https://hiresnix.co.in'}/verify/${cert.certificateId}`;
   const qrDataUrl = await QRCode.toDataURL(verifyUrl, { width: 120, margin: 1 });
   const qrBuffer  = Buffer.from(qrDataUrl.split(',')[1], 'base64');
 
@@ -502,7 +504,7 @@ const downloadCertificatePDF = asyncHandler(async (req, res) => {
     tagline: 'Empowering Future Professionals',
     email: 'support@hiresnix.co.in',
     website: 'www.hiresnix.co.in',
-    address: 'Shirpur, Maharashtra, India',
+    address: 'Pune, Maharashtra, India',
     colors: {
       accent:    '#d4af37',
       primary:   '#1e40af',
