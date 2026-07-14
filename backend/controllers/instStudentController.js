@@ -183,7 +183,7 @@ const changePassword = asyncHandler(async (req, res) => {
 
 // ── Academy Certificate PDF ──────────────────────────────────────
 const downloadAcademyCertificate = asyncHandler(async (req, res) => {
-  const student = req.student;
+  const student = req.instStudent;
   const { courseId } = req.params;
 
   const COURSE_NAMES = {
@@ -201,11 +201,13 @@ const downloadAcademyCertificate = asyncHandler(async (req, res) => {
   const qrBuffer  = Buffer.from(qrDataUrl.split(',')[1], 'base64');
 
   res.setHeader('Content-Type', 'application/pdf');
-  res.setHeader('Content-Disposition', `attachment; filename="Academy_${courseName.replace(/\s+/g,'_')}_${student.careerId}.pdf"`);
+  res.setHeader('Content-Disposition', `attachment; filename="Hiresnix_Academy_${courseName.replace(/\s+/g,'_')}_Certificate.pdf"`);
 
   const W = 841.89, H = 595.28;
   const doc = new PDFDocument({ size: 'A4', layout: 'landscape', margin: 0 });
   doc.pipe(res);
+
+  doc.on('error', (err) => { console.error('Academy PDF error:', err); });
 
   const GOLD = '#d4af37';
   const DARK = '#0f172a';
@@ -309,7 +311,7 @@ const downloadAcademyCertificate = asyncHandler(async (req, res) => {
 
 // ── Academy Progress ─────────────────────────────────────────────
 const saveAcademyProgress = asyncHandler(async (req, res) => {
-  const student = req.student;
+  const student = req.instStudent;
   const { courseId, completed, xp, claimedCert } = req.body;
   if (!courseId) { res.status(400); throw new Error('courseId required'); }
 
@@ -339,7 +341,7 @@ const saveAcademyProgress = asyncHandler(async (req, res) => {
 });
 
 const getAcademyProgress = asyncHandler(async (req, res) => {
-  const student = req.student;
+  const student = req.instStudent;
   const { sequelize } = require('../models');
   const [rows] = await sequelize.query(
     `SELECT * FROM inst_academy_progress WHERE student_id = :studentId`,
