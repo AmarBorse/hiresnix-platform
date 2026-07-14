@@ -420,7 +420,7 @@ export function LandingPage() {
             <h2 className="lp-section-title lp-reveal lp-d1">Our Products</h2>
             <p className="lp-reveal lp-d2" style={{ color: '#6b7a99', fontSize: '1rem', maxWidth: 520, margin: '0 auto' }}>A suite of AI-powered platforms and tools built on our own technology — available for institutions, students, and businesses.</p>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(320px,1fr))', gap: '1.5rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,minmax(0,420px))', gap: '1.5rem', justifyContent: 'center' }}>
             {PRODUCTS.map((p, i) => (
               <div key={p.title} className={`lp-product-card lp-reveal lp-d${Math.min(i + 1, 4)}`} style={{ background: p.gradient, border: `1px solid ${p.border}` }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
