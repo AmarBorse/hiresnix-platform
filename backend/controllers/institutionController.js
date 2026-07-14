@@ -502,7 +502,7 @@ const downloadCertificatePDF = asyncHandler(async (req, res) => {
     tagline: 'Empowering Future Professionals',
     email: 'support@hiresnix.co.in',
     website: 'www.hiresnix.co.in',
-    address: 'Pune, Maharashtra, India',
+    address: 'Shirpur, Maharashtra, India',
     colors: {
       accent:    '#d4af37',
       primary:   '#1e40af',
