@@ -590,7 +590,7 @@ const downloadCertificatePDF = asyncHandler(async (req, res) => {
      .text(cert.certificateId, qrX-4, qrY+qrSize+15, { width: qrSize+8, align: 'center' });
 
   // ── Signatures with images ────────────────────────────────────
-  const sigLineY = H - 100;   // horizontal line Y
+  const sigLineY = H - 115;   // horizontal line Y
   const sig1X    = W/2 - 260; // left block start X
   const sig2X    = W/2 + 100; // right block start X
   const sigW     = 160;        // block width

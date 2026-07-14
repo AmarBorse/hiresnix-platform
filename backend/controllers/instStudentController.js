@@ -271,7 +271,7 @@ const downloadAcademyCertificate = asyncHandler(async (req, res) => {
      .text(certNo, qrX-4, qrY+qrSize+15, { width: qrSize+8, align: 'center' });
 
   // ── Signatures ───────────────────────────────────────────────
-  const sigLineY2 = H - 100;
+  const sigLineY2 = H - 115;
   const sigBlockW = 160;
   const sigImgW2  = 140;
   const sigImgH2  = 52;
