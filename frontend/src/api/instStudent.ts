@@ -82,6 +82,7 @@ export const instStudentApi = {
   changePassword:  (currentPassword: string, newPassword: string) =>
                      instClient.put('/inst-student/change-password', { currentPassword, newPassword }).then(r => r.data),
   downloadCertPdf: (certId: string) => `${apiBaseUrl}/institution/certificates/${certId}/download-pdf`,
+  downloadAcademyCertPdf: (courseId: string) => `${apiBaseUrl}/inst-student/academy/certificate/${courseId}`,
 };
 
 export default instClient;

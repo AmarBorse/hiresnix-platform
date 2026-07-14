@@ -1,6 +1,6 @@
 // src/pages/instStudent/InstStudentCourses.tsx
 import React, { useEffect, useState } from 'react';
-import { BookOpen, Clock, ChevronRight, GraduationCap, CheckCircle, Sparkles } from 'lucide-react';
+import { BookOpen, Clock, ChevronRight, GraduationCap, CheckCircle, Sparkles, Download } from 'lucide-react';
 import { instStudentApi } from '../../api/instStudent';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
@@ -146,33 +146,35 @@ export function InstStudentCourses() {
           {ACADEMY_COURSES.map(c => {
             const prog = getAcademyProg(c.id);
             const pct = prog ? Math.min(100, Math.round((prog.done / (c.modules * 5)) * 100)) : 0;
+            const isCompleted = pct >= 100 || prog?.cert;
             return (
               <div key={c.id}
-                onClick={() => navigate('/inst-student/academy')}
-                className="rounded-xl p-4 cursor-pointer transition hover:-translate-y-0.5"
+                className="rounded-xl p-4 transition hover:-translate-y-0.5"
                 style={{
                   background: prog ? `linear-gradient(135deg,rgba(15,23,42,0.98),rgba(20,25,50,0.98))` : 'rgba(255,255,255,0.03)',
-                  border: `1px solid ${prog ? c.accent + '33' : 'rgba(255,255,255,0.07)'}`,
+                  border: `1px solid ${isCompleted ? '#34d39933' : prog ? c.accent + '33' : 'rgba(255,255,255,0.07)'}`,
                 }}>
                 <div className="flex items-center gap-3">
                   <span className="text-2xl flex-shrink-0">{c.icon}</span>
-                  <div className="flex-1 min-w-0">
+                  <div className="flex-1 min-w-0"
+                    onClick={() => navigate('/inst-student/academy')}
+                    style={{ cursor: 'pointer' }}>
                     <div className="flex items-center justify-between">
                       <span className="font-semibold text-sm text-white truncate">{c.title}</span>
-                      {prog?.cert && <span className="text-xs font-bold ml-2 flex-shrink-0" style={{ color: '#f59e0b' }}>🏆</span>}
+                      {isCompleted && <span className="text-xs font-bold ml-2 flex-shrink-0" style={{ color: '#34d399' }}>✓ Completed</span>}
                     </div>
                     {prog ? (
                       <>
                         <div className="flex items-center gap-2 mt-1">
                           <div className="flex-1 rounded-full h-1.5" style={{ background: 'rgba(255,255,255,0.08)' }}>
-                            <div className="h-1.5 rounded-full transition-all" style={{ width: `${pct}%`, background: c.accent }} />
+                            <div className="h-1.5 rounded-full transition-all" style={{ width: `${pct}%`, background: isCompleted ? '#34d399' : c.accent }} />
                           </div>
-                          <span className="text-xs font-bold flex-shrink-0" style={{ color: c.accent }}>{pct}%</span>
+                          <span className="text-xs font-bold flex-shrink-0" style={{ color: isCompleted ? '#34d399' : c.accent }}>{pct}%</span>
                         </div>
                         <div className="flex items-center gap-3 mt-1">
                           <span className="text-xs" style={{ color: '#475569' }}>{prog.done} lessons done</span>
                           {prog.xp > 0 && <span className="text-xs" style={{ color: '#f59e0b' }}>⚡ {prog.xp} XP</span>}
-                          {prog.cert && <span className="text-xs" style={{ color: '#34d399' }}>✓ Certified</span>}
+                          {prog.cert && <span className="text-xs" style={{ color: '#34d399' }}>🏆 Certified</span>}
                         </div>
                       </>
                     ) : (
@@ -181,7 +183,18 @@ export function InstStudentCourses() {
                       </div>
                     )}
                   </div>
-                  <ChevronRight size={14} style={{ color: prog ? c.accent : '#334155', flexShrink: 0 }} />
+                  {/* Download button if completed */}
+                  {isCompleted ? (
+                    <button
+                      onClick={e => { e.stopPropagation(); window.open(instStudentApi.downloadAcademyCertPdf(c.id), '_blank'); }}
+                      className="flex-shrink-0 flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-bold transition hover:opacity-80"
+                      style={{ background: 'rgba(52,211,153,0.15)', color: '#34d399', border: '1px solid rgba(52,211,153,0.25)' }}
+                      title="Download Certificate">
+                      <Download size={12} /> PDF
+                    </button>
+                  ) : (
+                    <ChevronRight size={14} onClick={() => navigate('/inst-student/academy')} style={{ color: prog ? c.accent : '#334155', flexShrink: 0, cursor: 'pointer' }} />
+                  )}
                 </div>
               </div>
             );
