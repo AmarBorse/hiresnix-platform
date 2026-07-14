@@ -590,37 +590,47 @@ const downloadCertificatePDF = asyncHandler(async (req, res) => {
      .text(cert.certificateId, qrX-4, qrY+qrSize+15, { width: qrSize+8, align: 'center' });
 
   // ── Signatures with images ────────────────────────────────────
-  const sigY = H - 130;
-  const sig1X = W/2 - 270;
-  const sig2X = W/2 + 110;
-  const sigW  = 150;
-  const sigImgH = 58;
+  const sigLineY = H - 100;   // horizontal line Y
+  const sig1X    = W/2 - 260; // left block start X
+  const sig2X    = W/2 + 100; // right block start X
+  const sigW     = 160;        // block width
+  const sigImgH  = 52;         // signature image height
+  const sigImgW  = 140;        // signature image max width
 
-  // Director signature
+  // ── Director (left) ──
   try {
     const dirSigPath = path.join(__dirname, '..', 'signatures', 'Director.png');
     if (require('fs').existsSync(dirSigPath)) {
-      doc.image(dirSigPath, sig1X + 20, sigY - sigImgH - 2, { height: sigImgH, fit: [sigW - 20, sigImgH] });
+      // Center image within block, sitting just above the line
+      doc.image(dirSigPath, sig1X + (sigW - sigImgW) / 2, sigLineY - sigImgH - 4, {
+        width: sigImgW, height: sigImgH, fit: [sigImgW, sigImgH], align: 'center'
+      });
     }
   } catch(e) {}
-  doc.moveTo(sig1X, sigY+2).lineTo(sig1X+sigW, sigY+2).lineWidth(0.8).stroke('#94a3b8');
+  doc.moveTo(sig1X, sigLineY).lineTo(sig1X + sigW, sigLineY).lineWidth(0.8).stroke('#94a3b8');
   doc.fillColor('#0f172a').fontSize(10).font('Helvetica-Bold')
-     .text('Mr.Jayesh Badgujar', sig1X, sigY+7, { width: sigW, align: 'center' });
-  doc.fillColor('#64748b').fontSize(8).font('Helvetica')
-     .text('Program Director', sig1X, sigY+21, { width: sigW, align: 'center' });
+     .text('Mr. Jayesh Badgujar', sig1X, sigLineY + 7, { width: sigW, align: 'center' });
+  doc.fillColor('#64748b').fontSize(8.5).font('Helvetica')
+     .text('Program Director', sig1X, sigLineY + 22, { width: sigW, align: 'center' });
+  doc.fillColor('#94a3b8').fontSize(7.5).font('Helvetica')
+     .text('Hiresnix', sig1X, sigLineY + 35, { width: sigW, align: 'center' });
 
-  // CEO signature
+  // ── CEO (right) ──
   try {
     const ceoSigPath = path.join(__dirname, '..', 'signatures', 'ceo.png');
     if (require('fs').existsSync(ceoSigPath)) {
-      doc.image(ceoSigPath, sig2X + 20, sigY - sigImgH - 2, { height: sigImgH, fit: [sigW - 20, sigImgH] });
+      doc.image(ceoSigPath, sig2X + (sigW - sigImgW) / 2, sigLineY - sigImgH - 4, {
+        width: sigImgW, height: sigImgH, fit: [sigImgW, sigImgH], align: 'center'
+      });
     }
   } catch(e) {}
-  doc.moveTo(sig2X, sigY+2).lineTo(sig2X+sigW, sigY+2).lineWidth(0.8).stroke('#94a3b8');
+  doc.moveTo(sig2X, sigLineY).lineTo(sig2X + sigW, sigLineY).lineWidth(0.8).stroke('#94a3b8');
   doc.fillColor('#0f172a').fontSize(10).font('Helvetica-Bold')
-     .text('Mr.A S Borse', sig2X, sigY+7, { width: sigW, align: 'center' });
-  doc.fillColor('#64748b').fontSize(8).font('Helvetica')
-     .text(`Founder & CEO, ${COMPANY.name}`, sig2X, sigY+21, { width: sigW, align: 'center' });
+     .text('Mr. A S Borse', sig2X, sigLineY + 7, { width: sigW, align: 'center' });
+  doc.fillColor('#64748b').fontSize(8.5).font('Helvetica')
+     .text('Founder & CEO', sig2X, sigLineY + 22, { width: sigW, align: 'center' });
+  doc.fillColor('#94a3b8').fontSize(7.5).font('Helvetica')
+     .text(`Hiresnix`, sig2X, sigLineY + 35, { width: sigW, align: 'center' });
 
   // ── Dark Footer ───────────────────────────────────────────────
   doc.rect(20, H-60, W-40, 40).fill('#0f172a');

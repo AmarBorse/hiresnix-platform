@@ -270,20 +270,30 @@ const downloadAcademyCertificate = asyncHandler(async (req, res) => {
   doc.fillColor('#64748b').fontSize(5.5).font('Helvetica')
      .text(certNo, qrX-4, qrY+qrSize+15, { width: qrSize+8, align: 'center' });
 
-  // ── Signatures (same size as internship cert) ────────────────
-  const sigFn = (doc2, name, title, x, y, imgPath, mult) => {
+  // ── Signatures ───────────────────────────────────────────────
+  const sigLineY2 = H - 100;
+  const sigBlockW = 160;
+  const sigImgW2  = 140;
+  const sigImgH2  = 52;
+
+  const sigFn = (doc2, name, title, company, x, imgPath) => {
     try {
       if (fs.existsSync(imgPath)) {
-        const boxW = 100*mult, boxH = 40*mult;
-        doc2.image(imgPath, x+(160-boxW)/2, y-(boxH-12), { fit:[boxW,boxH], align:'center' });
+        doc2.image(imgPath, x + (sigBlockW - sigImgW2) / 2, sigLineY2 - sigImgH2 - 4, {
+          width: sigImgW2, height: sigImgH2, fit: [sigImgW2, sigImgH2], align: 'center'
+        });
       }
     } catch(e) {}
-    doc2.moveTo(x,y).lineTo(x+160,y).stroke('#334155');
-    doc2.fillColor('#1e293b').fontSize(10).font('Helvetica-Bold').text(name,x,y+6,{width:160,align:'center'});
-    doc2.fillColor('#64748b').fontSize(9).font('Helvetica').text(title,x,y+20,{width:160,align:'center'});
+    doc2.moveTo(x, sigLineY2).lineTo(x + sigBlockW, sigLineY2).lineWidth(0.8).stroke('#334155');
+    doc2.fillColor('#1e293b').fontSize(10).font('Helvetica-Bold')
+        .text(name, x, sigLineY2 + 7, { width: sigBlockW, align: 'center' });
+    doc2.fillColor('#64748b').fontSize(8.5).font('Helvetica')
+        .text(title, x, sigLineY2 + 22, { width: sigBlockW, align: 'center' });
+    doc2.fillColor('#94a3b8').fontSize(7.5).font('Helvetica')
+        .text(company, x, sigLineY2 + 35, { width: sigBlockW, align: 'center' });
   };
-  sigFn(doc,'Mr.Jayesh Badgujar','Program Director',(W/2)-260,H-125,path.join(__dirname,'..','signatures','Director.png'),1.6);
-  sigFn(doc,'Mr.A S Borse','Founder & CEO, Hiresnix',(W/2)+100,H-125,path.join(__dirname,'..','signatures','ceo.png'),1.6);
+  sigFn(doc, 'Mr. Jayesh Badgujar', 'Program Director', 'Hiresnix', (W/2)-260, path.join(__dirname,'..','signatures','Director.png'));
+  sigFn(doc, 'Mr. A S Borse', 'Founder & CEO', 'Hiresnix', (W/2)+100, path.join(__dirname,'..','signatures','ceo.png'));
 
   // ── Dark Footer ───────────────────────────────────────────────
   doc.rect(20, H-58, W-40, 38).fill(DARK);
