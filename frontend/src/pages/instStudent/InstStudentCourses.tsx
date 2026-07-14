@@ -186,7 +186,7 @@ export function InstStudentCourses() {
                   {/* Download button if completed */}
                   {isCompleted ? (
                     <button
-                      onClick={e => { e.stopPropagation(); window.open(instStudentApi.downloadAcademyCertPdf(c.id), '_blank'); }}
+                      onClick={e => { e.stopPropagation(); void instStudentApi.downloadAcademyCertPdf(c.id, c.title).catch(() => toast.error('Download failed')); }}
                       className="flex-shrink-0 flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-bold transition hover:opacity-80"
                       style={{ background: 'rgba(52,211,153,0.15)', color: '#34d399', border: '1px solid rgba(52,211,153,0.25)' }}
                       title="Download Certificate">
