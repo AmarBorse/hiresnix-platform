@@ -489,6 +489,8 @@ const downloadCertificatePDF = asyncHandler(async (req, res) => {
     ? `${process.env.CLIENT_URL || 'https://www.hiresnix.co.in'}/verification/skill-assessment/${cert.certificateId}`
     : cert.type === 'Course Completion'
     ? `${process.env.CLIENT_URL || 'https://www.hiresnix.co.in'}/verification/course-completion/${cert.certificateId}`
+    : cert.type === 'Training Completion'
+    ? `${process.env.CLIENT_URL || 'https://www.hiresnix.co.in'}/verification/training-completion/${cert.certificateId}`
     : `${process.env.CLIENT_URL || 'https://hiresnix.co.in'}/verify/${cert.certificateId}`;
   const qrDataUrl = await QRCode.toDataURL(verifyUrl, { width: 120, margin: 1 });
   const qrBuffer  = Buffer.from(qrDataUrl.split(',')[1], 'base64');
@@ -532,6 +534,8 @@ const downloadCertificatePDF = asyncHandler(async (req, res) => {
     ? 'CERTIFICATE OF SKILL ASSESSMENT'
     : cert.type === 'Course Completion'
     ? 'CERTIFICATE OF COURSE COMPLETION'
+    : cert.type === 'Training Completion'
+    ? 'CERTIFICATE OF TRAINING COMPLETION'
     : `CERTIFICATE OF ${cert.type.toUpperCase()}`;
   doc.fillColor(COMPANY.colors.highlight).fontSize(11).font('Helvetica-Bold')
      .text(certTypeHeader, 0, 52, { align: 'right', width: W-50 });
@@ -549,6 +553,8 @@ const downloadCertificatePDF = asyncHandler(async (req, res) => {
     ? 'Certificate of Skill Assessment'
     : cert.type === 'Course Completion'
     ? 'Certificate of Course Completion'
+    : cert.type === 'Training Completion'
+    ? 'Certificate of Training Completion'
     : `Certificate of ${cert.type}`;
 
   doc.fillColor('#0f172a').fontSize(32).font('Helvetica-Bold')

@@ -80,7 +80,8 @@ const verifyCert = (expectedType) => asyncHandler(async (req, res) => {
   });
 });
 
-r.get('/verify-skill-assessment/:id?',  verifyCert('Skill Assessment'));
-r.get('/verify-course-completion/:id?', verifyCert('Course Completion'));
+r.get('/verify-skill-assessment/:id?',      verifyCert('Skill Assessment'));
+r.get('/verify-course-completion/:id?',     verifyCert('Course Completion'));
+r.get('/verify-training-completion/:id?',   verifyCert('Training Completion'));
 
 module.exports = r;

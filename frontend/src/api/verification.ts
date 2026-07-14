@@ -17,7 +17,7 @@ const endpoints: Record<VerificationType, string> = {
   'recommendation-letter': '/iplatform/verify-recommendation',
   'skill-assessment': '/iplatform/verify-skill-assessment',
   'course-completion': '/iplatform/verify-course-completion',
-  'training-completion': '/iplatform/verify-course-completion',
+  'training-completion': '/iplatform/verify-training-completion',
 };
 
 const getLookupIds = (type: VerificationType, id: string) => {
