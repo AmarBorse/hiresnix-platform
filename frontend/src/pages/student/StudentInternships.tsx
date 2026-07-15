@@ -30,13 +30,42 @@ function IPlatformPanel() {
 
   const load = async () => {
     try {
-      const [d, a, p] = await Promise.all([
+      const [d, a, p, instApp] = await Promise.all([
         client.get('/iplatform/domains').then(r => r.data),
         client.get('/iplatform/my-application').then(r => r.data).catch(() => ({ data: null })),
         client.get('/iplatform/my-progress').then(r => r.data).catch(() => ({ data: null })),
+        // Check if student came from institution portal and already applied there
+        client.get('/iplatform/institution-student-app').then(r => r.data).catch(() => ({ data: null })),
       ]);
       setDomains(d.data || []);
-      setMyApp(a.data);
+
+      // If already has hiresnix application use it, else check institution application
+      if (a.data) {
+        setMyApp(a.data);
+      } else if (instApp?.data) {
+        const instAppData = instApp.data;
+        // If approved — fetch their enrollment from hiresnix platform too
+        let enrollmentData = null;
+        if (instAppData.status === 'Approved') {
+          try {
+            const enrollRes = await client.get('/enrollments/my').then(r => r.data);
+            const enrollments = enrollRes?.data || enrollRes || [];
+            if (Array.isArray(enrollments) && enrollments.length > 0) {
+              enrollmentData = enrollments[0];
+            }
+          } catch {}
+        }
+        setMyApp({
+          application: {
+            status: instAppData.status || 'Pending',
+            domain: { name: instAppData.domain || 'Internship Program' },
+            isInstitutionApply: instAppData.status !== 'Approved', // hide institution tag if approved
+            institutionName: instAppData.institutionName,
+            adminNote: instAppData.status === 'Approved' ? null : 'Applied via institution portal',
+          },
+          enrollment: enrollmentData,
+        });
+      }
       setResources(p.data?.resources || []);
     } catch {}
     finally { setLoading(false); }
@@ -124,7 +153,28 @@ function IPlatformPanel() {
   // Already has application
   if (app) return (
     <div className="max-w-2xl mx-auto">
-      <div className={`rounded-2xl border-2 p-6 mb-4 ${
+      {/* Institution portal apply message */}
+      {app.isInstitutionApply && (
+        <div className="rounded-2xl border-2 border-blue-200 bg-blue-50 p-6 mb-4">
+          <div className="flex items-center gap-3 mb-3">
+            <div style={{ fontSize: '2rem' }}>🏫</div>
+            <div>
+              <h3 className="font-bold text-gray-900 text-lg">Applied via Institution Portal</h3>
+              <p className="text-gray-600 text-sm">{app.domain?.name}</p>
+            </div>
+            <span className={`ml-auto text-xs font-bold px-3 py-1 rounded-full ${
+              app.status === 'Approved' ? 'bg-green-100 text-green-700' :
+              app.status === 'Rejected' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'
+            }`}>{app.status}</span>
+          </div>
+          <p className="text-sm text-gray-600">
+            You have already applied through <strong>{app.institutionName || 'your institution'}</strong>. 
+            Your application is being reviewed. You cannot apply again from here.
+          </p>
+        </div>
+      )}
+
+      {!app.isInstitutionApply && <div className={`rounded-2xl border-2 p-6 mb-4 ${
         app.status === 'Approved' ? 'border-green-200 bg-green-50' :
         app.status === 'Rejected' ? 'border-red-200 bg-red-50' :
         'border-amber-200 bg-amber-50'}`}>
@@ -200,7 +250,7 @@ function IPlatformPanel() {
           }`}>{app.status}</span>
         </div>
         {app.adminNote && <p className="text-sm text-gray-600 italic">Note: {app.adminNote}</p>}
-      </div>
+      </div>}
 
       {/* Enrollment progress */}
       {enrollment && (

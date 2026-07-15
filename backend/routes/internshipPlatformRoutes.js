@@ -18,6 +18,27 @@ r.delete('/domains/:id',             protect, authorize('admin'), ctrl.deleteDom
 r.post('/apply',                     protect, authorize('student'), ctrl.applyInternship);
 r.get('/applications',               protect, authorize('admin'),   ctrl.getAllApplications);
 r.get('/my-application',             protect, authorize('student'), ctrl.getMyApplication);
+
+// Institution student — check if they applied via institution portal
+r.get('/institution-student-app',    protect, authorize('student'), async (req, res) => {
+  try {
+    const { InternshipApplication, Domain } = require('../models/internshipPlatform');
+    const app = await InternshipApplication.findOne({
+      where: { userId: req.user.id },
+      include: [{ model: Domain, as: 'domain', attributes: ['name', 'id'] }],
+      order: [['createdAt', 'DESC']],
+    });
+    if (!app) return res.json({ success: true, data: null });
+    res.json({ success: true, data: {
+      status: app.status,
+      domain: app.domain?.name || app.internshipDomain || 'Internship Program',
+      institutionName: app.institutionName || null,
+      appliedAt: app.createdAt,
+    }});
+  } catch(e) {
+    res.json({ success: true, data: null });
+  }
+});
 r.put('/applications/:id',           protect, authorize('admin'),   ctrl.updateApplicationStatus);
 
 // ── RESOURCES (domain-wise) ───────────────────────────────────────
@@ -80,8 +101,7 @@ const verifyCert = (expectedType) => asyncHandler(async (req, res) => {
   });
 });
 
-r.get('/verify-skill-assessment/:id?',      verifyCert('Skill Assessment'));
-r.get('/verify-course-completion/:id?',     verifyCert('Course Completion'));
-r.get('/verify-training-completion/:id?',   verifyCert('Training Completion'));
+r.get('/verify-skill-assessment/:id?',  verifyCert('Skill Assessment'));
+r.get('/verify-course-completion/:id?', verifyCert('Course Completion'));
 
 module.exports = r;
