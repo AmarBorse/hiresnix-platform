@@ -177,8 +177,54 @@ const changePassword = asyncHandler(async (req, res) => {
   const student = await InstitutionStudent.findByPk(req.instStudent.id);
   const match = await student.matchPassword(currentPassword);
   if (!match) { res.status(401); throw new Error('Current password is incorrect'); }
+
+  // Update inst student password
   await student.update({ password: newPassword });
-  res.json({ success: true, message: 'Password updated successfully' });
+
+  // ── Auto-register/update on Hiresnix internship portal ──────────
+  // Use real email if available, else synthetic
+  const registrationEmail = student.email && !student.email.includes('@inst.hiresnix.co.in')
+    ? student.email.trim().toLowerCase()
+    : `${student.careerId.toLowerCase()}@inst.hiresnix.co.in`;
+
+  try {
+    let hiresnixUser = await User.findOne({ where: { email: registrationEmail } });
+
+    if (!hiresnixUser) {
+      // First time password change — register on internship portal
+      hiresnixUser = await User.create({
+        name: student.name,
+        email: registrationEmail,
+        password: newPassword,  // same password
+        role: 'student',
+        isActive: true,
+        isApproved: true,
+      });
+
+      const { Student } = require('../models');
+      await Student.findOrCreate({
+        where: { userId: hiresnixUser.id },
+        defaults: { userId: hiresnixUser.id, isProfileComplete: false },
+      });
+    } else {
+      // Already registered — just sync the password
+      hiresnixUser.password = newPassword;
+      await hiresnixUser.save();
+    }
+
+    // Mark student as registered on internship portal
+    await student.update({ hiresnixUserId: hiresnixUser.id });
+
+  } catch(e) {
+    console.error('Auto-register on internship portal failed:', e.message);
+    // Don't fail the password change even if registration fails
+  }
+
+  res.json({
+    success: true,
+    message: 'Password updated successfully. You can now login to the internship portal with your email and this password.',
+    internshipEmail: registrationEmail,
+  });
 });
 
 // ── Academy Certificate PDF ──────────────────────────────────────

@@ -21,8 +21,14 @@ export function InstStudentProfile() {
     if (pwdForm.newPwd.length < 6) { toast.error('Password must be at least 6 characters'); return; }
     setSaving(true);
     try {
-      await instStudentApi.changePassword(pwdForm.current, pwdForm.newPwd);
+      const res = await instStudentApi.changePassword(pwdForm.current, pwdForm.newPwd);
       toast.success('Password changed successfully!');
+      // Show internship portal access info
+      if (res?.data?.internshipEmail) {
+        setTimeout(() => {
+          toast.success(`✅ Internship portal access ready! Login at hiresnix.co.in/auth with: ${res.data.internshipEmail}`, { duration: 8000 });
+        }, 1000);
+      }
       setPwdForm({ current: '', newPwd: '', confirm: '' });
     } catch (err: any) { toast.error(err.response?.data?.message || 'Failed to change password'); }
     finally { setSaving(false); }
