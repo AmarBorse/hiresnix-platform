@@ -1100,24 +1100,40 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
 
   const sigY = signBlockY + 32;
   const founderTextY = sigY + 34;
-  try {
-    doc.image(getSignaturePath('ceo.png'), left, sigY, { fit: [120, 48] });
-  } catch (err) {}
+  const pageW = doc.page.width;
+
+  // ── LEFT: Signature + Contact info ───────────────────────────
+  try { doc.image(getSignaturePath('ceo.png'), left, sigY, { fit: [120, 48] }); } catch (err) {}
   doc.fillColor('#1e293b').fontSize(11).font('Helvetica-Bold')
-    .text('A S Borse', left, founderTextY, { lineGap: 0 });
+    .text('A S Borse', left, founderTextY, { width: 220, lineGap: 0 });
   doc.fillColor('#334155').fontSize(8.8).font('Helvetica')
-    .text('Founder & CEO \u2013 Hiresnix', left, founderTextY + 12, { width: 265, lineGap: 0 })
-    .text('For', left, founderTextY + 26, { width: 265, lineGap: 0 })
-    .text(legalEntity, left, founderTextY + 36, { width: 265, lineGap: 0 })
-    .text('CIN:', left, founderTextY + 49, { width: 265, lineGap: 0 })
-    .text(cin, left, founderTextY + 59, { width: 265, lineGap: 0 });
+    .text('Founder & CEO \u2013 Hiresnix', left, founderTextY + 12, { width: 220, lineGap: 0 })
+    .text('For', left, founderTextY + 26, { width: 220, lineGap: 0 })
+    .text(legalEntity, left, founderTextY + 36, { width: 220, lineGap: 0 })
+    .text('CIN:', left, founderTextY + 49, { width: 220, lineGap: 0 })
+    .text(cin, left, founderTextY + 59, { width: 220, lineGap: 0 })
+    .text('support@hiresnix.co.in', left, founderTextY + 74, { width: 220, lineGap: 0 })
+    .text('www.hiresnix.co.in', left, founderTextY + 84, { width: 220, lineGap: 0 })
+    .text('Shirpur, Maharashtra, India', left, founderTextY + 94, { width: 220, lineGap: 0 });
 
-  drawOfferSeal(doc, left + bodyWidth - 54, 716);
+  // ── CENTER: Seal ──────────────────────────────────────────────
+  drawOfferSeal(doc, pageW / 2, sigY + 45);
 
-  doc.fillColor('#334155').fontSize(8.8).font('Helvetica')
-    .text('support@hiresnix.co.in', left, founderTextY + 72, { width: 265, lineGap: 0 })
-    .text('www.hiresnix.co.in', left, founderTextY + 82, { width: 265, lineGap: 0 })
-    .text('Shirpur, Maharashtra, India', left, founderTextY + 92, { width: 265, lineGap: 0 });
+  // ── RIGHT: QR Code ────────────────────────────────────────────
+  try {
+    const offerVerifyUrl = `https://www.hiresnix.co.in/verification/offer-letter/${stableOfferId}`;
+    const qrBuf2 = await QRCode.toBuffer(offerVerifyUrl, { errorCorrectionLevel: 'H', margin: 1, width: 120 });
+    const qrSize2 = 70;
+    const qrX2 = pageW - left - qrSize2;
+    const qrY2 = founderTextY - 5;
+    doc.roundedRect(qrX2 - 4, qrY2 - 4, qrSize2 + 8, qrSize2 + 24, 4)
+       .fillAndStroke('#ffffff', '#1e3a8a');
+    doc.image(qrBuf2, qrX2, qrY2, { width: qrSize2 });
+    doc.fillColor('#1e293b').fontSize(6).font('Helvetica-Bold')
+       .text('Scan to Verify', qrX2 - 3, qrY2 + qrSize2 + 3, { width: qrSize2 + 6, align: 'center' });
+    doc.fillColor('#64748b').fontSize(5).font('Helvetica')
+       .text(stableOfferId, qrX2 - 3, qrY2 + qrSize2 + 12, { width: qrSize2 + 6, align: 'center' });
+  } catch(e) {}
 
   doc.end();
   return;
