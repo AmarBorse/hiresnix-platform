@@ -3,6 +3,7 @@
  */
 
 const User                   = require('./User');
+const MockInterview           = require('./MockInterview');
 const Student                = require('./Student');
 const Company                = require('./Company');
 const Job                    = require('./Job');
@@ -97,10 +98,15 @@ Course.hasMany(CourseStudent, { foreignKey: 'courseId', as: 'courseStudents' });
 CourseStudent.belongsTo(Course, { foreignKey: 'courseId', as: 'course' });
 CourseStudent.belongsTo(InstitutionStudent, { foreignKey: 'studentId', as: 'student' });
 
+// MockInterview associations
+MockInterview.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+User.hasMany(MockInterview, { foreignKey: 'userId', as: 'mockInterviews' });
+
 module.exports = {
   User, Student, Company, Job, Application, Internship, Enrollment,
   Resource, Certificate, Enquiry,
   Institution, InstitutionStudent, Batch, BatchStudent,
   Course, CourseStudent, InstitutionCertificate,
+  MockInterview,
 };
 require('./internshipPlatform');

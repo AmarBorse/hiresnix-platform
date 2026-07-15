@@ -1,7 +1,7 @@
 // src/components/layout/StudentLayout.tsx
 import React, { useState } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router';
-import { LayoutDashboard, Briefcase, BookOpen, Award, FileText, User, Menu, X, LogOut, BotMessageSquare, Send } from 'lucide-react';
+import { LayoutDashboard, Briefcase, BookOpen, Award, FileText, User, Menu, X, LogOut, BotMessageSquare, Send, BarChart2 } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
 import { PORTAL_STYLES, PORTAL_COLORS } from './PortalTheme';
 
@@ -13,7 +13,8 @@ const NAV = [
   { to: '/student/jobs',          icon: Send,             label: 'Jobs'           },
   { to: '/student/applications',  icon: FileText,         label: 'Applications'   },
   { to: '/student/resources',     icon: BookOpen,         label: 'Resources'      },
-  { to: '/student/mock-interview',icon: BotMessageSquare, label: 'Mock Interview' },
+  { to: '/student/mock-interview', icon: BotMessageSquare, label: 'Mock Interview' },
+  { to: '/student/mock-dashboard', icon: BarChart2, label: 'Interview Stats' },
   { to: '/student/certificates',  icon: Award,            label: 'Certificates'   },
   { to: '/student/profile',       icon: User,             label: 'Profile'        },
 ];
