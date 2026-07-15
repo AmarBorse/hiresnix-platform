@@ -1021,7 +1021,7 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
     ['Mode of Internship', 'Remote'],
     ['Working Hours', 'Flexible (Maximum 20 Hours per Week)'],
     ['Reporting Manager', 'Assigned Mentor / Project Lead'],
-    ['Compensation', 'Unpaid (Learning & Project-Based Internship)'],
+    ['Compensation', 'Unpaid'],
   ].forEach(([label, value], index) => {
     const col = index % 3;
     const row = Math.floor(index / 3);
@@ -1029,7 +1029,7 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
   });
   doc.y = detailY + 134;
 
-  paragraph('Hiresnix is committed to helping students and early professionals gain practical industry experience through project-based learning, mentorship, and skill development.');
+  paragraph('Hiresnix is a technology and business services company delivering recruitment, software development, artificial intelligence (AI), digital transformation, and consulting solutions to organizations. To support innovation and workforce development, the company offers structured internship opportunities that enable candidates to contribute to live business projects while gaining practical industry experience.');
 
   doc.moveDown(sectionGap);
   paragraph('During the internship, you will have the opportunity to:', { align: 'left' });
