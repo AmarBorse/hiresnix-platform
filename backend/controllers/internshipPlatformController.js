@@ -1021,7 +1021,7 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
     ['Mode of Internship', 'Remote'],
     ['Working Hours', 'Flexible (Maximum 20 Hours per Week)'],
     ['Reporting Manager', 'Assigned Mentor / Project Lead'],
-    ['Compensation', 'Unpaid'],
+    ['Compensation', 'Unpaid (Learning & Project-Based Internship)'],
   ].forEach(([label, value], index) => {
     const col = index % 3;
     const row = Math.floor(index / 3);
@@ -1029,7 +1029,7 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
   });
   doc.y = detailY + 134;
 
-  paragraph(`Hiresnix is a technology and business services company delivering recruitment, software development, artificial intelligence (AI), digital transformation, and consulting solutions to organizations. To support innovation and workforce development, the company offers structured internship opportunities that enable candidates to contribute to live business projects while gaining practical industry experience.`);
+  paragraph('Hiresnix is committed to helping students and early professionals gain practical industry experience through project-based learning, mentorship, and skill development.');
 
   doc.moveDown(sectionGap);
   paragraph('During the internship, you will have the opportunity to:', { align: 'left' });
@@ -1100,43 +1100,24 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
 
   const sigY = signBlockY + 32;
   const founderTextY = sigY + 34;
-  const pageW = doc.page.width;
-
-  // ── LEFT: Contact info ────────────────────────────────────────
-  doc.fillColor('#334155').fontSize(8.8).font('Helvetica')
-    .text('support@hiresnix.co.in', left, founderTextY + 42, { width: 180, lineGap: 2 })
-    .text('www.hiresnix.co.in', left, founderTextY + 54, { width: 180, lineGap: 2 })
-    .text('Shirpur, Maharashtra, India', left, founderTextY + 66, { width: 180, lineGap: 2 });
-
-  // ── CENTER: Signature ─────────────────────────────────────────
-  const sigCX = pageW / 2 - 80;
-  try { doc.image(getSignaturePath('ceo.png'), sigCX, sigY, { fit: [120, 48] }); } catch (err) {}
-  doc.fillColor('#1e293b').fontSize(11).font('Helvetica-Bold')
-    .text('A S Borse', sigCX, founderTextY, { width: 200, lineGap: 0 });
-  doc.fillColor('#334155').fontSize(8.8).font('Helvetica')
-    .text('Founder & CEO \u2013 Hiresnix', sigCX, founderTextY + 13, { width: 200, lineGap: 0 })
-    .text('For', sigCX, founderTextY + 27, { width: 200, lineGap: 0 })
-    .text(legalEntity, sigCX, founderTextY + 37, { width: 200, lineGap: 0 })
-    .text('CIN: ' + cin, sigCX, founderTextY + 52, { width: 200, lineGap: 0 });
-
-  // ── RIGHT: Seal on top, QR below ─────────────────────────────
-  const rightX = pageW - 150;
-  drawOfferSeal(doc, rightX, sigY + 30);
-
   try {
-    const offerVerifyUrl = `https://www.hiresnix.co.in/verification/offer-letter/${stableOfferId}`;
-    const qrBuf2 = await QRCode.toBuffer(offerVerifyUrl, { errorCorrectionLevel: 'H', margin: 1, width: 120 });
-    const qrSize2 = 60;
-    const qrX2 = rightX - qrSize2/2 - 5;
-    const qrY2 = sigY + 90;
-    doc.roundedRect(qrX2 - 4, qrY2 - 4, qrSize2 + 8, qrSize2 + 22, 4)
-       .fillAndStroke('#ffffff', '#1e3a8a');
-    doc.image(qrBuf2, qrX2, qrY2, { width: qrSize2 });
-    doc.fillColor('#1e293b').fontSize(5.5).font('Helvetica-Bold')
-       .text('Scan to Verify', qrX2 - 2, qrY2 + qrSize2 + 3, { width: qrSize2 + 4, align: 'center' });
-    doc.fillColor('#64748b').fontSize(4.5).font('Helvetica')
-       .text(stableOfferId, qrX2 - 2, qrY2 + qrSize2 + 11, { width: qrSize2 + 4, align: 'center' });
-  } catch(e) {}
+    doc.image(getSignaturePath('ceo.png'), left, sigY, { fit: [120, 48] });
+  } catch (err) {}
+  doc.fillColor('#1e293b').fontSize(11).font('Helvetica-Bold')
+    .text('A S Borse', left, founderTextY, { lineGap: 0 });
+  doc.fillColor('#334155').fontSize(8.8).font('Helvetica')
+    .text('Founder & CEO \u2013 Hiresnix', left, founderTextY + 12, { width: 265, lineGap: 0 })
+    .text('For', left, founderTextY + 26, { width: 265, lineGap: 0 })
+    .text(legalEntity, left, founderTextY + 36, { width: 265, lineGap: 0 })
+    .text('CIN:', left, founderTextY + 49, { width: 265, lineGap: 0 })
+    .text(cin, left, founderTextY + 59, { width: 265, lineGap: 0 });
+
+  drawOfferSeal(doc, left + bodyWidth - 54, 716);
+
+  doc.fillColor('#334155').fontSize(8.8).font('Helvetica')
+    .text('support@hiresnix.co.in', left, founderTextY + 72, { width: 265, lineGap: 0 })
+    .text('www.hiresnix.co.in', left, founderTextY + 82, { width: 265, lineGap: 0 })
+    .text('Shirpur, Maharashtra, India', left, founderTextY + 92, { width: 265, lineGap: 0 });
 
   doc.end();
   return;
@@ -1239,8 +1220,8 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
      .text('Hiresnix', 40, legacySigY + 78)
      .text('hr@hiresnix.co.in', 40, legacySigY + 91);
 
-  // Official Company Stamp — centered
-  const stampX = doc.page.width / 2;
+  // Official Company Stamp / Symbol
+  const stampX = doc.page.width - 100;
   const stampY = legacySigY + 25;
   
   doc.save();
@@ -1256,22 +1237,6 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
   doc.fontSize(7).font('Helvetica')
      .text('OFFICIAL SEAL', stampX - 40, stampY + 4, { width: 80, align: 'center' });
   doc.restore();
-
-  // Verification QR Code
-  try {
-    const offerVerifyUrl = `https://www.hiresnix.co.in/verification/offer-letter/${stableOfferId}`;
-    const qrBuf = await QRCode.toBuffer(offerVerifyUrl, { errorCorrectionLevel: 'H', margin: 1, width: 120 });
-    const qrSize = 70;
-    const qrX = doc.page.width - 120;
-    const qrY = legacySigY - 20;
-    doc.roundedRect(qrX - 6, qrY - 6, qrSize + 12, qrSize + 28, 5)
-       .fillAndStroke('#ffffff', COMPANY.colors.accent);
-    doc.image(qrBuf, qrX, qrY, { width: qrSize });
-    doc.fillColor('#1e293b').fontSize(6.5).font('Helvetica-Bold')
-       .text('Scan to Verify', qrX - 4, qrY + qrSize + 4, { width: qrSize + 8, align: 'center' });
-    doc.fillColor('#64748b').fontSize(5.5).font('Helvetica')
-       .text(stableOfferId, qrX - 4, qrY + qrSize + 14, { width: qrSize + 8, align: 'center' });
-  } catch(e) {}
 
   pdfFooter(doc);
   
