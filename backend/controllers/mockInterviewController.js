@@ -42,12 +42,12 @@ const getMyInterviews = asyncHandler(async (req, res) => {
 
   // Weak topics aggregated
   const allWeak = interviews.flatMap(i => { try { return JSON.parse(i.weakTopics); } catch { return []; } });
-  const weakMap: Record<string, number> = {};
+  const weakMap = {};
   allWeak.forEach(t => { weakMap[t] = (weakMap[t] || 0) + 1; });
   const topWeak = Object.entries(weakMap).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([t]) => t);
 
   // Domain breakdown
-  const domainMap: Record<string, number[]> = {};
+  const domainMap = {};
   interviews.forEach(i => {
     if (!domainMap[i.domain]) domainMap[i.domain] = [];
     domainMap[i.domain].push(i.overallScore);
