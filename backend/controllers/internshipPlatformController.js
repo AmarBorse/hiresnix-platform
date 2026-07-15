@@ -1450,7 +1450,8 @@ const verifyOfferLetter = asyncHandler(async (req, res) => {
 });
 
 const verifyRecommendationLetter = asyncHandler(async (req, res) => {
-  const recommendationId = (req.params.recommendationId || '').trim().toUpperCase();
+  const recommendationId = (req.params.recommendationId || '').trim().toUpperCase()
+    .replace(/^LOR\s*ID\s*:\s*/i, '').trim();
   if (!recommendationId) {
     res.status(400); throw new Error('Recommendation Letter ID is required');
   }

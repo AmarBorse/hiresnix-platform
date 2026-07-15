@@ -55,7 +55,6 @@ const configs: Record<VerificationType, { label: string; idLabel: string; path: 
 const normalizeType = (type?: string): VerificationType => {
   if (type === 'skill-assessment') return 'skill-assessment';
   if (type === 'course-completion') return 'course-completion';
-  if (type === 'training-completion') return 'training-completion';
   if (type === 'offer-letter') return 'offer-letter';
   if (type === 'recommendation-letter') return 'recommendation-letter';
   return 'certificate';
@@ -123,7 +122,12 @@ export function VerificationPortal({ defaultType }: { defaultType?: Verification
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
-    const value = query.trim();
+    // Strip common prefixes users might type
+    const value = query.trim()
+      .replace(/^LOR\s*ID\s*:\s*/i, '')
+      .replace(/^CERT\s*(NO|ID|#)?\s*:\s*/i, '')
+      .replace(/^OFFER\s*(LETTER)?\s*(ID|NO)?\s*:\s*/i, '')
+      .trim().toUpperCase();
     if (!value) return;
     setSearchedId(value);
     navigate(`${active.path}/${encodeURIComponent(value)}`);
