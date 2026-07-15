@@ -1100,29 +1100,32 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
 
   const sigY = signBlockY + 32;
   const founderTextY = sigY + 34;
-  try {
-    doc.image(getSignaturePath('ceo.png'), left, sigY, { fit: [120, 48] });
-  } catch (err) {}
+  const pageW = doc.page.width;
+  const col1X = left;           // left — QR
+  const col2X = pageW / 2 - 60; // center — signature
+  const col3X = pageW - 140;    // right — seal
+
+  // Signature (center-left)
+  try { doc.image(getSignaturePath('ceo.png'), col2X, sigY, { fit: [120, 48] }); } catch (err) {}
   doc.fillColor('#1e293b').fontSize(11).font('Helvetica-Bold')
-    .text('A S Borse', left, founderTextY, { lineGap: 0 });
+    .text('A S Borse', col2X, founderTextY, { lineGap: 0 });
   doc.fillColor('#334155').fontSize(8.8).font('Helvetica')
-    .text('Founder & CEO \u2013 Hiresnix', left, founderTextY + 12, { width: 265, lineGap: 0 })
-    .text('For', left, founderTextY + 26, { width: 265, lineGap: 0 })
-    .text(legalEntity, left, founderTextY + 36, { width: 265, lineGap: 0 })
-    .text('CIN:', left, founderTextY + 49, { width: 265, lineGap: 0 })
-    .text(cin, left, founderTextY + 59, { width: 265, lineGap: 0 });
+    .text('Founder & CEO \u2013 Hiresnix', col2X, founderTextY + 12, { width: 200, lineGap: 0 })
+    .text('For', col2X, founderTextY + 26, { width: 200, lineGap: 0 })
+    .text(legalEntity, col2X, founderTextY + 36, { width: 200, lineGap: 0 })
+    .text('CIN:', col2X, founderTextY + 49, { width: 200, lineGap: 0 })
+    .text(cin, col2X, founderTextY + 59, { width: 200, lineGap: 0 });
 
-  // Seal — centered
-  const page1W = doc.page.width;
-  drawOfferSeal(doc, page1W / 2, 716);
+  // Seal (right)
+  drawOfferSeal(doc, col3X, sigY + 50);
 
-  // QR Code — left side
+  // QR Code — right side next to signature text
   try {
     const offerVerifyUrl = `https://www.hiresnix.co.in/verification/offer-letter/${stableOfferId}`;
     const qrBuf2 = await QRCode.toBuffer(offerVerifyUrl, { errorCorrectionLevel: 'H', margin: 1, width: 120 });
     const qrSize2 = 65;
-    const qrX2 = left;
-    const qrY2 = 680;
+    const qrX2 = col2X + 210;
+    const qrY2 = founderTextY;
     doc.roundedRect(qrX2 - 5, qrY2 - 5, qrSize2 + 10, qrSize2 + 26, 4)
        .fillAndStroke('#ffffff', '#1e3a8a');
     doc.image(qrBuf2, qrX2, qrY2, { width: qrSize2 });
