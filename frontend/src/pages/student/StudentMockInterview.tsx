@@ -59,58 +59,7 @@ export function StudentMockInterview() {
   const [currentQ, setCurrentQ]     = useState('');
   const [qNumber, setQNumber]       = useState(0);
   const [answer, setAnswer]         = useState('');
-
-  // ── Enrollment Gate ───────────────────────────────────────────
   const [isEnrolled, setIsEnrolled] = useState<boolean | null>(null);
-
-  useEffect(() => {
-    Promise.allSettled([
-      client.get('/enrollments/my'),
-      client.get('/iplatform/my-application'),
-      client.get('/iplatform/institution-student-app'),
-    ]).then(([enrollRes, appRes, instAppRes]) => {
-      const enrollments = enrollRes.status === 'fulfilled'
-        ? (enrollRes.value.data?.data || enrollRes.value.data || [])
-        : [];
-      const hasEnrollment = Array.isArray(enrollments) && enrollments.length > 0;
-
-      const appData = appRes.status === 'fulfilled' ? appRes.value.data : null;
-      const hasApp = appData?.success && appData?.data?.status === 'Approved';
-
-      const instApp = instAppRes.status === 'fulfilled' ? instAppRes.value.data : null;
-      const hasInstApp = instApp?.success && instApp?.data?.status === 'Approved';
-
-      setIsEnrolled(hasEnrollment || hasApp || hasInstApp);
-    });
-  }, []);
-
-  // Loading state
-  if (isEnrolled === null) return (
-    <div className="flex items-center justify-center min-h-[60vh]">
-      <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-    </div>
-  );
-
-  // Not enrolled — show locked screen
-  if (!isEnrolled) return (
-    <div className="flex items-center justify-center min-h-[60vh] px-4">
-      <div className="text-center max-w-md">
-        <div className="w-20 h-20 rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center mx-auto mb-6">
-          <Lock size={36} className="text-gray-500" />
-        </div>
-        <h2 className="text-xl font-bold text-white mb-3">Mock Interview Locked</h2>
-        <p className="text-gray-400 text-sm mb-6 leading-relaxed">
-          AI Mock Interview is available only for active learners.<br/>
-          Enroll in an internship program to unlock this feature.
-        </p>
-        <a href="/student/internships"
-          className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm text-white"
-          style={{ background: 'linear-gradient(135deg,#3b82f6,#6366f1)' }}>
-          Browse Internships →
-        </a>
-      </div>
-    </div>
-  );
   const [micOn, setMicOn]           = useState(false);
   const [aiSpeaking, setAiSpeaking] = useState(false);
   const [aiThinking, setAiThinking] = useState(false);
@@ -123,6 +72,24 @@ export function StudentMockInterview() {
   const [lookAwayCount, setLookAwayCount] = useState(0);
   const [eyeContact, setEyeContact]       = useState(true);
   const [micError, setMicError]     = useState('');
+
+  // ── Enrollment Gate Check ─────────────────────────────────────
+  useEffect(() => {
+    Promise.allSettled([
+      client.get('/internships/my'),
+      client.get('/iplatform/my-application'),
+      client.get('/iplatform/institution-student-app'),
+    ]).then(([enrollRes, appRes, instAppRes]) => {
+      const enrollments = enrollRes.status === 'fulfilled'
+        ? (enrollRes.value.data?.data || enrollRes.value.data || []) : [];
+      const hasEnrollment = Array.isArray(enrollments) && enrollments.length > 0;
+      const appData = appRes.status === 'fulfilled' ? appRes.value.data : null;
+      const hasApp = appData?.success && appData?.data?.status === 'Approved';
+      const instApp = instAppRes.status === 'fulfilled' ? instAppRes.value.data : null;
+      const hasInstApp = instApp?.success && instApp?.data?.status === 'Approved';
+      setIsEnrolled(hasEnrollment || hasApp || hasInstApp);
+    });
+  }, []);
 
   const videoRef    = useRef<HTMLVideoElement>(null);
   const canvasRef   = useRef<HTMLCanvasElement>(null);
@@ -537,6 +504,33 @@ Set isComplete true only after Q20.`;
 
   // ── SETUP ─────────────────────────────────────────────────────────
   if (stage === 'setup') return (
+    <div className="min-h-screen bg-gray-950 text-white p-4 md:p-6">
+      {/* Enrollment loading/locked gate */}
+      {isEnrolled === null && (
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+        </div>
+      )}
+      {isEnrolled === false && (
+        <div className="flex items-center justify-center min-h-[60vh] px-4">
+          <div className="text-center max-w-md">
+            <div className="w-20 h-20 rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center mx-auto mb-6">
+              <Lock size={36} className="text-gray-500" />
+            </div>
+            <h2 className="text-xl font-bold text-white mb-3">Mock Interview Locked</h2>
+            <p className="text-gray-400 text-sm mb-6 leading-relaxed">
+              AI Mock Interview is available only for active learners.<br/>
+              Enroll in an internship program to unlock this feature.
+            </p>
+            <a href="/student/internships"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm text-white"
+              style={{ background: 'linear-gradient(135deg,#3b82f6,#6366f1)' }}>
+              Browse Internships →
+            </a>
+          </div>
+        </div>
+      )}
+      {isEnrolled === true && <>
     <div className="max-w-2xl mx-auto space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">🎙️ AI Mock Interview</h1>
@@ -572,6 +566,7 @@ Set isComplete true only after Q20.`;
         </div>
       </div>
     </div>
+    </>}
   );
 
   // ── COUNTDOWN ─────────────────────────────────────────────────────
