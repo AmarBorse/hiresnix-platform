@@ -174,12 +174,26 @@ export function StudentMockInterview() {
     canvas.width=video.videoWidth; canvas.height=video.videoHeight;
     ctx.drawImage(video,0,0,canvas.width,canvas.height);
     const frame=ctx.getImageData(0,0,canvas.width,canvas.height);
+    const d=frame.data;
+    // Sample brightness across face region (center of frame)
+    const cx=Math.floor(canvas.width/2), cy=Math.floor(canvas.height/2);
+    let brightnessSum=0, sampleCount=0;
+    for(let y=cy-60;y<cy+60;y+=10){
+      for(let x=cx-60;x<cx+60;x+=10){
+        const i=(y*canvas.width+x)*4;
+        if(i>=0&&i<d.length){ brightnessSum+=(d[i]+d[i+1]+d[i+2])/3; sampleCount++; }
+      }
+    }
+    const avgBrightness=sampleCount>0?brightnessSum/sampleCount:128;
+    // Detect look-away using frame diff from previous
     if(prevFrameRef.current){
-      const d=frame.data, p=prevFrameRef.current.data;
-      let diff=0;
-      for(let i=0;i<d.length;i+=40){ const dr=d[i]-p[i],dg=d[i+1]-p[i+1],db=d[i+2]-p[i+2]; diff+=Math.sqrt(dr*dr+dg*dg+db*db); }
-      const motion=diff/(d.length/40);
-      if(motion<5){ setFaceWarning(true); setLookAwayCount(c=>c+1); }
+      const p=prevFrameRef.current.data;
+      let diff=0, samples=0;
+      for(let i=0;i<d.length;i+=200){ diff+=Math.abs(d[i]-p[i])+Math.abs(d[i+1]-p[i+1])+Math.abs(d[i+2]-p[i+2]); samples++; }
+      const motionLevel=diff/samples;
+      // Very low motion AND face region is too dark = looked away or left frame
+      const faceTooBlank=avgBrightness<15||avgBrightness>240;
+      if(faceTooBlank){ setFaceWarning(true); setLookAwayCount(c=>c+1); }
       else { setFaceWarning(false); }
     }
     prevFrameRef.current=frame;
@@ -206,13 +220,20 @@ export function StudentMockInterview() {
       window.speechSynthesis.cancel();
       const utt=new SpeechSynthesisUtterance(text);
       utt.rate=0.95; utt.pitch=1.1; utt.volume=1;
-      const voices=window.speechSynthesis.getVoices();
-      const en=voices.find(v=>v.lang.startsWith('en')&&v.name.includes('Female'))||voices.find(v=>v.lang.startsWith('en'));
-      if(en) utt.voice=en;
-      utt.onstart=()=>setAiSpeaking(true);
-      utt.onend=()=>{ setAiSpeaking(false); resolve(); };
-      utt.onerror=()=>{ setAiSpeaking(false); resolve(); };
-      window.speechSynthesis.speak(utt);
+      // Wait for voices to load
+      const trySpeak = () => {
+        const voices=window.speechSynthesis.getVoices();
+        const en=voices.find(v=>v.lang.startsWith('en-')&&(v.name.toLowerCase().includes('female')||v.name.toLowerCase().includes('zira')||v.name.toLowerCase().includes('samantha')))||voices.find(v=>v.lang.startsWith('en'));
+        if(en) utt.voice=en;
+        utt.onstart=()=>setAiSpeaking(true);
+        utt.onend=()=>{ setAiSpeaking(false); resolve(); };
+        utt.onerror=()=>{ setAiSpeaking(false); resolve(); };
+        window.speechSynthesis.speak(utt);
+        // Fallback if stuck
+        setTimeout(()=>{ if(window.speechSynthesis.speaking) return; setAiSpeaking(false); resolve(); },15000);
+      };
+      if(window.speechSynthesis.getVoices().length>0){ trySpeak(); }
+      else { window.speechSynthesis.onvoiceschanged=()=>{ window.speechSynthesis.onvoiceschanged=null; trySpeak(); }; }
     });
   },[muted]);
 
