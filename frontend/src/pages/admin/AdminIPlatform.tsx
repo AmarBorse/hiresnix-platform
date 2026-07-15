@@ -293,7 +293,13 @@ export function AdminIPlatform() {
             (app.domain?.name || '').toLowerCase().includes(q) ||
             (app.institutionName || '').toLowerCase().includes(q);
           const matchStatus = appStatusFilter === 'All' || app.status === appStatusFilter;
-          const matchSource = appSourceFilter === 'All' || (app.source || 'hiresnix') === appSourceFilter;
+          const matchSource = appSourceFilter === 'All' || 
+            (appSourceFilter === 'institution' 
+              ? (app.source === 'institution' || (app.email || '').includes('@inst.hiresnix.co.in') || !!app.instStudentId || !!app.institutionName)
+              : appSourceFilter === 'hiresnix'
+              ? (app.source === 'hiresnix' || app.source == null) && !(app.email || '').includes('@inst.hiresnix.co.in') && !app.instStudentId
+              : true
+            );
           return matchSearch && matchStatus && matchSource;
         });
 
