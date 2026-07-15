@@ -354,6 +354,11 @@ function getDomainDurationMonths(domainName) {
 
 let offerDateColumnsReady = false;
 async function ensureOfferDateColumns() {
+  const qi = sequelize.getQueryInterface();
+  // Add lorId column to ip_enrollments if not exists
+  try {
+    await qi.addColumn('ip_enrollments', 'lorId', { type: DataTypes.STRING(50), allowNull: true });
+  } catch(e) {}
   if (offerDateColumnsReady) return;
   try {
     const columns = await sequelize.getQueryInterface().describeTable('ip_applications');
@@ -776,6 +781,12 @@ const downloadLOR = asyncHandler(async (req, res) => {
   }
 
   const safeStudentName = enrollment.studentName || 'Student';
+
+  // Generate stable LOR ID
+  await ensureOfferDateColumns();
+  const lorId = enrollment.lorId || `HRX-LOR-${new Date().getFullYear()}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
+  if (!enrollment.lorId) { await enrollment.update({ lorId }).catch(() => {}); }
+
   const doc = new PDFDocument({ size: 'A4', margin: 0 });
   res.setHeader('Content-Type', 'application/pdf');
   res.setHeader('Content-Disposition', `attachment; filename="lor-${safeStudentName}.pdf"`);
@@ -788,7 +799,8 @@ const downloadLOR = asyncHandler(async (req, res) => {
   const highlights = enrollment.lorHighlights || 'demonstrated strong problem-solving skills and a commitment to excellence';
 
   doc.moveDown(1);
-  doc.fillColor('#475569').fontSize(11).font('Helvetica').text(`Date: ${date}`, 40);
+  doc.fillColor('#475569').fontSize(10).font('Helvetica').text(`Date: ${date}`, 40);
+  doc.fillColor('#475569').fontSize(10).font('Helvetica').text(`LOR ID: ${lorId}`, 40);
   doc.moveDown(0.5);
   doc.fillColor('#1e293b').fontSize(14).font('Helvetica-Bold').text('To Whomsoever It May Concern,', 40);
   doc.moveDown(0.5);
@@ -820,11 +832,27 @@ const downloadLOR = asyncHandler(async (req, res) => {
   );
   doc.moveDown(2);
   doc.fillColor('#1e293b').fontSize(11).font('Helvetica-Bold').text('Sincerely,', 40);
-  doc.moveDown(2.5); // Give a bit more space for the signatures
+  doc.moveDown(2.5);
   const sigY = doc.y;
   const W = doc.page.width;
-  signatureLine(doc, 'Mr.Jayesh Badgujar' , 'Program Director', 40, sigY, getSignaturePath('Director.png'), 1.6);
-  signatureLine(doc, 'Mr.A S Borse' , `Founder & CEO, ${COMPANY.name}`, W - 200, sigY, getSignaturePath('ceo.png'), 1.6);
+  signatureLine(doc, 'Mr.Jayesh Badgujar', 'Program Director', 40, sigY, getSignaturePath('Director.png'), 1.6);
+  signatureLine(doc, 'Mr.A S Borse', `Founder & CEO, ${COMPANY.name}`, W - 200, sigY, getSignaturePath('ceo.png'), 1.6);
+
+  // QR Code — bottom center for verification
+  try {
+    const lorVerifyUrl = `https://www.hiresnix.co.in/verification/recommendation-letter/${lorId}`;
+    const qrBuf = await QRCode.toBuffer(lorVerifyUrl, { errorCorrectionLevel: 'H', margin: 1, width: 120 });
+    const qrSize = 65;
+    const qrX = W / 2 - qrSize / 2;
+    const qrY = sigY + 80;
+    doc.roundedRect(qrX - 5, qrY - 5, qrSize + 10, qrSize + 24, 4)
+       .fillAndStroke('#ffffff', '#1e3a8a');
+    doc.image(qrBuf, qrX, qrY, { width: qrSize });
+    doc.fillColor('#1e293b').fontSize(6.5).font('Helvetica-Bold')
+       .text('Scan to Verify', qrX - 3, qrY + qrSize + 3, { width: qrSize + 6, align: 'center' });
+    doc.fillColor('#64748b').fontSize(5.5).font('Helvetica')
+       .text(lorId, qrX - 3, qrY + qrSize + 12, { width: qrSize + 6, align: 'center' });
+  } catch(e) {}
 
   pdfFooter(doc);
   doc.end();
@@ -1021,7 +1049,7 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
     ['Mode of Internship', 'Remote'],
     ['Working Hours', 'Flexible (Maximum 20 Hours per Week)'],
     ['Reporting Manager', 'Assigned Mentor / Project Lead'],
-    ['Compensation', 'Unpaid'],
+    ['Compensation', 'Unpaid (Learning & Project-Based Internship)'],
   ].forEach(([label, value], index) => {
     const col = index % 3;
     const row = Math.floor(index / 3);
@@ -1029,7 +1057,7 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
   });
   doc.y = detailY + 134;
 
-  paragraph('Hiresnix is a technology and business services company delivering recruitment, software development, artificial intelligence (AI), digital transformation, and consulting solutions to organizations. To support innovation and workforce development, the company offers structured internship opportunities that enable candidates to contribute to live business projects while gaining practical industry experience.');
+  paragraph('Hiresnix is committed to helping students and early professionals gain practical industry experience through project-based learning, mentorship, and skill development.');
 
   doc.moveDown(sectionGap);
   paragraph('During the internship, you will have the opportunity to:', { align: 'left' });
@@ -1422,23 +1450,34 @@ const verifyOfferLetter = asyncHandler(async (req, res) => {
 });
 
 const verifyRecommendationLetter = asyncHandler(async (req, res) => {
-  const recommendationId = (req.params.recommendationId || '').trim();
+  const recommendationId = (req.params.recommendationId || '').trim().toUpperCase();
   if (!recommendationId) {
     res.status(400); throw new Error('Recommendation Letter ID is required');
   }
 
-  const enrollmentId = recommendationId.replace(/^(LOR|REC|RL)-/i, '');
-  if (!/^\d+$/.test(enrollmentId)) {
-    res.status(404); throw new Error('Recommendation letter not found or invalid');
+  let enrollment = null;
+
+  // Try lorId format first (HRX-LOR-YYYY-XXXXXX)
+  if (recommendationId.startsWith('HRX-LOR-')) {
+    enrollment = await InternshipEnrollment.findOne({
+      where: { lorId: recommendationId, status: 'Completed' },
+      include: [{ model: Domain, as: 'domain' }],
+    });
   }
 
-  const enrollment = await InternshipEnrollment.findOne({
-    where: { id: enrollmentId, status: 'Completed' },
-    include: [{ model: Domain, as: 'domain' }],
-  });
+  // Fallback: numeric enrollment ID
+  if (!enrollment) {
+    const enrollmentId = recommendationId.replace(/^(LOR|REC|RL|HRX-LOR-\d+-)/i, '');
+    if (/^\d+$/.test(enrollmentId)) {
+      enrollment = await InternshipEnrollment.findOne({
+        where: { id: enrollmentId, status: 'Completed' },
+        include: [{ model: Domain, as: 'domain' }],
+      });
+    }
+  }
 
   if (!enrollment) {
-    res.status(404); throw new Error('Recommendation letter not found or invalid');
+    return res.json({ success: true, valid: false, data: null });
   }
 
   res.json({
@@ -1446,7 +1485,7 @@ const verifyRecommendationLetter = asyncHandler(async (req, res) => {
     valid: true,
     data: {
       documentType: 'Letter of Recommendation',
-      documentId: `LOR-${enrollment.id}`,
+      documentId: enrollment.lorId || `LOR-${enrollment.id}`,
       studentName: enrollment.studentName,
       issueDate: enrollment.completedAt || enrollment.updatedAt || enrollment.createdAt,
       internshipDomain: enrollment.domain?.name || 'Internship Program',
