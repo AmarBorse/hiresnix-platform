@@ -193,8 +193,16 @@ export function StudentMockInterview() {
       const motionLevel=diff/samples;
       // Very low motion AND face region is too dark = looked away or left frame
       const faceTooBlank=avgBrightness<15||avgBrightness>240;
-      if(faceTooBlank){ setFaceWarning(true); setLookAwayCount(c=>c+1); }
-      else { setFaceWarning(false); }
+      if(faceTooBlank){
+        setFaceWarning(true);
+        setLookAwayCount(c=>{
+          const next=c+1;
+          if(next>=3){
+            setTimeout(()=>exitInterview('❌ Interview ended — 3 face warnings exceeded. Please keep your face visible on camera.'),500);
+          }
+          return next;
+        });
+      } else { setFaceWarning(false); }
     }
     prevFrameRef.current=frame;
   },[]);
@@ -559,7 +567,7 @@ Start directly with the first question. Keep questions concise.`;
       {faceWarning&&(
         <div className="mb-4 flex items-center gap-3 bg-red-900/30 border border-red-500/40 text-red-300 px-4 py-3 rounded-xl animate-pulse">
           <AlertTriangle size={18} className="shrink-0"/>
-          <p className="text-sm font-semibold">⚠️ Face not detected properly — please look at the camera!</p>
+          <p className="text-sm font-semibold">⚠️ Face not detected! Warning {lookAwayCount}/3 — {3-lookAwayCount<=0?'Exiting...':`${3-lookAwayCount} warning(s) left before auto-exit`}</p>
         </div>
       )}
       {micError&&(
