@@ -6,6 +6,7 @@ const {
   getInstitutions, getInstitution, approveInstitution, rejectInstitution, deleteInstitution,
   resetInstitutionPassword, resetInstStudentPassword, resetAllStudentPasswords,
 } = require('../controllers/adminController');
+const { getEnquiries, markEnquiryRead, deleteEnquiry } = require('../controllers/enquiryController');
 const r = express.Router();
 
 const admin = [protect, authorize('admin')];
@@ -24,5 +25,10 @@ r.delete('/institutions/:id',                    ...admin, deleteInstitution);
 r.put('/institutions/:id/reset-password',        ...admin, resetInstitutionPassword);
 r.put('/institutions/:id/reset-student-password',...admin, resetInstStudentPassword);
 r.put('/institutions/:id/reset-all-passwords',   ...admin, resetAllStudentPasswords);
+
+// Enquiries
+r.get('/enquiries',              ...admin, getEnquiries);
+r.put('/enquiries/:id/read',     ...admin, markEnquiryRead);
+r.delete('/enquiries/:id',       ...admin, deleteEnquiry);
 
 module.exports = r;
