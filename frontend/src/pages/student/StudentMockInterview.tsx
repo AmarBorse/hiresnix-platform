@@ -73,24 +73,6 @@ export function StudentMockInterview() {
   const [eyeContact, setEyeContact]       = useState(true);
   const [micError, setMicError]     = useState('');
 
-  // ── Enrollment Gate Check ─────────────────────────────────────
-  useEffect(() => {
-    Promise.allSettled([
-      client.get('/internships/my'),
-      client.get('/iplatform/my-application'),
-      client.get('/iplatform/institution-student-app'),
-    ]).then(([enrollRes, appRes, instAppRes]) => {
-      const enrollments = enrollRes.status === 'fulfilled'
-        ? (enrollRes.value.data?.data || enrollRes.value.data || []) : [];
-      const hasEnrollment = Array.isArray(enrollments) && enrollments.length > 0;
-      const appData = appRes.status === 'fulfilled' ? appRes.value.data : null;
-      const hasApp = appData?.success && appData?.data?.status === 'Approved';
-      const instApp = instAppRes.status === 'fulfilled' ? instAppRes.value.data : null;
-      const hasInstApp = instApp?.success && instApp?.data?.status === 'Approved';
-      setIsEnrolled(hasEnrollment || hasApp || hasInstApp);
-    });
-  }, []);
-
   const videoRef    = useRef<HTMLVideoElement>(null);
   const canvasRef   = useRef<HTMLCanvasElement>(null);
   const streamRef   = useRef<MediaStream | null>(null);
@@ -212,6 +194,23 @@ export function StudentMockInterview() {
         setEyeContact(skinRatio > 0.12);
       }
     } catch {}
+  }, []);
+
+  useEffect(() => {
+    Promise.allSettled([
+      client.get('/internships/my'),
+      client.get('/iplatform/my-application'),
+      client.get('/iplatform/institution-student-app'),
+    ]).then(([enrollRes, appRes, instAppRes]) => {
+      const enrollments = enrollRes.status === 'fulfilled'
+        ? (enrollRes.value.data?.data || enrollRes.value.data || []) : [];
+      const hasEnrollment = Array.isArray(enrollments) && enrollments.length > 0;
+      const appData = appRes.status === 'fulfilled' ? appRes.value.data : null;
+      const hasApp = appData?.success && appData?.data?.status === 'Approved';
+      const instApp = instAppRes.status === 'fulfilled' ? instAppRes.value.data : null;
+      const hasInstApp = instApp?.success && instApp?.data?.status === 'Approved';
+      setIsEnrolled(hasEnrollment || hasApp || hasInstApp);
+    });
   }, []);
 
   useEffect(() => {
@@ -505,7 +504,6 @@ Set isComplete true only after Q20.`;
   // ── SETUP ─────────────────────────────────────────────────────────
   if (stage === 'setup') return (
     <div className="min-h-screen bg-gray-950 text-white p-4 md:p-6">
-      {/* Enrollment loading/locked gate */}
       {isEnrolled === null && (
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
@@ -530,7 +528,7 @@ Set isComplete true only after Q20.`;
           </div>
         </div>
       )}
-      {isEnrolled === true && <>
+      {isEnrolled === true && 
     <div className="max-w-2xl mx-auto space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">🎙️ AI Mock Interview</h1>
@@ -565,11 +563,11 @@ Set isComplete true only after Q20.`;
           </button>
         </div>
       </div>
+    </div>}
     </div>
-    </>}
   );
 
-  // ── COUNTDOWN ─────────────────────────────────────────────────────
+    // ── COUNTDOWN ─────────────────────────────────────────────────────
   if (stage === 'countdown') return (
     <div className="min-h-[60vh] flex flex-col items-center justify-center gap-6">
       <div className="bg-gradient-to-br from-gray-900 to-indigo-950 rounded-2xl p-8 text-center w-80">
