@@ -6,7 +6,7 @@ const {
   getInstitutions, getInstitution, approveInstitution, rejectInstitution, deleteInstitution,
   resetInstitutionPassword, resetInstStudentPassword, resetAllStudentPasswords,
 } = require('../controllers/adminController');
-const { getEnquiries, markEnquiryRead, deleteEnquiry } = require('../controllers/enquiryController');
+const { getAllEnquiries, markAsRead, deleteEnquiry } = require('../controllers/enquiryController');
 const r = express.Router();
 
 const admin = [protect, authorize('admin')];
@@ -27,8 +27,8 @@ r.put('/institutions/:id/reset-student-password',...admin, resetInstStudentPassw
 r.put('/institutions/:id/reset-all-passwords',   ...admin, resetAllStudentPasswords);
 
 // Enquiries
-r.get('/enquiries',              ...admin, getEnquiries);
-r.put('/enquiries/:id/read',     ...admin, markEnquiryRead);
+r.get('/enquiries',              ...admin, getAllEnquiries);
+r.put('/enquiries/:id/read',     ...admin, markAsRead);
 r.delete('/enquiries/:id',       ...admin, deleteEnquiry);
 
 module.exports = r;
