@@ -7,6 +7,7 @@ import { Internship } from '../../types';
 import { toast } from 'sonner';
 import { Clock, Users, Zap, ChevronRight, Search, Loader2, GraduationCap, CheckCircle, BookOpen, Download } from 'lucide-react';
 import client from '../../api/client';
+import { instInternshipClient } from '../../api/instStudent';
 
 const DIFF_COLORS: Record<string, string> = {
   Beginner:     'bg-green-100 text-green-700',
@@ -78,7 +79,10 @@ function IPlatformPanel() {
     if (!selected) return;
     setApplying(true);
     try {
-      await client.post('/iplatform/apply', { domainId: selected.id, ...form });
+      // Use instInternshipClient if inst student (sends x-inst-student-id headers automatically)
+      const isInstStudent = !!localStorage.getItem('hx_inst_student_id');
+      const applyClient = isInstStudent ? instInternshipClient : client;
+      await applyClient.post('/iplatform/apply', { domainId: selected.id, ...form });
       toast.success('Application submitted! Admin will review soon.');
       load();
       setSelected(null);
