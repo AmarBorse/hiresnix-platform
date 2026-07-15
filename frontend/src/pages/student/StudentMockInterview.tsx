@@ -64,12 +64,24 @@ export function StudentMockInterview() {
   const [isEnrolled, setIsEnrolled] = useState<boolean | null>(null);
 
   useEffect(() => {
-    client.get('/enrollments/my')
-      .then(res => {
-        const enrollments = res.data?.data || res.data || [];
-        setIsEnrolled(Array.isArray(enrollments) && enrollments.length > 0);
-      })
-      .catch(() => setIsEnrolled(false));
+    Promise.allSettled([
+      client.get('/enrollments/my'),
+      client.get('/iplatform/my-application'),
+      client.get('/iplatform/institution-student-app'),
+    ]).then(([enrollRes, appRes, instAppRes]) => {
+      const enrollments = enrollRes.status === 'fulfilled'
+        ? (enrollRes.value.data?.data || enrollRes.value.data || [])
+        : [];
+      const hasEnrollment = Array.isArray(enrollments) && enrollments.length > 0;
+
+      const appData = appRes.status === 'fulfilled' ? appRes.value.data : null;
+      const hasApp = appData?.success && appData?.data?.status === 'Approved';
+
+      const instApp = instAppRes.status === 'fulfilled' ? instAppRes.value.data : null;
+      const hasInstApp = instApp?.success && instApp?.data?.status === 'Approved';
+
+      setIsEnrolled(hasEnrollment || hasApp || hasInstApp);
+    });
   }, []);
 
   // Loading state
