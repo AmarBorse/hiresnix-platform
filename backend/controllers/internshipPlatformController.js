@@ -1112,7 +1112,25 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
     .text('CIN:', left, founderTextY + 49, { width: 265, lineGap: 0 })
     .text(cin, left, founderTextY + 59, { width: 265, lineGap: 0 });
 
-  drawOfferSeal(doc, left + bodyWidth - 54, 716);
+  // Seal — centered
+  const page1W = doc.page.width;
+  drawOfferSeal(doc, page1W / 2, 716);
+
+  // QR Code — left side
+  try {
+    const offerVerifyUrl = `https://www.hiresnix.co.in/verification/offer-letter/${stableOfferId}`;
+    const qrBuf2 = await QRCode.toBuffer(offerVerifyUrl, { errorCorrectionLevel: 'H', margin: 1, width: 120 });
+    const qrSize2 = 65;
+    const qrX2 = left;
+    const qrY2 = 680;
+    doc.roundedRect(qrX2 - 5, qrY2 - 5, qrSize2 + 10, qrSize2 + 26, 4)
+       .fillAndStroke('#ffffff', '#1e3a8a');
+    doc.image(qrBuf2, qrX2, qrY2, { width: qrSize2 });
+    doc.fillColor('#1e293b').fontSize(6).font('Helvetica-Bold')
+       .text('Scan to Verify', qrX2 - 3, qrY2 + qrSize2 + 3, { width: qrSize2 + 6, align: 'center' });
+    doc.fillColor('#64748b').fontSize(5).font('Helvetica')
+       .text(stableOfferId, qrX2 - 3, qrY2 + qrSize2 + 12, { width: qrSize2 + 6, align: 'center' });
+  } catch(e) {}
 
   doc.fillColor('#334155').fontSize(8.8).font('Helvetica')
     .text('support@hiresnix.co.in', left, founderTextY + 72, { width: 265, lineGap: 0 })
