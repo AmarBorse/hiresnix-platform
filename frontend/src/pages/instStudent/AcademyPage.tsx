@@ -234,29 +234,28 @@ const LANG_CFG: Record<string,{lang:string,ver:string,ext:string,starter:string}
 async function runCode(language: string, code: string) {
   const cfg = LANG_CFG[language] || LANG_CFG.python;
   try {
-    // Use Glot.io — free code execution API
-    const GLOT_LANG: Record<string,string> = {
-      python:'python', javascript:'javascript', java:'java', 'c++':'cpp', c:'c'
-    };
-    const glotLang = GLOT_LANG[cfg.lang] || 'python';
-    const fileName = `main.${cfg.ext}`;
-    const r = await fetch(`https://glot.io/api/run/${glotLang}/latest`, {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({ files:[{ name: fileName, content: code }] }),
+    // Use Groq to simulate code execution (no CORS issues)
+    const GROQ_KEY = (import.meta as any).env?.VITE_GROQ_API_KEY || '';
+    const prompt = `Execute this ${cfg.lang} code and return ONLY the exact output that would appear in the console/terminal. If there's an error, show the error message. No explanation, no markdown, just the raw output:
+
+\`\`\`${cfg.lang}
+${code}
+\`\`\``;
+    
+    const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${GROQ_KEY}` },
+      body: JSON.stringify({
+        model: 'llama-3.1-8b-instant',
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0,
+        max_tokens: 500,
+      }),
     });
     const d = await r.json();
-    if(d?.stdout !== undefined || d?.stderr !== undefined) {
-      const out = d.stdout || d.stderr || '(no output)';
-      return { out, err: !!d.stderr && !d.stdout };
-    }
-    // Fallback to Piston if Glot fails
-    const pr = await fetch('https://emkc.org/api/v2/piston/execute', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({ language:cfg.lang, version:cfg.ver, files:[{name:fileName,content:code}], run_timeout:10000 }),
-    });
-    const pd = await pr.json();
-    return { out: pd?.run?.stdout || pd?.run?.stderr || '(no output)', err: !!pd?.run?.stderr && !pd?.run?.stdout };
+    const out = d?.choices?.[0]?.message?.content?.trim() || '(no output)';
+    const isErr = out.toLowerCase().includes('error') || out.toLowerCase().includes('exception');
+    return { out, err: isErr };
   } catch (e:any) { return { out:`Error: ${e.message}`, err:true }; }
 }
 
