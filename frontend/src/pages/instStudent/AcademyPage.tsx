@@ -749,37 +749,75 @@ function LessonPage({ course, onBack }: { course:any; onBack:()=>void }) {
 
           {/* CODE & RUN */}
           {tab==='code' && (
-            <div style={{animation:'fade-in 0.3s ease',display:'flex',flexDirection:'column',gap:'14px'}}>
-              {codeLoading
-                ? <div style={{textAlign:'center',padding:'40px',color:'#334155'}}><div style={{width:24,height:24,border:`2px solid ${ACC}`,borderTopColor:'transparent',borderRadius:'50%',animation:'spin 0.8s linear infinite',margin:'0 auto 12px'}}/> Generating {course.codeLanguage} example...</div>
-                : <>
-                  {codeText && <div style={{background:'rgba(255,255,255,0.03)',borderRadius:'12px',border:'1px solid rgba(255,255,255,0.07)',padding:'14px 16px',fontSize:'12px',color:'#64748b',lineHeight:1.7,whiteSpace:'pre-wrap',maxHeight:'150px',overflowY:'auto'}}>{codeText}</div>}
-                  <div style={{background:'#0d1117',borderRadius:'14px',border:'1px solid rgba(255,255,255,0.08)',overflow:'hidden'}}>
-                    <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 16px',background:'rgba(255,255,255,0.03)',borderBottom:'1px solid rgba(255,255,255,0.06)'}}>
-                      <div style={{display:'flex',alignItems:'center',gap:'7px'}}>
-                        <Terminal size={12} style={{color:ACC}}/><span style={{color:'#475569',fontSize:'12px',fontFamily:'monospace'}}>{course.codeLanguage} · Live Playground</span>
-                      </div>
-                      <button onClick={runUserCode} disabled={runLoading}
-                        style={{display:'flex',alignItems:'center',gap:'5px',padding:'5px 14px',borderRadius:'7px',border:'none',background:'#10b981',color:'#fff',fontSize:'11px',fontWeight:700,cursor:'pointer',opacity:runLoading?0.6:1}}>
-                        {runLoading?<div style={{width:11,height:11,border:'2px solid #fff',borderTopColor:'transparent',borderRadius:'50%',animation:'spin 0.8s linear infinite'}}/>:<Play size={11} fill="#fff"/>}
-                        {runLoading?'Running...':'▶ Run Code'}
-                      </button>
-                    </div>
-                    <textarea value={userCode} onChange={e=>setUserCode(e.target.value)} spellCheck={false}
-                      style={{width:'100%',minHeight:'240px',background:'transparent',border:'none',padding:'14px 16px',fontFamily:'"Fira Code",monospace',fontSize:'13px',color:'#e2e8f0',outline:'none',lineHeight:1.75,boxSizing:'border-box'}}
-                      placeholder={`Write ${course.codeLanguage} code here...`}/>
-                    {codeOut && (
-                      <div style={{borderTop:'1px solid rgba(255,255,255,0.06)',padding:'12px 16px'}}>
-                        <div style={{fontSize:'10px',fontWeight:700,color:'#34d399',marginBottom:'5px',letterSpacing:'0.05em'}}>▶ OUTPUT</div>
-                        <pre style={{margin:0,fontFamily:'monospace',fontSize:'12px',color:codeErr?'#f87171':'#a7f3d0',lineHeight:1.6,whiteSpace:'pre-wrap'}}>{codeOut}</pre>
-                      </div>
-                    )}
-                  </div>
-                  <button onClick={loadCode} style={{display:'flex',alignItems:'center',gap:'5px',padding:'6px 13px',borderRadius:'8px',border:'1px solid rgba(255,255,255,0.08)',background:'none',color:'#334155',fontSize:'11px',cursor:'pointer',alignSelf:'flex-start'}}>
+            <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,zIndex:1000,display:'grid',gridTemplateRows:'48px 1fr',background:'#0d1117',fontFamily:'system-ui,sans-serif'}}>
+              {/* Top bar */}
+              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 16px',background:'#161b22',borderBottom:'1px solid #30363d'}}>
+                <div style={{display:'flex',alignItems:'center',gap:'12px'}}>
+                  <button onClick={()=>setTab('video')} style={{display:'flex',alignItems:'center',gap:'5px',padding:'5px 10px',borderRadius:'6px',border:'1px solid #30363d',background:'transparent',color:'#8b949e',fontSize:'12px',cursor:'pointer'}}>
+                    ← Back
+                  </button>
+                  <span style={{color:'#e6edf3',fontWeight:700,fontSize:'13px'}}>{lesson?.title||'Code & Run'}</span>
+                  <span style={{color:'#8b949e',fontSize:'11px'}}>·</span>
+                  <span style={{color:ACC,fontSize:'11px',fontFamily:'monospace'}}>{course.codeLanguage}</span>
+                </div>
+                <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
+                  <button onClick={loadCode} style={{display:'flex',alignItems:'center',gap:'5px',padding:'5px 12px',borderRadius:'6px',border:'1px solid #30363d',background:'transparent',color:'#8b949e',fontSize:'12px',cursor:'pointer'}}>
                     <RefreshCw size={11}/> New Example
                   </button>
-                </>
-              }
+                  <button onClick={runUserCode} disabled={runLoading}
+                    style={{display:'flex',alignItems:'center',gap:'6px',padding:'6px 16px',borderRadius:'6px',border:'none',background:'#238636',color:'#fff',fontSize:'12px',fontWeight:700,cursor:'pointer',opacity:runLoading?0.7:1}}>
+                    {runLoading?<div style={{width:11,height:11,border:'2px solid #fff',borderTopColor:'transparent',borderRadius:'50%',animation:'spin 0.8s linear infinite'}}/>:<Play size={11} fill="#fff"/>}
+                    {runLoading?'Running...':'▶ Run Code'}
+                  </button>
+                  <button onClick={markDone} style={{display:'flex',alignItems:'center',gap:'5px',padding:'6px 14px',borderRadius:'6px',border:'none',background:`linear-gradient(135deg,${ACC},${ACC}99)`,color:'#fff',fontSize:'12px',fontWeight:700,cursor:'pointer'}}>
+                    ✓ Mark Done
+                  </button>
+                </div>
+              </div>
+
+              {/* Split pane */}
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',overflow:'hidden'}}>
+                {/* LEFT — Problem / Description */}
+                <div style={{borderRight:'1px solid #30363d',overflow:'auto',padding:'20px 24px'}}>
+                  {/* Problem header */}
+                  <div style={{marginBottom:'16px'}}>
+                    <span style={{fontSize:'10px',fontWeight:700,color:ACC,letterSpacing:'0.1em',textTransform:'uppercase'}}>Problem</span>
+                    <h3 style={{color:'#e6edf3',fontSize:'16px',fontWeight:700,margin:'4px 0 0'}}>{lesson?.title}</h3>
+                  </div>
+                  {/* Description */}
+                  {codeLoading
+                    ? <div style={{textAlign:'center',padding:'40px',color:'#8b949e'}}><div style={{width:22,height:22,border:`2px solid ${ACC}`,borderTopColor:'transparent',borderRadius:'50%',animation:'spin 0.8s linear infinite',margin:'0 auto 12px'}}/> Loading...</div>
+                    : codeText && <div style={{color:'#c9d1d9',fontSize:'13px',lineHeight:1.8,whiteSpace:'pre-wrap'}}>{codeText}</div>
+                  }
+                </div>
+
+                {/* RIGHT — Editor + Output */}
+                <div style={{display:'grid',gridTemplateRows:'1fr auto',overflow:'hidden'}}>
+                  {/* Editor */}
+                  <div style={{position:'relative',overflow:'auto',background:'#0d1117'}}>
+                    <div style={{display:'flex',alignItems:'center',gap:'6px',padding:'8px 14px',background:'#161b22',borderBottom:'1px solid #30363d',position:'sticky',top:0}}>
+                      <div style={{width:10,height:10,borderRadius:'50%',background:'#ef4444'}}/>
+                      <div style={{width:10,height:10,borderRadius:'50%',background:'#f59e0b'}}/>
+                      <div style={{width:10,height:10,borderRadius:'50%',background:'#22c55e'}}/>
+                      <span style={{color:'#8b949e',fontSize:'11px',fontFamily:'monospace',marginLeft:'8px'}}>{`main.${LANG_CFG[course.codeLanguage]?.ext||'py'}`}</span>
+                    </div>
+                    <textarea value={userCode} onChange={e=>setUserCode(e.target.value)} spellCheck={false}
+                      style={{width:'100%',height:'calc(100% - 36px)',minHeight:'300px',background:'transparent',border:'none',padding:'16px',fontFamily:'"Fira Code","Cascadia Code",monospace',fontSize:'13px',color:'#e6edf3',outline:'none',lineHeight:1.75,boxSizing:'border-box',resize:'none'}}
+                      placeholder={`// Write ${course.codeLanguage} code here...`}/>
+                  </div>
+
+                  {/* Output */}
+                  <div style={{borderTop:'1px solid #30363d',background:'#0d1117',minHeight:'120px',maxHeight:'220px',overflow:'auto'}}>
+                    <div style={{display:'flex',alignItems:'center',gap:'8px',padding:'8px 14px',background:'#161b22',borderBottom:'1px solid #30363d'}}>
+                      <div style={{width:6,height:6,borderRadius:'50%',background:codeErr?'#ef4444':'#22c55e'}}/>
+                      <span style={{fontSize:'11px',fontWeight:700,color:'#8b949e',letterSpacing:'0.05em'}}>OUTPUT</span>
+                    </div>
+                    <pre style={{margin:0,padding:'12px 16px',fontFamily:'"Fira Code",monospace',fontSize:'12px',color:codeErr?'#f87171':codeOut?'#a7f3d0':'#4b5563',lineHeight:1.7,whiteSpace:'pre-wrap'}}>
+                      {codeOut || '// Run your code to see output here...'}
+                    </pre>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
