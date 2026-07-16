@@ -765,32 +765,55 @@ function LessonPage({ course, onBack }: { course:any; onBack:()=>void }) {
           {/* VIDEO — Auto redirect to AI Teacher */}
           {tab==='video' && (
             <div style={{animation:'fade-in 0.3s ease',display:'flex',flexDirection:'column',gap:'12px'}}>
-              {/* YouTube Embed */}
-              <div style={{position:'relative',paddingBottom:'56.25%',height:0,borderRadius:'14px',overflow:'hidden',border:'1px solid rgba(255,255,255,0.08)',background:'#000'}}>
-                <iframe
-                  key={lesson}
-                  src={`https://www.youtube-nocookie.com/embed/${getYT(lesson)}&rel=0&modestbranding=1&showinfo=0&iv_load_policy=3&color=white&playsinline=1`}
-                  title={lesson}
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  allowFullScreen
-                  style={{position:'absolute',top:0,left:0,width:'100%',height:'100%',border:'none'}}
-                />
-              </div>
-              {/* Bottom bar */}
-              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:'8px'}}>
-                <p style={{fontSize:'11px',color:'#475569',margin:0}}>
-                  💡 <strong style={{color:'#c7d2fe'}}>Tip:</strong> Watch → AI Teacher → Code & Run → Quiz → Mark Done ✅
-                </p>
-                <div style={{display:'flex',gap:'6px'}}>
-                  <button onClick={()=>setTab('teacher')}
-                    style={{padding:'5px 12px',borderRadius:'7px',border:'none',background:`${ACC}22`,color:ACC,fontSize:'11px',fontWeight:700,cursor:'pointer'}}>
-                    🤖 AI Teacher
-                  </button>
-                  <button onClick={()=>setTab('code')}
-                    style={{padding:'5px 12px',borderRadius:'7px',border:'1px solid rgba(16,185,129,0.3)',background:'rgba(16,185,129,0.08)',color:'#34d399',fontSize:'11px',fontWeight:700,cursor:'pointer'}}>
-                    ⌨️ Code & Run
-                  </button>
-                </div>
+              {/* AI Video Lecture */}
+              {!teacherText && !teacherLoading
+                ? <div style={{textAlign:'center',padding:'32px'}}>
+                    <button onClick={loadTeacher}
+                      style={{padding:'14px 32px',borderRadius:'14px',border:'none',background:`linear-gradient(135deg,${ACC},${ACC}bb)`,color:'#fff',fontSize:'15px',fontWeight:800,cursor:'pointer',boxShadow:`0 4px 24px ${ACC}44`}}>
+                      ▶ Start Video Lecture
+                    </button>
+                    <p style={{color:'#334155',fontSize:'12px',marginTop:'12px'}}>AI will explain {lesson} with examples</p>
+                  </div>
+                : teacherLoading
+                ? <div style={{textAlign:'center',padding:'40px',color:'#334155'}}>
+                    <div style={{width:28,height:28,border:`3px solid ${ACC}`,borderTopColor:'transparent',borderRadius:'50%',animation:'spin 0.8s linear infinite',margin:'0 auto 14px'}}/>
+                    Preparing your video lecture...
+                  </div>
+                : <div style={{background:'linear-gradient(135deg,#0f172a,#1e1b4b)',borderRadius:'16px',border:`1px solid ${ACC}33`,overflow:'hidden'}}>
+                    {/* Video-style header */}
+                    <div style={{background:`linear-gradient(135deg,${ACC}22,transparent)`,padding:'16px 20px',borderBottom:`1px solid ${ACC}22`,display:'flex',alignItems:'center',gap:'10px'}}>
+                      <div style={{width:36,height:36,borderRadius:'50%',background:`linear-gradient(135deg,${ACC},${ACC}88)`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'18px'}}>🤖</div>
+                      <div>
+                        <div style={{color:'#fff',fontWeight:800,fontSize:'13px'}}>AI Video Lecture</div>
+                        <div style={{color:ACC,fontSize:'11px'}}>{lesson} · {course.title}</div>
+                      </div>
+                      <div style={{marginLeft:'auto',display:'flex',alignItems:'center',gap:'6px',background:'rgba(239,68,68,0.15)',border:'1px solid rgba(239,68,68,0.3)',padding:'4px 10px',borderRadius:'20px'}}>
+                        <div style={{width:6,height:6,borderRadius:'50%',background:'#ef4444',animation:'pulse 1.5s ease-in-out infinite'}}/>
+                        <span style={{color:'#f87171',fontSize:'10px',fontWeight:700}}>LIVE</span>
+                      </div>
+                    </div>
+                    {/* Content */}
+                    <div style={{padding:'20px',color:'#e2e8f0',fontSize:'13px',lineHeight:1.85,whiteSpace:'pre-wrap',maxHeight:'420px',overflowY:'auto'}}>
+                      {teacherText}
+                    </div>
+                    {/* Controls */}
+                    <div style={{padding:'12px 20px',borderTop:`1px solid ${ACC}22`,display:'flex',gap:'8px',justifyContent:'space-between',alignItems:'center'}}>
+                      <button onClick={loadTeacher} style={{display:'flex',alignItems:'center',gap:'5px',padding:'6px 13px',borderRadius:'8px',border:`1px solid ${ACC}33`,background:`${ACC}11`,color:ACC,fontSize:'11px',fontWeight:600,cursor:'pointer'}}>
+                        🔄 Replay
+                      </button>
+                      <div style={{display:'flex',gap:'6px'}}>
+                        <button onClick={()=>setTab('code')} style={{padding:'6px 13px',borderRadius:'8px',border:'1px solid rgba(16,185,129,0.3)',background:'rgba(16,185,129,0.08)',color:'#34d399',fontSize:'11px',fontWeight:700,cursor:'pointer'}}>
+                          ⌨️ Code & Run
+                        </button>
+                        <button onClick={markDone} style={{padding:'6px 13px',borderRadius:'8px',border:'none',background:`linear-gradient(135deg,${ACC},${ACC}99)`,color:'#fff',fontSize:'11px',fontWeight:700,cursor:'pointer'}}>
+                          ✓ Mark Done
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+              }
+              <div style={{fontSize:'11px',color:'#334155',padding:'8px 12px',borderRadius:'8px',background:'rgba(99,102,241,0.06)',border:'1px solid rgba(99,102,241,0.12)'}}>
+                💡 <strong style={{color:'#c7d2fe'}}>Learning Path:</strong> Video Lecture → Code & Run → Quiz → Mark Done ✅
               </div>
             </div>
           )}
