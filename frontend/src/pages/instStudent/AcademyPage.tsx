@@ -814,28 +814,35 @@ function LessonPage({ course, onBack }: { course:any; onBack:()=>void }) {
         {/* Content */}
         <div style={{flex:1,overflowY:'auto',padding:'18px'}}>
 
-          {/* VIDEO */}
+          {/* VIDEO — Auto redirect to AI Teacher */}
           {tab==='video' && (
             <div style={{animation:'fade-in 0.3s ease',display:'flex',flexDirection:'column',gap:'12px'}}>
               {/* YouTube Embed */}
-              <div style={{position:'relative',paddingBottom:'56.25%',height:0,borderRadius:'14px',overflow:'hidden',border:`1px solid ${ACC}33`,background:'#000'}}>
+              <div style={{position:'relative',paddingBottom:'56.25%',height:0,borderRadius:'14px',overflow:'hidden',border:'1px solid rgba(255,255,255,0.08)',background:'#000'}}>
                 <iframe
                   key={lesson}
-                  src={`https://www.youtube.com/embed/${getYT(lesson)}&rel=0&modestbranding=1`}
+                  src={`https://www.youtube-nocookie.com/embed/${getYT(lesson)}&rel=0&modestbranding=1&showinfo=0&iv_load_policy=3&color=white&playsinline=1`}
                   title={lesson}
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                   allowFullScreen
                   style={{position:'absolute',top:0,left:0,width:'100%',height:'100%',border:'none'}}
                 />
               </div>
-              {/* Bottom row */}
+              {/* Bottom bar */}
               <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:'8px'}}>
-                <div style={{fontSize:'12px',color:'#64748b'}}>
-                  💡 <strong style={{color:'#c7d2fe'}}>Learning Path:</strong> Watch Video → AI Teacher → Code & Run → Quiz → Mark Done ✅
+                <p style={{fontSize:'11px',color:'#475569',margin:0}}>
+                  💡 <strong style={{color:'#c7d2fe'}}>Tip:</strong> Watch → AI Teacher → Code & Run → Quiz → Mark Done ✅
+                </p>
+                <div style={{display:'flex',gap:'6px'}}>
+                  <button onClick={()=>setTab('teacher')}
+                    style={{padding:'5px 12px',borderRadius:'7px',border:'none',background:`${ACC}22`,color:ACC,fontSize:'11px',fontWeight:700,cursor:'pointer'}}>
+                    🤖 AI Teacher
+                  </button>
+                  <button onClick={()=>setTab('code')}
+                    style={{padding:'5px 12px',borderRadius:'7px',border:'1px solid rgba(16,185,129,0.3)',background:'rgba(16,185,129,0.08)',color:'#34d399',fontSize:'11px',fontWeight:700,cursor:'pointer'}}>
+                    ⌨️ Code & Run
+                  </button>
                 </div>
-                <button onClick={()=>setTab('teacher')} style={{padding:'6px 14px',borderRadius:'8px',border:`1px solid ${ACC}33`,background:`${ACC}11`,color:ACC,fontSize:'11px',fontWeight:600,cursor:'pointer'}}>
-                  ✨ AI Teacher →
-                </button>
               </div>
             </div>
           )}
