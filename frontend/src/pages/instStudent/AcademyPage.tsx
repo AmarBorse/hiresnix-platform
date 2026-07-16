@@ -14,111 +14,112 @@ const GROQ = (import.meta as any).env.VITE_GROQ_API_KEY || '';
 
 // ── YouTube Video IDs ─────────────────────────────────────────────
 // Telusko + freeCodeCamp - Indian educator, embed allowed
+// CodeWithHarry - Hindi tutorials, embed allowed
 const YT: Record<string,string> = {
-  // ── PYTHON - Telusko ─────────────────────────────────────────
-  "What is Python?":         "hEgO047GxaQ",
-  "Setting Up Python":       "DWgzHbglNIo",
-  "Your First Program":      "DWgzHbglNIo",
-  "Variables & Data Types":  "hhvnYmRqzwQ",
-  "Type Conversion":         "hhvnYmRqzwQ",
-  "Arithmetic Operators":    "v5MR5JyNx_0",
-  "Comparison Operators":    "v5MR5JyNx_0",
-  "Logical Operators":       "v5MR5JyNx_0",
-  "If-Else Statements":      "AWek49wXGzI",
-  "For Loops":               "OnDr4J5BBOM",
-  "While Loops":             "6iF8Xb7Z3wQ",
-  "Break & Continue":        "yCZBnjF4_tU",
-  "Functions":               "9Os0IGs9u7E",
-  "Parameters & Return":     "9Os0IGs9u7E",
-  "Lambda Functions":        "25ovCm9jKfA",
-  "Recursion":               "ngCos3cnxi8",
-  "Decorators":              "r7Dtus7N4pI",
-  "Lists":                   "Eaz5e6M8tL4",
-  "Tuples":                  "bdgRT40UUBQ",
-  "Dictionaries":            "daefaLgNkw0",
-  "Sets":                    "sBvaPopl4nE",
-  "List Comprehensions":     "3dt4OGnU5sM",
-  "String Methods":          "zdMEn_hZ-KI",
-  "File Handling":           "Uh2ebFW8OYM",
-  "Exception Handling":      "NIWwJbo-9_8",
-  "Classes & Objects":       "qAIScuIAFU4",
-  "Inheritance":             "qAIScuIAFU4",
-  "Encapsulation":           "qAIScuIAFU4",
-  "Polymorphism":            "qAIScuIAFU4",
-  "Modules & Packages":      "1RuMJ53CKds",
-  "pip & Libraries":         "U8OtBUFVEFo",
-  "Generators":              "bD05uGo_sVI",
-  "Regular Expressions":     "K86ZkIY5FsM",
-  "Build a Calculator":      "4OX49nLNPEE",
-  "Build a To-Do App":       "DJGzR65BvqM",
-  "Build a Quiz Game":       "zehwgTB0vV8",
-  "Build a Web Scraper":     "ng2o98k983k",
-  "Final Python Project":    "DLn3jOsNRVE",
-  // ── JAVA - Telusko ────────────────────────────────────────────
-  "What is Java?":           "hBh_CC5y8-s",
-  "Java Setup & Hello World":"hBh_CC5y8-s",
-  "Java Variables":          "WPvGqX-TXP0",
-  "Java Data Types":         "WPvGqX-TXP0",
-  "Java Operators":          "Jb39YMrxbSQ",
-  "Java If-Else":            "HsDOeIiIVhQ",
-  "Java Loops":              "efpFoHCKMN8",
-  "Java Arrays":             "xzjZy-dHHLw",
-  "Java Methods":            "vvanI8NsuiQ",
-  "Java OOP - Classes":      "IUqKuGNasdM",
-  "Java Inheritance":        "Zs342ePFvRI",
-  "Java Polymorphism":       "jhDUxynEQRI",
-  "Java Interfaces":         "GhslBwrRVVE",
-  "Java Exception Handling": "1XAfapkBQjk",
-  "Java Collections":        "GdAon80-0GQ",
-  "Java Generics":           "XMvznsY02Mk",
-  "Java File I/O":           "ScUJx4aToet",
-  "Java Threads":            "r_MbozD32NU",
-  "Java Streams":            "Q93swyQbN80",
-  "Java Lambda":             "gpIUfj3KaOc",
-  "Build a Bank App":        "Nk5YFa4MVNE",
-  "Build a Student DB":      "goFcQrFsivY",
-  "Final Java Project":      "Nk5YFa4MVNE",
-  // ── JAVASCRIPT - freeCodeCamp ────────────────────────────────
-  "What is JavaScript?":     "PkZNo7MFNFg",
-  "Variables (let/const/var)":"PkZNo7MFNFg",
-  "JS Data Types":           "PkZNo7MFNFg",
-  "Template Literals":       "PkZNo7MFNFg",
-  "JS Functions":            "PkZNo7MFNFg",
-  "Arrow Functions":         "PkZNo7MFNFg",
-  "Arrays":                  "PkZNo7MFNFg",
-  "Objects":                 "PkZNo7MFNFg",
-  "Destructuring":           "PkZNo7MFNFg",
-  "Spread & Rest":           "PkZNo7MFNFg",
-  "DOM Manipulation":        "y17RuWkWdn8",
-  "Event Listeners":         "y17RuWkWdn8",
-  "Fetch API":               "drK3bge5eBw",
-  "Promises":                "DHvZLI3Mk4E",
-  "Async Await":             "vn3tm0quoqE",
-  "Error Handling":          "cFTFtuEQ-10",
-  "ES6+ Features":           "NCwa_xi0Uuc",
-  "Local Storage":           "AUOzvFzdIk4",
-  "Build a Todo App (JS)":   "G0jO8kUrg-I",
-  "Build a Weather App":     "MIYQR-Ybrn4",
-  "Final JS Project":        "3PHXvlpOkf4",
-  // ── C++ - freeCodeCamp ───────────────────────────────────────
-  "What is C++?":            "8jLOx1hD3_o",
-  "C++ Setup":               "8jLOx1hD3_o",
-  "C++ Variables":           "8jLOx1hD3_o",
-  "C++ Data Types":          "8jLOx1hD3_o",
-  "C++ Operators":           "8jLOx1hD3_o",
-  "C++ If-Else":             "8jLOx1hD3_o",
-  "C++ Loops":               "8jLOx1hD3_o",
-  "C++ Arrays":              "8jLOx1hD3_o",
-  "C++ Functions":           "8jLOx1hD3_o",
-  "C++ Pointers":            "8jLOx1hD3_o",
-  "C++ References":          "8jLOx1hD3_o",
-  "C++ OOP":                 "8jLOx1hD3_o",
-  "C++ Inheritance":         "8jLOx1hD3_o",
-  "C++ Polymorphism":        "8jLOx1hD3_o",
-  "C++ STL":                 "8jLOx1hD3_o",
-  "C++ File Handling":       "8jLOx1hD3_o",
-  "Build a Calculator (C++)":"8jLOx1hD3_o",
-  "Final C++ Project":       "8jLOx1hD3_o",
+  // ── PYTHON - CodeWithHarry ────────────────────────────────────
+  "What is Python?":         "7wnove7K-ZQ",
+  "Setting Up Python":       "7wnove7K-ZQ",
+  "Your First Program":      "7wnove7K-ZQ",
+  "Variables & Data Types":  "gfDE2a7MKjA",
+  "Type Conversion":         "gfDE2a7MKjA",
+  "Arithmetic Operators":    "gfDE2a7MKjA",
+  "Comparison Operators":    "gfDE2a7MKjA",
+  "Logical Operators":       "gfDE2a7MKjA",
+  "If-Else Statements":      "gfDE2a7MKjA",
+  "For Loops":               "gfDE2a7MKjA",
+  "While Loops":             "gfDE2a7MKjA",
+  "Break & Continue":        "gfDE2a7MKjA",
+  "Functions":               "gfDE2a7MKjA",
+  "Parameters & Return":     "gfDE2a7MKjA",
+  "Lambda Functions":        "gfDE2a7MKjA",
+  "Recursion":               "gfDE2a7MKjA",
+  "Decorators":              "gfDE2a7MKjA",
+  "Lists":                   "gfDE2a7MKjA",
+  "Tuples":                  "gfDE2a7MKjA",
+  "Dictionaries":            "gfDE2a7MKjA",
+  "Sets":                    "gfDE2a7MKjA",
+  "List Comprehensions":     "gfDE2a7MKjA",
+  "String Methods":          "gfDE2a7MKjA",
+  "File Handling":           "gfDE2a7MKjA",
+  "Exception Handling":      "gfDE2a7MKjA",
+  "Classes & Objects":       "gfDE2a7MKjA",
+  "Inheritance":             "gfDE2a7MKjA",
+  "Encapsulation":           "gfDE2a7MKjA",
+  "Polymorphism":            "gfDE2a7MKjA",
+  "Modules & Packages":      "gfDE2a7MKjA",
+  "pip & Libraries":         "gfDE2a7MKjA",
+  "Generators":              "gfDE2a7MKjA",
+  "Regular Expressions":     "gfDE2a7MKjA",
+  "Build a Calculator":      "fqF9M92jzUo",
+  "Build a To-Do App":       "fqF9M92jzUo",
+  "Build a Quiz Game":       "fqF9M92jzUo",
+  "Build a Web Scraper":     "fqF9M92jzUo",
+  "Final Python Project":    "fqF9M92jzUo",
+  // ── JAVA - CodeWithHarry ─────────────────────────────────────
+  "What is Java?":           "ntLJmHOJ4xE",
+  "Java Setup & Hello World":"ntLJmHOJ4xE",
+  "Java Variables":          "ntLJmHOJ4xE",
+  "Java Data Types":         "ntLJmHOJ4xE",
+  "Java Operators":          "ntLJmHOJ4xE",
+  "Java If-Else":            "ntLJmHOJ4xE",
+  "Java Loops":              "ntLJmHOJ4xE",
+  "Java Arrays":             "ntLJmHOJ4xE",
+  "Java Methods":            "ntLJmHOJ4xE",
+  "Java OOP - Classes":      "ntLJmHOJ4xE",
+  "Java Inheritance":        "ntLJmHOJ4xE",
+  "Java Polymorphism":       "ntLJmHOJ4xE",
+  "Java Interfaces":         "ntLJmHOJ4xE",
+  "Java Exception Handling": "ntLJmHOJ4xE",
+  "Java Collections":        "ntLJmHOJ4xE",
+  "Java Generics":           "ntLJmHOJ4xE",
+  "Java File I/O":           "ntLJmHOJ4xE",
+  "Java Threads":            "ntLJmHOJ4xE",
+  "Java Streams":            "ntLJmHOJ4xE",
+  "Java Lambda":             "ntLJmHOJ4xE",
+  "Build a Bank App":        "ntLJmHOJ4xE",
+  "Build a Student DB":      "ntLJmHOJ4xE",
+  "Final Java Project":      "ntLJmHOJ4xE",
+  // ── JAVASCRIPT - CodeWithHarry ───────────────────────────────
+  "What is JavaScript?":     "ER9SspLe4Hg",
+  "Variables (let/const/var)":"ER9SspLe4Hg",
+  "JS Data Types":           "ER9SspLe4Hg",
+  "Template Literals":       "ER9SspLe4Hg",
+  "JS Functions":            "ER9SspLe4Hg",
+  "Arrow Functions":         "ER9SspLe4Hg",
+  "Arrays":                  "ER9SspLe4Hg",
+  "Objects":                 "ER9SspLe4Hg",
+  "Destructuring":           "ER9SspLe4Hg",
+  "Spread & Rest":           "ER9SspLe4Hg",
+  "DOM Manipulation":        "ER9SspLe4Hg",
+  "Event Listeners":         "ER9SspLe4Hg",
+  "Fetch API":               "ER9SspLe4Hg",
+  "Promises":                "ER9SspLe4Hg",
+  "Async Await":             "ER9SspLe4Hg",
+  "Error Handling":          "ER9SspLe4Hg",
+  "ES6+ Features":           "ER9SspLe4Hg",
+  "Local Storage":           "ER9SspLe4Hg",
+  "Build a Todo App (JS)":   "ER9SspLe4Hg",
+  "Build a Weather App":     "ER9SspLe4Hg",
+  "Final JS Project":        "ER9SspLe4Hg",
+  // ── C++ - CodeWithHarry ──────────────────────────────────────
+  "What is C++?":            "e7sAf4SbS_g",
+  "C++ Setup":               "e7sAf4SbS_g",
+  "C++ Variables":           "e7sAf4SbS_g",
+  "C++ Data Types":          "e7sAf4SbS_g",
+  "C++ Operators":           "e7sAf4SbS_g",
+  "C++ If-Else":             "e7sAf4SbS_g",
+  "C++ Loops":               "e7sAf4SbS_g",
+  "C++ Arrays":              "e7sAf4SbS_g",
+  "C++ Functions":           "e7sAf4SbS_g",
+  "C++ Pointers":            "e7sAf4SbS_g",
+  "C++ References":          "e7sAf4SbS_g",
+  "C++ OOP":                 "e7sAf4SbS_g",
+  "C++ Inheritance":         "e7sAf4SbS_g",
+  "C++ Polymorphism":        "e7sAf4SbS_g",
+  "C++ STL":                 "e7sAf4SbS_g",
+  "C++ File Handling":       "e7sAf4SbS_g",
+  "Build a Calculator (C++)":"e7sAf4SbS_g",
+  "Final C++ Project":       "e7sAf4SbS_g",
   // ── DSA ──────────────────────────────────────────────────────
   "Arrays & Big O":"BBpAmxU_NQo","Two Pointers":"On03HWe2tZM","Sliding Window":"p-ss2JNDHLo",
   "Prefix Sum":"7pJo_rM0z_s","Strings":"Mj_Pyh77sXE","Linked List":"oiW79L8VYXk",
@@ -126,25 +127,29 @@ const YT: Record<string,string> = {
   "Heap":"0wPlzMU-k00","Graphs":"09_LlHjoEiY","Bubble Sort":"xli-hn4wrWA","Merge Sort":"TzeBrDU-JaY",
   "Quick Sort":"Hoixgm4-P4M","Binary Search":"P3YID7pr48E","Dynamic Programming":"oBt53YbR9Kk",
   "Greedy Algorithms":"HzeK7g8cD0Y","Backtracking":"DKCbsiDBN3c",
-  // ── SQL & WEB ─────────────────────────────────────────────────
+  // ── SQL ──────────────────────────────────────────────────────
   "What is SQL?":"HXV3zeQKqGY","SELECT & FROM":"HXV3zeQKqGY","WHERE & AND/OR":"HXV3zeQKqGY",
   "ORDER BY & LIMIT":"HXV3zeQKqGY","INSERT UPDATE DELETE":"gbMSNAOHMV4","JOINS":"9yeOJ0ZMUYw",
   "GROUP BY & HAVING":"7cjTqE4GwFE","Subqueries":"K1BKeugY5Xg","Window Functions":"Ww71knvVu_k",
   "Indexes":"fsG1XaZEa78","Views & CTEs":"K74_FNs6ox8","Transactions":"P80Js_qClUE",
   "Stored Procedures":"Sggdhd2PiNg","SQL Project":"p3qvj9hO_Bo",
-  "HTML Basics":"UB1O30fR-EE","HTML Forms":"fNcJuPIZ2BE","Semantic HTML":"kGW8Al_cga4",
-  "CSS Basics":"1PnVor36_40","Box Model":"rIO5326FgPE","Flexbox":"JJSoEo8JSnc",
-  "CSS Grid":"EiNiSFIPIQE","Responsive Design":"srvUrASNj0s","JavaScript for Web":"PkZNo7MFNFg",
-  "DOM & Events":"y17RuWkWdn8","What is React?":"SqcY0GlETPk","React Components":"Ke90Tje7VS0",
-  "React Props & State":"O6P86uwfdR0","React Hooks":"cF2lQ_gZeA8","React Router":"Law7wfdg_ls",
-  "API Integration":"T3Px88x_PsI","Node.js Basics":"TlB_eWDSMt4","Express.js":"L72fhnn2tj0",
-  "MongoDB Basics":"ofme2o29wY8","Build Full Stack App":"mrHNSanmqQ4","Deploy Your App":"l134cBALZGY",
-  "What is Git?":"USjZcfj8ckM","Git Installation":"USjZcfj8ckM","Git Branches":"e2IbNHi5ard",
+  // ── FULL STACK - CodeWithHarry ───────────────────────────────
+  "HTML Basics":"BsDoLVMnmZs","HTML Forms":"BsDoLVMnmZs","Semantic HTML":"BsDoLVMnmZs",
+  "CSS Basics":"Edsxf_NBFrw","Box Model":"Edsxf_NBFrw","Flexbox":"Edsxf_NBFrw",
+  "CSS Grid":"Edsxf_NBFrw","Responsive Design":"Edsxf_NBFrw",
+  "JavaScript for Web":"ER9SspLe4Hg","DOM & Events":"ER9SspLe4Hg",
+  "What is React?":"RGKi6LSPDLU","React Components":"RGKi6LSPDLU","React Props & State":"RGKi6LSPDLU",
+  "React Hooks":"RGKi6LSPDLU","React Router":"RGKi6LSPDLU","API Integration":"RGKi6LSPDLU",
+  "Node.js Basics":"BLl32FvcdVM","Express.js":"BLl32FvcdVM","MongoDB Basics":"BLl32FvcdVM",
+  "Build Full Stack App":"BLl32FvcdVM","Deploy Your App":"BLl32FvcdVM",
+  // ── OTHERS ───────────────────────────────────────────────────
+  "What is Git?":"q8EevlEpQ2A","Git Installation":"q8EevlEpQ2A","Git Branches":"q8EevlEpQ2A",
   "What is Docker?":"rOTqprHv1YE","Docker Containers":"rOTqprHv1YE",
   "What is Machine Learning?":"ukzFI9rgwfU","What is Data Science?":"X3paOmcrTjQ",
   "What is NumPy?":"QUT1VHiLrmI","What is Pandas?":"vmEHCKcdykY",
-  "What is C?":"87SH2Cn0s9A","C Setup":"87SH2Cn0s9A","Variables in C":"87SH2Cn0s9A",
+  "What is C?":"ZSPZob_VJGc","C Setup":"ZSPZob_VJGc","Variables in C":"ZSPZob_VJGc",
 };
+
 
 function getYT(l: string) {
   return YT[l] || 'rfscVS0vtbw';
@@ -765,55 +770,23 @@ function LessonPage({ course, onBack }: { course:any; onBack:()=>void }) {
           {/* VIDEO — Auto redirect to AI Teacher */}
           {tab==='video' && (
             <div style={{animation:'fade-in 0.3s ease',display:'flex',flexDirection:'column',gap:'12px'}}>
-              {/* AI Video Lecture */}
-              {!teacherText && !teacherLoading
-                ? <div style={{textAlign:'center',padding:'32px'}}>
-                    <button onClick={loadTeacher}
-                      style={{padding:'14px 32px',borderRadius:'14px',border:'none',background:`linear-gradient(135deg,${ACC},${ACC}bb)`,color:'#fff',fontSize:'15px',fontWeight:800,cursor:'pointer',boxShadow:`0 4px 24px ${ACC}44`}}>
-                      ▶ Start Video Lecture
-                    </button>
-                    <p style={{color:'#334155',fontSize:'12px',marginTop:'12px'}}>AI will explain {lesson} with examples</p>
-                  </div>
-                : teacherLoading
-                ? <div style={{textAlign:'center',padding:'40px',color:'#334155'}}>
-                    <div style={{width:28,height:28,border:`3px solid ${ACC}`,borderTopColor:'transparent',borderRadius:'50%',animation:'spin 0.8s linear infinite',margin:'0 auto 14px'}}/>
-                    Preparing your video lecture...
-                  </div>
-                : <div style={{background:'linear-gradient(135deg,#0f172a,#1e1b4b)',borderRadius:'16px',border:`1px solid ${ACC}33`,overflow:'hidden'}}>
-                    {/* Video-style header */}
-                    <div style={{background:`linear-gradient(135deg,${ACC}22,transparent)`,padding:'16px 20px',borderBottom:`1px solid ${ACC}22`,display:'flex',alignItems:'center',gap:'10px'}}>
-                      <div style={{width:36,height:36,borderRadius:'50%',background:`linear-gradient(135deg,${ACC},${ACC}88)`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'18px'}}>🤖</div>
-                      <div>
-                        <div style={{color:'#fff',fontWeight:800,fontSize:'13px'}}>AI Video Lecture</div>
-                        <div style={{color:ACC,fontSize:'11px'}}>{lesson} · {course.title}</div>
-                      </div>
-                      <div style={{marginLeft:'auto',display:'flex',alignItems:'center',gap:'6px',background:'rgba(239,68,68,0.15)',border:'1px solid rgba(239,68,68,0.3)',padding:'4px 10px',borderRadius:'20px'}}>
-                        <div style={{width:6,height:6,borderRadius:'50%',background:'#ef4444',animation:'pulse 1.5s ease-in-out infinite'}}/>
-                        <span style={{color:'#f87171',fontSize:'10px',fontWeight:700}}>LIVE</span>
-                      </div>
-                    </div>
-                    {/* Content */}
-                    <div style={{padding:'20px',color:'#e2e8f0',fontSize:'13px',lineHeight:1.85,whiteSpace:'pre-wrap',maxHeight:'420px',overflowY:'auto'}}>
-                      {teacherText}
-                    </div>
-                    {/* Controls */}
-                    <div style={{padding:'12px 20px',borderTop:`1px solid ${ACC}22`,display:'flex',gap:'8px',justifyContent:'space-between',alignItems:'center'}}>
-                      <button onClick={loadTeacher} style={{display:'flex',alignItems:'center',gap:'5px',padding:'6px 13px',borderRadius:'8px',border:`1px solid ${ACC}33`,background:`${ACC}11`,color:ACC,fontSize:'11px',fontWeight:600,cursor:'pointer'}}>
-                        🔄 Replay
-                      </button>
-                      <div style={{display:'flex',gap:'6px'}}>
-                        <button onClick={()=>setTab('code')} style={{padding:'6px 13px',borderRadius:'8px',border:'1px solid rgba(16,185,129,0.3)',background:'rgba(16,185,129,0.08)',color:'#34d399',fontSize:'11px',fontWeight:700,cursor:'pointer'}}>
-                          ⌨️ Code & Run
-                        </button>
-                        <button onClick={markDone} style={{padding:'6px 13px',borderRadius:'8px',border:'none',background:`linear-gradient(135deg,${ACC},${ACC}99)`,color:'#fff',fontSize:'11px',fontWeight:700,cursor:'pointer'}}>
-                          ✓ Mark Done
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-              }
-              <div style={{fontSize:'11px',color:'#334155',padding:'8px 12px',borderRadius:'8px',background:'rgba(99,102,241,0.06)',border:'1px solid rgba(99,102,241,0.12)'}}>
-                💡 <strong style={{color:'#c7d2fe'}}>Learning Path:</strong> Video Lecture → Code & Run → Quiz → Mark Done ✅
+              {/* YouTube Embed - CodeWithHarry */}
+              <div style={{position:'relative',paddingBottom:'56.25%',height:0,borderRadius:'14px',overflow:'hidden',border:'1px solid rgba(255,255,255,0.08)',background:'#000'}}>
+                <iframe
+                  key={lesson}
+                  src={`https://www.youtube-nocookie.com/embed/${getYT(lesson)}?rel=0&modestbranding=1&showinfo=0`}
+                  title={lesson}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  style={{position:'absolute',top:0,left:0,width:'100%',height:'100%',border:'none'}}
+                />
+              </div>
+              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:'8px'}}>
+                <p style={{fontSize:'11px',color:'#475569',margin:0}}>💡 Watch → Code & Run → Quiz → Mark Done ✅</p>
+                <div style={{display:'flex',gap:'6px'}}>
+                  <button onClick={()=>setTab('teacher')} style={{padding:'5px 12px',borderRadius:'7px',border:'none',background:`${ACC}22`,color:ACC,fontSize:'11px',fontWeight:700,cursor:'pointer'}}>🤖 AI Teacher</button>
+                  <button onClick={()=>setTab('code')} style={{padding:'5px 12px',borderRadius:'7px',border:'1px solid rgba(16,185,129,0.3)',background:'rgba(16,185,129,0.08)',color:'#34d399',fontSize:'11px',fontWeight:700,cursor:'pointer'}}>⌨️ Code & Run</button>
+                </div>
               </div>
             </div>
           )}
