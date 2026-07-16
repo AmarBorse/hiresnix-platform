@@ -781,6 +781,14 @@ const downloadLOR = asyncHandler(async (req, res) => {
   }
 
   const safeStudentName = enrollment.studentName || 'Student';
+
+  // ── LOR ID: generate once and save permanently ───────────────
+  let lor_id = enrollment.lor_id;
+  if (!lor_id) {
+    lor_id = `HRX-LOR-${new Date().getFullYear()}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
+    await enrollment.update({ lor_id }).catch(() => {});
+  }
+
   const doc = new PDFDocument({ size: 'A4', margin: 0 });
   res.setHeader('Content-Type', 'application/pdf');
   res.setHeader('Content-Disposition', `attachment; filename="lor-${safeStudentName}.pdf"`);
@@ -794,6 +802,7 @@ const downloadLOR = asyncHandler(async (req, res) => {
 
   doc.moveDown(1);
   doc.fillColor('#475569').fontSize(10).font('Helvetica').text(`Date: ${date}`, 40);
+  doc.fillColor('#64748b').fontSize(9).font('Helvetica').text(`LOR ID: ${lor_id}`, 40);
   doc.moveDown(0.5);
   doc.fillColor('#1e293b').fontSize(14).font('Helvetica-Bold').text('To Whomsoever It May Concern,', 40);
   doc.moveDown(0.5);
@@ -830,6 +839,22 @@ const downloadLOR = asyncHandler(async (req, res) => {
   const W = doc.page.width;
   signatureLine(doc, 'Mr.Jayesh Badgujar', 'Program Director', 40, sigY, getSignaturePath('Director.png'), 1.6);
   signatureLine(doc, 'Mr.A S Borse', `Founder & CEO, ${COMPANY.name}`, W - 200, sigY, getSignaturePath('ceo.png'), 1.6);
+
+  // QR Code — bottom center
+  try {
+    const lorVerifyUrl = `https://www.hiresnix.co.in/verification/recommendation-letter/${lor_id}`;
+    const qrBuf = await QRCode.toBuffer(lorVerifyUrl, { errorCorrectionLevel: 'M', margin: 1, width: 100 });
+    const qrSize = 65;
+    const qrX = W / 2 - qrSize / 2;
+    const qrY = sigY + 85;
+    doc.roundedRect(qrX - 5, qrY - 5, qrSize + 10, qrSize + 24, 4)
+       .fillAndStroke('#ffffff', '#1e3a8a');
+    doc.image(qrBuf, qrX, qrY, { width: qrSize });
+    doc.fillColor('#1e293b').fontSize(6.5).font('Helvetica-Bold')
+       .text('Scan to Verify', qrX - 3, qrY + qrSize + 3, { width: qrSize + 6, align: 'center' });
+    doc.fillColor('#64748b').fontSize(5).font('Helvetica')
+       .text(lor_id, qrX - 3, qrY + qrSize + 13, { width: qrSize + 6, align: 'center' });
+  } catch(e) {}
 
   pdfFooter(doc);
   doc.end();
@@ -1436,24 +1461,12 @@ const verifyRecommendationLetter = asyncHandler(async (req, res) => {
 
   let enrollment = null;
 
-  // Try lorId format first (HRX-LOR-YYYY-XXXXXX)
+  // Try lor_id format (HRX-LOR-YYYY-XXXXXX)
   if (recommendationId.startsWith('HRX-LOR-')) {
     enrollment = await InternshipEnrollment.findOne({
-      where: {
-        [Op.or]: [
-          { lorId: recommendationId },
-          { lor_id: recommendationId },
-        ],
-        status: 'Completed'
-      },
+      where: { lor_id: recommendationId, status: 'Completed' },
       include: [{ model: Domain, as: 'domain' }],
-    }).catch(async () => {
-      // If lor_id column doesn't exist, try just lorId
-      return InternshipEnrollment.findOne({
-        where: { lorId: recommendationId, status: 'Completed' },
-        include: [{ model: Domain, as: 'domain' }],
-      });
-    });
+    }).catch(() => null);
   }
 
   // Fallback: numeric enrollment ID
@@ -1476,7 +1489,7 @@ const verifyRecommendationLetter = asyncHandler(async (req, res) => {
     valid: true,
     data: {
       documentType: 'Letter of Recommendation',
-      documentId: enrollment.lorId || `LOR-${enrollment.id}`,
+      documentId: enrollment.lor_id || `LOR-${enrollment.id}`,
       studentName: enrollment.studentName,
       issueDate: enrollment.completedAt || enrollment.updatedAt || enrollment.createdAt,
       internshipDomain: enrollment.domain?.name || 'Internship Program',

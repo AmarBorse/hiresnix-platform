@@ -68,6 +68,8 @@ const InternshipEnrollment = sequelize.define('InternshipEnrollment', {
   instStudentId:   { type: DataTypes.BIGINT, allowNull: true },
   institutionId:   { type: DataTypes.BIGINT, allowNull: true },
   institutionName: { type: DataTypes.STRING(200), allowNull: true },
+  // LOR verification ID
+  lor_id:          { type: DataTypes.STRING(50), allowNull: true, unique: true },
 }, { tableName: 'ip_enrollments', timestamps: true });
 
 // ── INTERNSHIP RESOURCE (domain-wise) ─────────────────────────────
