@@ -784,8 +784,13 @@ const downloadLOR = asyncHandler(async (req, res) => {
 
   // Generate stable LOR ID
   await ensureOfferDateColumns();
-  const lorId = enrollment.lorId || `HRX-LOR-${new Date().getFullYear()}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
-  if (!enrollment.lorId) { await enrollment.update({ lorId }).catch(() => {}); }
+  const existingLorId = enrollment.lorId || enrollment.dataValues?.lorId || enrollment.dataValues?.lor_id;
+  const lorId = existingLorId || `HRX-LOR-${new Date().getFullYear()}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
+  if (!existingLorId) {
+    try { await enrollment.update({ lorId }); } catch(e) {
+      try { await enrollment.update({ lor_id: lorId }); } catch(e2) {}
+    }
+  }
 
   const doc = new PDFDocument({ size: 'A4', margin: 0 });
   res.setHeader('Content-Type', 'application/pdf');
@@ -841,7 +846,7 @@ const downloadLOR = asyncHandler(async (req, res) => {
   // QR Code — bottom center for verification
   try {
     const lorVerifyUrl = `https://www.hiresnix.co.in/verification/recommendation-letter/${lorId}`;
-    const qrBuf = await QRCode.toBuffer(lorVerifyUrl, { errorCorrectionLevel: 'H', margin: 1, width: 120 });
+    const qrBuf = await QRCode.toBuffer(lorVerifyUrl, { errorCorrectionLevel: 'M', margin: 1, width: 80 });
     const qrSize = 65;
     const qrX = W / 2 - qrSize / 2;
     const qrY = sigY + 80;
@@ -1461,8 +1466,20 @@ const verifyRecommendationLetter = asyncHandler(async (req, res) => {
   // Try lorId format first (HRX-LOR-YYYY-XXXXXX)
   if (recommendationId.startsWith('HRX-LOR-')) {
     enrollment = await InternshipEnrollment.findOne({
-      where: { lorId: recommendationId, status: 'Completed' },
+      where: {
+        [Op.or]: [
+          { lorId: recommendationId },
+          { lor_id: recommendationId },
+        ],
+        status: 'Completed'
+      },
       include: [{ model: Domain, as: 'domain' }],
+    }).catch(async () => {
+      // If lor_id column doesn't exist, try just lorId
+      return InternshipEnrollment.findOne({
+        where: { lorId: recommendationId, status: 'Completed' },
+        include: [{ model: Domain, as: 'domain' }],
+      });
     });
   }
 
