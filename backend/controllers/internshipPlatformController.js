@@ -781,17 +781,6 @@ const downloadLOR = asyncHandler(async (req, res) => {
   }
 
   const safeStudentName = enrollment.studentName || 'Student';
-
-  // Generate stable LOR ID
-  await ensureOfferDateColumns();
-  const existingLorId = enrollment.lorId || enrollment.dataValues?.lorId || enrollment.dataValues?.lor_id;
-  const lorId = existingLorId || `HRX-LOR-${new Date().getFullYear()}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
-  if (!existingLorId) {
-    try { await enrollment.update({ lorId }); } catch(e) {
-      try { await enrollment.update({ lor_id: lorId }); } catch(e2) {}
-    }
-  }
-
   const doc = new PDFDocument({ size: 'A4', margin: 0 });
   res.setHeader('Content-Type', 'application/pdf');
   res.setHeader('Content-Disposition', `attachment; filename="lor-${safeStudentName}.pdf"`);
@@ -805,7 +794,6 @@ const downloadLOR = asyncHandler(async (req, res) => {
 
   doc.moveDown(1);
   doc.fillColor('#475569').fontSize(10).font('Helvetica').text(`Date: ${date}`, 40);
-  doc.fillColor('#475569').fontSize(10).font('Helvetica').text(`LOR ID: ${lorId}`, 40);
   doc.moveDown(0.5);
   doc.fillColor('#1e293b').fontSize(14).font('Helvetica-Bold').text('To Whomsoever It May Concern,', 40);
   doc.moveDown(0.5);
@@ -843,25 +831,10 @@ const downloadLOR = asyncHandler(async (req, res) => {
   signatureLine(doc, 'Mr.Jayesh Badgujar', 'Program Director', 40, sigY, getSignaturePath('Director.png'), 1.6);
   signatureLine(doc, 'Mr.A S Borse', `Founder & CEO, ${COMPANY.name}`, W - 200, sigY, getSignaturePath('ceo.png'), 1.6);
 
-  // QR Code — bottom center for verification
-  try {
-    const lorVerifyUrl = `https://www.hiresnix.co.in/verification/recommendation-letter/${lorId}`;
-    const qrBuf = await QRCode.toBuffer(lorVerifyUrl, { errorCorrectionLevel: 'M', margin: 1, width: 80 });
-    const qrSize = 65;
-    const qrX = W / 2 - qrSize / 2;
-    const qrY = sigY + 80;
-    doc.roundedRect(qrX - 5, qrY - 5, qrSize + 10, qrSize + 24, 4)
-       .fillAndStroke('#ffffff', '#1e3a8a');
-    doc.image(qrBuf, qrX, qrY, { width: qrSize });
-    doc.fillColor('#1e293b').fontSize(6.5).font('Helvetica-Bold')
-       .text('Scan to Verify', qrX - 3, qrY + qrSize + 3, { width: qrSize + 6, align: 'center' });
-    doc.fillColor('#64748b').fontSize(5.5).font('Helvetica')
-       .text(lorId, qrX - 3, qrY + qrSize + 12, { width: qrSize + 6, align: 'center' });
-  } catch(e) {}
-
   pdfFooter(doc);
   doc.end();
 });
+
 
 const generateOfferLetter = asyncHandler(async (req, res) => {
   const { applicationId, candidateName, role, duration, joiningDate, endDate, offerLetterDate, salary, stipend } = req.body;
