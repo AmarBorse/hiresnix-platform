@@ -234,18 +234,29 @@ const LANG_CFG: Record<string,{lang:string,ver:string,ext:string,starter:string}
 async function runCode(language: string, code: string) {
   const cfg = LANG_CFG[language] || LANG_CFG.python;
   try {
-    // First get available runtimes to find correct version
-    const runtimes = await fetch('https://emkc.org/api/v2/piston/runtimes')
-      .then(r=>r.json()).catch(()=>[]);
-    const runtime = runtimes.find((r:any)=>r.language===cfg.lang);
-    const version = runtime?.version || cfg.ver;
-
-    const r = await fetch('https://emkc.org/api/v2/piston/execute', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({ language:cfg.lang, version, files:[{name:`main.${cfg.ext}`,content:code}], run_timeout:10000 }),
+    // Use Glot.io — free code execution API
+    const GLOT_LANG: Record<string,string> = {
+      python:'python', javascript:'javascript', java:'java', 'c++':'cpp', c:'c'
+    };
+    const glotLang = GLOT_LANG[cfg.lang] || 'python';
+    const fileName = `main.${cfg.ext}`;
+    const r = await fetch(`https://glot.io/api/run/${glotLang}/latest`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ files:[{ name: fileName, content: code }] }),
     });
     const d = await r.json();
-    return { out: d?.run?.stdout || d?.run?.stderr || '(no output)', err: !!d?.run?.stderr && !d?.run?.stdout };
+    if(d?.stdout !== undefined || d?.stderr !== undefined) {
+      const out = d.stdout || d.stderr || '(no output)';
+      return { out, err: !!d.stderr && !d.stdout };
+    }
+    // Fallback to Piston if Glot fails
+    const pr = await fetch('https://emkc.org/api/v2/piston/execute', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ language:cfg.lang, version:cfg.ver, files:[{name:fileName,content:code}], run_timeout:10000 }),
+    });
+    const pd = await pr.json();
+    return { out: pd?.run?.stdout || pd?.run?.stderr || '(no output)', err: !!pd?.run?.stderr && !pd?.run?.stdout };
   } catch (e:any) { return { out:`Error: ${e.message}`, err:true }; }
 }
 
