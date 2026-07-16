@@ -151,8 +151,26 @@ const YT: Record<string,string> = {
 };
 
 
+// Course to Harvard/CS50 playlist mapping
+const COURSE_PLAYLIST: Record<string,string> = {
+  python:     'PLhQjrBD2T382_R182iC2gNZI9HsWTtK3', // CS50P - Harvard Python
+  javascript: 'PLhQjrBD2T3837t83RFsI69e5mCX2e1NI0', // CS50W Web
+  java:       'PLhQjrBD2T380UU2uo0mzFGVMfaOcbGxOX', // CS50x - covers Java
+  cpp:        'PLhQjrBD2T380UU2uo0mzFGVMfaOcbGxOX', // CS50x
+  dsa:        'PLhQjrBD2T380UU2uo0mzFGVMfaOcbGxOX', // CS50x DSA
+  sql:        'PLhQjrBD2T3837t83RFsI69e5mCX2e1NI0', // CS50W has SQL
+  webdev:     'PLhQjrBD2T3837t83RFsI69e5mCX2e1NI0', // CS50W
+  datascience:'PLhQjrBD2T382_R182iC2gNZI9HsWTtK3', // CS50P
+  ml:         'PLhQjrBD2T382_R182iC2gNZI9HsWTtK3', // CS50P
+  cybersecurity:'PLhQjrBD2T3837t83RFsI69e5mCX2e1NI0',
+};
+
 function getYT(l: string) {
-  return YT[l] || 'rfscVS0vtbw';
+  return YT[l] || 'gfDE2a7MKjA';
+}
+
+function getCoursePlaylist(courseId: string) {
+  return COURSE_PLAYLIST[courseId] || COURSE_PLAYLIST.python;
 }
 
 // ── Courses ───────────────────────────────────────────────────────
@@ -770,12 +788,16 @@ function LessonPage({ course, onBack }: { course:any; onBack:()=>void }) {
           {/* VIDEO — Auto redirect to AI Teacher */}
           {tab==='video' && (
             <div style={{animation:'fade-in 0.3s ease',display:'flex',flexDirection:'column',gap:'12px'}}>
-              {/* YouTube Embed - CodeWithHarry */}
+              {/* Harvard CS50 Playlist Embed */}
+              <div style={{background:'rgba(99,102,241,0.08)',borderRadius:'10px',padding:'8px 12px',marginBottom:'4px',display:'flex',alignItems:'center',gap:'8px',border:'1px solid rgba(99,102,241,0.2)'}}>
+                <span style={{fontSize:'16px'}}>🎓</span>
+                <span style={{color:'#c7d2fe',fontSize:'12px',fontWeight:600}}>Harvard University — Official Free Course</span>
+              </div>
               <div style={{position:'relative',paddingBottom:'56.25%',height:0,borderRadius:'14px',overflow:'hidden',border:'1px solid rgba(255,255,255,0.08)',background:'#000'}}>
                 <iframe
-                  key={lesson}
-                  src={`https://www.youtube-nocookie.com/embed/${getYT(lesson)}?rel=0&modestbranding=1&showinfo=0`}
-                  title={lesson}
+                  key={course.id}
+                  src={`https://www.youtube-nocookie.com/embed/videoseries?list=${getCoursePlaylist(course.id)}&rel=0&modestbranding=1`}
+                  title={`${course.title} - Harvard CS50`}
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
                   style={{position:'absolute',top:0,left:0,width:'100%',height:'100%',border:'none'}}
