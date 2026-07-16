@@ -234,13 +234,19 @@ const LANG_CFG: Record<string,{lang:string,ver:string,ext:string,starter:string}
 async function runCode(language: string, code: string) {
   const cfg = LANG_CFG[language] || LANG_CFG.python;
   try {
+    // First get available runtimes to find correct version
+    const runtimes = await fetch('https://emkc.org/api/v2/piston/runtimes')
+      .then(r=>r.json()).catch(()=>[]);
+    const runtime = runtimes.find((r:any)=>r.language===cfg.lang);
+    const version = runtime?.version || cfg.ver;
+
     const r = await fetch('https://emkc.org/api/v2/piston/execute', {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({ language:cfg.lang, version:cfg.ver, files:[{name:`main.${cfg.ext}`,content:code}], run_timeout:5000 }),
+      body:JSON.stringify({ language:cfg.lang, version, files:[{name:`main.${cfg.ext}`,content:code}], run_timeout:10000 }),
     });
     const d = await r.json();
     return { out: d?.run?.stdout || d?.run?.stderr || '(no output)', err: !!d?.run?.stderr && !d?.run?.stdout };
-  } catch (e:any) { return { out:`Network error: ${e.message}`, err:true }; }
+  } catch (e:any) { return { out:`Error: ${e.message}`, err:true }; }
 }
 
 // ── CATALOG ───────────────────────────────────────────────────────
