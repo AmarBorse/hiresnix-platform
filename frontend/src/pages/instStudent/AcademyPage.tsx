@@ -686,27 +686,26 @@ function LessonPage({ course, onBack }: { course:any; onBack:()=>void }) {
 
           {/* VIDEO */}
           {tab==='video' && (
-            <div style={{animation:'fade-in 0.3s ease'}}>
-              <div style={{borderRadius:'16px',border:`1px solid ${ACC}33`,padding:'36px 24px',textAlign:'center',background:`linear-gradient(135deg,${ACC}0d,rgba(15,23,42,0.98))`}}>
-                <div style={{fontSize:'64px',marginBottom:'16px'}}>🎬</div>
-                <h3 style={{color:'#fff',fontWeight:800,fontSize:'18px',marginBottom:'8px'}}>{lesson}</h3>
-                <p style={{color:'#64748b',fontSize:'13px',marginBottom:'28px',lineHeight:1.6}}>Watch the video lecture on YouTube for the best experience</p>
-                <div style={{display:'flex',gap:'12px',justifyContent:'center',flexWrap:'wrap',marginBottom:'20px'}}>
-                  <a href={`https://www.youtube.com/watch?v=${getYT(lesson)}`} target="_blank" rel="noopener noreferrer"
-                    style={{display:'inline-flex',alignItems:'center',gap:'8px',padding:'13px 28px',borderRadius:'12px',background:'#FF0000',color:'#fff',fontSize:'14px',fontWeight:800,textDecoration:'none',boxShadow:'0 4px 20px rgba(255,0,0,0.35)'}}>
-                    ▶ Watch on YouTube
-                  </a>
-                  <a href={`https://www.youtube.com/results?search_query=${encodeURIComponent(lesson+' '+course.title+' tutorial beginners')}`} target="_blank" rel="noopener noreferrer"
-                    style={{display:'inline-flex',alignItems:'center',gap:'8px',padding:'13px 24px',borderRadius:'12px',border:'1px solid rgba(255,255,255,0.15)',background:'rgba(255,255,255,0.06)',color:'#94a3b8',fontSize:'13px',fontWeight:600,textDecoration:'none'}}>
-                    🔍 Search More Videos
-                  </a>
-                </div>
-                <button onClick={()=>setTab('teacher')} style={{padding:'10px 24px',borderRadius:'10px',border:`1px solid ${ACC}33`,background:`${ACC}11`,color:ACC,fontSize:'13px',fontWeight:600,cursor:'pointer'}}>
-                  ✨ Learn with AI Teacher instead →
-                </button>
+            <div style={{animation:'fade-in 0.3s ease',display:'flex',flexDirection:'column',gap:'12px'}}>
+              {/* YouTube Embed */}
+              <div style={{position:'relative',paddingBottom:'56.25%',height:0,borderRadius:'14px',overflow:'hidden',border:`1px solid ${ACC}33`,background:'#000'}}>
+                <iframe
+                  key={lesson}
+                  src={`https://www.youtube.com/embed/${getYT(lesson)}?autoplay=0&rel=0&modestbranding=1`}
+                  title={lesson}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  style={{position:'absolute',top:0,left:0,width:'100%',height:'100%',border:'none'}}
+                />
               </div>
-              <div style={{marginTop:'12px',padding:'12px 16px',borderRadius:'12px',background:'rgba(99,102,241,0.07)',border:'1px solid rgba(99,102,241,0.15)',fontSize:'12px',color:'#94a3b8',lineHeight:1.6}}>
-                💡 <strong style={{color:'#c7d2fe'}}>Learning Path:</strong> Watch Video → AI Teacher → Code & Run → Quiz (20 Qs) → Mark Done ✅
+              {/* Bottom row */}
+              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:'8px'}}>
+                <div style={{fontSize:'12px',color:'#64748b'}}>
+                  💡 <strong style={{color:'#c7d2fe'}}>Learning Path:</strong> Watch Video → AI Teacher → Code & Run → Quiz → Mark Done ✅
+                </div>
+                <button onClick={()=>setTab('teacher')} style={{padding:'6px 14px',borderRadius:'8px',border:`1px solid ${ACC}33`,background:`${ACC}11`,color:ACC,fontSize:'11px',fontWeight:600,cursor:'pointer'}}>
+                  ✨ AI Teacher →
+                </button>
               </div>
             </div>
           )}
