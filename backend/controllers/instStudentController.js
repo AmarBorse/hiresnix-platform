@@ -408,10 +408,12 @@ const verifyAcademyCertificate = asyncHandler(async (req, res) => {
     });
     if (!student) return res.json({ success:true, valid:false });
 
-    const { supabase } = require('../config/supabase');
-    const { data: progress } = await supabase
-      .from('inst_academy_progress').select('*')
-      .eq('career_id', careerId).eq('course_id', courseId).maybeSingle();
+    const { sequelize } = require('../models');
+    const [rows] = await sequelize.query(
+      `SELECT * FROM inst_academy_progress WHERE career_id = :careerId AND course_id = :courseId LIMIT 1`,
+      { replacements: { careerId, courseId }, type: sequelize.QueryTypes.SELECT }
+    );
+    const progress = rows;
 
     if (!progress || (!progress.claimed_cert && (progress.xp||0) < 100))
       return res.json({ success:true, valid:false });
