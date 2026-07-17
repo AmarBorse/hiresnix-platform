@@ -157,11 +157,44 @@ export function AuthPage() {
   );
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-8" style={{ background: 'linear-gradient(135deg,#060910,#0f172a,#060910)', position: 'relative' }}>
-      <style>{`body { margin: 0; background-color: #060910; }`}</style>
-      <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(circle,rgba(59,130,246,0.07) 1px,transparent 1px)', backgroundSize: '30px 30px' }} />
-      <div style={{ position: 'absolute', top: -200, right: -100, width: 500, height: 500, borderRadius: '50%', background: 'rgba(59,130,246,0.06)', filter: 'blur(80px)' }} />
-      <div style={{ position: 'absolute', bottom: -150, left: -100, width: 400, height: 400, borderRadius: '50%', background: 'rgba(139,92,246,0.06)', filter: 'blur(80px)' }} />
+    <div className="min-h-screen flex items-center justify-center px-4 py-8" style={{ background: 'linear-gradient(135deg,#020617,#0f172a,#020617)', position: 'relative', overflow: 'hidden' }}>
+      <style>{`
+        body { margin: 0; background-color: #020617; }
+        @keyframes float { 0%,100%{transform:translateY(0) rotate(0deg);opacity:0.6} 50%{transform:translateY(-30px) rotate(180deg);opacity:0.2} }
+        @keyframes pulse-glow { 0%,100%{opacity:0.3;transform:scale(1)} 50%{opacity:0.7;transform:scale(1.1)} }
+        @keyframes drift { 0%{transform:translate(0,0)} 25%{transform:translate(30px,-20px)} 50%{transform:translate(-10px,40px)} 75%{transform:translate(-30px,-10px)} 100%{transform:translate(0,0)} }
+        @keyframes shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
+      `}</style>
+
+      {/* Animated gradient orbs */}
+      <div style={{ position:'absolute', top:'-10%', right:'-5%', width:500, height:500, borderRadius:'50%', background:'radial-gradient(circle,rgba(59,130,246,0.15),transparent 70%)', filter:'blur(40px)', animation:'drift 12s ease-in-out infinite' }} />
+      <div style={{ position:'absolute', bottom:'-10%', left:'-5%', width:450, height:450, borderRadius:'50%', background:'radial-gradient(circle,rgba(139,92,246,0.12),transparent 70%)', filter:'blur(40px)', animation:'drift 15s ease-in-out infinite reverse' }} />
+      <div style={{ position:'absolute', top:'40%', left:'20%', width:300, height:300, borderRadius:'50%', background:'radial-gradient(circle,rgba(16,185,129,0.08),transparent 70%)', filter:'blur(60px)', animation:'pulse-glow 6s ease-in-out infinite' }} />
+
+      {/* Grid pattern */}
+      <div style={{ position:'absolute', inset:0, backgroundImage:'radial-gradient(circle,rgba(59,130,246,0.08) 1px,transparent 1px)', backgroundSize:'28px 28px', opacity:0.6 }} />
+
+      {/* Floating particles */}
+      {[
+        {top:'10%',left:'15%',size:6,delay:'0s',color:'rgba(59,130,246,0.5)'},
+        {top:'20%',left:'80%',size:4,delay:'1s',color:'rgba(139,92,246,0.5)'},
+        {top:'60%',left:'10%',size:5,delay:'2s',color:'rgba(16,185,129,0.4)'},
+        {top:'75%',left:'85%',size:7,delay:'0.5s',color:'rgba(59,130,246,0.4)'},
+        {top:'40%',left:'90%',size:4,delay:'3s',color:'rgba(245,158,11,0.4)'},
+        {top:'85%',left:'40%',size:5,delay:'1.5s',color:'rgba(139,92,246,0.4)'},
+        {top:'5%',left:'50%',size:3,delay:'2.5s',color:'rgba(59,130,246,0.6)'},
+        {top:'50%',left:'5%',size:6,delay:'0.8s',color:'rgba(16,185,129,0.3)'},
+      ].map((p,i)=>(
+        <div key={i} style={{
+          position:'absolute', top:p.top, left:p.left,
+          width:p.size, height:p.size, borderRadius:'50%',
+          background:p.color, filter:'blur(1px)',
+          animation:`float ${4+i*0.5}s ease-in-out ${p.delay} infinite`
+        }}/>
+      ))}
+
+      {/* Top shimmer line */}
+      <div style={{ position:'absolute', top:0, left:0, right:0, height:2, background:'linear-gradient(90deg,transparent,rgba(59,130,246,0.6),rgba(139,92,246,0.6),transparent)', animation:'shimmer 3s linear infinite', backgroundSize:'200% 100%' }} />
 
       <div className="relative z-10 w-full max-w-md">
         <div className="text-center mb-7">
