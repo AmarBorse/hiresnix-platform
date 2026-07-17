@@ -43,7 +43,7 @@ const configs: Record<VerificationType, { label: string; idLabel: string; path: 
     placeholder: 'e.g. HX-CERT-504AAFC2',
   },
   'training-completion': {
-    label: '(Institution) Certificate of Training Completion',
+    label: '(Institution)Certificate of Training Completion',
     idLabel: 'Certificate ID',
     path: '/verification/training-completion',
     icon: FileCheck2,
@@ -53,6 +53,7 @@ const configs: Record<VerificationType, { label: string; idLabel: string; path: 
 };
 
 const normalizeType = (type?: string): VerificationType => {
+  if (type === 'training-completion') return 'training-completion';
   if (type === 'skill-assessment') return 'skill-assessment';
   if (type === 'course-completion') return 'course-completion';
   if (type === 'offer-letter') return 'offer-letter';
