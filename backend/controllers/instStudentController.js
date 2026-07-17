@@ -198,7 +198,7 @@ const downloadAcademyCertificate = asyncHandler(async (req, res) => {
 
   const courseName = COURSE_NAMES[courseId] || courseId;
   const certNo = `HXAC-${student.careerId}-${courseId.toUpperCase()}-${Date.now().toString(36).toUpperCase()}`.replace(/\s+/g, '');
-  const verifyUrl = `${process.env.CLIENT_URL || 'https://hiresnix.co.in'}/verify-academy/${certNo}`;
+  const verifyUrl = `${process.env.CLIENT_URL || 'https://hiresnix.co.in'}/verification/academy-certificate/${certNo}`;
   const issuedDate = new Date().toLocaleDateString('en-IN', { day:'numeric', month:'long', year:'numeric' });
 
   try {
@@ -387,65 +387,52 @@ const getAllAcademyProgress = asyncHandler(async (req, res) => {
 // ── Verify Academy Certificate (public) ──────────────────────────
 const verifyAcademyCertificate = asyncHandler(async (req, res) => {
   const { certNo } = req.params;
-  if (!certNo) { res.status(400); throw new Error('Certificate number required'); }
+  if (!certNo) return res.json({ success:true, valid:false });
 
-  // certNo format: HXAC-{careerId}-{COURSEID}-{HASH}
-  // e.g. HXAC-HX-2026-000005-PYTHON-MROKNCTS
-  // careerId always starts with HX- and has format HX-YYYY-NNNNNN (3 parts with dashes)
-  // So: parts[0]=HXAC, parts[1]=HX, parts[2]=2026, parts[3]=000005, parts[4]=COURSEID, parts[5]=HASH
   const clean = certNo.toUpperCase().replace(/\s+/g, '');
   const parts = clean.split('-');
-  if (parts[0] !== 'HXAC' || parts.length < 6) {
-    return res.json({ success: true, valid: false });
-  }
+  if (parts[0] !== 'HXAC' || parts.length < 6) return res.json({ success:true, valid:false });
 
   const careerId = `${parts[1]}-${parts[2]}-${parts[3]}`;
   const courseId = parts[4].toLowerCase();
-
   const COURSE_NAMES = {
-    python: 'Python Programming', javascript: 'JavaScript',
-    java: 'Java', cpp: 'C++', dsa: 'Data Structures & Algorithms',
-    sql: 'SQL & Databases', webdev: 'Full Stack Web Development',
+    python:'Python Programming',javascript:'JavaScript',java:'Java',
+    cpp:'C++',dsa:'Data Structures & Algorithms',sql:'SQL & Databases',webdev:'Full Stack Web Development',
   };
 
-  // Find student by careerId
-  const student = await InstitutionStudent.findOne({
-    where: { careerId },
-    attributes: ['id','name','email','careerId','department'],
-    include: [{ model: Institution, as: 'institution', attributes: ['institutionName','city','state'] }],
-  });
+  try {
+    const student = await InstitutionStudent.findOne({
+      where: { careerId },
+      attributes: ['id','name','email','careerId'],
+      include: [{ model: Institution, as: 'institution', attributes: ['institutionName'] }],
+    });
+    if (!student) return res.json({ success:true, valid:false });
 
-  if (!student) return res.json({ success: true, valid: false });
+    const { supabase } = require('../config/supabase');
+    const { data: progress } = await supabase
+      .from('inst_academy_progress').select('*')
+      .eq('career_id', careerId).eq('course_id', courseId).maybeSingle();
 
-  // Check if they completed this course
-  const { supabase } = require('../config/supabase');
-  const { data: progress } = await supabase
-    .from('inst_academy_progress')
-    .select('*')
-    .eq('career_id', careerId)
-    .eq('course_id', courseId)
-    .single();
+    if (!progress || (!progress.claimed_cert && (progress.xp||0) < 100))
+      return res.json({ success:true, valid:false });
 
-  if (!progress || (!progress.claimed_cert && (progress.xp || 0) < 500)) {
-    return res.json({ success: true, valid: false });
+    return res.json({
+      success:true, valid:true,
+      data: {
+        documentType: 'Hiresnix AI Academy Certificate',
+        documentId: clean,
+        studentName: student.name,
+        careerId: student.careerId,
+        course: COURSE_NAMES[courseId] || courseId,
+        institution: student.institution?.institutionName || 'Hiresnix AI Academy',
+        xp: progress.xp || 0,
+        issueDate: progress.last_active || new Date().toISOString(),
+      },
+    });
+  } catch(e) {
+    console.error('Verify academy error:', e.message);
+    return res.json({ success:true, valid:false });
   }
-
-  res.json({
-    success: true,
-    valid: true,
-    data: {
-      documentType: 'AI Academy Certificate',
-      documentId: certNo,
-      studentName: student.name,
-      careerId: student.careerId,
-      email: student.email,
-      course: COURSE_NAMES[courseId] || courseId,
-      institution: student.institution?.institutionName || 'Hiresnix',
-      xp: progress.xp || 0,
-      completedLessons: (progress.completed || []).length,
-      issueDate: progress.last_active || new Date().toISOString(),
-    },
-  });
 });
 
 module.exports = { login, getMe, getDashboard, getCertificates, changePassword, protectInstStudent, saveAcademyProgress, getAcademyProgress, getAllAcademyProgress, downloadAcademyCertificate, verifyAcademyCertificate };
