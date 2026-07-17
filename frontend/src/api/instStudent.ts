@@ -82,18 +82,24 @@ export const instStudentApi = {
   changePassword:  (currentPassword: string, newPassword: string) =>
                      instClient.put('/inst-student/change-password', { currentPassword, newPassword }).then(r => r.data),
   downloadCertPdf: (certId: string) => `${apiBaseUrl}/institution/certificates/${certId}/download-pdf`,
-  downloadAcademyCertPdf: async (courseId: string, courseName: string) => {
-    try {
-      const token = localStorage.getItem('hx_inst_student_token');
-      const res = await fetch(`${apiBaseUrl}/inst-student/academy/certificate/${courseId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url; a.download = `AI_Academy_${courseName.replace(/ /g,'_')}_Certificate.pdf`;
-      a.click(); URL.revokeObjectURL(url);
-    } catch (e) { console.error('Download failed', e); }
+  downloadAcademyCertPdf: (courseId: string, courseName: string) => {
+    const token = localStorage.getItem('hx_inst_student_token');
+    const apiBase = (import.meta as any).env?.VITE_API_URL || 'https://hirenix-backend.onrender.com/api';
+    const url = `${apiBase}/inst-student/academy/certificate/${courseId}`;
+    // Use fetch with auth header and proper blob handling
+    fetch(url, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.blob())
+      .then(blob => {
+        const blobUrl = URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = `AI_Academy_${courseName.replace(/ /g,'_')}_Certificate.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(blobUrl);
+      })
+      .catch(e => console.error('Download failed', e));
   },
 };
 
