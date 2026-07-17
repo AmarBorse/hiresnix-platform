@@ -1555,9 +1555,9 @@ function LessonPage({ course, onBack }: { course:any; onBack:()=>void }) {
                 {speaking && (
                   <button onClick={()=>{
                     if(window.speechSynthesis.paused){window.speechSynthesis.resume();setSpeaking(true);}
-                    else{window.speechSynthesis.pause();setSpeaking(false);}
+                    else{window.speechSynthesis.pause();window.speechSynthesis.cancel();setSpeaking(false);stopWave();}
                   }} style={{display:'flex',alignItems:'center',gap:'6px',padding:'7px 14px',borderRadius:'9px',border:'1px solid rgba(255,255,255,0.1)',background:'rgba(255,255,255,0.05)',color:'#fff',fontSize:'11px',fontWeight:600,cursor:'pointer'}}>
-                    {window.speechSynthesis?.paused ? '▶ Resume' : '⏸ Pause'}
+                    ⏸ Pause
                   </button>
                 )}
                 {!speaking && teacherText && (
