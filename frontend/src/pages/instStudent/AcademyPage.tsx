@@ -12,63 +12,84 @@ import { useInstStudentStore } from '../../store/useInstStudentStore';
 
 const GROQ = (import.meta as any).env.VITE_GROQ_API_KEY || '';
 
-// ── YouTube Video IDs ─────────────────────────────────────────────
+// ── YouTube Video IDs (freeCodeCamp & trusted channels) ──────────
 const YT: Record<string,string> = {
-  "What is Python?":"_uQrJ0TkZlc","Setting Up Python":"YYXdXT2l-Gg","Your First Program":"kqtD5dpn9C8",
-  "Variables & Data Types":"cQT33yu9pY8","Type Conversion":"HGOBQPFzWKo","Arithmetic Operators":"v5MR5JyNx_0",
-  "Comparison Operators":"7I9bw5W9WIU","Logical Operators":"ysKnOlKZQUM","If-Else Statements":"AWek49wXGzI",
-  "For Loops":"OnDr4J5BBOM","While Loops":"6iF8Xb7Z3wQ","Break & Continue":"yCZBnjF4_tU",
-  "Functions":"9Os0IGs9u7E","Parameters & Return":"9Os0IGs9u7E","Lambda Functions":"25ovCm9jKfA",
-  "Recursion":"ngCos3cnxi8","Decorators":"r7Dtus7N4pI","Lists":"Eaz5e6M33zE","Tuples":"bdgRT40UUBQ",
-  "Dictionaries":"daefaLgNkw0","Sets":"sBvaPopl4nE","List Comprehensions":"3dt4OGnU5sM",
-  "String Methods":"zdMEn_hZ-KI","File Handling":"Uh2ebFW8OYM","Exception Handling":"NIWwJbo-9_8",
-  "Classes & Objects":"JeznW0oahkk","Inheritance":"Cn7AkDb4pIU","Encapsulation":"JeznW0oahkk",
-  "Polymorphism":"JeznW0oahkk","Modules & Packages":"GxCXiSkm6no","pip & Libraries":"U8OtBUFVEFo",
-  "Generators":"bD05uGo_sVI","Regular Expressions":"K86ZkIY5FsM","Build a Calculator":"4OX49nLNPEE",
-  "Build a To-Do App":"DJGzR65BvqM","Build a Quiz Game":"zehwgTB0vV8","Build a Web Scraper":"ng2o98k983k",
-  "Final Python Project":"DLn3jOsNRVE","What is JavaScript?":"W6NZfCO5SIk","Variables (let/const/var)":"edlFjlzxkSI",
-  "JS Data Types":"qnDkYs2CnOA","Template Literals":"DG4obitDvUA","JS Functions":"xUI5Tsl2JpY",
-  "Arrow Functions":"h33Srr5J9nY","Arrays":"R8rmfD9Y5-0","Objects":"_js_NLAlIqI",
-  "Destructuring":"NIq3qLaHCIs","Spread & Rest":"iLx4ma8ZqvQ","DOM Manipulation":"y17RuWkWdn8",
-  "Event Listeners":"XF1_MlZ5l6M","Fetch API":"drK3bge5eBw","Promises":"DHvZLI3Mk4E",
-  "Async Await":"vn3tm0quoqE","Error Handling":"cFTFtuEQ-10","ES6+ Features":"NCwa_xi0Uuc",
-  "Local Storage":"AUOzvFzdIk4","Build a Todo App (JS)":"G0jO8kUrg-I","Build a Weather App":"MIYQR-Ybrn4",
-  "Final JS Project":"3PHXvlpOkf4","What is Java?":"eIrMbAQSU34","Java Setup & Hello World":"bm0OyhwFDuY",
-  "Java Variables":"EKzNKDhpbhQ","Java Data Types":"EKzNKDhpbhQ","Java Operators":"Jb39YMrxbSQ",
-  "Java If-Else":"HsDOeIiIVhQ","Java Loops":"efpFoHCKMN8","Java Arrays":"xzjZy-dHHLw",
-  "Java Methods":"vvanI8NsuiQ","Java OOP - Classes":"IUqKuGNasdM","Java Inheritance":"Zs342ePFvRI",
-  "Java Polymorphism":"jhDUxynEQRI","Java Interfaces":"GhslBwrRVVE","Java Exception Handling":"1XAfapkBQjk",
-  "Java Collections":"GdAon80-0GQ","Java Generics":"XMvznsY02Mk","Java File I/O":"ScUJx4aToet",
-  "Java Threads":"r_MbozD32NU","Java Streams":"Q93swyQbN80","Java Lambda":"gpIUfj3KaOc",
-  "Build a Bank App":"Nk5YFa4MVNE","Build a Student DB":"goFcQrFsivY","Final Java Project":"Nk5YFa4MVNE",
-  "What is C++?":"vLnPwxZdW4Y","C++ Setup":"vLnPwxZdW4Y","C++ Variables":"Rub-JsjMhWY",
-  "C++ Data Types":"Rub-JsjMhWY","C++ Operators":"E7F-xQlDiaw","C++ If-Else":"mG5KVEgCkEY",
-  "C++ Loops":"c6N_gkqDsS8","C++ Arrays":"zB9RI8_5ygM","C++ Functions":"-TkoO8Z07hI",
-  "C++ Pointers":"DTssVzssPV0","C++ References":"IzoFn3dfsPA","C++ OOP":"wN0x9eZLix4",
-  "C++ Inheritance":"X8nYM0wbdiM","C++ Polymorphism":"oIr-ik3Bg3A","C++ STL":"LyGlTmaWEPs",
-  "C++ File Handling":"EaHFhms1Shw","Build a Calculator (C++)":"BkBVnkl0NF4","Final C++ Project":"BkBVnkl0NF4",
-  "What is C?":"6KAMoVSvevo","C Setup":"6KAMoVSvevo","Variables in C":"6KAMoVSvevo",
-  "Arrays & Big O":"A37-3lflh8I","Two Pointers":"On03HWe2tZM","Sliding Window":"p-ss2JNDHLo",
-  "Prefix Sum":"7pJo_rM0z_s","Strings":"Mj_Pyh77sXE","Linked List":"oiW79L8VYXk",
-  "Stack":"I5lq6sCuABE","Queue":"nqXaPZi99JI","Binary Tree":"fAAZixBzIAI","BST":"cySVml6e_Fc",
-  "Heap":"0wPlzMU-k00","Graphs":"09_LlHjoEiY","Bubble Sort":"xli-hn4wrWA","Merge Sort":"TzeBrDU-JaY",
-  "Quick Sort":"Hoixgm4-P4M","Binary Search":"P3YID7pr48E","Dynamic Programming":"oBt53YbR9Kk",
-  "Greedy Algorithms":"HzeK7g8cD0Y","Backtracking":"DKCbsiDBN3c",
+  // PYTHON - freeCodeCamp full course chapters
+  "What is Python?":"rfscVS0vtbw","Setting Up Python":"rfscVS0vtbw","Your First Program":"rfscVS0vtbw",
+  "Variables & Data Types":"rfscVS0vtbw","Type Conversion":"rfscVS0vtbw","Arithmetic Operators":"rfscVS0vtbw",
+  "Comparison Operators":"rfscVS0vtbw","Logical Operators":"rfscVS0vtbw","If-Else Statements":"rfscVS0vtbw",
+  "For Loops":"rfscVS0vtbw","While Loops":"rfscVS0vtbw","Break & Continue":"rfscVS0vtbw",
+  "Functions":"rfscVS0vtbw","Parameters & Return":"rfscVS0vtbw","Lambda Functions":"rfscVS0vtbw",
+  "Recursion":"rfscVS0vtbw","Decorators":"rfscVS0vtbw","Lists":"rfscVS0vtbw","Tuples":"rfscVS0vtbw",
+  "Dictionaries":"rfscVS0vtbw","Sets":"rfscVS0vtbw","List Comprehensions":"rfscVS0vtbw",
+  "String Methods":"rfscVS0vtbw","File Handling":"rfscVS0vtbw","Exception Handling":"rfscVS0vtbw",
+  "Classes & Objects":"rfscVS0vtbw","Inheritance":"rfscVS0vtbw","Encapsulation":"rfscVS0vtbw",
+  "Polymorphism":"rfscVS0vtbw","Modules & Packages":"rfscVS0vtbw","pip & Libraries":"rfscVS0vtbw",
+  "Generators":"rfscVS0vtbw","Regular Expressions":"rfscVS0vtbw",
+  "Build a Calculator":"rfscVS0vtbw","Build a To-Do App":"rfscVS0vtbw","Build a Quiz Game":"rfscVS0vtbw",
+  "Build a Web Scraper":"rfscVS0vtbw","Final Python Project":"rfscVS0vtbw",
+
+  // JAVASCRIPT - freeCodeCamp
+  "What is JavaScript?":"PkZNo7MFNFg","Variables (let/const/var)":"PkZNo7MFNFg","JS Data Types":"PkZNo7MFNFg",
+  "Template Literals":"PkZNo7MFNFg","JS Functions":"PkZNo7MFNFg","Arrow Functions":"PkZNo7MFNFg",
+  "Arrays":"PkZNo7MFNFg","Objects":"PkZNo7MFNFg","Destructuring":"PkZNo7MFNFg",
+  "Spread & Rest":"PkZNo7MFNFg","DOM Manipulation":"PkZNo7MFNFg","Event Listeners":"PkZNo7MFNFg",
+  "Fetch API":"PkZNo7MFNFg","Promises":"PkZNo7MFNFg","Async Await":"PkZNo7MFNFg",
+  "Error Handling":"PkZNo7MFNFg","ES6+ Features":"PkZNo7MFNFg","Local Storage":"PkZNo7MFNFg",
+  "Build a Todo App (JS)":"PkZNo7MFNFg","Build a Weather App":"PkZNo7MFNFg","Final JS Project":"PkZNo7MFNFg",
+
+  // JAVA - freeCodeCamp
+  "What is Java?":"grEKMHGYyns","Java Setup & Hello World":"grEKMHGYyns","Java Variables":"grEKMHGYyns",
+  "Java Data Types":"grEKMHGYyns","Java Operators":"grEKMHGYyns","Java If-Else":"grEKMHGYyns",
+  "Java Loops":"grEKMHGYyns","Java Arrays":"grEKMHGYyns","Java Methods":"grEKMHGYyns",
+  "Java OOP - Classes":"grEKMHGYyns","Java Inheritance":"grEKMHGYyns","Java Polymorphism":"grEKMHGYyns",
+  "Java Interfaces":"grEKMHGYyns","Java Exception Handling":"grEKMHGYyns","Java Collections":"grEKMHGYyns",
+  "Java Generics":"grEKMHGYyns","Java File I/O":"grEKMHGYyns","Java Threads":"grEKMHGYyns",
+  "Java Streams":"grEKMHGYyns","Java Lambda":"grEKMHGYyns",
+  "Build a Bank App":"grEKMHGYyns","Build a Student DB":"grEKMHGYyns","Final Java Project":"grEKMHGYyns",
+
+  // C++ - freeCodeCamp
+  "What is C++?":"8jLOx1hD3_o","C++ Setup":"8jLOx1hD3_o","C++ Variables":"8jLOx1hD3_o",
+  "C++ Data Types":"8jLOx1hD3_o","C++ Operators":"8jLOx1hD3_o","C++ If-Else":"8jLOx1hD3_o",
+  "C++ Loops":"8jLOx1hD3_o","C++ Arrays":"8jLOx1hD3_o","C++ Functions":"8jLOx1hD3_o",
+  "C++ Pointers":"8jLOx1hD3_o","C++ References":"8jLOx1hD3_o","C++ OOP":"8jLOx1hD3_o",
+  "C++ Inheritance":"8jLOx1hD3_o","C++ Polymorphism":"8jLOx1hD3_o","C++ STL":"8jLOx1hD3_o",
+  "C++ File Handling":"8jLOx1hD3_o",
+  "Build a Calculator (C++)":"8jLOx1hD3_o","Final C++ Project":"8jLOx1hD3_o",
+
+  // DSA - freeCodeCamp
+  "Arrays & Big O":"pkYVOmU3MgA","Two Pointers":"pkYVOmU3MgA","Sliding Window":"pkYVOmU3MgA",
+  "Prefix Sum":"pkYVOmU3MgA","Strings":"pkYVOmU3MgA","Linked List":"pkYVOmU3MgA",
+  "Stack":"pkYVOmU3MgA","Queue":"pkYVOmU3MgA","Binary Tree":"pkYVOmU3MgA","BST":"pkYVOmU3MgA",
+  "Heap":"pkYVOmU3MgA","Graphs":"pkYVOmU3MgA","Bubble Sort":"pkYVOmU3MgA","Merge Sort":"pkYVOmU3MgA",
+  "Quick Sort":"pkYVOmU3MgA","Binary Search":"pkYVOmU3MgA","Dynamic Programming":"pkYVOmU3MgA",
+  "Greedy Algorithms":"pkYVOmU3MgA","Backtracking":"pkYVOmU3MgA",
+
+  // SQL - freeCodeCamp
   "What is SQL?":"HXV3zeQKqGY","SELECT & FROM":"HXV3zeQKqGY","WHERE & AND/OR":"HXV3zeQKqGY",
-  "ORDER BY & LIMIT":"HXV3zeQKqGY","INSERT UPDATE DELETE":"gbMSNAOHMV4","JOINS":"9yeOJ0ZMUYw",
-  "GROUP BY & HAVING":"7cjTqE4GwFE","Subqueries":"K1BKeugY5Xg","Window Functions":"Ww71knvVu_k",
-  "Indexes":"fsG1XaZEa78","Views & CTEs":"K74_FNs6ox8","Transactions":"P80Js_qClUE",
-  "Stored Procedures":"Sggdhd2PiNg","SQL Project":"p3qvj9hO_Bo",
-  "HTML Basics":"UB1O30fR-EE","HTML Forms":"fNcJuPIZ2BE","Semantic HTML":"kGW8Al_cga4",
-  "CSS Basics":"1PnVor36_40","Box Model":"rIO5326FgPE","Flexbox":"JJSoEo8JSnc",
-  "CSS Grid":"EiNiSFIPIQE","Responsive Design":"srvUrASNj0s","JavaScript for Web":"W6NZfCO5SIk",
-  "DOM & Events":"y17RuWkWdn8","What is React?":"SqcY0GlETPk","React Components":"Ke90Tje7VS0",
-  "React Props & State":"O6P86uwfdR0","React Hooks":"cF2lQ_gZeA8","React Router":"Law7wfdg_ls",
-  "API Integration":"T3Px88x_PsI","Node.js Basics":"TlB_eWDSMt4","Express.js":"L72fhnn2tj0",
-  "MongoDB Basics":"ofme2o29wY8","Build Full Stack App":"mrHNSanmqQ4","Deploy Your App":"l134cBALZGY",
-  "What is Git?":"USjZcfj8ckM","Git Installation":"USjZcfj8ckM","Git Branches":"e2IbNHi5ard",
-  "What is Docker?":"rOTqprHv1YE","Docker Containers":"rOTqprHv1YE","What is Machine Learning?":"ukzFI9rgwfU",
-  "What is Data Science?":"X3paOmcrTjQ","What is NumPy?":"QUT1VHiLrmI","What is Pandas?":"vmEHCKcdykY",
+  "ORDER BY & LIMIT":"HXV3zeQKqGY","INSERT UPDATE DELETE":"HXV3zeQKqGY","JOINS":"HXV3zeQKqGY",
+  "GROUP BY & HAVING":"HXV3zeQKqGY","Subqueries":"HXV3zeQKqGY","Window Functions":"HXV3zeQKqGY",
+  "Indexes":"HXV3zeQKqGY","Views & CTEs":"HXV3zeQKqGY","Transactions":"HXV3zeQKqGY",
+  "Stored Procedures":"HXV3zeQKqGY","SQL Project":"HXV3zeQKqGY",
+
+  // WEB DEV - freeCodeCamp
+  "HTML Basics":"mU6anWqZJcc","HTML Forms":"mU6anWqZJcc","Semantic HTML":"mU6anWqZJcc",
+  "CSS Basics":"OXGznpKZ_sA","Box Model":"OXGznpKZ_sA","Flexbox":"OXGznpKZ_sA",
+  "CSS Grid":"OXGznpKZ_sA","Responsive Design":"OXGznpKZ_sA","JavaScript for Web":"PkZNo7MFNFg",
+  "DOM & Events":"PkZNo7MFNFg","What is React?":"bMknfKXIFA8","React Components":"bMknfKXIFA8",
+  "React Props & State":"bMknfKXIFA8","React Hooks":"bMknfKXIFA8","React Router":"bMknfKXIFA8",
+  "API Integration":"bMknfKXIFA8","Node.js Basics":"Oe421EPjeBE","Express.js":"Oe421EPjeBE",
+  "MongoDB Basics":"ofme2o29wY8","Build Full Stack App":"nu_pCVPKzTk","Deploy Your App":"nu_pCVPKzTk",
+
+  // GIT
+  "What is Git?":"RGOj5yH7evk","Git Installation":"RGOj5yH7evk","Git Branches":"RGOj5yH7evk",
+
+  // DOCKER
+  "What is Docker?":"fqMOX6JJhGo","Docker Containers":"fqMOX6JJhGo",
+
+  // ML / DS
+  "What is Machine Learning?":"i_LwzRVP7bg","What is Data Science?":"i_LwzRVP7bg",
+  "What is NumPy?":"QUT1VHiLrmI","What is Pandas?":"vmEHCKcdykY",
 };
 function getYT(l: string) { return YT[l] || 'dQw4w9WgXcQ'; }
 
@@ -675,18 +696,18 @@ function LessonPage({ course, onBack }: { course:any; onBack:()=>void }) {
           {/* VIDEO */}
           {tab==='video' && (
             <div style={{animation:'fade-in 0.3s ease',display:'flex',flexDirection:'column',gap:'12px'}}>
-              <div style={{borderRadius:'14px',overflow:'hidden',background:'linear-gradient(135deg,#0f172a,#1e1b4b)',border:`1px solid ${ACC}33`,padding:'48px 24px',textAlign:'center',display:'flex',flexDirection:'column',alignItems:'center',gap:'16px'}}>
-                <div style={{width:64,height:64,borderRadius:'50%',background:`${ACC}22`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'28px'}}>🎓</div>
-                <div>
-                  <p style={{color:'#fff',fontWeight:800,fontSize:'18px',margin:'0 0 6px'}}>Video Lectures Coming Soon</p>
-                  <p style={{color:'#64748b',fontSize:'13px',margin:0}}>Use AI Teacher for an interactive, personalized learning experience</p>
-                </div>
-                <button onClick={()=>setTab('teacher')} style={{padding:'10px 28px',borderRadius:'10px',border:'none',background:`linear-gradient(135deg,${ACC},${ACC}99)`,color:'#fff',fontSize:'13px',fontWeight:700,cursor:'pointer',boxShadow:`0 4px 16px ${ACC}44`}}>
-                  🤖 Start AI Teacher
-                </button>
+              <div style={{position:'relative',paddingBottom:'56.25%',height:0,borderRadius:'14px',overflow:'hidden',background:'#000',border:'1px solid rgba(255,255,255,0.08)'}}>
+                <iframe
+                  key={lesson}
+                  src={`https://www.youtube.com/embed/${getYT(lesson)}?rel=0&modestbranding=1&playsinline=1`}
+                  title={lesson}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  style={{position:'absolute',top:0,left:0,width:'100%',height:'100%',border:'none'}}
+                />
               </div>
               <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:'8px'}}>
-                <p style={{fontSize:'11px',color:'#475569',margin:0}}>💡 AI Teacher → Code & Run → Quiz → Mark Done ✅</p>
+                <p style={{fontSize:'11px',color:'#475569',margin:0}}>💡 Watch → AI Teacher → Code & Run → Quiz → Mark Done ✅</p>
                 <div style={{display:'flex',gap:'6px'}}>
                   <button onClick={()=>setTab('teacher')} style={{padding:'5px 12px',borderRadius:'7px',border:'none',background:`${ACC}22`,color:ACC,fontSize:'11px',fontWeight:700,cursor:'pointer'}}>🤖 AI Teacher</button>
                   <button onClick={()=>setTab('code')} style={{padding:'5px 12px',borderRadius:'7px',border:'1px solid rgba(16,185,129,0.3)',background:'rgba(16,185,129,0.08)',color:'#34d399',fontSize:'11px',fontWeight:700,cursor:'pointer'}}>⌨️ Code</button>
