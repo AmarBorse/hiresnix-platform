@@ -11,6 +11,7 @@ const jwt          = require('jsonwebtoken');
 const bcrypt       = require('bcryptjs');
 const crypto       = require('crypto');
 const { Op }       = require('sequelize');
+const { sequelize } = require('../config/db');
 const {
   InstitutionStudent, Institution,
   Batch, BatchStudent, Course, CourseStudent, InstitutionCertificate,
@@ -198,7 +199,6 @@ const downloadAcademyCertificate = asyncHandler(async (req, res) => {
 
   const courseName = COURSE_NAMES[courseId] || courseId;
   // Get or generate cert_no from DB
-  const { sequelize } = require('../models');
   const progRows = await sequelize.query(
     'SELECT cert_no FROM inst_academy_progress WHERE student_id = :sid AND course_id = :courseId LIMIT 1',
     { replacements: { sid: student.id, courseId }, type: sequelize.QueryTypes.SELECT }
@@ -317,7 +317,6 @@ const saveAcademyProgress = asyncHandler(async (req, res) => {
   const { courseId, completed, xp, claimedCert } = req.body;
   if (!courseId) { res.status(400); throw new Error('courseId required'); }
 
-  const { sequelize } = require('../models');
   await sequelize.query(`
     INSERT INTO inst_academy_progress (student_id, career_id, course_id, completed, xp, claimed_cert, cert_no, last_active)
     VALUES (:studentId, :careerId, :courseId, :completed::jsonb, :xp, :claimedCert,
@@ -347,7 +346,6 @@ const saveAcademyProgress = asyncHandler(async (req, res) => {
 
 const getAcademyProgress = asyncHandler(async (req, res) => {
   const student = req.student;
-  const { sequelize } = require('../models');
   const [rows] = await sequelize.query(
     `SELECT * FROM inst_academy_progress WHERE student_id = :studentId`,
     { replacements: { studentId: student.id }, type: sequelize.QueryTypes.SELECT }
@@ -358,7 +356,6 @@ const getAcademyProgress = asyncHandler(async (req, res) => {
 // Admin: get all students academy progress
 const getAllAcademyProgress = asyncHandler(async (req, res) => {
   const institutionId = req.institution?.id;
-  const { sequelize } = require('../models');
 
   // Get all students of this institution with their academy progress
   const rows = await sequelize.query(`
@@ -413,7 +410,6 @@ const verifyAcademyCertificate = asyncHandler(async (req, res) => {
       sql:'SQL & Databases', webdev:'Full Stack Web Development',
     };
 
-    const { sequelize } = require('../models');
 
     // Lookup directly by cert_no
     const rows = await sequelize.query(
