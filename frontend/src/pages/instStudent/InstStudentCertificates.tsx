@@ -22,36 +22,26 @@ export function InstStudentCertificates() {
       .then(r => setCerts(r.data || []))
       .catch(() => {});
 
-    // Load AI Academy certs from localStorage directly
-    try {
-      // sid in AcademyPage = student.id or student.careerId
-      const studentRaw = localStorage.getItem('hx_inst_student_id') || '';
-      const COURSES = ['python','javascript','java','cpp','dsa','sql','webdev'];
-      const COURSE_NAMES: Record<string,string> = {
-        python:'Python Programming', javascript:'JavaScript', java:'Java',
-        cpp:'C++', dsa:'Data Structures & Algorithms', sql:'SQL & Databases', webdev:'Full Stack Web Development'
-      };
-      const completed: any[] = [];
-      // Try both student id and all possible keys
-      const allKeys = Object.keys(localStorage).filter(k => k.startsWith('hx_academy_') && !k.includes('enrolled'));
-      allKeys.forEach(key => {
-        // Key format: hx_academy_{studentId}_{courseId}
-        const parts = key.split('_');
-        const courseId = parts[parts.length - 1]; // last part = courseId
-        if (COURSES.includes(courseId)) {
-          const data = localStorage.getItem(key);
-          if (data) {
-            try {
-              const p = JSON.parse(data);
-              if (p.claimedCert === true || (p.xp || 0) > 0) {
-                completed.push({ ...p, course_id: courseId, courseName: COURSE_NAMES[courseId] });
-              }
-            } catch(e) {}
-          }
-        }
-      });
-      setAcademyCerts(completed);
-    } catch(e) {}
+    // Load AI Academy certs from DB
+    instStudentApi.getAcademyProgress()
+      .then(r => {
+        const COURSE_NAMES: Record<string,string> = {
+          python:'Python Programming', javascript:'JavaScript', java:'Java',
+          cpp:'C++', dsa:'Data Structures & Algorithms', sql:'SQL & Databases',
+          webdev:'Full Stack Web Development', nodejs:'Node.js & Express',
+          react:'React', c:'C Programming', git:'Git & GitHub',
+          docker:'Docker & DevOps', cybersecurity:'Cybersecurity',
+          flutter:'Flutter & Dart', datascience:'Data Science', ml:'Machine Learning',
+        };
+        const completed = (r.data || []).filter((p: any) => p.claimed_cert || p.claimedCert);
+        setAcademyCerts(completed.map((p: any) => ({
+          ...p,
+          course_id: p.course_id || p.courseId,
+          courseName: COURSE_NAMES[p.course_id || p.courseId] || p.course_id,
+        })));
+      })
+      .catch(() => {});
+
     setLoading(false);
   }, []);
 

@@ -33,6 +33,8 @@ export const useInstStudentStore = create<InstStudentState>()(
       logout: () => {
         localStorage.removeItem('hx_inst_student_token');
         localStorage.removeItem('hx_inst_student');
+        // Clear all academy progress keys
+        Object.keys(localStorage).filter(k => k.startsWith('hx_academy_')).forEach(k => localStorage.removeItem(k));
         set({ student: null, token: null, isAuthenticated: false });
       },
     }),
