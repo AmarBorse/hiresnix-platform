@@ -145,10 +145,13 @@ function IssueCertModal({ onClose, onSaved }: { onClose: () => void; onSaved: ()
             ? <div className="flex justify-center py-8"><div className="w-6 h-6 border-3 border-indigo-500 border-t-transparent rounded-full animate-spin" /></div>
             : students.length === 0
             ? <p className="text-center text-gray-400 text-sm py-8">No students found</p>
-            : students.map(s => (
-              <label key={s.id} className="flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition hover:bg-white/05">
+            : students.map(s => {
+              const alreadyIssued = issuedStudentIds.has(s.id);
+              return (
+              <label key={s.id} className={`flex items-center gap-3 p-2.5 rounded-lg transition ${alreadyIssued ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-white/05'}`}>
                 <input type="checkbox" checked={selected.includes(s.id)}
-                  onChange={e => setSelected(prev =>
+                  disabled={alreadyIssued}
+                  onChange={e => !alreadyIssued && setSelected(prev =>
                     e.target.checked ? [...prev, s.id] : prev.filter(x => x !== s.id)
                   )}
                   className="w-4 h-4 rounded border-gray-300 text-indigo-600" />
@@ -156,11 +159,13 @@ function IssueCertModal({ onClose, onSaved }: { onClose: () => void; onSaved: ()
                   <p className="text-sm font-medium text-white">{s.name}</p>
                   <p className="text-xs" style={{color:"#64748b"}}>{s.careerId} · {s.email}</p>
                 </div>
-                {s.department && (
-                  <span className="text-xs text-gray-400 shrink-0">{s.department}</span>
-                )}
+                {alreadyIssued
+                  ? <span className="text-xs font-semibold shrink-0" style={{color:'#34d399'}}>✅ Already Issued</span>
+                  : s.department && <span className="text-xs text-gray-400 shrink-0">{s.department}</span>
+                }
               </label>
-            ))
+              );
+            })
           }
         </div>
 
