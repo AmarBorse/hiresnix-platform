@@ -11,8 +11,8 @@ type Tab = 'login' | 'register';
 type RegisterRole = 'student' | 'company' | 'institution';
 
 const inputStyle = (err?: string) =>
-  `w-full border ${err ? 'border-red-500' : 'border-white/10'} rounded-xl px-4 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-blue-500 transition`;
-const bg07 = { background: 'rgba(255,255,255,0.07)' };
+  `w-full border ${err ? 'border-red-500' : 'border-white/10'} rounded-xl px-4 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-blue-500 transition auth-input`;
+const bg07 = { background: 'rgba(13,18,30,0.6)' };
 
 export function AuthPage() {
   const navigate    = useNavigate();
@@ -164,6 +164,15 @@ export function AuthPage() {
         @keyframes pulse-glow { 0%,100%{opacity:0.3;transform:scale(1)} 50%{opacity:0.7;transform:scale(1.1)} }
         @keyframes drift { 0%{transform:translate(0,0)} 25%{transform:translate(30px,-20px)} 50%{transform:translate(-10px,40px)} 75%{transform:translate(-30px,-10px)} 100%{transform:translate(0,0)} }
         @keyframes shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
+        @keyframes card-in { from{opacity:0;transform:translateY(28px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes logo-pulse { 0%,100%{filter:drop-shadow(0 0 20px rgba(59,130,246,0.5))} 50%{filter:drop-shadow(0 0 35px rgba(59,130,246,0.9)) drop-shadow(0 0 60px rgba(139,92,246,0.4))} }
+        .auth-input { transition: border-color 0.2s, box-shadow 0.2s !important; }
+        .auth-input:focus { border-color: rgba(59,130,246,0.6) !important; box-shadow: 0 0 0 3px rgba(59,130,246,0.12), 0 0 16px rgba(59,130,246,0.1) !important; outline: none !important; }
+        .auth-btn { transition: all 0.2s !important; }
+        .auth-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(59,130,246,0.4) !important; }
+        .auth-btn:active { transform: translateY(0); }
+        .role-btn { transition: all 0.2s !important; }
+        .role-btn:hover { transform: translateY(-1px); }
       `}</style>
 
       {/* Animated gradient orbs */}
@@ -197,12 +206,14 @@ export function AuthPage() {
       <div style={{ position:'absolute', top:0, left:0, right:0, height:2, background:'linear-gradient(90deg,transparent,rgba(59,130,246,0.6),rgba(139,92,246,0.6),transparent)', animation:'shimmer 3s linear infinite', backgroundSize:'200% 100%' }} />
 
       <div className="relative z-10 w-full max-w-md">
-        <div className="text-center mb-7">
-          <Link to="/"><img src="/hiresnix-logo.png" alt="Hiresnix" style={{ height: 100, objectFit: 'contain', margin: '0 auto 0.75rem', filter: 'drop-shadow(0 0 25px rgba(59,130,246,0.6))', display: 'block', cursor: 'pointer' }} /></Link>
+        <div className="text-center mb-7" style={{animation:'card-in 0.6s ease both'}}>
+          <Link to="/"><img src="/hiresnix-logo.png" alt="Hiresnix" style={{ height: 100, objectFit: 'contain', margin: '0 auto 0.75rem', filter: 'drop-shadow(0 0 25px rgba(59,130,246,0.6))', display: 'block', cursor: 'pointer', animation:'logo-pulse 3s ease-in-out infinite' }} /></Link>
           <p className="text-gray-500 text-sm" style={{ fontFamily: "'JetBrains Mono',monospace", letterSpacing: '0.05em' }}>Elevating Talent. Empowering Futures.</p>
         </div>
 
-        <div style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(24px)', borderRadius: 20, border: '1px solid rgba(255,255,255,0.09)', overflow: 'hidden', boxShadow: '0 25px 60px rgba(0,0,0,0.5)' }}>
+        <div style={{ background: 'rgba(13,18,30,0.85)', backdropFilter: 'blur(24px)', borderRadius: 20, border: '1px solid rgba(59,130,246,0.2)', overflow: 'hidden', boxShadow: '0 25px 60px rgba(0,0,0,0.6), 0 0 40px rgba(59,130,246,0.08)', animation:'card-in 0.7s ease both', position:'relative' }}>
+          {/* Card top glow line */}
+          <div style={{position:'absolute',top:0,left:0,right:0,height:1,background:'linear-gradient(90deg,transparent,rgba(59,130,246,0.8),rgba(139,92,246,0.8),transparent)',animation:'shimmer 2.5s linear infinite',backgroundSize:'200% 100%'}}/>
           {/* Tabs */}
           <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
             {(['login', 'register'] as Tab[]).map(t => (
@@ -239,7 +250,7 @@ export function AuthPage() {
     Forgot password?
   </button>
 </div>
-                <button type="submit" disabled={loading} className="w-full bg-blue-500 hover:bg-blue-600 disabled:opacity-60 text-white font-bold py-2.5 rounded-xl text-sm transition flex items-center justify-center gap-2">
+                <button type="submit" disabled={loading} className="w-full bg-blue-500 hover:bg-blue-600 disabled:opacity-60 text-white font-bold py-2.5 rounded-xl text-sm transition flex items-center justify-center gap-2 auth-btn">
                   {loading && <Loader2 size={14} className="animate-spin" />} Sign In
                 </button>
                 <p className="text-center text-xs text-gray-600">
@@ -333,7 +344,7 @@ export function AuthPage() {
                 )}
 
                 <button type="submit" disabled={loading}
-                  className="w-full bg-blue-500 hover:bg-blue-600 disabled:opacity-60 text-white font-bold py-2.5 rounded-xl text-sm transition flex items-center justify-center gap-2 mt-1">
+                  className="w-full bg-blue-500 hover:bg-blue-600 disabled:opacity-60 text-white font-bold py-2.5 rounded-xl text-sm transition flex items-center justify-center gap-2 mt-1 auth-btn">
                   {loading && <Loader2 size={14} className="animate-spin" />}
                   {registerRole === 'company' ? '🏢 Register Company' : registerRole === 'institution' ? '🏫 Register Institution' : '🎓 Create Account'}
                 </button>
