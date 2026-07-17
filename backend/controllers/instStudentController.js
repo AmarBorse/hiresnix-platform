@@ -396,42 +396,49 @@ const verifyAcademyCertificate = asyncHandler(async (req, res) => {
     const raw = (req.params.certNo || '').replace(/\s+/g,'').toUpperCase();
     if (!raw.startsWith('HXAC')) return res.json({ success:true, valid:false });
 
-    // Format: HXAC-HX-2026-000005-PYTHON-HASH
-    const parts = raw.split('-');
-    if (parts.length < 6) return res.json({ success:true, valid:false });
-
-    // careerId = HX-2026-000005 (parts 1,2,3)
-    const careerId = parts[1] + '-' + parts[2] + '-' + parts[3];
-    const courseId = parts[4].toLowerCase();
-
+    const { sequelize } = require('../config/db');
     const COURSES = {
       python:'Python Programming', javascript:'JavaScript', java:'Java',
       cpp:'C++', dsa:'Data Structures & Algorithms',
       sql:'SQL & Databases', webdev:'Full Stack Web Development',
     };
 
-
-    // Lookup directly by cert_no
-    const rows = await sequelize.query(
+    // Try cert_no lookup first (works for both short & long format)
+    let rows = await sequelize.query(
       `SELECT iap.*, ist.name, ist.career_id
        FROM inst_academy_progress iap
        JOIN institution_students ist ON ist.id = iap.student_id
        WHERE iap.cert_no = :certNo LIMIT 1`,
       { replacements: { certNo: raw }, type: sequelize.QueryTypes.SELECT }
     );
+
+    // Fallback: long format HXAC-HX-2026-000005-PYTHON-HASH
+    if (!rows[0]) {
+      const parts = raw.split('-');
+      if (parts.length >= 6) {
+        const careerId = parts[1] + '-' + parts[2] + '-' + parts[3];
+        const courseId = parts[4].toLowerCase();
+        rows = await sequelize.query(
+          `SELECT iap.*, ist.name, ist.career_id
+           FROM inst_academy_progress iap
+           JOIN institution_students ist ON ist.id = iap.student_id
+           WHERE ist.career_id = :careerId AND iap.course_id = :courseId LIMIT 1`,
+          { replacements: { careerId, courseId }, type: sequelize.QueryTypes.SELECT }
+        );
+      }
+    }
+
     const row = rows[0];
     if (!row) return res.json({ success:true, valid:false });
-    const courseIdFromRow = row.course_id;
 
     return res.json({
-      success: true,
-      valid: true,
+      success: true, valid: true,
       data: {
         documentType: 'Hiresnix AI Academy Certificate',
         documentId: raw,
         studentName: row.name,
         careerId: row.career_id,
-        course: COURSES[courseIdFromRow] || courseIdFromRow,
+        course: COURSES[row.course_id] || row.course_id,
         xp: row.xp || 0,
         issueDate: row.last_active || new Date().toISOString(),
       }
@@ -441,5 +448,6 @@ const verifyAcademyCertificate = asyncHandler(async (req, res) => {
     return res.json({ success:true, valid:false });
   }
 });
+
 
 module.exports = { login, getMe, getDashboard, getCertificates, changePassword, protectInstStudent, saveAcademyProgress, getAcademyProgress, getAllAcademyProgress, downloadAcademyCertificate, verifyAcademyCertificate };
