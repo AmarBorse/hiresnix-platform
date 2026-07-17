@@ -177,8 +177,6 @@ const VID: Record<string,[string,number]> = {
   "React Hooks":              ["bMknfKXIFA8",9000],
   "React Router":             ["bMknfKXIFA8",12600],
   "API Integration":          ["bMknfKXIFA8",16200],
-  "Node.js Basics":           ["Oe421EPjeBE",0],
-  "Express.js":               ["Oe421EPjeBE",5400],
   "MongoDB Basics":           ["ofme2o29wY8",0],
   "Build Full Stack App":     ["nu_pCVPKzTk",0],
   "Deploy Your App":          ["nu_pCVPKzTk",7200],
@@ -202,11 +200,79 @@ const VID: Record<string,[string,number]> = {
   "Dynamic Memory":           ["B31LgI4Y4DQ",25200],
   "C Programs":               ["B31LgI4Y4DQ",28800],
 
-  // REACT — freeCodeCamp React full course (bMknfKXIFA8)
-  "Context API":              ["bMknfKXIFA8",19800],
+  // GIT & GITHUB — freeCodeCamp Git full course (zTjRZNkhiEU)
+  "What is Git?":             ["zTjRZNkhiEU",0],
+  "Git Installation":         ["zTjRZNkhiEU",600],
+  "Git Branches":             ["zTjRZNkhiEU",3600],
+  "Git Merge & Rebase":       ["zTjRZNkhiEU",7200],
+  "GitHub Remote":            ["zTjRZNkhiEU",9000],
+  "Pull Requests":            ["zTjRZNkhiEU",10800],
 
-  // C PROGRAMMING already added above
-  // Java Functions
+  // DOCKER & DEVOPS — Docker Crash Course (pg19Z8LL06w) - simple beginner friendly
+  "What is Docker?":          ["pg19Z8LL06w",0],
+  "Docker Containers":        ["pg19Z8LL06w",600],
+  "Docker Images":            ["pg19Z8LL06w",1800],
+  "Dockerfile":               ["pg19Z8LL06w",3600],
+  "Docker Compose":           ["pg19Z8LL06w",5400],
+  "CI/CD Basics":             ["Wf2eSG3owoA",0],
+  "Kubernetes Intro":         ["Wf2eSG3owoA",3600],
+
+  // MACHINE LEARNING — freeCodeCamp ML (bmmQA8A-yUA)
+  "What is Machine Learning?":["bmmQA8A-yUA",0],
+  "ML Roadmap":               ["bmmQA8A-yUA",300],
+  "Supervised Learning":      ["bmmQA8A-yUA",1800],
+  "Unsupervised Learning":    ["bmmQA8A-yUA",5400],
+  "Linear Regression":        ["bmmQA8A-yUA",7200],
+  "Classification":           ["bmmQA8A-yUA",9000],
+  "Decision Trees":           ["bmmQA8A-yUA",10800],
+  "Neural Networks Intro":    ["bmmQA8A-yUA",14400],
+  "ML Project":               ["bmmQA8A-yUA",18000],
+
+  // DATA SCIENCE — freeCodeCamp Data Science (r-uOLxNrNk8)
+  "What is Data Science?":    ["r-uOLxNrNk8",0],
+  "What is NumPy?":           ["r-uOLxNrNk8",1800],
+  "NumPy Arrays":             ["r-uOLxNrNk8",3600],
+  "What is Pandas?":          ["r-uOLxNrNk8",7200],
+  "Pandas DataFrames":        ["r-uOLxNrNk8",9000],
+  "Data Cleaning":            ["r-uOLxNrNk8",12600],
+  "Data Visualization":       ["r-uOLxNrNk8",18000],
+  "EDA Project":              ["r-uOLxNrNk8",21600],
+
+  // NODE.JS & EXPRESS — freeCodeCamp Node (Oe421EPjeBE)
+  "Node.js Basics":           ["Oe421EPjeBE",0],
+  "Node Modules":             ["Oe421EPjeBE",1800],
+  "Express.js":               ["Oe421EPjeBE",3600],
+  "REST API":                 ["Oe421EPjeBE",7200],
+  "Middleware":               ["Oe421EPjeBE",9000],
+  "MongoDB & Mongoose":       ["Oe421EPjeBE",12600],
+  "Authentication":           ["Oe421EPjeBE",16200],
+  "Node Project":             ["Oe421EPjeBE",21600],
+
+  // CYBERSECURITY — freeCodeCamp Ethical Hacking (3Kq1MIfTWCE)
+  "What is Cybersecurity?":   ["3Kq1MIfTWCE",0],
+  "Networking Basics":        ["3Kq1MIfTWCE",1800],
+  "Linux for Security":       ["IkuPKJmhTi4",0],
+  "Reconnaissance":           ["3Kq1MIfTWCE",5400],
+  "Scanning & Enumeration":   ["3Kq1MIfTWCE",9000],
+  "Web Hacking Basics":       ["3Kq1MIfTWCE",14400],
+  "Password Attacks":         ["3Kq1MIfTWCE",18000],
+  "Metasploit":               ["3Kq1MIfTWCE",21600],
+
+  // FLUTTER & DART — freeCodeCamp (Ej_Pcr4uC2Q for Dart, pTJJsmejUOQ for Flutter)
+  "What is Dart?":            ["Ej_Pcr4uC2Q",0],
+  "Dart Variables":           ["Ej_Pcr4uC2Q",600],
+  "Dart Functions":           ["Ej_Pcr4uC2Q",2400],
+  "Dart OOP":                 ["Ej_Pcr4uC2Q",5400],
+  "What is Flutter?":         ["pTJJsmejUOQ",0],
+  "Flutter Widgets":          ["pTJJsmejUOQ",1800],
+  "Flutter Layout":           ["pTJJsmejUOQ",5400],
+  "Flutter State":            ["pTJJsmejUOQ",9000],
+  "Flutter Navigation":       ["pTJJsmejUOQ",12600],
+  "Flutter API":              ["pTJJsmejUOQ",16200],
+  "Flutter App":              ["pTJJsmejUOQ",21600],
+
+  // REACT extra
+  "Context API":              ["bMknfKXIFA8",19800],
   "Java Functions":           ["grEKMHGYyns",10800],
 };
 
@@ -469,35 +535,37 @@ const COURSES = [
     { title:'Projects', lessons:['Build a Todo App (JS)','Build a Weather App'] },
   ]},
   { id:'nodejs', title:'Node.js & Express', icon:'🟢', accent:'#68a063', codeLanguage:'javascript', tag:'Backend', tagColor:'#f59e0b', desc:'Backend with Node.js & Express', modules:[
-    { title:'Node.js', lessons:['Node.js Basics','Express.js','MongoDB Basics'] },
-    { title:'API', lessons:['Fetch API','Async Await','Error Handling'] },
-    { title:'Projects', lessons:['Build Full Stack App','Deploy Your App'] },
+    { title:'Node.js', lessons:['Node.js Basics','Node Modules','Express.js'] },
+    { title:'API', lessons:['REST API','Middleware','Authentication'] },
+    { title:'Database', lessons:['MongoDB & Mongoose','Node Project'] },
   ]},
   { id:'datascience', title:'Data Science', icon:'📊', accent:'#f97316', codeLanguage:'python', tag:'Data Science', tagColor:'#8b5cf6', desc:'Python for data analysis', modules:[
-    { title:'NumPy', lessons:['What is NumPy?','What is Data Science?'] },
-    { title:'Pandas', lessons:['What is Pandas?','File Handling'] },
-    { title:'Visualization', lessons:['What is Machine Learning?'] },
+    { title:'Intro', lessons:['What is Data Science?','What is NumPy?','NumPy Arrays'] },
+    { title:'Pandas', lessons:['What is Pandas?','Pandas DataFrames','Data Cleaning'] },
+    { title:'Visualization', lessons:['Data Visualization','EDA Project'] },
   ]},
   { id:'ml', title:'Machine Learning', icon:'🤖', accent:'#a855f7', codeLanguage:'python', tag:'AI/ML', tagColor:'#10b981', desc:'ML algorithms & implementation', modules:[
-    { title:'ML Basics', lessons:['What is Machine Learning?','What is Data Science?'] },
-    { title:'Algorithms', lessons:['Dynamic Programming','Backtracking'] },
-    { title:'Projects', lessons:['Final Python Project'] },
+    { title:'ML Basics', lessons:['What is Machine Learning?','ML Roadmap','Supervised Learning','Unsupervised Learning'] },
+    { title:'Algorithms', lessons:['Linear Regression','Classification','Decision Trees','Neural Networks Intro'] },
+    { title:'Projects', lessons:['ML Project'] },
   ]},
   { id:'git', title:'Git & GitHub', icon:'🐙', accent:'#f05032', codeLanguage:'javascript', tag:'DevOps', tagColor:'#10b981', desc:'Version control for developers', modules:[
-    { title:'Git Basics', lessons:['What is Git?','Git Installation','Git Branches'] },
-    { title:'GitHub', lessons:['API Integration','Deploy Your App'] },
+    { title:'Git Basics', lessons:['What is Git?','Git Installation','Git Branches','Git Merge & Rebase'] },
+    { title:'GitHub', lessons:['GitHub Remote','Pull Requests','Deploy Your App'] },
   ]},
   { id:'docker', title:'Docker & DevOps', icon:'🐳', accent:'#2496ed', codeLanguage:'javascript', tag:'DevOps', tagColor:'#6366f1', desc:'Containerization & deployment', modules:[
-    { title:'Docker', lessons:['What is Docker?','Docker Containers'] },
-    { title:'CI/CD', lessons:['Deploy Your App','Build Full Stack App'] },
+    { title:'Docker', lessons:['What is Docker?','Docker Containers','Docker Images','Dockerfile','Docker Compose'] },
+    { title:'CI/CD', lessons:['CI/CD Basics','Kubernetes Intro'] },
   ]},
   { id:'cybersecurity', title:'Cybersecurity', icon:'🔒', accent:'#22c55e', codeLanguage:'python', tag:'Security', tagColor:'#ef4444', desc:'Ethical hacking fundamentals', modules:[
-    { title:'Basics', lessons:['What is Python?','File Handling','Exception Handling'] },
-    { title:'Web Security', lessons:['What is JavaScript?','DOM Manipulation','Error Handling'] },
+    { title:'Basics', lessons:['What is Cybersecurity?','Networking Basics','Linux for Security'] },
+    { title:'Hacking', lessons:['Reconnaissance','Scanning & Enumeration','Web Hacking Basics'] },
+    { title:'Advanced', lessons:['Password Attacks','Metasploit'] },
   ]},
   { id:'flutter', title:'Flutter & Dart', icon:'💙', accent:'#54c5f8', codeLanguage:'javascript', tag:'Mobile', tagColor:'#f59e0b', desc:'Build iOS & Android apps', modules:[
-    { title:'Dart', lessons:['What is Java?','Java Variables','Java Functions'] },
-    { title:'Flutter', lessons:['What is React?','React Components','React Props & State'] },
+    { title:'Dart', lessons:['What is Dart?','Dart Variables','Dart Functions','Dart OOP'] },
+    { title:'Flutter', lessons:['What is Flutter?','Flutter Widgets','Flutter Layout','Flutter State','Flutter Navigation'] },
+    { title:'Projects', lessons:['Flutter API','Flutter App'] },
   ]},
 ];
 
