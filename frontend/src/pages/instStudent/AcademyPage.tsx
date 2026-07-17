@@ -813,9 +813,9 @@ function LessonPage({ course, onBack }: { course:any; onBack:()=>void }) {
               <div style={{position:'relative',paddingBottom:'56.25%',height:0,borderRadius:'14px',overflow:'hidden',background:'#000',border:'1px solid rgba(255,255,255,0.08)'}}>
                 <iframe
                   key={lesson}
-                  src={`https://www.youtube.com/embed/${getVid(lesson)[0]}?start=${getVid(lesson)[1]}&rel=0&modestbranding=1&playsinline=1`}
+                  src={`https://www.youtube.com/embed/${getVid(lesson)[0]}?start=${getVid(lesson)[1]}&rel=0&modestbranding=1&playsinline=1&autoplay=1`}
                   title={lesson}
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                   allowFullScreen
                   style={{position:'absolute',top:0,left:0,width:'100%',height:'100%',border:'none'}}
                 />
