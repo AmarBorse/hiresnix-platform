@@ -29,7 +29,7 @@ const configs: Record<VerificationType, { label: string; idLabel: string; path: 
     placeholder: 'e.g. LOR-1024',
   },
   'skill-assessment': {
-    label: 'Certificate of Skill Assessment',
+    label: '(Institution)Certificate of Skill Assessment',
     idLabel: 'Certificate ID',
     path: '/verification/skill-assessment',
     icon: Award,
