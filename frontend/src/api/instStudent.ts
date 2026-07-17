@@ -85,21 +85,8 @@ export const instStudentApi = {
   downloadAcademyCertPdf: (courseId: string, courseName: string) => {
     const token = localStorage.getItem('hx_inst_student_token');
     const apiBase = (import.meta as any).env?.VITE_API_URL || 'https://hirenix-backend.onrender.com/api';
-    const url = `${apiBase}/inst-student/academy/certificate/${courseId}`;
-    // Use fetch with auth header and proper blob handling
-    fetch(url, { headers: { Authorization: `Bearer ${token}` } })
-      .then(r => r.blob())
-      .then(blob => {
-        const blobUrl = URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
-        const a = document.createElement('a');
-        a.href = blobUrl;
-        a.download = `AI_Academy_${courseName.replace(/ /g,'_')}_Certificate.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(blobUrl);
-      })
-      .catch(e => console.error('Download failed', e));
+    const url = `${apiBase}/inst-student/academy/certificate/${courseId}?token=${token}`;
+    window.open(url, '_blank');
   },
 };
 

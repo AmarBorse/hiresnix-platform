@@ -32,6 +32,10 @@ const protectInstStudent = asyncHandler(async (req, res, next) => {
   if (req.headers.authorization?.startsWith('Bearer')) {
     token = req.headers.authorization.split(' ')[1];
   }
+  // Also support token in query param for direct downloads
+  if (!token && req.query.token) {
+    token = req.query.token;
+  }
   if (!token) { res.status(401); throw new Error('Not authorized'); }
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
@@ -197,8 +201,9 @@ const downloadAcademyCertificate = asyncHandler(async (req, res) => {
   const verifyUrl = `${process.env.CLIENT_URL || 'https://hiresnix.co.in'}/verify-academy/${certNo}`;
   const issuedDate = new Date().toLocaleDateString('en-IN', { day:'numeric', month:'long', year:'numeric' });
 
-  const qrDataUrl = await QRCode.toDataURL(verifyUrl, { width: 120, margin: 1 });
-  const qrBuffer  = Buffer.from(qrDataUrl.split(',')[1], 'base64');
+  try {
+    const qrDataUrl = await QRCode.toDataURL(verifyUrl, { width: 120, margin: 1 });
+    const qrBuffer  = Buffer.from(qrDataUrl.split(',')[1], 'base64');
 
   res.setHeader('Content-Type', 'application/pdf');
   res.setHeader('Content-Disposition', `attachment; filename="Academy_${courseName.replace(/\s+/g,'_')}_${student.careerId}.pdf"`);
@@ -294,6 +299,10 @@ const downloadAcademyCertificate = asyncHandler(async (req, res) => {
      .text('support@hiresnix.co.in  |  www.hiresnix.co.in  |  Shirpur, Maharashtra, India', 0, H-45, { align: 'center' });
 
   doc.end();
+  } catch(err) {
+    console.error('Academy cert error:', err);
+    if (!res.headersSent) res.status(500).json({ success:false, message:'Certificate generation failed' });
+  }
 });
 
 // ── Academy Progress ─────────────────────────────────────────────
