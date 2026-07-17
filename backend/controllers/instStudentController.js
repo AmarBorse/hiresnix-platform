@@ -386,52 +386,57 @@ const getAllAcademyProgress = asyncHandler(async (req, res) => {
 
 // ── Verify Academy Certificate (public) ──────────────────────────
 const verifyAcademyCertificate = asyncHandler(async (req, res) => {
-  const { certNo } = req.params;
-  if (!certNo) return res.json({ success:true, valid:false });
-
-  const clean = certNo.toUpperCase().replace(/\s+/g, '');
-  const parts = clean.split('-');
-  if (parts[0] !== 'HXAC' || parts.length < 6) return res.json({ success:true, valid:false });
-
-  const careerId = `${parts[1]}-${parts[2]}-${parts[3]}`;
-  const courseId = parts[4].toLowerCase();
-  const COURSE_NAMES = {
-    python:'Python Programming',javascript:'JavaScript',java:'Java',
-    cpp:'C++',dsa:'Data Structures & Algorithms',sql:'SQL & Databases',webdev:'Full Stack Web Development',
-  };
-
   try {
-    const student = await InstitutionStudent.findOne({
-      where: { careerId },
-      attributes: ['id','name','email','careerId'],
-      include: [{ model: Institution, as: 'institution', attributes: ['institutionName'] }],
-    });
-    if (!student) return res.json({ success:true, valid:false });
+    const raw = (req.params.certNo || '').replace(/\s+/g,'').toUpperCase();
+    if (!raw.startsWith('HXAC')) return res.json({ success:true, valid:false });
+
+    // Format: HXAC-HX-2026-000005-PYTHON-HASH
+    const parts = raw.split('-');
+    if (parts.length < 6) return res.json({ success:true, valid:false });
+
+    // careerId = HX-2026-000005 (parts 1,2,3)
+    const careerId = parts[1] + '-' + parts[2] + '-' + parts[3];
+    const courseId = parts[4].toLowerCase();
+
+    const COURSES = {
+      python:'Python Programming', javascript:'JavaScript', java:'Java',
+      cpp:'C++', dsa:'Data Structures & Algorithms',
+      sql:'SQL & Databases', webdev:'Full Stack Web Development',
+    };
 
     const { sequelize } = require('../models');
-    const [rows] = await sequelize.query(
-      `SELECT * FROM inst_academy_progress WHERE career_id = :careerId AND course_id = :courseId LIMIT 1`,
-      { replacements: { careerId, courseId }, type: sequelize.QueryTypes.SELECT }
-    );
-    const progress = rows[0];
 
-    if (!progress) return res.json({ success:true, valid:false });
+    // Step 1: find student by careerId
+    const students = await sequelize.query(
+      'SELECT id, name, career_id FROM institution_students WHERE career_id = :careerId LIMIT 1',
+      { replacements:{ careerId }, type: sequelize.QueryTypes.SELECT }
+    );
+    const student = students[0];
+    if (!student) return res.json({ success:true, valid:false });
+
+    // Step 2: find progress
+    const progRows = await sequelize.query(
+      'SELECT * FROM inst_academy_progress WHERE student_id = :sid AND course_id = :courseId LIMIT 1',
+      { replacements:{ sid: student.id, courseId }, type: sequelize.QueryTypes.SELECT }
+    );
+    const prog = progRows[0];
+    if (!prog) return res.json({ success:true, valid:false });
 
     return res.json({
-      success:true, valid:true,
+      success: true,
+      valid: true,
       data: {
         documentType: 'Hiresnix AI Academy Certificate',
-        documentId: clean,
+        documentId: raw,
         studentName: student.name,
-        careerId: student.careerId,
-        course: COURSE_NAMES[courseId] || courseId,
-        institution: student.institution?.institutionName || 'Hiresnix AI Academy',
-        xp: progress.xp || 0,
-        issueDate: progress.last_active || new Date().toISOString(),
-      },
+        careerId: student.career_id,
+        course: COURSES[courseId] || courseId,
+        xp: prog.xp || 0,
+        issueDate: prog.last_active || new Date().toISOString(),
+      }
     });
   } catch(e) {
-    console.error('Verify academy error:', e.message);
+    console.error('verifyAcademy:', e.message);
     return res.json({ success:true, valid:false });
   }
 });
