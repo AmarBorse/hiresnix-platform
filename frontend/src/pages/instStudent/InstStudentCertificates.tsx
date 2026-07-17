@@ -24,8 +24,9 @@ export function InstStudentCertificates() {
       if (certsRes.status === 'fulfilled') setCerts(certsRes.value.data || []);
       if (academyRes.status === 'fulfilled') {
         const progress = academyRes.value.data || [];
-        // Filter only completed courses with certificate claimed
-        const completed = progress.filter((p: any) => p.claimedCert || p.claimed_cert || p.xp >= 500);
+        const completed = progress.filter((p: any) => 
+          p.claimed_cert === true || p.claimedCert === true || (p.xp || 0) >= 100
+        );
         setAcademyCerts(completed);
       }
     }).catch(() => toast.error('Failed to load certificates'))
@@ -125,13 +126,13 @@ export function InstStudentCertificates() {
                   </span>
                 </div>
                 <p className="font-semibold text-white">Hiresnix AI Academy</p>
-                <p className="text-sm text-gray-400 mt-0.5">{p.courseName || p.courseId}</p>
+                <p className="text-sm text-gray-400 mt-0.5">{p.courseName || p.course_id || p.courseId}</p>
                 <p className="text-xs text-amber-500 mt-1">⚡ {p.xp || 0} XP earned</p>
                 <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-800">
                   <div className="flex items-center gap-1.5 text-emerald-500 text-xs font-medium">
                     <CheckCircle2 size={13} /> Course Completed
                   </div>
-                  <button onClick={() => downloadAcademyCert(p.courseId, p.courseName || p.courseId)}
+                  <button onClick={() => downloadAcademyCert(p.course_id || p.courseId, p.courseName || p.course_id || p.courseId)}
                     className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-amber-600 text-white rounded-lg hover:bg-amber-700">
                     <Download size={13} /> Download PDF
                   </button>

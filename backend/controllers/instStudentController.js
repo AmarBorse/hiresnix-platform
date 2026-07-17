@@ -345,8 +345,8 @@ const saveAcademyProgress = asyncHandler(async (req, res) => {
 });
 
 const getAcademyProgress = asyncHandler(async (req, res) => {
-  const student = req.student;
-  const [rows] = await sequelize.query(
+  const student = req.instStudent;
+  const rows = await sequelize.query(
     `SELECT * FROM inst_academy_progress WHERE student_id = :studentId`,
     { replacements: { studentId: student.id }, type: sequelize.QueryTypes.SELECT }
   );
