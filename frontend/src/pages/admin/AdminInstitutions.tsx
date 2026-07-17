@@ -1,6 +1,6 @@
 // src/pages/admin/AdminInstitutions.tsx
 import React, { useEffect, useState } from 'react';
-import { CheckCircle2, XCircle, Eye, Trash2, Search, GraduationCap, X, Users, Layers, BookOpen, Award, KeyRound, RefreshCw } from 'lucide-react';
+import { CheckCircle2, XCircle, Eye, Trash2, Search, GraduationCap, X, Users, Layers, BookOpen, Award, KeyRound, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
 import { toast } from 'sonner';
 import { adminInstitutionApi } from '../../api/institution';
 import client from '../../api/client';
@@ -149,6 +149,28 @@ export function AdminInstitutions() {
   const [rejectModal, setRejectModal] = useState<any | null>(null);
   const [rejectReason, setRejectReason] = useState('');
   const [resetModal, setResetModal]   = useState<any | null>(null);
+  const [academyExpanded, setAcademyExpanded] = useState<number | null>(null);
+  const [academyData, setAcademyData] = useState<Record<number, any[]>>({});
+  const [academyLoading, setAcademyLoading] = useState<number | null>(null);
+
+  const COURSE_NAMES: Record<string, string> = {
+    python:'Python', javascript:'JavaScript', java:'Java', cpp:'C++',
+    dsa:'DSA', sql:'SQL', webdev:'Web Dev', nodejs:'Node.js',
+    react:'React', c:'C', git:'Git', docker:'Docker',
+    cybersecurity:'Cybersecurity', flutter:'Flutter',
+    datascience:'Data Science', ml:'Machine Learning',
+  };
+
+  const toggleAcademy = async (instId: number) => {
+    if (academyExpanded === instId) { setAcademyExpanded(null); return; }
+    setAcademyExpanded(instId);
+    if (academyData[instId]) return;
+    setAcademyLoading(instId);
+    try {
+      const r = await client.get('/admin/academy-progress', { params: { institutionId: instId } });
+      setAcademyData(prev => ({ ...prev, [instId]: r.data.data || [] }));
+    } catch {} finally { setAcademyLoading(null); }
+  };
 
   const load = () => {
     setLoading(true);
@@ -233,7 +255,8 @@ export function AdminInstitutions() {
               : filtered.length === 0
               ? <tr><td colSpan={6} className="text-center py-12 text-gray-600">No institutions found</td></tr>
               : filtered.map(inst => (
-                <tr key={inst.id} className="transition" style={{borderBottom:"1px solid rgba(255,255,255,0.05)"}} onMouseEnter={e=>(e.currentTarget.style.background="rgba(255,255,255,0.04)")} onMouseLeave={e=>(e.currentTarget.style.background="")}>
+                <React.Fragment key={inst.id}>
+                <tr className="transition" style={{borderBottom:"1px solid rgba(255,255,255,0.05)"}} onMouseEnter={e=>(e.currentTarget.style.background="rgba(255,255,255,0.04)")} onMouseLeave={e=>(e.currentTarget.style.background="")}>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -251,9 +274,15 @@ export function AdminInstitutions() {
                     <p className="text-xs text-gray-600">{inst.user?.email}</p>
                   </td>
                   <td className="px-4 py-3">
-                    {inst.user?.isApproved
-                      ? <span className="flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full w-fit" style={{background:"rgba(16,185,129,0.15)",color:"#34d399"}}><CheckCircle2 size={12} /> Approved</span>
-                      : <span className="flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full w-fit" style={{background:"rgba(245,158,11,0.15)",color:"#fbbf24"}}>Pending</span>}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {inst.user?.isApproved
+                        ? <span className="flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full w-fit" style={{background:"rgba(16,185,129,0.15)",color:"#34d399"}}><CheckCircle2 size={12} /> Approved</span>
+                        : <span className="flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full w-fit" style={{background:"rgba(245,158,11,0.15)",color:"#fbbf24"}}>Pending</span>}
+                      <button onClick={()=>toggleAcademy(inst.id)}
+                        style={{display:'flex',alignItems:'center',gap:4,padding:'2px 8px',borderRadius:6,border:'1px solid rgba(99,102,241,0.3)',background:'rgba(99,102,241,0.1)',color:'#818cf8',fontSize:11,fontWeight:700,cursor:'pointer'}}>
+                        <GraduationCap size={11}/> Academy {academyExpanded===inst.id ? <ChevronUp size={10}/> : <ChevronDown size={10}/>}
+                      </button>
+                    </div>
                   </td>
                   <td className="px-4 py-3 text-gray-400 text-xs">{new Date(inst.createdAt).toLocaleDateString('en-IN')}</td>
                   <td className="px-4 py-3">
@@ -268,6 +297,47 @@ export function AdminInstitutions() {
                     </div>
                   </td>
                 </tr>
+                {/* Academy Expanded Row */}
+                {academyExpanded === inst.id && (
+                  <tr style={{background:'rgba(99,102,241,0.04)'}}>
+                    <td colSpan={6} style={{padding:'0 16px 16px'}}>
+                      {academyLoading === inst.id
+                        ? <div style={{color:'#475569',fontSize:12,padding:'12px 0'}}>Loading academy data...</div>
+                        : (academyData[inst.id] || []).length === 0
+                        ? <div style={{color:'#334155',fontSize:12,padding:'12px 0'}}>No students enrolled in AI Academy yet</div>
+                        : <div style={{display:'flex',flexDirection:'column',gap:8,marginTop:4}}>
+                            {(academyData[inst.id] || []).map((s: any) => (
+                              <div key={s.student_id} style={{background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:10,padding:'10px 14px'}}>
+                                <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:6}}>
+                                  <div>
+                                    <span style={{color:'#fff',fontSize:13,fontWeight:700}}>{s.name}</span>
+                                    <span style={{color:'#6366f1',fontSize:11,fontFamily:'monospace',marginLeft:8}}>{s.careerId}</span>
+                                  </div>
+                                  <span style={{color:'#475569',fontSize:11}}>{s.department || ''}</span>
+                                </div>
+                                <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
+                                  {(s.academy || []).length === 0
+                                    ? <span style={{color:'#334155',fontSize:11}}>No courses enrolled</span>
+                                    : (s.academy || []).map((c: any) => (
+                                      <div key={c.courseId} style={{
+                                        background: c.claimedCert ? 'rgba(16,185,129,0.1)' : 'rgba(255,255,255,0.04)',
+                                        border: `1px solid ${c.claimedCert ? 'rgba(16,185,129,0.25)' : 'rgba(255,255,255,0.07)'}`,
+                                        borderRadius:6, padding:'3px 10px',
+                                      }}>
+                                        <span style={{color:'#94a3b8',fontSize:11}}>{COURSE_NAMES[c.courseId] || c.courseId}</span>
+                                        {c.claimedCert && <span style={{color:'#34d399',fontSize:10,marginLeft:4}}>✅</span>}
+                                      </div>
+                                    ))
+                                  }
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                      }
+                    </td>
+                  </tr>
+                )}
+                </React.Fragment>
               ))}
           </tbody>
         </table>

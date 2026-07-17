@@ -365,9 +365,9 @@ const getAcademyProgress = asyncHandler(async (req, res) => {
 
 // Admin: get all students academy progress
 const getAllAcademyProgress = asyncHandler(async (req, res) => {
-  const institutionId = req.institution?.id;
+  const institutionId = req.institution?.id || req.query.institutionId;
+  const isAdmin = req.user?.role === 'admin';
 
-  // Get all students of this institution with their academy progress
   const rows = await sequelize.query(`
     SELECT
       ist.id as student_id,
@@ -375,11 +375,11 @@ const getAllAcademyProgress = asyncHandler(async (req, res) => {
       ist.name,
       ist.email,
       ist.department,
+      inst."institutionName",
       COALESCE(
         json_agg(
           json_build_object(
             'courseId', ap.course_id,
-            'completed', ap.completed,
             'xp', ap.xp,
             'claimedCert', ap.claimed_cert,
             'lastActive', ap.last_active
@@ -389,9 +389,10 @@ const getAllAcademyProgress = asyncHandler(async (req, res) => {
       ) as academy
     FROM institution_students ist
     LEFT JOIN inst_academy_progress ap ON ap.student_id = ist.id
-    WHERE ist."institutionId" = :institutionId
-    GROUP BY ist.id, ist."careerId", ist.name, ist.email, ist.department
-    ORDER BY ist.name
+    LEFT JOIN institutions inst ON inst.id = ist."institutionId"
+    ${isAdmin ? '' : 'WHERE ist."institutionId" = :institutionId'}
+    GROUP BY ist.id, ist."careerId", ist.name, ist.email, ist.department, inst."institutionName"
+    ORDER BY inst."institutionName", ist.name
   `, {
     replacements: { institutionId },
     type: sequelize.QueryTypes.SELECT,
