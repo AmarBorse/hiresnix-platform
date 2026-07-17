@@ -17,20 +17,39 @@ export function InstStudentCertificates() {
   const [loading, setLoading]       = useState(true);
 
   useEffect(() => {
-    Promise.allSettled([
-      instStudentApi.getCertificates(),
-      instStudentApi.getAcademyProgress(),
-    ]).then(([certsRes, academyRes]) => {
-      if (certsRes.status === 'fulfilled') setCerts(certsRes.value.data || []);
-      if (academyRes.status === 'fulfilled') {
-        const progress = academyRes.value.data || [];
-        const completed = progress.filter((p: any) => 
-          p.claimed_cert === true || p.claimedCert === true || (p.xp || 0) > 0
-        );
-        setAcademyCerts(completed);
-      }
-    }).catch(() => toast.error('Failed to load certificates'))
-      .finally(() => setLoading(false));
+    // Load institution certificates from backend
+    instStudentApi.getCertificates()
+      .then(r => setCerts(r.data || []))
+      .catch(() => {});
+
+    // Load AI Academy certs from localStorage directly
+    try {
+      // sid in AcademyPage = student.id or student.careerId
+      const studentRaw = localStorage.getItem('hx_inst_student_id') || '';
+      const COURSES = ['python','javascript','java','cpp','dsa','sql','webdev'];
+      const COURSE_NAMES: Record<string,string> = {
+        python:'Python Programming', javascript:'JavaScript', java:'Java',
+        cpp:'C++', dsa:'Data Structures & Algorithms', sql:'SQL & Databases', webdev:'Full Stack Web Development'
+      };
+      const completed: any[] = [];
+      // Try both student id and all possible keys
+      const allKeys = Object.keys(localStorage).filter(k => k.startsWith('hx_academy_') && !k.startsWith('hx_academy_enrolled'));
+      allKeys.forEach(key => {
+        const parts = key.split('_');
+        const courseId = parts[parts.length - 1];
+        if (COURSES.includes(courseId)) {
+          const data = localStorage.getItem(key);
+          if (data) {
+            const p = JSON.parse(data);
+            if ((p.xp || 0) > 0) {
+              completed.push({ ...p, course_id: courseId, courseName: COURSE_NAMES[courseId] });
+            }
+          }
+        }
+      });
+      setAcademyCerts(completed);
+    } catch(e) {}
+    setLoading(false);
   }, []);
 
   const downloadPdf = (certId: string) => {
