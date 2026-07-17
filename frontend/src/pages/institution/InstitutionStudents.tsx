@@ -207,7 +207,7 @@ export function InstitutionStudents() {
               <div className="flex items-center justify-between">
                 <span className="" style={{color:"#64748b"}}>Default Password</span>
                 <span className="font-mono text-xs px-2 py-1 rounded" style={{background:"rgba(255,255,255,0.08)",color:"#e2e8f0"}}>
-                  HX@{selected.careerId?.split('-')[2]}
+                  HX@{(() => { const p = selected.careerId?.split('-'); return p?.[p.length-1]; })()}
                 </span>
               </div>
               {[['Name', selected.name], ['Email', selected.email], ['Mobile', selected.mobile],
