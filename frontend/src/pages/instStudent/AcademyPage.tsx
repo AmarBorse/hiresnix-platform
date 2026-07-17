@@ -1269,17 +1269,29 @@ function LessonPage({ course, onBack }: { course:any; onBack:()=>void }) {
 
   const toggleMic = ()=>{
     const SR=(window as any).SpeechRecognition||(window as any).webkitSpeechRecognition;
-    if (!SR){alert('Use Chrome for voice');return;}
+    if (!SR){alert('Voice not supported. Use Chrome browser.');return;}
     if (micOn){micRef.current?.abort();setMicOn(false);return;}
-    // Cancel any ongoing speech before mic
     window.speechSynthesis?.cancel();
     setSpeaking(false);
     stopWave();
     setMicOn(true);
-    const r=new SR(); r.lang='en-US'; r.continuous=false;
-    r.onresult=(e:any)=>{sendMentor(e.results[0][0].transcript);};
-    r.onend=()=>setMicOn(false); r.onerror=()=>setMicOn(false);
-    micRef.current=r; r.start();
+    const r=new SR();
+    r.lang='en-US';
+    r.continuous=false;
+    r.interimResults=false;
+    r.onresult=(e:any)=>{
+      const transcript = e.results[0][0].transcript;
+      if(transcript) sendMentor(transcript);
+    };
+    r.onend=()=>setMicOn(false);
+    r.onerror=(e:any)=>{
+      console.error('Mic error:',e.error);
+      setMicOn(false);
+      if(e.error==='not-allowed') alert('Mic permission denied. Allow mic in browser settings.');
+      else if(e.error==='no-speech') alert('No speech detected. Try again.');
+    };
+    try { micRef.current=r; r.start(); }
+    catch(e){ console.error('Start error:',e); setMicOn(false); }
   };
 
   const selectLesson = (mi:number,li:number)=>{
