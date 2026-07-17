@@ -203,12 +203,21 @@ export function InstitutionCertificates() {
     window.open(institutionApi.downloadCertPdf(cert.certificateId), '_blank');
   };
 
+  // Group by student
+  const grouped = certs.reduce((acc: Record<number, any>, c) => {
+    const sid = c.studentId;
+    if (!acc[sid]) acc[sid] = { name: c.studentName, careerId: c.student?.careerId || '—', certs: [] };
+    acc[sid].certs.push(c);
+    return acc;
+  }, {});
+  const students = Object.values(grouped);
+
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-white">Certificate Management</h1>
-          <p className="text-sm" style={{color:"#64748b"}}>{total} certificates issued</p>
+          <p className="text-sm" style={{color:"#64748b"}}>{students.length} students · {total} certificates issued</p>
         </div>
         <button onClick={() => setModal(true)}
           className="flex items-center gap-2 px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
@@ -216,69 +225,69 @@ export function InstitutionCertificates() {
         </button>
       </div>
 
-      <div className="rounded-xl overflow-x-auto" style={{background:"linear-gradient(135deg,rgba(15,23,42,0.95),rgba(20,30,55,0.95))",border:"1px solid rgba(255,255,255,0.1)"}}>
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-left text-xs uppercase tracking-wide" style={{color:"#475569",borderBottom:"1px solid rgba(255,255,255,0.08)"}}>
-              <th className="px-4 py-3">Certificate ID</th>
-              <th className="px-4 py-3">Student</th>
-              <th className="px-4 py-3">Career ID</th>
-              <th className="px-4 py-3">Type</th>
-              <th className="px-4 py-3">Course</th>
-              <th className="px-4 py-3">Issued</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3 text-center">PDF</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading
-              ? <tr><td colSpan={8} className="text-center py-12" style={{color:"#475569"}}>Loading...</td></tr>
-              : certs.length === 0
-              ? <tr><td colSpan={8} className="text-center py-12" style={{color:"#475569"}}>No certificates issued yet</td></tr>
-              : certs.map(c => (
-                <tr key={c.id} className="transition" style={{borderBottom:"1px solid rgba(255,255,255,0.05)"}} onMouseEnter={e=>(e.currentTarget.style.background="rgba(255,255,255,0.04)")} onMouseLeave={e=>(e.currentTarget.style.background="")}>
-                  <td className="px-4 py-3">
-                    <span className="font-mono text-xs px-2 py-0.5 rounded" style={{background:"rgba(99,102,241,0.15)",color:"#818cf8"}}>{c.certificateId}</span>
-                  </td>
-                  <td className="px-4 py-3 font-medium text-white">{c.studentName}</td>
-                  <td className="px-4 py-3">
-                    <span className="font-mono text-xs" style={{color:"#64748b"}}>{c.student?.careerId || '—'}</span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={"text-xs px-2 py-0.5 rounded-full font-medium"}>
-                      {c.type}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3" style={{color:"#64748b"}}>{c.courseName || '—'}</td>
-                  <td className="px-4 py-3" style={{color:"#64748b"}}>{new Date(c.issuedAt).toLocaleDateString('en-IN')}</td>
-                  <td className="px-4 py-3">
-                    {c.isValid
-                      ? <span className="flex items-center gap-1 text-xs font-medium" style={{color:"#34d399"}}><CheckCircle2 size={13} /> Valid</span>
-                      : <span className="text-xs" style={{color:"#f87171"}}>Revoked</span>}
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    <button onClick={() => downloadPdf(c)}
-                      className="p-1.5 hover:bg-indigo-500/20 text-indigo-400 rounded-lg transition" title="Download PDF">
-                      <Download size={15} />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-          </tbody>
-        </table>
-      </div>
-
-      {total > LIMIT && (
-        <div className="flex items-center justify-between text-sm" style={{color:"#64748b"}}>
-          <span>Showing {Math.min((page-1)*LIMIT+1, total)}–{Math.min(page*LIMIT, total)} of {total}</span>
-          <div className="flex gap-2">
-            <button disabled={page===1} onClick={() => setPage(p=>p-1)}
-              className="p-1.5 rounded disabled:opacity-40 hover:bg-white/10 text-gray-400 transition" style={{border:"1px solid rgba(255,255,255,0.1)"}}><ChevronLeft size={16} /></button>
-            <button disabled={page*LIMIT>=total} onClick={() => setPage(p=>p+1)}
-              className="p-1.5 rounded disabled:opacity-40 hover:bg-white/10 text-gray-400 transition" style={{border:"1px solid rgba(255,255,255,0.1)"}}><ChevronRight size={16} /></button>
-          </div>
+      <div className="rounded-xl overflow-hidden" style={{background:"linear-gradient(135deg,rgba(15,23,42,0.95),rgba(20,30,55,0.95))",border:"1px solid rgba(255,255,255,0.1)"}}>
+        {/* Header */}
+        <div className="grid text-xs uppercase tracking-wide px-4 py-3" style={{gridTemplateColumns:'2fr 2fr 1fr 1fr 1fr 1fr',color:"#475569",borderBottom:"1px solid rgba(255,255,255,0.08)"}}>
+          <div>Student</div>
+          <div>Career ID</div>
+          <div className="text-center">Skill</div>
+          <div className="text-center">Course</div>
+          <div className="text-center">Training</div>
+          <div className="text-center">Downloads</div>
         </div>
-      )}
+
+        {loading
+          ? <div className="text-center py-12" style={{color:"#475569"}}>Loading...</div>
+          : students.length === 0
+          ? <div className="text-center py-12" style={{color:"#475569"}}>No certificates issued yet</div>
+          : students.map((s: any) => {
+              const skill    = s.certs.find((c: any) => c.type === 'Skill Assessment');
+              const course   = s.certs.find((c: any) => c.type === 'Course Completion');
+              const training = s.certs.find((c: any) => c.type === 'Training Completion');
+              return (
+                <div key={s.careerId} className="grid px-4 py-3 items-center transition"
+                  style={{gridTemplateColumns:'2fr 2fr 1fr 1fr 1fr 1fr',borderBottom:"1px solid rgba(255,255,255,0.05)"}}
+                  onMouseEnter={e=>(e.currentTarget.style.background="rgba(255,255,255,0.04)")}
+                  onMouseLeave={e=>(e.currentTarget.style.background="")}>
+                  <div className="font-medium text-white text-sm">{s.name}</div>
+                  <div className="font-mono text-xs" style={{color:"#64748b"}}>{s.careerId}</div>
+                  <div className="flex justify-center">
+                    {skill
+                      ? <button onClick={()=>downloadPdf(skill)} title={skill.certificateId}
+                          className="flex flex-col items-center gap-0.5 group">
+                          <CheckCircle2 size={18} style={{color:'#c084fc'}}/>
+                        </button>
+                      : <span style={{color:"#334155"}}>—</span>}
+                  </div>
+                  <div className="flex justify-center">
+                    {course
+                      ? <button onClick={()=>downloadPdf(course)} title={course.certificateId}
+                          className="flex flex-col items-center gap-0.5 group">
+                          <CheckCircle2 size={18} style={{color:'#34d399'}}/>
+                        </button>
+                      : <span style={{color:"#334155"}}>—</span>}
+                  </div>
+                  <div className="flex justify-center">
+                    {training
+                      ? <button onClick={()=>downloadPdf(training)} title={training.certificateId}
+                          className="flex flex-col items-center gap-0.5 group">
+                          <CheckCircle2 size={18} style={{color:'#60a5fa'}}/>
+                        </button>
+                      : <span style={{color:"#334155"}}>—</span>}
+                  </div>
+                  <div className="flex justify-center gap-2">
+                    {s.certs.map((c: any) => (
+                      <button key={c.id} onClick={()=>downloadPdf(c)} title={c.type}
+                        className="p-1.5 hover:bg-indigo-500/20 text-indigo-400 rounded-lg transition">
+                        <Download size={14}/>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })
+        }
+      </div>
 
       {modal && <IssueCertModal onClose={() => setModal(false)} onSaved={() => { setModal(false); load(); }} />}
     </div>
