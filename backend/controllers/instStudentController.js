@@ -323,7 +323,7 @@ const downloadAcademyCertificate = asyncHandler(async (req, res) => {
 
 // ── Academy Progress ─────────────────────────────────────────────
 const saveAcademyProgress = asyncHandler(async (req, res) => {
-  const student = req.student;
+  const student = req.instStudent;
   const { courseId, completed, xp, claimedCert } = req.body;
   if (!courseId) { res.status(400); throw new Error('courseId required'); }
 
