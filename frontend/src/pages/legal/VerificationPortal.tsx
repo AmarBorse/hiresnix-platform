@@ -136,6 +136,7 @@ export function VerificationPortal({ defaultType }: { defaultType?: Verification
       .replace(/^LOR\s*ID\s*:\s*/i, '')
       .replace(/^CERT\s*(NO|ID|#)?\s*:\s*/i, '')
       .replace(/^OFFER\s*(LETTER)?\s*(ID|NO)?\s*:\s*/i, '')
+      .replace(/\s+/g, '')
       .trim().toUpperCase();
     if (!value) return;
     setSearchedId(value);

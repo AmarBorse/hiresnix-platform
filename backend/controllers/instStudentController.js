@@ -197,7 +197,7 @@ const downloadAcademyCertificate = asyncHandler(async (req, res) => {
   };
 
   const courseName = COURSE_NAMES[courseId] || courseId;
-  const certNo = `HXAC-${student.careerId}-${courseId.toUpperCase()}-${Date.now().toString(36).toUpperCase()}`;
+  const certNo = `HXAC-${student.careerId}-${courseId.toUpperCase()}-${Date.now().toString(36).toUpperCase()}`.replace(/\s+/g, '');
   const verifyUrl = `${process.env.CLIENT_URL || 'https://hiresnix.co.in'}/verify-academy/${certNo}`;
   const issuedDate = new Date().toLocaleDateString('en-IN', { day:'numeric', month:'long', year:'numeric' });
 
@@ -389,17 +389,18 @@ const verifyAcademyCertificate = asyncHandler(async (req, res) => {
   const { certNo } = req.params;
   if (!certNo) { res.status(400); throw new Error('Certificate number required'); }
 
-  // certNo format: HXAC-{careerId}-{courseId}-{hash}
-  // e.g. HXAC-HX-2026-000005-PYTHON-ABC123
-  const parts = certNo.toUpperCase().split('-');
-  if (parts[0] !== 'HXAC' || parts.length < 4) {
+  // certNo format: HXAC-{careerId}-{COURSEID}-{HASH}
+  // e.g. HXAC-HX-2026-000005-PYTHON-MROKNCTS
+  // careerId always starts with HX- and has format HX-YYYY-NNNNNN (3 parts with dashes)
+  // So: parts[0]=HXAC, parts[1]=HX, parts[2]=2026, parts[3]=000005, parts[4]=COURSEID, parts[5]=HASH
+  const clean = certNo.toUpperCase().replace(/\s+/g, '');
+  const parts = clean.split('-');
+  if (parts[0] !== 'HXAC' || parts.length < 6) {
     return res.json({ success: true, valid: false });
   }
 
-  // Extract careerId - everything between HXAC- and the last two parts (courseId-hash)
-  // Format: HXAC-HX-2026-000005-PYTHON-ABC123
-  const courseId = parts[parts.length - 2].toLowerCase();
-  const careerId = parts.slice(1, parts.length - 2).join('-');
+  const careerId = `${parts[1]}-${parts[2]}-${parts[3]}`;
+  const courseId = parts[4].toLowerCase();
 
   const COURSE_NAMES = {
     python: 'Python Programming', javascript: 'JavaScript',
