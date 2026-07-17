@@ -25,7 +25,7 @@ export function InstStudentCertificates() {
       if (academyRes.status === 'fulfilled') {
         const progress = academyRes.value.data || [];
         const completed = progress.filter((p: any) => 
-          p.claimed_cert === true || p.claimedCert === true || (p.xp || 0) >= 100
+          p.claimed_cert === true || p.claimedCert === true || (p.xp || 0) > 0
         );
         setAcademyCerts(completed);
       }
