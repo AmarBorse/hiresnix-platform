@@ -21,7 +21,7 @@ export function InstStudentInternship() {
   const [form, setForm] = useState({ phone: '', college: student?.institutionName || '', year: '', whyJoin: '' });
 
   // Check if hiresnixToken exists
-  const hasToken = !!localStorage.getItem('hirenix_token');
+  const hasToken = !!localStorage.getItem('hx_inst_hiresnix_token');
 
   const loadData = async () => {
     setLoading(true);

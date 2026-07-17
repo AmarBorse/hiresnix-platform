@@ -21,7 +21,7 @@ instClient.interceptors.request.use((config) => {
 export const instInternshipClient = axios.create({ baseURL: apiBaseUrl, withCredentials: true });
 
 instInternshipClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem('hirenix_token');
+  const token = localStorage.getItem('hx_inst_hiresnix_token');
   if (token) config.headers.Authorization = `Bearer ${token}`;
   // Send inst student context so backend can tag applications
   const instStudentId = localStorage.getItem('hx_inst_student_id');
@@ -64,7 +64,7 @@ export const instStudentApi = {
     const data = await instClient.post('/inst-student/login', { careerId, password }).then(r => r.data);
     // Save hiresnixToken for internship platform access
     if (data.hiresnixToken) {
-      localStorage.setItem('hirenix_token', data.hiresnixToken);
+      localStorage.setItem('hx_inst_hiresnix_token', data.hiresnixToken);
       localStorage.setItem('hx_hiresnix_user_id', data.hiresnixUserId || '');
       localStorage.setItem('hx_is_inst_student', 'true');
       localStorage.setItem('hx_inst_student_id', data.student?.id || '');
