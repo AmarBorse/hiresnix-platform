@@ -529,6 +529,7 @@ function LessonPage({ course, onBack }: { course:any; onBack:()=>void }) {
 
   const [isPlaying, setIsPlaying] = useState(true);
   const [showControls, setShowControls] = useState(false);
+  const [vidLang, setVidLang] = useState<'en'|'hi'|'mr'>('en');
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const controlsTimerRef = useRef<any>(null);
 
@@ -823,8 +824,8 @@ function LessonPage({ course, onBack }: { course:any; onBack:()=>void }) {
                 <div style={{position:'relative',paddingBottom:'56.25%',height:0,overflow:'hidden'}}>
                   <iframe
                     ref={iframeRef}
-                    key={lesson}
-                    src={`https://www.youtube.com/embed/${getVid(lesson)[0]}?start=${getVid(lesson)[1]}&rel=0&modestbranding=1&playsinline=1&autoplay=1&controls=0&disablekb=0&iv_load_policy=3&enablejsapi=1&vq=hd720`}
+                    key={lesson + vidLang}
+                    src={`https://www.youtube.com/embed/${getVid(lesson)[0]}?start=${getVid(lesson)[1]}&rel=0&modestbranding=1&playsinline=1&autoplay=1&controls=0&disablekb=0&iv_load_policy=3&enablejsapi=1&vq=hd720&hl=${vidLang}&cc_lang_pref=${vidLang}&cc_load_policy=1`}
                     title={lesson}
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
                     allowFullScreen
@@ -856,6 +857,13 @@ function LessonPage({ course, onBack }: { course:any; onBack:()=>void }) {
                       style={{background:'none',border:'none',color:'#94a3b8',fontSize:'14px',cursor:'pointer',padding:'2px 6px',lineHeight:1}}
                     >10s ⏩</button>
                     <div style={{flex:1}}/>
+                    {/* Language selector */}
+                    {(['en','hi','mr'] as const).map(lang=>(
+                      <button key={lang} onClick={()=>setVidLang(lang)}
+                        style={{background:vidLang===lang?`${ACC}33`:'none',border:`1px solid ${vidLang===lang?ACC:'rgba(255,255,255,0.15)'}`,color:vidLang===lang?ACC:'#94a3b8',fontSize:'10px',fontWeight:700,padding:'3px 8px',borderRadius:'6px',cursor:'pointer'}}>
+                        {lang==='en'?'EN':lang==='hi'?'हिं':'मर'}
+                      </button>
+                    ))}
                     <button
                       onClick={()=>iframeRef.current?.requestFullscreen()}
                       style={{background:'none',border:'none',color:'#94a3b8',fontSize:'16px',cursor:'pointer',padding:'2px 6px',lineHeight:1}}
