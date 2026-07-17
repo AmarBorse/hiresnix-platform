@@ -413,10 +413,9 @@ const verifyAcademyCertificate = asyncHandler(async (req, res) => {
       `SELECT * FROM inst_academy_progress WHERE career_id = :careerId AND course_id = :courseId LIMIT 1`,
       { replacements: { careerId, courseId }, type: sequelize.QueryTypes.SELECT }
     );
-    const progress = rows;
+    const progress = rows[0];
 
-    if (!progress || (!progress.claimed_cert && (progress.xp||0) < 100))
-      return res.json({ success:true, valid:false });
+    if (!progress) return res.json({ success:true, valid:false });
 
     return res.json({
       success:true, valid:true,
