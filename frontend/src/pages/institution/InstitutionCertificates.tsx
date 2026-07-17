@@ -1,6 +1,6 @@
 // src/pages/institution/InstitutionCertificates.tsx
 import React, { useEffect, useState } from 'react';
-import { Award, Plus, Download, X, CheckCircle2, CheckSquare, Square } from 'lucide-react';
+import { Award, Plus, Download, X, CheckCircle2, ChevronLeft, ChevronRight, CheckSquare, Square } from 'lucide-react';
 import { toast } from 'sonner';
 import { institutionApi } from '../../api/institution';
 import { InstitutionCertificate, InstitutionStudent, InstituteCourse } from '../../types';
@@ -145,13 +145,10 @@ function IssueCertModal({ onClose, onSaved }: { onClose: () => void; onSaved: ()
             ? <div className="flex justify-center py-8"><div className="w-6 h-6 border-3 border-indigo-500 border-t-transparent rounded-full animate-spin" /></div>
             : students.length === 0
             ? <p className="text-center text-gray-400 text-sm py-8">No students found</p>
-            : students.map(s => {
-              const alreadyIssued = issuedStudentIds.has(s.id);
-              return (
-              <label key={s.id} className={`flex items-center gap-3 p-2.5 rounded-lg transition ${alreadyIssued ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-white/05'}`}>
+            : students.map(s => (
+              <label key={s.id} className="flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition hover:bg-white/05">
                 <input type="checkbox" checked={selected.includes(s.id)}
-                  disabled={alreadyIssued}
-                  onChange={e => !alreadyIssued && setSelected(prev =>
+                  onChange={e => setSelected(prev =>
                     e.target.checked ? [...prev, s.id] : prev.filter(x => x !== s.id)
                   )}
                   className="w-4 h-4 rounded border-gray-300 text-indigo-600" />
@@ -159,13 +156,11 @@ function IssueCertModal({ onClose, onSaved }: { onClose: () => void; onSaved: ()
                   <p className="text-sm font-medium text-white">{s.name}</p>
                   <p className="text-xs" style={{color:"#64748b"}}>{s.careerId} · {s.email}</p>
                 </div>
-                {alreadyIssued
-                  ? <span className="text-xs font-semibold shrink-0" style={{color:'#34d399'}}>✅ Already Issued</span>
-                  : s.department && <span className="text-xs text-gray-400 shrink-0">{s.department}</span>
-                }
+                {s.department && (
+                  <span className="text-xs text-gray-400 shrink-0">{s.department}</span>
+                )}
               </label>
-              );
-            })
+            ))
           }
         </div>
 
@@ -190,35 +185,22 @@ function IssueCertModal({ onClose, onSaved }: { onClose: () => void; onSaved: ()
 export function InstitutionCertificates() {
   const [certs, setCerts]   = useState<InstitutionCertificate[]>([]);
   const [total, setTotal]   = useState(0);
+  const [page, setPage]     = useState(1);
   const [loading, setLoading] = useState(true);
   const [modal, setModal]   = useState(false);
+  const LIMIT = 15;
 
   const load = () => {
     setLoading(true);
-    institutionApi.getCertificates({ page: 1, limit: 500 })
+    institutionApi.getCertificates({ page, limit: LIMIT })
       .then(r => { setCerts(r.data); setTotal(r.total); })
       .catch(() => toast.error('Failed to load certificates'))
       .finally(() => setLoading(false));
   };
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [page]);
 
   const downloadPdf = (cert: InstitutionCertificate) => {
     window.open(institutionApi.downloadCertPdf(cert.certificateId), '_blank');
-  };
-
-  // Group by student
-  const grouped = certs.reduce((acc: Record<number, any>, c) => {
-    const sid = c.studentId;
-    if (!acc[sid]) acc[sid] = { name: c.studentName, careerId: c.student?.careerId || '—', certs: [] };
-    acc[sid].certs.push(c);
-    return acc;
-  }, {});
-  const students = Object.values(grouped);
-
-  const TYPE_COLOR: Record<string, { bg: string; color: string; label: string }> = {
-    'Skill Assessment':    { bg: 'rgba(139,92,246,0.15)', color: '#c084fc', label: 'Skill' },
-    'Course Completion':   { bg: 'rgba(16,185,129,0.15)', color: '#34d399', label: 'Course' },
-    'Training Completion': { bg: 'rgba(59,130,246,0.15)', color: '#60a5fa', label: 'Training' },
   };
 
   return (
@@ -226,7 +208,7 @@ export function InstitutionCertificates() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-white">Certificate Management</h1>
-          <p className="text-sm" style={{color:"#64748b"}}>{students.length} students · {total} certificates issued</p>
+          <p className="text-sm" style={{color:"#64748b"}}>{total} certificates issued</p>
         </div>
         <button onClick={() => setModal(true)}
           className="flex items-center gap-2 px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
@@ -234,79 +216,69 @@ export function InstitutionCertificates() {
         </button>
       </div>
 
-      <div className="rounded-xl overflow-hidden" style={{background:"linear-gradient(135deg,rgba(15,23,42,0.95),rgba(20,30,55,0.95))",border:"1px solid rgba(255,255,255,0.1)"}}>
-        {/* Header */}
-        <div className="grid text-xs uppercase tracking-wide px-4 py-3" style={{gridTemplateColumns:'2fr 2fr 1fr 1fr 1fr 1fr',color:"#475569",borderBottom:"1px solid rgba(255,255,255,0.08)"}}>
-          <div>Student</div>
-          <div>Career ID</div>
-          <div className="text-center">Skill</div>
-          <div className="text-center">Course</div>
-          <div className="text-center">Training</div>
-          <div className="text-center">Downloads</div>
-        </div>
-
-        {loading
-          ? <div className="text-center py-12" style={{color:"#475569"}}>Loading...</div>
-          : students.length === 0
-          ? <div className="text-center py-12" style={{color:"#475569"}}>No certificates issued yet</div>
-          : students.map((s: any) => {
-              const skill    = s.certs.find((c: any) => c.type === 'Skill Assessment');
-              const course   = s.certs.find((c: any) => c.type === 'Course Completion');
-              const training = s.certs.find((c: any) => c.type === 'Training Completion');
-              return (
-                <div key={s.careerId} className="grid px-4 py-3 items-center transition"
-                  style={{gridTemplateColumns:'2fr 2fr 1fr 1fr 1fr 1fr',borderBottom:"1px solid rgba(255,255,255,0.05)"}}
-                  onMouseEnter={e=>(e.currentTarget.style.background="rgba(255,255,255,0.04)")}
-                  onMouseLeave={e=>(e.currentTarget.style.background="")}>
-                  {/* Student */}
-                  <div className="font-medium text-white text-sm">{s.name}</div>
-                  {/* Career ID */}
-                  <div className="font-mono text-xs" style={{color:"#64748b"}}>{s.careerId}</div>
-                  {/* Skill */}
-                  <div className="flex justify-center">
-                    {skill
-                      ? <button onClick={()=>downloadPdf(skill)} title={`Download ${skill.certificateId}`}
-                          className="flex flex-col items-center gap-0.5 group">
-                          <CheckCircle2 size={18} style={{color:'#c084fc'}}/>
-                          <span className="text-[10px] opacity-0 group-hover:opacity-100 transition" style={{color:'#c084fc'}}>↓</span>
-                        </button>
-                      : <span style={{color:"#334155"}}>—</span>}
-                  </div>
-                  {/* Course */}
-                  <div className="flex justify-center">
-                    {course
-                      ? <button onClick={()=>downloadPdf(course)} title={`Download ${course.certificateId}`}
-                          className="flex flex-col items-center gap-0.5 group">
-                          <CheckCircle2 size={18} style={{color:'#34d399'}}/>
-                          <span className="text-[10px] opacity-0 group-hover:opacity-100 transition" style={{color:'#34d399'}}>↓</span>
-                        </button>
-                      : <span style={{color:"#334155"}}>—</span>}
-                  </div>
-                  {/* Training */}
-                  <div className="flex justify-center">
-                    {training
-                      ? <button onClick={()=>downloadPdf(training)} title={`Download ${training.certificateId}`}
-                          className="flex flex-col items-center gap-0.5 group">
-                          <CheckCircle2 size={18} style={{color:'#60a5fa'}}/>
-                          <span className="text-[10px] opacity-0 group-hover:opacity-100 transition" style={{color:'#60a5fa'}}>↓</span>
-                        </button>
-                      : <span style={{color:"#334155"}}>—</span>}
-                  </div>
-                  {/* Download All */}
-                  <div className="flex justify-center gap-2">
-                    {s.certs.map((c: any) => (
-                      <button key={c.id} onClick={()=>downloadPdf(c)}
-                        title={c.type}
-                        className="p-1.5 hover:bg-indigo-500/20 text-indigo-400 rounded-lg transition">
-                        <Download size={14}/>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              );
-            })
-        }
+      <div className="rounded-xl overflow-x-auto" style={{background:"linear-gradient(135deg,rgba(15,23,42,0.95),rgba(20,30,55,0.95))",border:"1px solid rgba(255,255,255,0.1)"}}>
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-left text-xs uppercase tracking-wide" style={{color:"#475569",borderBottom:"1px solid rgba(255,255,255,0.08)"}}>
+              <th className="px-4 py-3">Certificate ID</th>
+              <th className="px-4 py-3">Student</th>
+              <th className="px-4 py-3">Career ID</th>
+              <th className="px-4 py-3">Type</th>
+              <th className="px-4 py-3">Course</th>
+              <th className="px-4 py-3">Issued</th>
+              <th className="px-4 py-3">Status</th>
+              <th className="px-4 py-3 text-center">PDF</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading
+              ? <tr><td colSpan={8} className="text-center py-12" style={{color:"#475569"}}>Loading...</td></tr>
+              : certs.length === 0
+              ? <tr><td colSpan={8} className="text-center py-12" style={{color:"#475569"}}>No certificates issued yet</td></tr>
+              : certs.map(c => (
+                <tr key={c.id} className="transition" style={{borderBottom:"1px solid rgba(255,255,255,0.05)"}} onMouseEnter={e=>(e.currentTarget.style.background="rgba(255,255,255,0.04)")} onMouseLeave={e=>(e.currentTarget.style.background="")}>
+                  <td className="px-4 py-3">
+                    <span className="font-mono text-xs px-2 py-0.5 rounded" style={{background:"rgba(99,102,241,0.15)",color:"#818cf8"}}>{c.certificateId}</span>
+                  </td>
+                  <td className="px-4 py-3 font-medium text-white">{c.studentName}</td>
+                  <td className="px-4 py-3">
+                    <span className="font-mono text-xs" style={{color:"#64748b"}}>{c.student?.careerId || '—'}</span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className={"text-xs px-2 py-0.5 rounded-full font-medium"}>
+                      {c.type}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3" style={{color:"#64748b"}}>{c.courseName || '—'}</td>
+                  <td className="px-4 py-3" style={{color:"#64748b"}}>{new Date(c.issuedAt).toLocaleDateString('en-IN')}</td>
+                  <td className="px-4 py-3">
+                    {c.isValid
+                      ? <span className="flex items-center gap-1 text-xs font-medium" style={{color:"#34d399"}}><CheckCircle2 size={13} /> Valid</span>
+                      : <span className="text-xs" style={{color:"#f87171"}}>Revoked</span>}
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    <button onClick={() => downloadPdf(c)}
+                      className="p-1.5 hover:bg-indigo-500/20 text-indigo-400 rounded-lg transition" title="Download PDF">
+                      <Download size={15} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+          </tbody>
+        </table>
       </div>
+
+      {total > LIMIT && (
+        <div className="flex items-center justify-between text-sm" style={{color:"#64748b"}}>
+          <span>Showing {Math.min((page-1)*LIMIT+1, total)}–{Math.min(page*LIMIT, total)} of {total}</span>
+          <div className="flex gap-2">
+            <button disabled={page===1} onClick={() => setPage(p=>p-1)}
+              className="p-1.5 rounded disabled:opacity-40 hover:bg-white/10 text-gray-400 transition" style={{border:"1px solid rgba(255,255,255,0.1)"}}><ChevronLeft size={16} /></button>
+            <button disabled={page*LIMIT>=total} onClick={() => setPage(p=>p+1)}
+              className="p-1.5 rounded disabled:opacity-40 hover:bg-white/10 text-gray-400 transition" style={{border:"1px solid rgba(255,255,255,0.1)"}}><ChevronRight size={16} /></button>
+          </div>
+        </div>
+      )}
 
       {modal && <IssueCertModal onClose={() => setModal(false)} onSaved={() => { setModal(false); load(); }} />}
     </div>
