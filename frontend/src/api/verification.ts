@@ -12,12 +12,12 @@ export type VerificationRecord = {
 };
 
 const endpoints: Record<VerificationType, string> = {
-  certificate: '/iplatform/verify',
-  'offer-letter': '/iplatform/verify-offer',
+  certificate:             '/iplatform/verify',
+  'offer-letter':          '/iplatform/verify-offer',
   'recommendation-letter': '/iplatform/verify-recommendation',
-  'skill-assessment': '/iplatform/verify-skill-assessment',
-  'course-completion': '/iplatform/verify-course-completion',
-  'training-completion': '/iplatform/verify-training-completion',
+  'skill-assessment':      '/institution/certificates/verify',
+  'course-completion':     '/institution/certificates/verify',
+  'training-completion':   '/institution/certificates/verify',
 };
 
 const getLookupIds = (type: VerificationType, id: string) => {
