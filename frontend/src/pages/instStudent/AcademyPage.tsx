@@ -1744,7 +1744,7 @@ function LessonPage({ course, onBack }: { course:any; onBack:()=>void }) {
       </div>
 
       {/* RIGHT SIDEBAR — AI MENTOR */}
-      <div style={{background:'#0b0f1a',borderLeft:'1px solid rgba(255,255,255,0.06)',display:'flex',flexDirection:'column',overflow:'hidden'}}>
+      <div style={{background:'#0b0f1a',borderLeft:'1px solid rgba(255,255,255,0.06)',display:'flex',flexDirection:'column',overflow:'hidden',position:'relative',zIndex:10}}>
         <div style={{padding:'12px 14px',borderBottom:'1px solid rgba(255,255,255,0.06)',display:'flex',alignItems:'center',gap:'9px'}}>
           <div style={{position:'relative'}}>
             <div style={{width:36,height:36,borderRadius:'50%',background:`linear-gradient(135deg,${ACC},${ACC}88)`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'16px',boxShadow:`0 0 12px ${ACC}44`}}>🤖</div>
