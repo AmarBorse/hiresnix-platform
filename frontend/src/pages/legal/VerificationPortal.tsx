@@ -49,6 +49,13 @@ const configs: Record<VerificationType, { label: string; idLabel: string; path: 
     icon: FileCheck2,
     placeholder: 'e.g. HX-CERT-504AAFC2',
   },
+  'academy-certificate': {
+    label: 'Hiresnix AI Academy Certificate',
+    idLabel: 'Certificate Number',
+    path: '/verification/academy-certificate',
+    icon: Award,
+    placeholder: 'e.g. HXAC-HX-2026-000005-PYTHON-ABC123',
+  },
 
 };
 
@@ -56,6 +63,7 @@ const normalizeType = (type?: string): VerificationType => {
   if (type === 'skill-assessment') return 'skill-assessment';
   if (type === 'course-completion') return 'course-completion';
   if (type === 'training-completion') return 'training-completion';
+  if (type === 'academy-certificate') return 'academy-certificate';
   if (type === 'offer-letter') return 'offer-letter';
   if (type === 'recommendation-letter') return 'recommendation-letter';
   return 'certificate';
@@ -218,7 +226,7 @@ export function VerificationPortal({ defaultType }: { defaultType?: Verification
                         ['Student Name', record.studentName || 'Not available'],
                         ['Issue Date', formatDate(record.issueDate) || 'Not available'],
                         [
-                          (type === 'skill-assessment' || type === 'course-completion') ? 'Course / Subject' : 'Internship Domain',
+                          (type === 'skill-assessment' || type === 'course-completion' || type === 'training-completion' || type === 'academy-certificate') ? 'Course / Subject' : 'Internship Domain',
                           record.internshipDomain || 'Not available'
                         ],
                         ['Document Type', record.documentType || active.label],

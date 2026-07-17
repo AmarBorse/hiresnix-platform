@@ -384,4 +384,67 @@ const getAllAcademyProgress = asyncHandler(async (req, res) => {
   res.json({ success: true, data: rows || [] });
 });
 
-module.exports = { login, getMe, getDashboard, getCertificates, changePassword, protectInstStudent, saveAcademyProgress, getAcademyProgress, getAllAcademyProgress, downloadAcademyCertificate };
+// ── Verify Academy Certificate (public) ──────────────────────────
+const verifyAcademyCertificate = asyncHandler(async (req, res) => {
+  const { certNo } = req.params;
+  if (!certNo) { res.status(400); throw new Error('Certificate number required'); }
+
+  // certNo format: HXAC-{careerId}-{courseId}-{hash}
+  // e.g. HXAC-HX-2026-000005-PYTHON-ABC123
+  const parts = certNo.toUpperCase().split('-');
+  if (parts[0] !== 'HXAC' || parts.length < 4) {
+    return res.json({ success: true, valid: false });
+  }
+
+  // Extract careerId - everything between HXAC- and the last two parts (courseId-hash)
+  // Format: HXAC-HX-2026-000005-PYTHON-ABC123
+  const courseId = parts[parts.length - 2].toLowerCase();
+  const careerId = parts.slice(1, parts.length - 2).join('-');
+
+  const COURSE_NAMES = {
+    python: 'Python Programming', javascript: 'JavaScript',
+    java: 'Java', cpp: 'C++', dsa: 'Data Structures & Algorithms',
+    sql: 'SQL & Databases', webdev: 'Full Stack Web Development',
+  };
+
+  // Find student by careerId
+  const student = await InstitutionStudent.findOne({
+    where: { careerId },
+    attributes: ['id','name','email','careerId','department'],
+    include: [{ model: Institution, as: 'institution', attributes: ['institutionName','city','state'] }],
+  });
+
+  if (!student) return res.json({ success: true, valid: false });
+
+  // Check if they completed this course
+  const { supabase } = require('../config/supabase');
+  const { data: progress } = await supabase
+    .from('inst_academy_progress')
+    .select('*')
+    .eq('career_id', careerId)
+    .eq('course_id', courseId)
+    .single();
+
+  if (!progress || (!progress.claimed_cert && (progress.xp || 0) < 500)) {
+    return res.json({ success: true, valid: false });
+  }
+
+  res.json({
+    success: true,
+    valid: true,
+    data: {
+      documentType: 'AI Academy Certificate',
+      documentId: certNo,
+      studentName: student.name,
+      careerId: student.careerId,
+      email: student.email,
+      course: COURSE_NAMES[courseId] || courseId,
+      institution: student.institution?.institutionName || 'Hiresnix',
+      xp: progress.xp || 0,
+      completedLessons: (progress.completed || []).length,
+      issueDate: progress.last_active || new Date().toISOString(),
+    },
+  });
+});
+
+module.exports = { login, getMe, getDashboard, getCertificates, changePassword, protectInstStudent, saveAcademyProgress, getAcademyProgress, getAllAcademyProgress, downloadAcademyCertificate, verifyAcademyCertificate };

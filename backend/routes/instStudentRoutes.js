@@ -6,7 +6,7 @@ const express = require('express');
 const r = express.Router();
 const {
   login, getMe, getDashboard, getCertificates, changePassword, protectInstStudent,
-  saveAcademyProgress, getAcademyProgress, downloadAcademyCertificate,
+  saveAcademyProgress, getAcademyProgress, downloadAcademyCertificate, verifyAcademyCertificate,
 } = require('../controllers/instStudentController');
 
 r.post('/login',             login);
@@ -17,5 +17,6 @@ r.put('/change-password',    protectInstStudent, changePassword);
 r.post('/academy/progress',  protectInstStudent, saveAcademyProgress);
 r.get('/academy/progress',   protectInstStudent, getAcademyProgress);
 r.get('/academy/certificate/:courseId', protectInstStudent, downloadAcademyCertificate);
+r.get('/academy/verify/:certNo', verifyAcademyCertificate); // public
 
 module.exports = r;
