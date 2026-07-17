@@ -1831,6 +1831,7 @@ function CertificateGate({ onUnlocked }: { onUnlocked:()=>void }) {
           ))}
         </div>
         {student && <p style={{color:'#334155',fontSize:'12px',marginTop:'16px'}}>Logged in as: <strong style={{color:'#6366f1'}}>{student.careerId}</strong></p>}
+        <button onClick={()=>window.history.back()} style={{marginTop:'20px',padding:'8px 20px',borderRadius:'10px',border:'1px solid rgba(255,255,255,0.1)',background:'rgba(255,255,255,0.05)',color:'#94a3b8',fontSize:'12px',fontWeight:600,cursor:'pointer'}}>← Back</button>
       </div>
     </div>
   );
