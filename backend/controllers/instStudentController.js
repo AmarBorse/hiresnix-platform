@@ -187,7 +187,7 @@ const changePassword = asyncHandler(async (req, res) => {
 
 // ── Academy Certificate PDF ──────────────────────────────────────
 const downloadAcademyCertificate = asyncHandler(async (req, res) => {
-  const student = req.student;
+  const student = req.instStudent;
   const { courseId } = req.params;
 
   const COURSE_NAMES = {
