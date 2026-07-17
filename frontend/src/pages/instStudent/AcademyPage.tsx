@@ -1269,13 +1269,29 @@ function LessonPage({ course, onBack }: { course:any; onBack:()=>void }) {
 
   const toggleMic = ()=>{
     const SR=(window as any).SpeechRecognition||(window as any).webkitSpeechRecognition;
-    if (!SR){alert('Use Chrome for voice');return;}
+    if (!SR){alert('Voice not supported. Use Chrome browser.');return;}
     if (micOn){micRef.current?.abort();setMicOn(false);return;}
+    window.speechSynthesis?.cancel();
+    setSpeaking(false);
+    stopWave();
     setMicOn(true);
-    const r=new SR(); r.lang='en-US'; r.continuous=false;
-    r.onresult=(e:any)=>{sendMentor(e.results[0][0].transcript);};
-    r.onend=()=>setMicOn(false); r.onerror=()=>setMicOn(false);
-    micRef.current=r; r.start();
+    const r=new SR();
+    r.lang='en-IN';
+    r.continuous=false;
+    r.interimResults=false;
+    r.onresult=(e:any)=>{
+      const transcript = e.results[0][0].transcript;
+      if(transcript) sendMentor(transcript);
+    };
+    r.onend=()=>setMicOn(false);
+    r.onerror=(e:any)=>{
+      console.error('Mic error:',e.error);
+      setMicOn(false);
+      if(e.error==='not-allowed') alert('Mic permission denied. Allow mic in browser settings.');
+      else if(e.error==='no-speech') alert('No speech detected. Try again.');
+    };
+    try { micRef.current=r; r.start(); }
+    catch(e){ console.error('Start error:',e); setMicOn(false); }
   };
 
   const selectLesson = (mi:number,li:number)=>{
@@ -1548,9 +1564,24 @@ function LessonPage({ course, onBack }: { course:any; onBack:()=>void }) {
                   {waveBars.map((h,i)=><div key={i} style={{width:'3px',background:ACC,borderRadius:'2px',height:`${h}px`,transition:'height 0.1s',opacity:0.6+i%3*0.13}}/>)}
                 </div>
               )}
-              <button onClick={loadTeacher} style={{display:'flex',alignItems:'center',gap:'6px',padding:'7px 14px',borderRadius:'9px',border:`1px solid ${ACC}33`,background:`${ACC}0d`,color:ACC,fontSize:'11px',fontWeight:600,cursor:'pointer'}}>
-                <RefreshCw size={12}/> Re-explain
-              </button>
+              <div style={{display:'flex',gap:'8px',alignItems:'center'}}>
+                <button onClick={loadTeacher} style={{display:'flex',alignItems:'center',gap:'6px',padding:'7px 14px',borderRadius:'9px',border:`1px solid ${ACC}33`,background:`${ACC}0d`,color:ACC,fontSize:'11px',fontWeight:600,cursor:'pointer'}}>
+                  <RefreshCw size={12}/> Re-explain
+                </button>
+                {speaking && (
+                  <button onClick={()=>{
+                    if(window.speechSynthesis.paused){window.speechSynthesis.resume();setSpeaking(true);}
+                    else{window.speechSynthesis.pause();window.speechSynthesis.cancel();setSpeaking(false);stopWave();}
+                  }} style={{display:'flex',alignItems:'center',gap:'6px',padding:'7px 14px',borderRadius:'9px',border:'1px solid rgba(255,255,255,0.1)',background:'rgba(255,255,255,0.05)',color:'#fff',fontSize:'11px',fontWeight:600,cursor:'pointer'}}>
+                    ⏸ Pause
+                  </button>
+                )}
+                {!speaking && teacherText && (
+                  <button onClick={()=>speak(teacherText)} style={{display:'flex',alignItems:'center',gap:'6px',padding:'7px 14px',borderRadius:'9px',border:'1px solid rgba(255,255,255,0.1)',background:'rgba(255,255,255,0.05)',color:'#fff',fontSize:'11px',fontWeight:600,cursor:'pointer'}}>
+                    ▶ Play
+                  </button>
+                )}
+              </div>
             </div>
           )}
 
@@ -1729,7 +1760,7 @@ function LessonPage({ course, onBack }: { course:any; onBack:()=>void }) {
       </div>
 
       {/* RIGHT SIDEBAR — AI MENTOR */}
-      <div style={{background:'#0b0f1a',borderLeft:'1px solid rgba(255,255,255,0.06)',display:'flex',flexDirection:'column',overflow:'hidden'}}>
+      <div style={{background:'#0b0f1a',borderLeft:'1px solid rgba(255,255,255,0.06)',display:'flex',flexDirection:'column',overflow:'hidden',position:'relative',zIndex:10}}>
         <div style={{padding:'12px 14px',borderBottom:'1px solid rgba(255,255,255,0.06)',display:'flex',alignItems:'center',gap:'9px'}}>
           <div style={{position:'relative'}}>
             <div style={{width:36,height:36,borderRadius:'50%',background:`linear-gradient(135deg,${ACC},${ACC}88)`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'16px',boxShadow:`0 0 12px ${ACC}44`}}>🤖</div>
