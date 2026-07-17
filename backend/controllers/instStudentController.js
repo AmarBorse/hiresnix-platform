@@ -197,7 +197,13 @@ const downloadAcademyCertificate = asyncHandler(async (req, res) => {
   };
 
   const courseName = COURSE_NAMES[courseId] || courseId;
-  const certNo = `HXAC-${student.careerId}-${courseId.toUpperCase()}-${Date.now().toString(36).toUpperCase()}`.replace(/\s+/g, '');
+  // Get or generate cert_no from DB
+  const { sequelize } = require('../models');
+  const progRows = await sequelize.query(
+    'SELECT cert_no FROM inst_academy_progress WHERE student_id = :sid AND course_id = :courseId LIMIT 1',
+    { replacements: { sid: student.id, courseId }, type: sequelize.QueryTypes.SELECT }
+  );
+  const certNo = (progRows[0] && progRows[0].cert_no) || `HXAC-${Date.now().toString(36).toUpperCase().slice(-6)}`;
   const verifyUrl = `${process.env.CLIENT_URL || 'https://hiresnix.co.in'}/verification/academy-certificate/${certNo}`;
   const issuedDate = new Date().toLocaleDateString('en-IN', { day:'numeric', month:'long', year:'numeric' });
 
@@ -313,13 +319,16 @@ const saveAcademyProgress = asyncHandler(async (req, res) => {
 
   const { sequelize } = require('../models');
   await sequelize.query(`
-    INSERT INTO inst_academy_progress (student_id, career_id, course_id, completed, xp, claimed_cert, last_active)
-    VALUES (:studentId, :careerId, :courseId, :completed::jsonb, :xp, :claimedCert, NOW())
+    INSERT INTO inst_academy_progress (student_id, career_id, course_id, completed, xp, claimed_cert, cert_no, last_active)
+    VALUES (:studentId, :careerId, :courseId, :completed::jsonb, :xp, :claimedCert,
+      CASE WHEN :claimedCert = true THEN COALESCE((SELECT cert_no FROM inst_academy_progress WHERE student_id = :studentId AND course_id = :courseId), CONCAT('HXAC-', UPPER(SUBSTRING(MD5(RANDOM()::TEXT), 1, 6)))) ELSE NULL END,
+      NOW())
     ON CONFLICT (student_id, course_id)
     DO UPDATE SET
       completed = :completed::jsonb,
       xp = :xp,
       claimed_cert = :claimedCert,
+      cert_no = CASE WHEN :claimedCert = true THEN COALESCE(inst_academy_progress.cert_no, CONCAT('HXAC-', UPPER(SUBSTRING(MD5(RANDOM()::TEXT), 1, 6)))) ELSE inst_academy_progress.cert_no END,
       last_active = NOW()
   `, {
     replacements: {
@@ -406,21 +415,17 @@ const verifyAcademyCertificate = asyncHandler(async (req, res) => {
 
     const { sequelize } = require('../models');
 
-    // Step 1: find student by careerId
-    const students = await sequelize.query(
-      'SELECT id, name, career_id FROM institution_students WHERE career_id = :careerId LIMIT 1',
-      { replacements:{ careerId }, type: sequelize.QueryTypes.SELECT }
+    // Lookup directly by cert_no
+    const rows = await sequelize.query(
+      `SELECT iap.*, ist.name, ist.career_id
+       FROM inst_academy_progress iap
+       JOIN institution_students ist ON ist.id = iap.student_id
+       WHERE iap.cert_no = :certNo LIMIT 1`,
+      { replacements: { certNo: raw }, type: sequelize.QueryTypes.SELECT }
     );
-    const student = students[0];
-    if (!student) return res.json({ success:true, valid:false });
-
-    // Step 2: find progress
-    const progRows = await sequelize.query(
-      'SELECT * FROM inst_academy_progress WHERE student_id = :sid AND course_id = :courseId LIMIT 1',
-      { replacements:{ sid: student.id, courseId }, type: sequelize.QueryTypes.SELECT }
-    );
-    const prog = progRows[0];
-    if (!prog) return res.json({ success:true, valid:false });
+    const row = rows[0];
+    if (!row) return res.json({ success:true, valid:false });
+    const courseIdFromRow = row.course_id;
 
     return res.json({
       success: true,
@@ -428,11 +433,11 @@ const verifyAcademyCertificate = asyncHandler(async (req, res) => {
       data: {
         documentType: 'Hiresnix AI Academy Certificate',
         documentId: raw,
-        studentName: student.name,
-        careerId: student.career_id,
-        course: COURSES[courseId] || courseId,
-        xp: prog.xp || 0,
-        issueDate: prog.last_active || new Date().toISOString(),
+        studentName: row.name,
+        careerId: row.career_id,
+        course: COURSES[courseIdFromRow] || courseIdFromRow,
+        xp: row.xp || 0,
+        issueDate: row.last_active || new Date().toISOString(),
       }
     });
   } catch(e) {
