@@ -150,9 +150,9 @@ export default function App() {
             <Route path="courses"      element={<InstStudentCourses />} />
             <Route path="certificates" element={<InstStudentCertificates />} />
             <Route path="internship"   element={<InstStudentInternship />} />
-            {/* AI Academy */}
-            <Route path="academy" element={<AcademyPage />} />
           </Route>
+          {/* AI Academy - full screen, outside layout */}
+          <Route path="/inst-student/academy" element={<InstStudentRoute><AcademyPage /></InstStudentRoute>} />
 
           {/* Student */}
           <Route path="/student" element={<ProtectedRoute allowedRoles={['student']}><StudentLayout /></ProtectedRoute>}>

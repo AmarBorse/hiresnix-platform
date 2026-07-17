@@ -675,18 +675,18 @@ function LessonPage({ course, onBack }: { course:any; onBack:()=>void }) {
           {/* VIDEO */}
           {tab==='video' && (
             <div style={{animation:'fade-in 0.3s ease',display:'flex',flexDirection:'column',gap:'12px'}}>
-              <div style={{position:'relative',paddingBottom:'56.25%',height:0,borderRadius:'14px',overflow:'hidden',background:'#000',border:'1px solid rgba(255,255,255,0.08)'}}>
-                <iframe
-                  key={lesson}
-                  src={`https://www.youtube.com/embed/${getYT(lesson)}?rel=0&modestbranding=1&playsinline=1`}
-                  title={lesson}
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                  style={{position:'absolute',top:0,left:0,width:'100%',height:'100%',border:'none'}}
-                />
+              <div style={{borderRadius:'14px',overflow:'hidden',background:'linear-gradient(135deg,#0f172a,#1e1b4b)',border:`1px solid ${ACC}33`,padding:'48px 24px',textAlign:'center',display:'flex',flexDirection:'column',alignItems:'center',gap:'16px'}}>
+                <div style={{width:64,height:64,borderRadius:'50%',background:`${ACC}22`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'28px'}}>🎓</div>
+                <div>
+                  <p style={{color:'#fff',fontWeight:800,fontSize:'18px',margin:'0 0 6px'}}>Video Lectures Coming Soon</p>
+                  <p style={{color:'#64748b',fontSize:'13px',margin:0}}>Use AI Teacher for an interactive, personalized learning experience</p>
+                </div>
+                <button onClick={()=>setTab('teacher')} style={{padding:'10px 28px',borderRadius:'10px',border:'none',background:`linear-gradient(135deg,${ACC},${ACC}99)`,color:'#fff',fontSize:'13px',fontWeight:700,cursor:'pointer',boxShadow:`0 4px 16px ${ACC}44`}}>
+                  🤖 Start AI Teacher
+                </button>
               </div>
               <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:'8px'}}>
-                <p style={{fontSize:'11px',color:'#475569',margin:0}}>💡 Watch → AI Teacher → Code & Run → Quiz → Mark Done ✅</p>
+                <p style={{fontSize:'11px',color:'#475569',margin:0}}>💡 AI Teacher → Code & Run → Quiz → Mark Done ✅</p>
                 <div style={{display:'flex',gap:'6px'}}>
                   <button onClick={()=>setTab('teacher')} style={{padding:'5px 12px',borderRadius:'7px',border:'none',background:`${ACC}22`,color:ACC,fontSize:'11px',fontWeight:700,cursor:'pointer'}}>🤖 AI Teacher</button>
                   <button onClick={()=>setTab('code')} style={{padding:'5px 12px',borderRadius:'7px',border:'1px solid rgba(16,185,129,0.3)',background:'rgba(16,185,129,0.08)',color:'#34d399',fontSize:'11px',fontWeight:700,cursor:'pointer'}}>⌨️ Code</button>
