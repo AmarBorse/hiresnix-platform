@@ -83,20 +83,17 @@ export const instStudentApi = {
                      instClient.put('/inst-student/change-password', { currentPassword, newPassword }).then(r => r.data),
   downloadCertPdf: (certId: string) => `${apiBaseUrl}/institution/certificates/${certId}/download-pdf`,
   downloadAcademyCertPdf: async (courseId: string, courseName: string) => {
-    const token = localStorage.getItem('hx_inst_student_token');
-    const res = await fetch(`${apiBaseUrl}/inst-student/academy/certificate/${courseId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (!res.ok) throw new Error('Download failed');
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `Hiresnix_Academy_${courseName.replace(/\s+/g,'_')}_Certificate.pdf`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    try {
+      const token = localStorage.getItem('hx_inst_student_token');
+      const res = await fetch(`${apiBaseUrl}/inst-student/academy/certificate/${courseId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = `AI_Academy_${courseName.replace(/ /g,'_')}_Certificate.pdf`;
+      a.click(); URL.revokeObjectURL(url);
+    } catch (e) { console.error('Download failed', e); }
   },
 };
 
