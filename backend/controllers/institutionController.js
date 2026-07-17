@@ -36,23 +36,43 @@ function signatureLine(doc, name, title, x, y, imagePath = null, sizeMultiplier 
 
 // ── Helpers ──────────────────────────────────────────────────────
 
-async function generateCareerId() {
+async function generateCareerId(institutionId) {
   const year = new Date().getFullYear();
+
+  // Get institution code
+  const institution = await Institution.findByPk(institutionId, { attributes: ['code', 'institutionName'] });
+  let code = institution?.code;
+
+  // Auto-generate code if not set
+  if (!code) {
+    const name = institution?.institutionName || 'HX';
+    code = name.replace(/[^a-zA-Z]/g, '').toUpperCase().slice(0, 3).padEnd(3, 'X');
+    // Save it back
+    await Institution.update({ code }, { where: { id: institutionId } });
+  }
+
+  // Get last student of this institution with this code
   const last = await InstitutionStudent.findOne({
-    where: { careerId: { [Op.like]: `HX-${year}-%` } },
+    where: {
+      institutionId,
+      careerId: { [Op.like]: `HX-${code}-${year}-%` },
+    },
     order: [['createdAt', 'DESC']],
   });
+
   let seq = 1;
   if (last?.careerId) {
     const parts = last.careerId.split('-');
-    seq = parseInt(parts[2], 10) + 1;
+    seq = parseInt(parts[3], 10) + 1;
   }
-  return `HX-${year}-${String(seq).padStart(6, '0')}`;
+
+  return `HX-${code}-${year}-${String(seq).padStart(4, '0')}`;
 }
 
-// Default password: HX@ + last 6 of careerId  e.g. HX@000001
+// Default password: HX@ + last part of careerId  e.g. HX@0001
 function defaultPassword(careerId) {
-  return `HX@${careerId.split('-')[2]}`;
+  const parts = careerId.split('-');
+  return `HX@${parts[parts.length - 1]}`;
 }
 
 function getInstitutionId(req) { return req.institutionId; }
@@ -109,7 +129,7 @@ const createStudent = asyncHandler(async (req, res) => {
   const exists = await InstitutionStudent.findOne({ where: { institutionId, email } });
   if (exists) { res.status(400); throw new Error('Student with this email already exists'); }
 
-  const careerId = await generateCareerId();
+  const careerId = await generateCareerId(institutionId);
   const pwd      = defaultPassword(careerId);  // plain text for response only
 
   const student = await InstitutionStudent.create({
@@ -708,7 +728,7 @@ const bulkImportToBatch = asyncHandler(async (req, res) => {
       let isNew = false;
 
       if (!student) {
-        const careerId = await generateCareerId();
+        const careerId = await generateCareerId(institutionId);
         const pwd = defaultPassword(careerId);
         student = await InstitutionStudent.create({
           institutionId, careerId, password: pwd,
@@ -774,7 +794,7 @@ const bulkImportStudents = asyncHandler(async (req, res) => {
         results.skipped.push({ name, email, reason: 'Already exists', careerId: exists.careerId });
         continue;
       }
-      const careerId = await generateCareerId();
+      const careerId = await generateCareerId(institutionId);
       const pwd = defaultPassword(careerId);
       await InstitutionStudent.create({
         institutionId, careerId, password: pwd,

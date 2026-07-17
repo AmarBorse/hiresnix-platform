@@ -27,6 +27,7 @@ const Institution = sequelize.define('Institution', {
   isVerified:    { type: DataTypes.BOOLEAN, defaultValue: false },
   isPartner:     { type: DataTypes.BOOLEAN, defaultValue: false },
   rejectionReason: { type: DataTypes.TEXT, allowNull: true },
+  code:          { type: DataTypes.STRING(10), allowNull: true, unique: true, comment: '3-letter institution code e.g. SAI, HIR' },
 }, {
   tableName: 'institutions', timestamps: true,
 });
