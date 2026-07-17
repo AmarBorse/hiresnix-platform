@@ -61,6 +61,7 @@ const AdminAnalytics    = lazy(() => import('./pages/admin/AdminAnalytics').then
 const AdminSettings     = lazy(() => import('./pages/admin/AdminSettings').then(m => ({ default: m.AdminSettings })));
 const AdminIPlatform    = lazy(() => import('./pages/admin/AdminIPlatform').then(m => ({ default: m.AdminIPlatform })));
 const AdminEnquiries    = lazy(() => import('./pages/admin/AdminEnquiries').then(m => ({ default: m.AdminEnquiries })));
+const AdminDocuments    = lazy(() => import('./pages/admin/AdminDocuments').then(m => ({ default: m.AdminDocuments })));
 const AdminInstitutions = lazy(() => import('./pages/admin/AdminInstitutions').then(m => ({ default: m.AdminInstitutions })));
 
 const InstitutionDashboard    = lazy(() => import('./pages/institution/InstitutionDashboard').then(m => ({ default: m.InstitutionDashboard })));
@@ -191,6 +192,7 @@ export default function App() {
             <Route path="internships"  element={<AdminInternships />} />
             <Route path="resources"    element={<AdminResources />} />
             <Route path="certificates" element={<AdminCertificates />} />
+            <Route path="documents"    element={<AdminDocuments />} />
             <Route path="enquiries"    element={<AdminEnquiries />} />
             <Route path="analytics"    element={<AdminAnalytics />} />
             <Route path="settings"     element={<AdminSettings />} />

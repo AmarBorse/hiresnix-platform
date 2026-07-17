@@ -104,4 +104,9 @@ const verifyCert = (expectedType) => asyncHandler(async (req, res) => {
 r.get('/verify-skill-assessment/:id?',  verifyCert('Skill Assessment'));
 r.get('/verify-course-completion/:id?', verifyCert('Course Completion'));
 
+// ── ADMIN ONLY DOCUMENTS ─────────────────────────────────────────
+r.post('/generate-appointment', protect, authorize('admin'), ctrl.generateAppointmentLetter);
+r.post('/generate-joining',     protect, authorize('admin'), ctrl.generateJoiningLetter);
+r.post('/generate-stipend',     protect, authorize('admin'), ctrl.generateStipendSlip);
+
 module.exports = r;
