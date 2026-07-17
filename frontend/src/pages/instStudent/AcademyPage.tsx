@@ -533,6 +533,7 @@ function LessonPage({ course, onBack }: { course:any; onBack:()=>void }) {
   const controlsTimerRef = useRef<any>(null);
 
   const totalL = course.modules.reduce((a:number,m:any)=>a+m.lessons.length,0);
+  const lesson = course.modules[activeMod]?.lessons[activeLesson] || '';
   const progress = Math.round((completed.size/totalL)*100);
   const ACC = course.accent;
 
@@ -812,17 +813,15 @@ function LessonPage({ course, onBack }: { course:any; onBack:()=>void }) {
         <div style={{flex:1,overflowY:'auto',padding:'18px'}}>
 
           {/* VIDEO */}
-          {tab==='video' && (()=>{
+          {tab==='video' && (() => {
             const [vidId, startSec] = getVid(course.modules[activeMod]?.lessons[activeLesson]||'');
             return (
             <div style={{animation:'fade-in 0.3s ease',display:'flex',flexDirection:'column',gap:'12px'}}>
-              {/* Custom Video Player */}
               <div
                 style={{position:'relative',borderRadius:'14px',overflow:'hidden',background:'#000',border:`1px solid ${ACC}33`,cursor:'pointer'}}
                 onMouseEnter={()=>setShowControls(true)}
                 onMouseLeave={()=>setShowControls(false)}
               >
-                {/* iframe scaled up to hide YouTube UI */}
                 <div style={{position:'relative',paddingBottom:'56.25%',height:0,overflow:'hidden'}}>
                   <iframe
                     ref={iframeRef}
@@ -830,14 +829,8 @@ function LessonPage({ course, onBack }: { course:any; onBack:()=>void }) {
                     src={`https://www.youtube.com/embed/${vidId}?start=${startSec}&rel=0&modestbranding=1&playsinline=1&autoplay=1&controls=0&disablekb=1&iv_load_policy=3&fs=0`}
                     title={course.modules[activeMod]?.lessons[activeLesson]}
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    style={{
-                      position:'absolute',
-                      top:'-10%', left:'-2%',
-                      width:'104%', height:'124%',
-                      border:'none', pointerEvents:'none',
-                    }}
+                    style={{position:'absolute',top:'-10%',left:'-2%',width:'104%',height:'124%',border:'none',pointerEvents:'none'}}
                   />
-                  {/* Click overlay to play/pause via postMessage */}
                   <div
                     style={{position:'absolute',inset:0,zIndex:2,cursor:'pointer'}}
                     onClick={()=>{
@@ -846,33 +839,20 @@ function LessonPage({ course, onBack }: { course:any; onBack:()=>void }) {
                       setIsPlaying(p=>!p);
                     }}
                   />
-                  {/* Play/Pause center icon */}
                   {showControls && (
                     <div style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',zIndex:3,background:'rgba(0,0,0,0.6)',borderRadius:'50%',width:56,height:56,display:'flex',alignItems:'center',justifyContent:'center',pointerEvents:'none'}}>
                       <span style={{color:'#fff',fontSize:'22px'}}>{isPlaying?'⏸':'▶'}</span>
                     </div>
                   )}
-                  {/* Top branding bar — hides YouTube logo */}
                   <div style={{position:'absolute',top:0,left:0,right:0,height:'14%',background:'linear-gradient(180deg,#000 60%,transparent)',zIndex:3,pointerEvents:'none',display:'flex',alignItems:'center',padding:'0 14px',gap:'8px'}}>
                     <span style={{fontSize:'13px'}}>🎓</span>
-                    <span style={{color:'#fff',fontSize:'12px',fontWeight:700,letterSpacing:'0.04em'}}>Hiresnix AI Academy</span>
-                    <span style={{color:`${ACC}`,fontSize:'10px',fontWeight:600,marginLeft:'4px'}}>· {course.modules[activeMod]?.lessons[activeLesson]}</span>
+                    <span style={{color:'#fff',fontSize:'12px',fontWeight:700}}>Hiresnix AI Academy</span>
+                    <span style={{color:ACC,fontSize:'10px',fontWeight:600,marginLeft:'4px'}}>· {course.modules[activeMod]?.lessons[activeLesson]}</span>
                   </div>
-                  {/* Bottom bar — hides YouTube controls */}
                   <div style={{position:'absolute',bottom:0,left:0,right:0,height:'20%',background:'linear-gradient(0deg,#000 60%,transparent)',zIndex:3,pointerEvents:'none'}}/>
-                  {/* Custom bottom controls */}
                   <div style={{position:'absolute',bottom:0,left:0,right:0,zIndex:4,padding:'8px 14px',display:'flex',alignItems:'center',gap:'10px'}}>
-                    <button
-                      onClick={()=>{
-                        const win = iframeRef.current?.contentWindow;
-                        if(win) win.postMessage(JSON.stringify({event:'command',func:isPlaying?'pauseVideo':'playVideo',args:[]}),'*');
-                        setIsPlaying(p=>!p);
-                      }}
-                      style={{background:'none',border:'none',color:'#fff',fontSize:'18px',cursor:'pointer',padding:'2px 6px',lineHeight:1}}
-                    >{isPlaying?'⏸':'▶'}</button>
-                    <div style={{flex:1,height:'3px',background:'rgba(255,255,255,0.2)',borderRadius:'2px'}}>
-                      <div style={{width:'0%',height:'100%',background:ACC,borderRadius:'2px'}}/>
-                    </div>
+                    <button onClick={()=>{const win=iframeRef.current?.contentWindow;if(win)win.postMessage(JSON.stringify({event:'command',func:isPlaying?'pauseVideo':'playVideo',args:[]}),'*');setIsPlaying(p=>!p);}} style={{background:'none',border:'none',color:'#fff',fontSize:'18px',cursor:'pointer',padding:'2px 6px',lineHeight:1}}>{isPlaying?'⏸':'▶'}</button>
+                    <div style={{flex:1,height:'3px',background:'rgba(255,255,255,0.2)',borderRadius:'2px'}}/>
                     <button onClick={()=>setTab('teacher')} style={{background:`${ACC}22`,border:`1px solid ${ACC}44`,color:ACC,fontSize:'10px',fontWeight:700,padding:'3px 10px',borderRadius:'6px',cursor:'pointer'}}>AI Teacher →</button>
                   </div>
                 </div>
