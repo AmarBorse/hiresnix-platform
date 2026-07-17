@@ -33,17 +33,20 @@ export function InstStudentCertificates() {
       };
       const completed: any[] = [];
       // Try both student id and all possible keys
-      const allKeys = Object.keys(localStorage).filter(k => k.startsWith('hx_academy_') && !k.startsWith('hx_academy_enrolled'));
+      const allKeys = Object.keys(localStorage).filter(k => k.startsWith('hx_academy_') && !k.includes('enrolled'));
       allKeys.forEach(key => {
+        // Key format: hx_academy_{studentId}_{courseId}
         const parts = key.split('_');
-        const courseId = parts[parts.length - 1];
+        const courseId = parts[parts.length - 1]; // last part = courseId
         if (COURSES.includes(courseId)) {
           const data = localStorage.getItem(key);
           if (data) {
-            const p = JSON.parse(data);
-            if ((p.xp || 0) > 0) {
-              completed.push({ ...p, course_id: courseId, courseName: COURSE_NAMES[courseId] });
-            }
+            try {
+              const p = JSON.parse(data);
+              if (p.claimedCert === true || (p.xp || 0) > 0) {
+                completed.push({ ...p, course_id: courseId, courseName: COURSE_NAMES[courseId] });
+              }
+            } catch(e) {}
           }
         }
       });
