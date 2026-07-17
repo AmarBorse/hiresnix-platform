@@ -294,6 +294,12 @@ function Catalog({ onSelect }: { onSelect:(c:any)=>void }) {
         .ccard{transition:all 0.25s!important}.ccard:hover{transform:translateY(-5px)!important}
       `}</style>
       <div style={{maxWidth:'1200px',margin:'0 auto'}}>
+        {/* Back Button */}
+        <div style={{display:'flex',justifyContent:'flex-end',marginBottom:'8px'}}>
+          <button onClick={()=>window.history.back()} style={{display:'flex',alignItems:'center',gap:'6px',padding:'7px 16px',borderRadius:'10px',border:'1px solid rgba(255,255,255,0.1)',background:'rgba(255,255,255,0.05)',color:'#94a3b8',fontSize:'12px',fontWeight:600,cursor:'pointer'}}>
+            ← Back
+          </button>
+        </div>
         <div style={{textAlign:'center',marginBottom:'48px',animation:'slide-up 0.5s ease'}}>
           <div style={{display:'inline-flex',alignItems:'center',gap:'8px',padding:'5px 16px',borderRadius:'20px',background:'rgba(99,102,241,0.12)',border:'1px solid rgba(99,102,241,0.25)',marginBottom:'20px'}}>
             <Sparkles size={13} style={{color:'#818cf8'}}/><span style={{color:'#818cf8',fontSize:'12px',fontWeight:700}}>100% Free · AI-Powered · Groq</span>
