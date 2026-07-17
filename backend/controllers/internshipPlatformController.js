@@ -1497,6 +1497,399 @@ const verifyRecommendationLetter = asyncHandler(async (req, res) => {
   });
 });
 
+// ── APPOINTMENT LETTER (Admin Only) ──────────────────────────────
+const generateAppointmentLetter = asyncHandler(async (req, res) => {
+  const {
+    candidateName, designation, department, employmentType, // 'fulltime' | 'internship'
+    startDate, endDate, stipend, ctc,
+    workingHours, workingDays, reportingManager, location,
+    probationPeriod, noticePeriod,
+  } = req.body;
+
+  if (!candidateName || !designation || !employmentType || !startDate) {
+    res.status(400); throw new Error('Missing required fields');
+  }
+
+  const isInternship = employmentType === 'internship';
+  const issueDate = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+  const docNo = `HX-APT-${Date.now().toString().slice(-6)}`;
+
+  const doc = new PDFDocument({ size: 'A4', margin: 0 });
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename="Appointment_Letter_${candidateName.replace(/\s+/g,'_')}.pdf"`);
+  doc.pipe(res);
+
+  const W = doc.page.width;
+  const MARGIN = 50;
+  const NAVY = '#0f172a';
+  const GOLD = '#d4af37';
+  const BLUE = '#1e40af';
+  const GRAY = '#475569';
+  const LIGHT = '#f8fafc';
+
+  // ── Header ──────────────────────────────────────────────────────
+  doc.rect(0, 0, W, 110).fill(NAVY);
+  doc.fillColor('#ffffff').fontSize(24).font('Helvetica-Bold').text('Hiresnix', MARGIN, 28);
+  doc.fillColor('#94a3b8').fontSize(9).font('Helvetica').text('Empowering Future Professionals', MARGIN, 57);
+  doc.fillColor('#60a5fa').fontSize(12).font('Helvetica-Bold')
+     .text(isInternship ? 'INTERNSHIP APPOINTMENT LETTER' : 'APPOINTMENT LETTER', 0, 46, { align: 'right', width: W - MARGIN });
+  doc.rect(0, 110, W, 3).fill(GOLD);
+
+  // ── Doc Info ────────────────────────────────────────────────────
+  doc.y = 130;
+  doc.fillColor(GRAY).fontSize(9).font('Helvetica')
+     .text(`Ref No: ${docNo}`, MARGIN, 130)
+     .text(`Date: ${issueDate}`, 0, 130, { align: 'right', width: W - MARGIN });
+
+  // ── Subject ─────────────────────────────────────────────────────
+  doc.moveDown(1.5);
+  doc.fillColor(NAVY).fontSize(11).font('Helvetica-Bold')
+     .text(`Dear ${candidateName},`, MARGIN);
+  doc.moveDown(0.5);
+  doc.fillColor(GRAY).fontSize(10).font('Helvetica')
+     .text(`Sub: ${isInternship ? 'Internship' : 'Appointment'} Letter — ${designation}`, MARGIN);
+  doc.moveDown(0.5);
+  doc.fillColor('#334155').fontSize(10).font('Helvetica')
+     .text(`We are pleased to ${isInternship ? 'offer you an internship' : 'appoint you'} at Hiresnix on the following terms and conditions:`, MARGIN, doc.y, { width: W - MARGIN * 2 });
+
+  // ── Details Table ───────────────────────────────────────────────
+  doc.moveDown(1);
+  const tableTop = doc.y;
+  doc.rect(MARGIN, tableTop, W - MARGIN * 2, 14).fill(NAVY);
+  doc.fillColor('#ffffff').fontSize(9).font('Helvetica-Bold')
+     .text('EMPLOYMENT DETAILS', MARGIN + 10, tableTop + 3);
+
+  const rows = [
+    ['Candidate Name', candidateName],
+    ['Designation / Role', designation],
+    ['Department', department || 'Technology'],
+    ['Employment Type', isInternship ? 'Internship' : 'Full-Time Employee'],
+    ['Date of Joining', new Date(startDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })],
+    ...(endDate && isInternship ? [['Internship End Date', new Date(endDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })]] : []),
+    ['Work Location', location || 'Shirpur, Maharashtra / Remote'],
+    ['Reporting To', reportingManager || 'Mr. A.S. Borse (Founder & CEO)'],
+    ['Working Hours', workingHours || '9:00 AM – 6:00 PM'],
+    ['Working Days', workingDays || 'Monday to Saturday'],
+    ...(isInternship
+      ? [['Monthly Stipend', stipend ? `₹${Number(stipend).toLocaleString('en-IN')}/month` : 'As per agreement']]
+      : [
+          ['Annual CTC', ctc ? `₹${Number(ctc).toLocaleString('en-IN')} per annum` : 'As per agreement'],
+          ['Probation Period', probationPeriod || '3 months'],
+          ['Notice Period', noticePeriod || '30 days'],
+        ]
+    ),
+  ];
+
+  let rowY = tableTop + 18;
+  rows.forEach((row, i) => {
+    const bg = i % 2 === 0 ? LIGHT : '#ffffff';
+    doc.rect(MARGIN, rowY, W - MARGIN * 2, 18).fill(bg);
+    doc.fillColor(NAVY).fontSize(9).font('Helvetica-Bold').text(row[0], MARGIN + 10, rowY + 5, { width: 180 });
+    doc.fillColor('#334155').fontSize(9).font('Helvetica').text(row[1], MARGIN + 200, rowY + 5, { width: W - MARGIN * 2 - 210 });
+    rowY += 18;
+  });
+  doc.rect(MARGIN, tableTop, W - MARGIN * 2, rowY - tableTop).stroke('#e2e8f0');
+
+  // ── Terms ────────────────────────────────────────────────────────
+  doc.y = rowY + 16;
+  doc.rect(MARGIN, doc.y, W - MARGIN * 2, 14).fill(NAVY);
+  doc.fillColor('#ffffff').fontSize(9).font('Helvetica-Bold').text('TERMS & CONDITIONS', MARGIN + 10, doc.y + 3);
+  doc.moveDown(0.2);
+
+  const terms = isInternship ? [
+    'This internship appointment is valid only for the period mentioned above.',
+    'The intern shall maintain confidentiality of all company information and data.',
+    'The intern is expected to adhere to company policies, working hours, and code of conduct.',
+    'Stipend (if applicable) will be disbursed at the end of each month upon satisfactory performance.',
+    'Hiresnix reserves the right to terminate this internship with prior notice in case of misconduct.',
+    'An internship certificate will be provided upon successful completion.',
+  ] : [
+    'Your appointment is subject to verification of all original documents and educational certificates.',
+    'You will be on probation for the period mentioned above; employment will be confirmed based on performance.',
+    'You are required to maintain strict confidentiality of all company and client information.',
+    'Salary/CTC will be disbursed as per company payroll cycle after deduction of applicable taxes.',
+    'You must give the notice period mentioned above before resignation; otherwise salary in lieu will be deducted.',
+    'Violation of company policies may result in disciplinary action including termination.',
+    'This letter is issued subject to your joining on the date mentioned and submission of all required documents.',
+  ];
+
+  terms.forEach((t, i) => {
+    doc.fillColor('#334155').fontSize(9).font('Helvetica')
+       .text(`${i + 1}. ${t}`, MARGIN + 10, doc.y + 4, { width: W - MARGIN * 2 - 20 });
+    doc.moveDown(0.3);
+  });
+
+  // ── Acceptance line ─────────────────────────────────────────────
+  doc.moveDown(0.8);
+  doc.fillColor('#334155').fontSize(9).font('Helvetica')
+     .text('Please sign and return a copy of this letter as your acceptance of the above terms.', MARGIN, doc.y, { width: W - MARGIN * 2 });
+
+  // ── Signatures ──────────────────────────────────────────────────
+  const sigY = doc.y + 30;
+  signatureLine(doc, 'Mr. A.S. Borse', 'Founder & CEO, Hiresnix', MARGIN, sigY, getSignaturePath('ceo.png'), 1.4);
+
+  // Candidate acceptance block
+  const candX = W / 2 + 20;
+  doc.moveTo(candX, sigY).lineTo(candX + 160, sigY).stroke('#334155');
+  doc.fillColor('#1e293b').fontSize(10).font('Helvetica-Bold').text(candidateName, candX, sigY + 6, { width: 160, align: 'center' });
+  doc.fillColor('#64748b').fontSize(9).font('Helvetica').text("Candidate's Signature & Date", candX, sigY + 20, { width: 160, align: 'center' });
+
+  // ── Footer ───────────────────────────────────────────────────────
+  pdfFooter(doc);
+  doc.end();
+});
+
+// ── JOINING LETTER (Admin Only) ───────────────────────────────────
+const generateJoiningLetter = asyncHandler(async (req, res) => {
+  const {
+    candidateName, designation, department, employmentType,
+    joiningDate, stipend, ctc, reportingManager, location,
+  } = req.body;
+
+  if (!candidateName || !designation || !joiningDate) {
+    res.status(400); throw new Error('Missing required fields');
+  }
+
+  const isInternship = employmentType === 'internship';
+  const issueDate = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+  const fmtJoining = new Date(joiningDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+  const docNo = `HX-JL-${Date.now().toString().slice(-6)}`;
+
+  const doc = new PDFDocument({ size: 'A4', margin: 0 });
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename="Joining_Letter_${candidateName.replace(/\s+/g,'_')}.pdf"`);
+  doc.pipe(res);
+
+  const W = doc.page.width;
+  const MARGIN = 50;
+  const NAVY = '#0f172a';
+  const GOLD = '#d4af37';
+  const GRAY = '#475569';
+  const LIGHT = '#f8fafc';
+
+  // Header
+  doc.rect(0, 0, W, 110).fill(NAVY);
+  doc.fillColor('#ffffff').fontSize(24).font('Helvetica-Bold').text('Hiresnix', MARGIN, 28);
+  doc.fillColor('#94a3b8').fontSize(9).font('Helvetica').text('Empowering Future Professionals', MARGIN, 57);
+  doc.fillColor('#60a5fa').fontSize(12).font('Helvetica-Bold')
+     .text('JOINING LETTER', 0, 46, { align: 'right', width: W - MARGIN });
+  doc.rect(0, 110, W, 3).fill(GOLD);
+
+  // Ref & Date
+  doc.fillColor(GRAY).fontSize(9).font('Helvetica')
+     .text(`Ref No: ${docNo}`, MARGIN, 130)
+     .text(`Date: ${issueDate}`, 0, 130, { align: 'right', width: W - MARGIN });
+
+  // Body
+  doc.y = 155;
+  doc.fillColor(NAVY).fontSize(11).font('Helvetica-Bold').text(`Dear ${candidateName},`, MARGIN);
+  doc.moveDown(0.8);
+  doc.fillColor('#334155').fontSize(10).font('Helvetica')
+     .text(
+       `With reference to your acceptance of the ${isInternship ? 'internship' : 'appointment'} offer, we are pleased to confirm your joining at Hiresnix as ${designation} effective ${fmtJoining}.`,
+       MARGIN, doc.y, { width: W - MARGIN * 2 }
+     );
+
+  // Joining details box
+  doc.moveDown(1.2);
+  const boxTop = doc.y;
+  doc.rect(MARGIN, boxTop, W - MARGIN * 2, 14).fill(NAVY);
+  doc.fillColor('#ffffff').fontSize(9).font('Helvetica-Bold').text('JOINING DETAILS', MARGIN + 10, boxTop + 3);
+
+  const rows = [
+    ['Name', candidateName],
+    ['Designation', designation],
+    ['Department', department || 'Technology'],
+    ['Type', isInternship ? 'Internship' : 'Full-Time'],
+    ['Date of Joining', fmtJoining],
+    ['Work Location', location || 'Shirpur, Maharashtra / Remote'],
+    ['Reporting To', reportingManager || 'Mr. A.S. Borse (Founder & CEO)'],
+    [isInternship ? 'Monthly Stipend' : 'CTC',
+      isInternship
+        ? (stipend ? `₹${Number(stipend).toLocaleString('en-IN')}/month` : 'As per agreement')
+        : (ctc ? `₹${Number(ctc).toLocaleString('en-IN')} per annum` : 'As per agreement')],
+  ];
+
+  let rowY = boxTop + 18;
+  rows.forEach((row, i) => {
+    doc.rect(MARGIN, rowY, W - MARGIN * 2, 18).fill(i % 2 === 0 ? LIGHT : '#ffffff');
+    doc.fillColor(NAVY).fontSize(9).font('Helvetica-Bold').text(row[0], MARGIN + 10, rowY + 5, { width: 180 });
+    doc.fillColor('#334155').fontSize(9).font('Helvetica').text(row[1], MARGIN + 200, rowY + 5, { width: W - MARGIN * 2 - 210 });
+    rowY += 18;
+  });
+  doc.rect(MARGIN, boxTop, W - MARGIN * 2, rowY - boxTop).stroke('#e2e8f0');
+
+  // Documents to carry
+  doc.y = rowY + 16;
+  doc.rect(MARGIN, doc.y, W - MARGIN * 2, 14).fill(NAVY);
+  doc.fillColor('#ffffff').fontSize(9).font('Helvetica-Bold').text('DOCUMENTS TO SUBMIT ON JOINING', MARGIN + 10, doc.y + 3);
+  doc.moveDown(0.2);
+  const docs = [
+    'Signed copy of this Joining Letter',
+    'Signed copy of Appointment Letter',
+    'Aadhar Card (original + 1 photocopy)',
+    'PAN Card (original + 1 photocopy)',
+    '2 recent passport-size photographs',
+    'Educational certificates (original for verification)',
+    'Bank account details for stipend/salary transfer',
+  ];
+  docs.forEach((d, i) => {
+    doc.fillColor('#334155').fontSize(9).font('Helvetica')
+       .text(`${i + 1}. ${d}`, MARGIN + 10, doc.y + 4, { width: W - MARGIN * 2 - 20 });
+    doc.moveDown(0.3);
+  });
+
+  // Closing
+  doc.moveDown(0.8);
+  doc.fillColor('#334155').fontSize(10).font('Helvetica')
+     .text("We look forward to welcoming you to the Hiresnix family. Wishing you a successful journey with us!", MARGIN, doc.y, { width: W - MARGIN * 2 });
+  doc.moveDown(0.5);
+  doc.text("Please sign and return a copy of this letter on or before your joining date.", MARGIN, doc.y, { width: W - MARGIN * 2 });
+
+  // Signatures
+  const sigY = doc.y + 30;
+  signatureLine(doc, 'Mr. A.S. Borse', 'Founder & CEO, Hiresnix', MARGIN, sigY, getSignaturePath('ceo.png'), 1.4);
+  const candX = W / 2 + 20;
+  doc.moveTo(candX, sigY).lineTo(candX + 160, sigY).stroke('#334155');
+  doc.fillColor('#1e293b').fontSize(10).font('Helvetica-Bold').text(candidateName, candX, sigY + 6, { width: 160, align: 'center' });
+  doc.fillColor('#64748b').fontSize(9).font('Helvetica').text("Candidate's Signature & Date", candX, sigY + 20, { width: 160, align: 'center' });
+
+  pdfFooter(doc);
+  doc.end();
+});
+
+// ── STIPEND SLIP (Admin Only) ─────────────────────────────────────
+const generateStipendSlip = asyncHandler(async (req, res) => {
+  const {
+    candidateName, designation, department, employeeId,
+    month, year,
+    basicStipend, allowances, deductions,
+  } = req.body;
+
+  if (!candidateName || !month || !year || !basicStipend) {
+    res.status(400); throw new Error('Missing required fields');
+  }
+
+  const basic = Number(basicStipend) || 0;
+  const allow = Number(allowances) || 0;
+  const deduct = Number(deductions) || 0;
+  const gross = basic + allow;
+  const net = gross - deduct;
+  const monthName = new Date(`${year}-${month}-01`).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+  const issueDate = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+  const slipNo = `HX-SS-${year}${month}-${Date.now().toString().slice(-4)}`;
+
+  const doc = new PDFDocument({ size: 'A4', margin: 0 });
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename="Stipend_Slip_${candidateName.replace(/\s+/g,'_')}_${monthName.replace(' ','_')}.pdf"`);
+  doc.pipe(res);
+
+  const W = doc.page.width;
+  const MARGIN = 50;
+  const NAVY = '#0f172a';
+  const GOLD = '#d4af37';
+  const GRAY = '#475569';
+  const GREEN = '#16a34a';
+  const LIGHT = '#f8fafc';
+
+  // Header
+  doc.rect(0, 0, W, 110).fill(NAVY);
+  doc.fillColor('#ffffff').fontSize(24).font('Helvetica-Bold').text('Hiresnix', MARGIN, 28);
+  doc.fillColor('#94a3b8').fontSize(9).font('Helvetica').text('Empowering Future Professionals', MARGIN, 57);
+  doc.fillColor('#60a5fa').fontSize(12).font('Helvetica-Bold')
+     .text('STIPEND SLIP', 0, 46, { align: 'right', width: W - MARGIN });
+  doc.rect(0, 110, W, 3).fill(GOLD);
+
+  // Slip info
+  doc.fillColor(GRAY).fontSize(9).font('Helvetica')
+     .text(`Slip No: ${slipNo}`, MARGIN, 130)
+     .text(`Pay Period: ${monthName}  |  Issue Date: ${issueDate}`, 0, 130, { align: 'right', width: W - MARGIN });
+
+  // Employee details
+  doc.y = 155;
+  doc.rect(MARGIN, doc.y, W - MARGIN * 2, 14).fill(NAVY);
+  doc.fillColor('#ffffff').fontSize(9).font('Helvetica-Bold').text('EMPLOYEE DETAILS', MARGIN + 10, doc.y + 3);
+  doc.moveDown(0.2);
+
+  const empRows = [
+    ['Name', candidateName],
+    ['Designation', designation || 'Intern'],
+    ['Department', department || 'Technology'],
+    ['Employee / Intern ID', employeeId || 'N/A'],
+    ['Pay Period', monthName],
+  ];
+  let rowY = doc.y + 4;
+  empRows.forEach((row, i) => {
+    doc.rect(MARGIN, rowY, W - MARGIN * 2, 18).fill(i % 2 === 0 ? LIGHT : '#ffffff');
+    doc.fillColor(NAVY).fontSize(9).font('Helvetica-Bold').text(row[0], MARGIN + 10, rowY + 5, { width: 180 });
+    doc.fillColor('#334155').fontSize(9).font('Helvetica').text(row[1], MARGIN + 200, rowY + 5);
+    rowY += 18;
+  });
+  doc.rect(MARGIN, doc.y + 4, W - MARGIN * 2, rowY - (doc.y + 4)).stroke('#e2e8f0');
+
+  // Earnings & Deductions side by side
+  doc.y = rowY + 16;
+  const halfW = (W - MARGIN * 2 - 10) / 2;
+  const leftX = MARGIN;
+  const rightX = MARGIN + halfW + 10;
+
+  // Earnings header
+  doc.rect(leftX, doc.y, halfW, 14).fill(GREEN);
+  doc.fillColor('#ffffff').fontSize(9).font('Helvetica-Bold').text('EARNINGS', leftX + 10, doc.y + 3);
+  // Deductions header
+  doc.rect(rightX, doc.y, halfW, 14).fill('#dc2626');
+  doc.fillColor('#ffffff').fontSize(9).font('Helvetica-Bold').text('DEDUCTIONS', rightX + 10, doc.y + 3);
+
+  const earningsY = doc.y + 18;
+  // Earnings rows
+  [['Basic Stipend', `₹${basic.toLocaleString('en-IN')}`],
+   ['Allowances', `₹${allow.toLocaleString('en-IN')}`]
+  ].forEach((row, i) => {
+    doc.rect(leftX, earningsY + i * 18, halfW, 18).fill(i % 2 === 0 ? LIGHT : '#ffffff');
+    doc.fillColor('#334155').fontSize(9).font('Helvetica').text(row[0], leftX + 10, earningsY + i * 18 + 5);
+    doc.fillColor(NAVY).fontSize(9).font('Helvetica-Bold').text(row[1], leftX, earningsY + i * 18 + 5, { align: 'right', width: halfW - 10 });
+  });
+
+  // Deductions rows
+  [['Tax / TDS', `₹${deduct.toLocaleString('en-IN')}`],
+   ['Other Deductions', '₹0']
+  ].forEach((row, i) => {
+    doc.rect(rightX, earningsY + i * 18, halfW, 18).fill(i % 2 === 0 ? LIGHT : '#ffffff');
+    doc.fillColor('#334155').fontSize(9).font('Helvetica').text(row[0], rightX + 10, earningsY + i * 18 + 5);
+    doc.fillColor('#dc2626').fontSize(9).font('Helvetica-Bold').text(row[1], rightX, earningsY + i * 18 + 5, { align: 'right', width: halfW - 10 });
+  });
+
+  // Totals
+  const totY = earningsY + 36 + 4;
+  doc.rect(leftX, totY, halfW, 20).fill('#dcfce7');
+  doc.fillColor(GREEN).fontSize(9).font('Helvetica-Bold').text('Gross Earnings', leftX + 10, totY + 5);
+  doc.text(`₹${gross.toLocaleString('en-IN')}`, leftX, totY + 5, { align: 'right', width: halfW - 10 });
+
+  doc.rect(rightX, totY, halfW, 20).fill('#fee2e2');
+  doc.fillColor('#dc2626').fontSize(9).font('Helvetica-Bold').text('Total Deductions', rightX + 10, totY + 5);
+  doc.text(`₹${deduct.toLocaleString('en-IN')}`, rightX, totY + 5, { align: 'right', width: halfW - 10 });
+
+  // Net Pay
+  doc.y = totY + 30;
+  doc.rect(MARGIN, doc.y, W - MARGIN * 2, 28).fill(NAVY);
+  doc.fillColor('#ffffff').fontSize(11).font('Helvetica-Bold')
+     .text(`NET STIPEND PAYABLE:  ₹${net.toLocaleString('en-IN')}`, MARGIN + 10, doc.y + 8, { width: W - MARGIN * 2 - 20, align: 'center' });
+
+  // Note
+  doc.y += 40;
+  doc.fillColor(GRAY).fontSize(8).font('Helvetica')
+     .text('* This is a computer-generated stipend slip and does not require a physical signature.', MARGIN, doc.y, { width: W - MARGIN * 2, align: 'center' });
+  doc.moveDown(0.5);
+  doc.text('* For any queries regarding this slip, please contact hr@hiresnix.co.in', MARGIN, doc.y, { width: W - MARGIN * 2, align: 'center' });
+
+  // Signature
+  const sigY = doc.y + 30;
+  signatureLine(doc, 'Mr. A.S. Borse', 'Founder & CEO, Hiresnix', MARGIN, sigY, getSignaturePath('ceo.png'), 1.4);
+
+  pdfFooter(doc);
+  doc.end();
+});
+
 module.exports = {
   getDomains, createDomain, deleteDomain,
   applyInternship, getMyApplication, getAllApplications, updateApplicationStatus,
@@ -1506,4 +1899,5 @@ module.exports = {
   generateOfferLetter,
   getStats, getEnrolledStudents, getAllEnrollments,
   verifyCertificate, verifyOfferLetter, verifyRecommendationLetter,
+  generateAppointmentLetter, generateJoiningLetter, generateStipendSlip,
 };
