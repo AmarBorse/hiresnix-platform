@@ -1548,9 +1548,24 @@ function LessonPage({ course, onBack }: { course:any; onBack:()=>void }) {
                   {waveBars.map((h,i)=><div key={i} style={{width:'3px',background:ACC,borderRadius:'2px',height:`${h}px`,transition:'height 0.1s',opacity:0.6+i%3*0.13}}/>)}
                 </div>
               )}
-              <button onClick={loadTeacher} style={{display:'flex',alignItems:'center',gap:'6px',padding:'7px 14px',borderRadius:'9px',border:`1px solid ${ACC}33`,background:`${ACC}0d`,color:ACC,fontSize:'11px',fontWeight:600,cursor:'pointer'}}>
-                <RefreshCw size={12}/> Re-explain
-              </button>
+              <div style={{display:'flex',gap:'8px',alignItems:'center'}}>
+                <button onClick={loadTeacher} style={{display:'flex',alignItems:'center',gap:'6px',padding:'7px 14px',borderRadius:'9px',border:`1px solid ${ACC}33`,background:`${ACC}0d`,color:ACC,fontSize:'11px',fontWeight:600,cursor:'pointer'}}>
+                  <RefreshCw size={12}/> Re-explain
+                </button>
+                {speaking && (
+                  <button onClick={()=>{
+                    if(window.speechSynthesis.paused){window.speechSynthesis.resume();setSpeaking(true);}
+                    else{window.speechSynthesis.pause();setSpeaking(false);}
+                  }} style={{display:'flex',alignItems:'center',gap:'6px',padding:'7px 14px',borderRadius:'9px',border:'1px solid rgba(255,255,255,0.1)',background:'rgba(255,255,255,0.05)',color:'#fff',fontSize:'11px',fontWeight:600,cursor:'pointer'}}>
+                    {window.speechSynthesis?.paused ? '▶ Resume' : '⏸ Pause'}
+                  </button>
+                )}
+                {!speaking && teacherText && (
+                  <button onClick={()=>speak(teacherText)} style={{display:'flex',alignItems:'center',gap:'6px',padding:'7px 14px',borderRadius:'9px',border:'1px solid rgba(255,255,255,0.1)',background:'rgba(255,255,255,0.05)',color:'#fff',fontSize:'11px',fontWeight:600,cursor:'pointer'}}>
+                    ▶ Play
+                  </button>
+                )}
+              </div>
             </div>
           )}
 
