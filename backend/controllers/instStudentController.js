@@ -415,7 +415,7 @@ const verifyAcademyCertificate = asyncHandler(async (req, res) => {
 
     // Try cert_no lookup first (works for both short & long format)
     let rows = await sequelize.query(
-      `SELECT iap.*, ist.name, ist.career_id
+      `SELECT iap.*, ist.name, ist."careerId"
        FROM inst_academy_progress iap
        JOIN institution_students ist ON ist.id = iap.student_id
        WHERE iap.cert_no = :certNo LIMIT 1`,
@@ -429,10 +429,10 @@ const verifyAcademyCertificate = asyncHandler(async (req, res) => {
         const careerId = parts[1] + '-' + parts[2] + '-' + parts[3];
         const courseId = parts[4].toLowerCase();
         rows = await sequelize.query(
-          `SELECT iap.*, ist.name, ist.career_id
+          `SELECT iap.*, ist.name, ist."careerId"
            FROM inst_academy_progress iap
            JOIN institution_students ist ON ist.id = iap.student_id
-           WHERE ist.career_id = :careerId AND iap.course_id = :courseId LIMIT 1`,
+           WHERE ist."careerId" = :careerId AND iap.course_id = :courseId LIMIT 1`,
           { replacements: { careerId, courseId }, type: sequelize.QueryTypes.SELECT }
         );
       }
@@ -447,7 +447,7 @@ const verifyAcademyCertificate = asyncHandler(async (req, res) => {
         documentType: 'Hiresnix AI Academy Certificate',
         documentId: raw,
         studentName: row.name,
-        careerId: row.career_id,
+        careerId: row.careerId,
         course: COURSES[row.course_id] || row.course_id,
         xp: row.xp || 0,
         issueDate: row.last_active || new Date().toISOString(),
