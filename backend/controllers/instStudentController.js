@@ -365,7 +365,7 @@ const getAcademyProgress = asyncHandler(async (req, res) => {
 
 // Admin: get all students academy progress
 const getAllAcademyProgress = asyncHandler(async (req, res) => {
-  const institutionId = req.institution?.id || req.query.institutionId;
+  const institutionId = req.institution?.id || req.institutionId || req.query.institutionId;
   const isAdmin = req.user?.role === 'admin';
 
   const rows = await sequelize.query(`

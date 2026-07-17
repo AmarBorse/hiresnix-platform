@@ -76,4 +76,8 @@ r.get('/student-credentials', ...withAuth, asyncHandler(async (req, res) => {
   res.json({ success: true, data });
 }));
 
+// AI Academy progress for institution's students
+const { getAllAcademyProgress } = require('../controllers/instStudentController');
+r.get('/academy/progress', ...withAuth, getAllAcademyProgress);
+
 module.exports = r;
