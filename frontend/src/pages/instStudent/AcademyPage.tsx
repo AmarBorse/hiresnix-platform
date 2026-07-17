@@ -15,45 +15,50 @@ const GROQ = (import.meta as any).env.VITE_GROQ_API_KEY || '';
 // ── Video + Timestamp Map ─────────────────────────────────────────
 // Format: [videoId, startSeconds]
 const VID: Record<string,[string,number]> = {
-  // PYTHON — freeCodeCamp 4.5hr (rfscVS0vtbw)
-  "What is Python?":          ["rfscVS0vtbw",0],
-  "Setting Up Python":        ["rfscVS0vtbw",147],
-  "Your First Program":       ["rfscVS0vtbw",325],
-  "Variables & Data Types":   ["rfscVS0vtbw",490],
-  "Type Conversion":          ["rfscVS0vtbw",920],
-  "Arithmetic Operators":     ["rfscVS0vtbw",1380],
-  "Comparison Operators":     ["rfscVS0vtbw",1980],
-  "Logical Operators":        ["rfscVS0vtbw",2400],
-  "If-Else Statements":       ["rfscVS0vtbw",2700],
-  "For Loops":                ["rfscVS0vtbw",3600],
-  "While Loops":              ["rfscVS0vtbw",4200],
-  "Break & Continue":         ["rfscVS0vtbw",4800],
-  "Functions":                ["rfscVS0vtbw",5400],
-  "Parameters & Return":      ["rfscVS0vtbw",5900],
-  "Lambda Functions":         ["rfscVS0vtbw",6500],
-  "Recursion":                ["rfscVS0vtbw",7200],
-  "Decorators":               ["rfscVS0vtbw",7800],
-  "Lists":                    ["rfscVS0vtbw",8400],
-  "Tuples":                   ["rfscVS0vtbw",9000],
-  "Dictionaries":             ["rfscVS0vtbw",9600],
-  "Sets":                     ["rfscVS0vtbw",10200],
-  "List Comprehensions":      ["rfscVS0vtbw",10800],
-  "String Methods":           ["rfscVS0vtbw",2100],
-  "File Handling":            ["rfscVS0vtbw",11400],
-  "Exception Handling":       ["rfscVS0vtbw",12000],
-  "Classes & Objects":        ["rfscVS0vtbw",12600],
-  "Inheritance":              ["rfscVS0vtbw",13500],
-  "Encapsulation":            ["rfscVS0vtbw",13800],
-  "Polymorphism":             ["rfscVS0vtbw",14100],
-  "Modules & Packages":       ["rfscVS0vtbw",14700],
-  "pip & Libraries":          ["rfscVS0vtbw",15000],
-  "Generators":               ["rfscVS0vtbw",15300],
-  "Regular Expressions":      ["rfscVS0vtbw",15600],
-  "Build a Calculator":       ["rfscVS0vtbw",1680],
-  "Build a To-Do App":        ["rfscVS0vtbw",9200],
-  "Build a Quiz Game":        ["rfscVS0vtbw",12900],
-  "Build a Web Scraper":      ["rfscVS0vtbw",15800],
-  "Final Python Project":     ["rfscVS0vtbw",15900],
+  // PYTHON — CodeWithHarry (UrsmFxEIp5k) - Simple Hindi/English mix
+  "What is Python?":          ["UrsmFxEIp5k",0],
+  "Setting Up Python":        ["UrsmFxEIp5k",300],
+  "Your First Program":       ["UrsmFxEIp5k",600],
+  "Variables & Data Types":   ["UrsmFxEIp5k",1200],
+  "Type Conversion":          ["UrsmFxEIp5k",2400],
+  "Arithmetic Operators":     ["UrsmFxEIp5k",3000],
+  "Comparison Operators":     ["UrsmFxEIp5k",3600],
+  "Logical Operators":        ["UrsmFxEIp5k",4200],
+  "If-Else Statements":       ["UrsmFxEIp5k",4800],
+  "For Loops":                ["UrsmFxEIp5k",6000],
+  "While Loops":              ["UrsmFxEIp5k",7200],
+  "Break & Continue":         ["UrsmFxEIp5k",8400],
+  "Functions":                ["UrsmFxEIp5k",9600],
+  "Parameters & Return":      ["UrsmFxEIp5k",10800],
+  "Lambda Functions":         ["UrsmFxEIp5k",12000],
+  "Recursion":                ["UrsmFxEIp5k",13200],
+  "Decorators":               ["UrsmFxEIp5k",14400],
+  "Lists":                    ["UrsmFxEIp5k",15600],
+  "Tuples":                   ["UrsmFxEIp5k",16800],
+  "Dictionaries":             ["UrsmFxEIp5k",18000],
+  "Sets":                     ["UrsmFxEIp5k",19200],
+  "List Comprehensions":      ["UrsmFxEIp5k",20400],
+  "String Methods":           ["UrsmFxEIp5k",21600],
+  "File Handling":            ["UrsmFxEIp5k",22800],
+  "Exception Handling":       ["UrsmFxEIp5k",24000],
+  "Classes & Objects":        ["UrsmFxEIp5k",25200],
+  "Inheritance":              ["UrsmFxEIp5k",27600],
+  "Encapsulation":            ["UrsmFxEIp5k",28800],
+  "Polymorphism":             ["UrsmFxEIp5k",30000],
+  "Modules & Packages":       ["UrsmFxEIp5k",31200],
+  "pip & Libraries":          ["UrsmFxEIp5k",32400],
+  "Generators":               ["UrsmFxEIp5k",33600],
+  "Regular Expressions":      ["UrsmFxEIp5k",34800],
+  "Multithreading":           ["UrsmFxEIp5k",36000],
+  "Virtual Environment":      ["UrsmFxEIp5k",37200],
+  "Python JSON":              ["UrsmFxEIp5k",38400],
+  "Python API Calls":         ["UrsmFxEIp5k",39600],
+  "Python Testing":           ["UrsmFxEIp5k",40800],
+  "Build a Calculator":       ["UrsmFxEIp5k",42000],
+  "Build a To-Do App":        ["UrsmFxEIp5k",43200],
+  "Build a Quiz Game":        ["UrsmFxEIp5k",44400],
+  "Build a Web Scraper":      ["UrsmFxEIp5k",45600],
+  "Final Python Project":     ["UrsmFxEIp5k",46800],
 
   // JAVASCRIPT — freeCodeCamp 7hr (PkZNo7MFNFg)
   "What is JavaScript?":      ["PkZNo7MFNFg",0],
@@ -274,13 +279,6 @@ const VID: Record<string,[string,number]> = {
   // REACT extra
   "Context API":              ["bMknfKXIFA8",19800],
   "Java Functions":           ["grEKMHGYyns",10800],
-
-  // PYTHON extra lessons
-  "Multithreading":           ["rfscVS0vtbw",14000],
-  "Virtual Environment":      ["rfscVS0vtbw",14200],
-  "Python JSON":              ["rfscVS0vtbw",14400],
-  "Python API Calls":         ["rfscVS0vtbw",14600],
-  "Python Testing":           ["rfscVS0vtbw",14800],
 
   // JS extra lessons
   "Type Coercion":            ["PkZNo7MFNFg",800],
@@ -1174,7 +1172,6 @@ function LessonPage({ course, onBack }: { course:any; onBack:()=>void }) {
 
   const [isPlaying, setIsPlaying] = useState(true);
   const [showControls, setShowControls] = useState(false);
-  const [vidLang, setVidLang] = useState<'en'|'hi'|'mr'>('en');
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const controlsTimerRef = useRef<any>(null);
 
@@ -1469,8 +1466,8 @@ function LessonPage({ course, onBack }: { course:any; onBack:()=>void }) {
                 <div style={{position:'relative',paddingBottom:'56.25%',height:0,overflow:'hidden'}}>
                   <iframe
                     ref={iframeRef}
-                    key={lesson + vidLang}
-                    src={`https://www.youtube.com/embed/${getVid(lesson,vidLang)[0]}?start=${getVid(lesson,vidLang)[1]}&rel=0&modestbranding=1&playsinline=1&autoplay=1&controls=0&disablekb=0&iv_load_policy=3&enablejsapi=1&vq=hd720&hl=${vidLang}&cc_lang_pref=${vidLang}&cc_load_policy=1`}
+                    key={lesson}
+                    src={`https://www.youtube.com/embed/${getVid(lesson)[0]}?start=${getVid(lesson)[1]}&rel=0&modestbranding=1&playsinline=1&autoplay=1&controls=0&disablekb=0&iv_load_policy=3&enablejsapi=1&vq=hd720`}
                     title={lesson}
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
                     allowFullScreen
@@ -1494,21 +1491,14 @@ function LessonPage({ course, onBack }: { course:any; onBack:()=>void }) {
                       style={{background:'none',border:'none',color:'#fff',fontSize:'20px',cursor:'pointer',padding:'2px 6px',lineHeight:1,zIndex:5}}
                     >{isPlaying?'⏸':'▶'}</button>
                     <button
-                      onClick={()=>{const win=iframeRef.current?.contentWindow;if(win)win.postMessage(JSON.stringify({event:'command',func:'seekTo',args:[Math.max(0,getVid(lesson,vidLang)[1]-10),true]}),'*');}}
+                      onClick={()=>{const win=iframeRef.current?.contentWindow;if(win)win.postMessage(JSON.stringify({event:'command',func:'seekTo',args:[Math.max(0,getVid(lesson)[1]-10),true]}),'*');}}
                       style={{background:'none',border:'none',color:'#94a3b8',fontSize:'14px',cursor:'pointer',padding:'2px 6px',lineHeight:1}}
                     >⏪ 10s</button>
                     <button
-                      onClick={()=>{const win=iframeRef.current?.contentWindow;if(win)win.postMessage(JSON.stringify({event:'command',func:'seekTo',args:[getVid(lesson,vidLang)[1]+10,true]}),'*');}}
+                      onClick={()=>{const win=iframeRef.current?.contentWindow;if(win)win.postMessage(JSON.stringify({event:'command',func:'seekTo',args:[getVid(lesson)[1]+10,true]}),'*');}}
                       style={{background:'none',border:'none',color:'#94a3b8',fontSize:'14px',cursor:'pointer',padding:'2px 6px',lineHeight:1}}
                     >10s ⏩</button>
                     <div style={{flex:1}}/>
-                    {/* Language selector */}
-                    {(['en','hi','mr'] as const).map(lang=>(
-                      <button key={lang} onClick={()=>setVidLang(lang)}
-                        style={{background:vidLang===lang?`${ACC}33`:'none',border:`1px solid ${vidLang===lang?ACC:'rgba(255,255,255,0.15)'}`,color:vidLang===lang?ACC:'#94a3b8',fontSize:'10px',fontWeight:700,padding:'3px 8px',borderRadius:'6px',cursor:'pointer'}}>
-                        {lang==='en'?'EN':lang==='hi'?'हिं':'मर'}
-                      </button>
-                    ))}
                     <button
                       onClick={()=>iframeRef.current?.requestFullscreen()}
                       style={{background:'none',border:'none',color:'#94a3b8',fontSize:'16px',cursor:'pointer',padding:'2px 6px',lineHeight:1}}
