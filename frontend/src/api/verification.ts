@@ -60,7 +60,7 @@ export const verificationApi = {
       valid: isValid,
       studentName: flat.studentName || data.studentName || data.candidateName,
       issueDate: flat.issueDate || flat.issuedAt || data.issueDate || data.issuedAt,
-      internshipDomain: flat.courseName || flat.certType || data.courseName || flat.internshipDomain || data.internshipDomain || data.domainName || 'N/A',
+      internshipDomain: flat.courseName || flat.certType || data.courseName || data.course || flat.internshipDomain || data.internshipDomain || data.domainName || 'N/A',
       documentId: flat.documentId || data.documentId || data.certificateId || id,
       documentType: flat.documentType || data.documentType,
     };

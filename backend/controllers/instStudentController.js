@@ -198,12 +198,22 @@ const downloadAcademyCertificate = asyncHandler(async (req, res) => {
   };
 
   const courseName = COURSE_NAMES[courseId] || courseId;
-  // Get or generate cert_no from DB
+  // Get or generate cert_no from DB, and SAVE it if newly generated
   const progRows = await sequelize.query(
     'SELECT cert_no FROM inst_academy_progress WHERE student_id = :sid AND course_id = :courseId LIMIT 1',
     { replacements: { sid: student.id, courseId }, type: sequelize.QueryTypes.SELECT }
   );
-  const certNo = (progRows[0] && progRows[0].cert_no) || `HXAC-${Date.now().toString(36).toUpperCase().slice(-6)}`;
+  let certNo = progRows[0] && progRows[0].cert_no;
+  if (!certNo) {
+    certNo = `HXAC-${Math.random().toString(36).toUpperCase().slice(2, 8)}`;
+    // Upsert cert_no to DB so verify works
+    await sequelize.query(
+      `INSERT INTO inst_academy_progress (student_id, career_id, course_id, completed, xp, claimed_cert, cert_no, last_active)
+       VALUES (:sid, :careerId, :courseId, '[]'::jsonb, 0, true, :certNo, NOW())
+       ON CONFLICT (student_id, course_id) DO UPDATE SET cert_no = :certNo, claimed_cert = true`,
+      { replacements: { certNo, sid: student.id, careerId: student.careerId, courseId } }
+    );
+  }
   const verifyUrl = `${process.env.CLIENT_URL || 'https://hiresnix.co.in'}/verification/academy-certificate/${certNo}`;
   const issuedDate = new Date().toLocaleDateString('en-IN', { day:'numeric', month:'long', year:'numeric' });
 
