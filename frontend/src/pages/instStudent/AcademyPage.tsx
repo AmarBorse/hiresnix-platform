@@ -1279,6 +1279,7 @@ function LessonPage({ course, onBack }: { course:any; onBack:()=>void }) {
     r.lang='en-IN';
     r.continuous=false;
     r.interimResults=false;
+    r.maxAlternatives=1;
     r.onresult=(e:any)=>{
       const transcript = e.results[0][0].transcript;
       if(transcript) sendMentor(transcript);
