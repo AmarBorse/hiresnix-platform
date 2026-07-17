@@ -970,7 +970,7 @@ async function groq(prompt: string): Promise<string> {
   try {
     const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${GROQ}`},
-      body:JSON.stringify({ model:'llama-3.1-8b-instant', messages:[{role:'user',content:prompt}], temperature:0.7, max_tokens:2000 }),
+      body:JSON.stringify({ model:'llama-3.1-8b-instant', messages:[{role:'user',content:prompt}], temperature:0.7, max_tokens:4000 }),
     });
     const d = await r.json();
     return d?.choices?.[0]?.message?.content || 'No response';
@@ -1240,11 +1240,11 @@ function LessonPage({ course, onBack }: { course:any; onBack:()=>void }) {
 
   const loadQuiz = useCallback(async()=>{
     setQuizLoading(true); setQuizAll([]); setQuizIdx(0); setSelectedAns(null); setQuizScore(0); setQuizDone(false);
-    const res = await groq(`Generate 20 MCQ quiz questions about "${lesson}" in ${course.title}. Simple English.\nReturn ONLY valid JSON array (no markdown):\n[{"q":"question","opts":["A","B","C","D"],"ans":0,"exp":"explanation"}]\nMix easy(5),medium(10),hard(5).`);
+    const res = await groq(`Generate exactly 10 MCQ quiz questions about "${lesson}" in ${course.title}. Simple English.\nReturn ONLY a valid JSON array, no markdown, no explanation:\n[{"q":"question text","opts":["option A","option B","option C","option D"],"ans":0,"exp":"brief explanation"}]\nMix difficulty: 3 easy, 5 medium, 2 hard. ans is 0-based index of correct option.`);
     try {
       const clean = res.replace(/```json?|```/g,'').trim();
       const s = clean.indexOf('['), e = clean.lastIndexOf(']');
-      setQuizAll(JSON.parse(clean.slice(s,e+1)).slice(0,20));
+      setQuizAll(JSON.parse(clean.slice(s,e+1)).slice(0,10));
     } catch { setQuizAll([{q:`What is the main use of ${lesson}?`,opts:['Store data','Run loops','Define functions','Import modules'],ans:0,exp:`${lesson} is fundamental in ${course.title}.`}]); }
     setQuizLoading(false);
   },[lesson,course.title]);
@@ -1423,7 +1423,7 @@ function LessonPage({ course, onBack }: { course:any; onBack:()=>void }) {
         )}
 
         {/* Topbar */}
-        <div style={{padding:'10px 18px',borderBottom:'1px solid rgba(255,255,255,0.06)',display:'flex',alignItems:'center',justifyContent:'space-between',flexShrink:0,background:'rgba(8,11,18,0.95)',backdropFilter:'blur(12px)'}}>
+        <div style={{padding:'10px 18px',borderBottom:'1px solid rgba(255,255,255,0.06)',display:'flex',alignItems:'center',justifyContent:'space-between',flexShrink:0,background:'rgba(8,11,18,0.95)',backdropFilter:'blur(12px)',position:'relative',zIndex:10}}>
           <div>
             <div style={{color:'#fff',fontWeight:800,fontSize:'15px'}}>{lesson}</div>
             <div style={{color:'#334155',fontSize:'11px',marginTop:'1px'}}>{course.modules[activeMod]?.title}</div>
