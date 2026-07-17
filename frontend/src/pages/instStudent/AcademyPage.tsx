@@ -183,21 +183,33 @@ const VID: Record<string,[string,number]> = {
   "Build Full Stack App":     ["nu_pCVPKzTk",0],
   "Deploy Your App":          ["nu_pCVPKzTk",7200],
 
-  // GIT
-  "What is Git?":             ["RGOj5yH7evk",0],
-  "Git Installation":         ["RGOj5yH7evk",600],
-  "Git Branches":             ["RGOj5yH7evk",3600],
+  // C PROGRAMMING — freeCodeCamp C full course (B31LgI4Y4DQ)
+  "What is C?":               ["B31LgI4Y4DQ",0],
+  "C Setup":                  ["B31LgI4Y4DQ",300],
+  "Variables in C":           ["B31LgI4Y4DQ",900],
+  "Data Types in C":          ["B31LgI4Y4DQ",1800],
+  "Operators in C":           ["B31LgI4Y4DQ",2700],
+  "If-Else in C":             ["B31LgI4Y4DQ",3600],
+  "Loops in C":               ["B31LgI4Y4DQ",5400],
+  "Switch Statement":         ["B31LgI4Y4DQ",7200],
+  "Break & Continue in C":    ["B31LgI4Y4DQ",8100],
+  "Functions in C":           ["B31LgI4Y4DQ",9000],
+  "Arrays in C":              ["B31LgI4Y4DQ",10800],
+  "Strings in C":             ["B31LgI4Y4DQ",12600],
+  "Pointers in C":            ["B31LgI4Y4DQ",14400],
+  "Structures in C":          ["B31LgI4Y4DQ",18000],
+  "File Handling in C":       ["B31LgI4Y4DQ",21600],
+  "Dynamic Memory":           ["B31LgI4Y4DQ",25200],
+  "C Programs":               ["B31LgI4Y4DQ",28800],
 
-  // DOCKER
-  "What is Docker?":          ["fqMOX6JJhGo",0],
-  "Docker Containers":        ["fqMOX6JJhGo",3600],
+  // REACT — freeCodeCamp React full course (bMknfKXIFA8)
+  "Context API":              ["bMknfKXIFA8",19800],
 
-  // ML/DS
-  "What is Machine Learning?":["i_LwzRVP7bg",0],
-  "What is Data Science?":    ["i_LwzRVP7bg",0],
-  "What is NumPy?":           ["QUT1VHiLrmI",0],
-  "What is Pandas?":          ["vmEHCKcdykY",0],
+  // C PROGRAMMING already added above
+  // Java Functions
+  "Java Functions":           ["grEKMHGYyns",10800],
 };
+
 // ── Hindi Video Map (CodeWithHarry) ──────────────────────────────
 const VID_HI: Record<string,[string,number]> = {
   // PYTHON — CodeWithHarry Hindi full course (UrsmFxEIp5k)
@@ -352,6 +364,31 @@ const VID_HI: Record<string,[string,number]> = {
   "Git Branches":             ["RGOj5yH7evk",3600],
   "What is Machine Learning?":["i_LwzRVP7bg",0],
   "What is Data Science?":    ["i_LwzRVP7bg",0],
+  "What is NumPy?":           ["QUT1VHiLrmI",0],
+  "What is Pandas?":          ["vmEHCKcdykY",0],
+
+  // C PROGRAMMING — freeCodeCamp C full course (B31LgI4Y4DQ)
+  "What is C?":               ["B31LgI4Y4DQ",0],
+  "C Setup":                  ["B31LgI4Y4DQ",300],
+  "Variables in C":           ["B31LgI4Y4DQ",900],
+  "Data Types in C":          ["B31LgI4Y4DQ",1800],
+  "Operators in C":           ["B31LgI4Y4DQ",2700],
+  "If-Else in C":             ["B31LgI4Y4DQ",3600],
+  "Loops in C":               ["B31LgI4Y4DQ",5400],
+  "Switch Statement":         ["B31LgI4Y4DQ",7200],
+  "Break & Continue in C":    ["B31LgI4Y4DQ",8100],
+  "Functions in C":           ["B31LgI4Y4DQ",9000],
+  "Arrays in C":              ["B31LgI4Y4DQ",10800],
+  "Strings in C":             ["B31LgI4Y4DQ",12600],
+  "Pointers in C":            ["B31LgI4Y4DQ",14400],
+  "Structures in C":          ["B31LgI4Y4DQ",18000],
+  "File Handling in C":       ["B31LgI4Y4DQ",21600],
+  "Dynamic Memory":           ["B31LgI4Y4DQ",25200],
+  "C Programs":               ["B31LgI4Y4DQ",28800],
+
+  // React & Node extra
+  "Context API":              ["bMknfKXIFA8",19800],
+  "Java Functions":           ["grEKMHGYyns",10800],
 };
 
 // Marathi — same as Hindi fallback (no major Marathi coding channels available)
