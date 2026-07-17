@@ -19,9 +19,8 @@ function ResetPasswordModal({ inst, onClose }: { inst: any; onClose: () => void 
   useEffect(() => {
     if (tab === 'student') {
       setStuLoading(true);
-      client.get(`/institution/students?limit=200`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('hirenix_token')}` }
-      }).then(r => setStudents(r.data.data || [])).catch(() => {}).finally(() => setStuLoading(false));
+      client.get(`/admin/institutions/${inst.id}/students`)
+        .then(r => setStudents(r.data.data || [])).catch(() => {}).finally(() => setStuLoading(false));
     }
   }, [tab]);
 
