@@ -1271,6 +1271,10 @@ function LessonPage({ course, onBack }: { course:any; onBack:()=>void }) {
     const SR=(window as any).SpeechRecognition||(window as any).webkitSpeechRecognition;
     if (!SR){alert('Use Chrome for voice');return;}
     if (micOn){micRef.current?.abort();setMicOn(false);return;}
+    // Cancel any ongoing speech before mic
+    window.speechSynthesis?.cancel();
+    setSpeaking(false);
+    stopWave();
     setMicOn(true);
     const r=new SR(); r.lang='en-US'; r.continuous=false;
     r.onresult=(e:any)=>{sendMentor(e.results[0][0].transcript);};
