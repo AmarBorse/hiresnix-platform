@@ -198,7 +198,171 @@ const VID: Record<string,[string,number]> = {
   "What is NumPy?":           ["QUT1VHiLrmI",0],
   "What is Pandas?":          ["vmEHCKcdykY",0],
 };
-function getVid(l: string): [string, number] { return VID[l] || ["rfscVS0vtbw", 0]; }
+// ── Hindi Video Map (CodeWithHarry) ──────────────────────────────
+const VID_HI: Record<string,[string,number]> = {
+  // PYTHON — CodeWithHarry Hindi full course (UrsmFxEIp5k)
+  "What is Python?":          ["UrsmFxEIp5k",0],
+  "Setting Up Python":        ["UrsmFxEIp5k",300],
+  "Your First Program":       ["UrsmFxEIp5k",600],
+  "Variables & Data Types":   ["UrsmFxEIp5k",1200],
+  "Type Conversion":          ["UrsmFxEIp5k",2400],
+  "Arithmetic Operators":     ["UrsmFxEIp5k",3000],
+  "Comparison Operators":     ["UrsmFxEIp5k",3600],
+  "Logical Operators":        ["UrsmFxEIp5k",4200],
+  "If-Else Statements":       ["UrsmFxEIp5k",4800],
+  "For Loops":                ["UrsmFxEIp5k",6000],
+  "While Loops":              ["UrsmFxEIp5k",7200],
+  "Break & Continue":         ["UrsmFxEIp5k",8400],
+  "Functions":                ["UrsmFxEIp5k",9600],
+  "Parameters & Return":      ["UrsmFxEIp5k",10800],
+  "Lambda Functions":         ["UrsmFxEIp5k",12000],
+  "Recursion":                ["UrsmFxEIp5k",13200],
+  "Lists":                    ["UrsmFxEIp5k",14400],
+  "Tuples":                   ["UrsmFxEIp5k",16800],
+  "Dictionaries":             ["UrsmFxEIp5k",18000],
+  "Sets":                     ["UrsmFxEIp5k",19200],
+  "List Comprehensions":      ["UrsmFxEIp5k",20400],
+  "String Methods":           ["UrsmFxEIp5k",21600],
+  "File Handling":            ["UrsmFxEIp5k",22800],
+  "Exception Handling":       ["UrsmFxEIp5k",24000],
+  "Classes & Objects":        ["UrsmFxEIp5k",25200],
+  "Inheritance":              ["UrsmFxEIp5k",27600],
+  "Encapsulation":            ["UrsmFxEIp5k",28800],
+  "Polymorphism":             ["UrsmFxEIp5k",30000],
+  "Modules & Packages":       ["UrsmFxEIp5k",31200],
+  "pip & Libraries":          ["UrsmFxEIp5k",32400],
+  "Decorators":               ["UrsmFxEIp5k",33600],
+  "Generators":               ["UrsmFxEIp5k",34800],
+  "Regular Expressions":      ["UrsmFxEIp5k",36000],
+  "Build a Calculator":       ["UrsmFxEIp5k",37200],
+  "Build a To-Do App":        ["UrsmFxEIp5k",38400],
+  "Build a Quiz Game":        ["UrsmFxEIp5k",39600],
+  "Build a Web Scraper":      ["UrsmFxEIp5k",40800],
+  "Final Python Project":     ["UrsmFxEIp5k",42000],
+
+  // JAVASCRIPT — CodeWithHarry Hindi JS series (ER9SspLe4Hg)
+  "What is JavaScript?":      ["ER9SspLe4Hg",0],
+  "Variables (let/const/var)":["Q4p8vRQX8uY",0],
+  "JS Data Types":            ["ER9SspLe4Hg",1800],
+  "Template Literals":        ["ER9SspLe4Hg",2400],
+  "JS Functions":             ["ER9SspLe4Hg",3600],
+  "Arrow Functions":          ["ER9SspLe4Hg",5400],
+  "Arrays":                   ["a_Bz5ciBHQ0",0],
+  "Objects":                  ["ER9SspLe4Hg",7200],
+  "Destructuring":            ["ER9SspLe4Hg",9000],
+  "Spread & Rest":            ["ER9SspLe4Hg",10800],
+  "DOM Manipulation":         ["ER9SspLe4Hg",14400],
+  "Event Listeners":          ["rFq0HVOdDo4",0],
+  "Fetch API":                ["ER9SspLe4Hg",18000],
+  "Promises":                 ["ER9SspLe4Hg",19800],
+  "Async Await":              ["ER9SspLe4Hg",21600],
+  "Error Handling":           ["ER9SspLe4Hg",23400],
+  "ES6+ Features":            ["ER9SspLe4Hg",25200],
+  "Local Storage":            ["ER9SspLe4Hg",27000],
+  "Build a Todo App (JS)":    ["ER9SspLe4Hg",28800],
+  "Build a Weather App":      ["ER9SspLe4Hg",30600],
+  "Final JS Project":         ["ER9SspLe4Hg",32400],
+
+  // JAVA — CodeWithHarry Hindi (rV_3Lewxx6o)
+  "What is Java?":            ["rV_3Lewxx6o",0],
+  "Java Setup & Hello World": ["rV_3Lewxx6o",300],
+  "Java Variables":           ["rV_3Lewxx6o",900],
+  "Java Data Types":          ["rV_3Lewxx6o",1800],
+  "Java Operators":           ["rV_3Lewxx6o",3600],
+  "Java If-Else":             ["rV_3Lewxx6o",5400],
+  "Java Loops":               ["rV_3Lewxx6o",7200],
+  "Java Arrays":              ["rV_3Lewxx6o",9000],
+  "Java Methods":             ["rV_3Lewxx6o",10800],
+  "Java OOP - Classes":       ["rV_3Lewxx6o",12600],
+  "Java Inheritance":         ["rV_3Lewxx6o",14400],
+  "Java Polymorphism":        ["rV_3Lewxx6o",16200],
+  "Java Interfaces":          ["rV_3Lewxx6o",18000],
+  "Java Exception Handling":  ["rV_3Lewxx6o",19800],
+  "Java Collections":         ["rV_3Lewxx6o",21600],
+  "Java Generics":            ["rV_3Lewxx6o",23400],
+  "Java File I/O":            ["rV_3Lewxx6o",25200],
+  "Java Threads":             ["rV_3Lewxx6o",27000],
+  "Java Streams":             ["rV_3Lewxx6o",28800],
+  "Java Lambda":              ["rV_3Lewxx6o",30600],
+  "Build a Bank App":         ["rV_3Lewxx6o",32400],
+  "Build a Student DB":       ["rV_3Lewxx6o",32400],
+  "Final Java Project":       ["rV_3Lewxx6o",32400],
+
+  // DSA — CodeWithHarry Hindi DSA playlist (PLu0W_9lII9ahIappRPN0MCAgtOu3lQjQi)
+  "Arrays & Big O":           ["zLQfQDr7JjA",0],
+  "Two Pointers":             ["zLQfQDr7JjA",1800],
+  "Sliding Window":           ["zLQfQDr7JjA",3600],
+  "Prefix Sum":               ["zLQfQDr7JjA",5400],
+  "Strings":                  ["zLQfQDr7JjA",7200],
+  "Linked List":              ["zLQfQDr7JjA",9000],
+  "Stack":                    ["zLQfQDr7JjA",12600],
+  "Queue":                    ["zLQfQDr7JjA",14400],
+  "Binary Tree":              ["zLQfQDr7JjA",18000],
+  "BST":                      ["zLQfQDr7JjA",21600],
+  "Heap":                     ["zLQfQDr7JjA",25200],
+  "Graphs":                   ["zLQfQDr7JjA",28800],
+  "Bubble Sort":              ["zLQfQDr7JjA",32400],
+  "Merge Sort":               ["zLQfQDr7JjA",34200],
+  "Quick Sort":               ["zLQfQDr7JjA",36000],
+  "Binary Search":            ["zLQfQDr7JjA",37800],
+  "Dynamic Programming":      ["zLQfQDr7JjA",39600],
+  "Greedy Algorithms":        ["zLQfQDr7JjA",43200],
+  "Backtracking":             ["zLQfQDr7JjA",46800],
+
+  // SQL — CodeWithHarry Hindi (HXV3zeQKqGY fallback, same timestamps)
+  "What is SQL?":             ["HXV3zeQKqGY",0],
+  "SELECT & FROM":            ["HXV3zeQKqGY",600],
+  "WHERE & AND/OR":           ["HXV3zeQKqGY",1800],
+  "ORDER BY & LIMIT":         ["HXV3zeQKqGY",3000],
+  "INSERT UPDATE DELETE":     ["HXV3zeQKqGY",5400],
+  "JOINS":                    ["HXV3zeQKqGY",9000],
+  "GROUP BY & HAVING":        ["HXV3zeQKqGY",12600],
+  "Subqueries":               ["HXV3zeQKqGY",16200],
+  "Window Functions":         ["HXV3zeQKqGY",19800],
+  "Indexes":                  ["HXV3zeQKqGY",23400],
+  "Views & CTEs":             ["HXV3zeQKqGY",25200],
+  "Transactions":             ["HXV3zeQKqGY",27000],
+  "Stored Procedures":        ["HXV3zeQKqGY",28800],
+  "SQL Project":              ["HXV3zeQKqGY",30600],
+
+  // WEB DEV — CodeWithHarry Hindi
+  "HTML Basics":              ["BsDoLVMnmZs",0],
+  "HTML Forms":               ["BsDoLVMnmZs",3600],
+  "Semantic HTML":            ["BsDoLVMnmZs",7200],
+  "CSS Basics":               ["BsDoLVMnmZs",10800],
+  "Box Model":                ["BsDoLVMnmZs",14400],
+  "Flexbox":                  ["BsDoLVMnmZs",18000],
+  "CSS Grid":                 ["BsDoLVMnmZs",21600],
+  "Responsive Design":        ["BsDoLVMnmZs",25200],
+  "JavaScript for Web":       ["ER9SspLe4Hg",0],
+  "DOM & Events":             ["ER9SspLe4Hg",14400],
+  "What is React?":           ["bMknfKXIFA8",0],
+  "React Components":         ["bMknfKXIFA8",1800],
+  "React Props & State":      ["bMknfKXIFA8",5400],
+  "React Hooks":              ["bMknfKXIFA8",9000],
+  "React Router":             ["bMknfKXIFA8",12600],
+  "API Integration":          ["bMknfKXIFA8",16200],
+  "Node.js Basics":           ["Oe421EPjeBE",0],
+  "Express.js":               ["Oe421EPjeBE",5400],
+  "MongoDB Basics":           ["ofme2o29wY8",0],
+  "Build Full Stack App":     ["nu_pCVPKzTk",0],
+  "Deploy Your App":          ["nu_pCVPKzTk",7200],
+  "What is Git?":             ["RGOj5yH7evk",0],
+  "Git Installation":         ["RGOj5yH7evk",600],
+  "Git Branches":             ["RGOj5yH7evk",3600],
+  "What is Machine Learning?":["i_LwzRVP7bg",0],
+  "What is Data Science?":    ["i_LwzRVP7bg",0],
+};
+
+// Marathi — same as Hindi fallback (no major Marathi coding channels available)
+const VID_MR = VID_HI;
+
+function getVid(l: string, lang: 'en'|'hi'|'mr' = 'en'): [string, number] {
+  if (lang === 'hi') return VID_HI[l] || VID[l] || ["UrsmFxEIp5k", 0];
+  if (lang === 'mr') return VID_MR[l] || VID[l] || ["UrsmFxEIp5k", 0];
+  return VID[l] || ["rfscVS0vtbw", 0];
+}
+// Keep getYT for any legacy usage
 function getYT(l: string) { return getVid(l)[0]; }
 
 // ── Courses ───────────────────────────────────────────────────────
@@ -825,7 +989,7 @@ function LessonPage({ course, onBack }: { course:any; onBack:()=>void }) {
                   <iframe
                     ref={iframeRef}
                     key={lesson + vidLang}
-                    src={`https://www.youtube.com/embed/${getVid(lesson)[0]}?start=${getVid(lesson)[1]}&rel=0&modestbranding=1&playsinline=1&autoplay=1&controls=0&disablekb=0&iv_load_policy=3&enablejsapi=1&vq=hd720&hl=${vidLang}&cc_lang_pref=${vidLang}&cc_load_policy=1`}
+                    src={`https://www.youtube.com/embed/${getVid(lesson,vidLang)[0]}?start=${getVid(lesson,vidLang)[1]}&rel=0&modestbranding=1&playsinline=1&autoplay=1&controls=0&disablekb=0&iv_load_policy=3&enablejsapi=1&vq=hd720&hl=${vidLang}&cc_lang_pref=${vidLang}&cc_load_policy=1`}
                     title={lesson}
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
                     allowFullScreen
@@ -849,11 +1013,11 @@ function LessonPage({ course, onBack }: { course:any; onBack:()=>void }) {
                       style={{background:'none',border:'none',color:'#fff',fontSize:'20px',cursor:'pointer',padding:'2px 6px',lineHeight:1,zIndex:5}}
                     >{isPlaying?'⏸':'▶'}</button>
                     <button
-                      onClick={()=>{const win=iframeRef.current?.contentWindow;if(win)win.postMessage(JSON.stringify({event:'command',func:'seekTo',args:[Math.max(0,getVid(lesson)[1]-10),true]}),'*');}}
+                      onClick={()=>{const win=iframeRef.current?.contentWindow;if(win)win.postMessage(JSON.stringify({event:'command',func:'seekTo',args:[Math.max(0,getVid(lesson,vidLang)[1]-10),true]}),'*');}}
                       style={{background:'none',border:'none',color:'#94a3b8',fontSize:'14px',cursor:'pointer',padding:'2px 6px',lineHeight:1}}
                     >⏪ 10s</button>
                     <button
-                      onClick={()=>{const win=iframeRef.current?.contentWindow;if(win)win.postMessage(JSON.stringify({event:'command',func:'seekTo',args:[getVid(lesson)[1]+10,true]}),'*');}}
+                      onClick={()=>{const win=iframeRef.current?.contentWindow;if(win)win.postMessage(JSON.stringify({event:'command',func:'seekTo',args:[getVid(lesson,vidLang)[1]+10,true]}),'*');}}
                       style={{background:'none',border:'none',color:'#94a3b8',fontSize:'14px',cursor:'pointer',padding:'2px 6px',lineHeight:1}}
                     >10s ⏩</button>
                     <div style={{flex:1}}/>
