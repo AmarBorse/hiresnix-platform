@@ -824,7 +824,7 @@ function LessonPage({ course, onBack }: { course:any; onBack:()=>void }) {
                   <iframe
                     ref={iframeRef}
                     key={lesson}
-                    src={`https://www.youtube.com/embed/${getVid(lesson)[0]}?start=${getVid(lesson)[1]}&rel=0&modestbranding=1&playsinline=1&autoplay=1&controls=0&disablekb=0&iv_load_policy=3&enablejsapi=1`}
+                    src={`https://www.youtube.com/embed/${getVid(lesson)[0]}?start=${getVid(lesson)[1]}&rel=0&modestbranding=1&playsinline=1&autoplay=1&controls=0&disablekb=0&iv_load_policy=3&enablejsapi=1&vq=hd720`}
                     title={lesson}
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
                     allowFullScreen
@@ -837,7 +837,7 @@ function LessonPage({ course, onBack }: { course:any; onBack:()=>void }) {
                     <span style={{color:ACC,fontSize:'10px',fontWeight:600,marginLeft:'4px'}}>· {lesson}</span>
                   </div>
                   {/* Bottom cover bar */}
-                  <div style={{position:'absolute',bottom:0,left:0,right:0,height:'18%',background:'linear-gradient(0deg,#000 70%,transparent)',zIndex:3,pointerEvents:'none'}}/>
+                  <div style={{position:'absolute',bottom:0,left:0,right:0,height:'12%',background:'linear-gradient(0deg,#000 80%,transparent)',zIndex:3,pointerEvents:'none'}}/>
                   {/* Custom controls bar */}
                   <div style={{position:'absolute',bottom:0,left:0,right:0,zIndex:4,padding:'8px 14px',display:'flex',alignItems:'center',gap:'10px'}}>
                     <button
