@@ -25,7 +25,7 @@ export function InstStudentCertificates() {
       if (academyRes.status === 'fulfilled') {
         const progress = academyRes.value.data || [];
         // Filter only completed courses with certificate claimed
-        const completed = progress.filter((p: any) => p.claimedCert || p.xp >= 100);
+        const completed = progress.filter((p: any) => p.claimedCert || p.claimed_cert || p.xp >= 500);
         setAcademyCerts(completed);
       }
     }).catch(() => toast.error('Failed to load certificates'))
