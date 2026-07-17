@@ -33,7 +33,7 @@ export function InstStudentCertificates() {
           docker:'Docker & DevOps', cybersecurity:'Cybersecurity',
           flutter:'Flutter & Dart', datascience:'Data Science', ml:'Machine Learning',
         };
-        const completed = (r.data || []).filter((p: any) => p.claimed_cert || p.claimedCert);
+        const completed = (r.data || r || []).filter((p: any) => p.claimed_cert || p.claimedCert || (p.xp && p.xp > 0));
         setAcademyCerts(completed.map((p: any) => ({
           ...p,
           course_id: p.course_id || p.courseId,
