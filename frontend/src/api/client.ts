@@ -16,7 +16,12 @@ const apiClient = axios.create({
 
 // Attach JWT token from localStorage on every request
 apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem('hirenix_token');
+  // Pick correct token based on current user's role
+  const user = (() => { try { return JSON.parse(localStorage.getItem('hirenix_user') || '{}'); } catch { return {}; } })();
+  const role = user?.role;
+  const key = role === 'institution' ? 'hx_institution_token' : role === 'admin' ? 'hx_admin_token' : 'hx_student_token';
+  // Fallback to old key for existing logged-in users
+  const token = localStorage.getItem(key) || localStorage.getItem('hirenix_token');
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
@@ -26,8 +31,8 @@ apiClient.interceptors.response.use(
   (res) => res,
   (err) => {
     if (err.response?.status === 401) {
-      localStorage.removeItem('hirenix_token');
-      localStorage.removeItem('hirenix_user');
+      ['hx_student_token','hx_institution_token','hx_admin_token','hirenix_token','hirenix_user']
+        .forEach(k => localStorage.removeItem(k));
       window.location.href = '/auth';
     }
     return Promise.reject(err);
