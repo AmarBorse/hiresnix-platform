@@ -59,17 +59,33 @@ export function AdminDocuments() {
     s.domain?.name?.toLowerCase().includes(search.toLowerCase())
   );
 
+  const domainToDept: Record<string,string> = {
+    'frontend development': 'Web Development',
+    'backend development': 'Technology',
+    'full stack development': 'Technology',
+    'python development': 'Technology',
+    'data science': 'Data & Analytics',
+    'machine learning': 'Data & Analytics',
+    'digital marketing': 'Marketing',
+    'ui/ux design': 'Design',
+    'android development': 'Mobile Development',
+    'flutter development': 'Mobile Development',
+    'devops': 'Infrastructure',
+    'cybersecurity': 'Security',
+  };
+
   const autoFill = (enrollment: any) => {
     const name = enrollment.studentName || '';
     const domain = enrollment.domain?.name || 'Intern';
+    const dept = domainToDept[domain.toLowerCase()] || 'Technology';
     const start = enrollment.startDate ? enrollment.startDate.split('T')[0] : '';
     const end   = enrollment.endDate   ? enrollment.endDate.split('T')[0]   : '';
     const stipendAmt = enrollment.stipend || '';
     const designation = `${domain} Intern`;
 
-    setApt(p => ({ ...p, candidateName: name, designation, startDate: start, endDate: end, stipend: stipendAmt, employmentType: 'internship' }));
-    setJl(p => ({ ...p, candidateName: name, designation, joiningDate: start, stipend: stipendAmt, employmentType: 'internship' }));
-    setSs(p => ({ ...p, candidateName: name, designation, basicStipend: stipendAmt }));
+    setApt(p => ({ ...p, candidateName: name, designation, department: dept, startDate: start, endDate: end, stipend: stipendAmt, employmentType: 'internship' }));
+    setJl(p => ({ ...p, candidateName: name, designation, department: dept, joiningDate: start, stipend: stipendAmt, employmentType: 'internship' }));
+    setSs(p => ({ ...p, candidateName: name, designation, department: dept, basicStipend: stipendAmt }));
     setSearch(name);
     setShowDropdown(false);
   };
