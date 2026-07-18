@@ -1974,7 +1974,7 @@ const generateJoiningLetter = asyncHandler(async (req, res) => {
   // Left: CEO
   signatureLine(doc, 'Mr. A S Borse', 'Founder & CEO - Hiresnix', MARGIN, sigY, getSignaturePath('ceo.png'), 1.4);
   doc.fillColor('#9ca3af').fontSize(7.5).font('Helvetica')
-     .text('For SR PATIL INFRASTRUCTURE PRIVATE LIMITED', MARGIN, sigY + 35, { width: 220 });
+     .text('For SR PATIL INFRASTRUCTURE PRIVATE LIMITED', MARGIN, sigY + 35 );
   // Right: Candidate sig + date separately
   const candX = W / 2 + 20;
   doc.moveTo(candX, sigY).lineTo(candX + 180, sigY).strokeColor('#334155').lineWidth(0.6).stroke();
