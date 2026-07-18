@@ -30,13 +30,14 @@ function IPlatformPanel() {
   const [resources, setResources] = useState<any[]>([]);
 
   const load = async () => {
+    const token = localStorage.getItem('hirenix_token') || localStorage.getItem('hx_student_token');
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
     try {
       const [d, a, p, instApp] = await Promise.all([
-        client.get('/iplatform/domains').then(r => r.data),
-        client.get('/iplatform/my-application').then(r => r.data).catch(() => ({ data: null })),
-        client.get('/iplatform/my-progress').then(r => r.data).catch(() => ({ data: null })),
-        // Check if student came from institution portal and already applied there
-        client.get('/iplatform/institution-student-app').then(r => r.data).catch(() => ({ data: null })),
+        client.get('/iplatform/domains', { headers }).then(r => r.data),
+        client.get('/iplatform/my-application', { headers }).then(r => r.data).catch(() => ({ data: null })),
+        client.get('/iplatform/my-progress', { headers }).then(r => r.data).catch(() => ({ data: null })),
+        client.get('/iplatform/institution-student-app', { headers }).then(r => r.data).catch(() => ({ data: null })),
       ]);
       setDomains(d.data || []);
 
@@ -79,10 +80,16 @@ function IPlatformPanel() {
     if (!selected) return;
     setApplying(true);
     try {
-      // Use instInternshipClient if inst student (sends x-inst-student-id headers automatically)
       const isInstStudent = !!localStorage.getItem('hx_inst_student_id');
-      const applyClient = isInstStudent ? instInternshipClient : client;
-      await applyClient.post('/iplatform/apply', { domainId: selected.id, ...form });
+      if (isInstStudent) {
+        await instInternshipClient.post('/iplatform/apply', { domainId: selected.id, ...form });
+      } else {
+        // Use student token directly — avoid any token conflict
+        const token = localStorage.getItem('hirenix_token') || localStorage.getItem('hx_student_token');
+        await client.post('/iplatform/apply', { domainId: selected.id, ...form }, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        });
+      }
       toast.success('Application submitted! Admin will review soon.');
       load();
       setSelected(null);
