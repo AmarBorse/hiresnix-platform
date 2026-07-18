@@ -19,7 +19,7 @@ function IssueCertModal({ onClose, onSaved }: { onClose: () => void; onSaved: ()
   const [students, setStudents]   = useState<InstitutionStudent[]>([]);
   const [courses, setCourses]     = useState<InstituteCourse[]>([]);
   const [selected, setSelected]   = useState<number[]>([]);
-  const [certType, setCertType]   = useState<CertType>('Course Completion');
+  const [certTypes, setCertTypes] = useState<Set<CertType>>(new Set(['Course Completion']));
   const [courseId, setCourseId]   = useState('');
   const [loading, setLoading]     = useState(false);
   const [dataLoading, setDataLoading] = useState(true);
@@ -60,12 +60,12 @@ function IssueCertModal({ onClose, onSaved }: { onClose: () => void; onSaved: ()
     institutionApi.getCertificates({ limit: 500 }).then(certs => {
       const issued = new Set<number>(
         (certs.data || [])
-          .filter((cert: any) => cert.type === certType && (courseId ? String(cert.courseId) === courseId : !cert.courseId))
+          .filter((cert: any) => certTypes.has(cert.type as CertType) && (courseId ? String(cert.courseId) === courseId : !cert.courseId))
           .map((cert: any) => cert.studentId)
       );
       setIssuedStudentIds(issued);
     }).catch(() => {});
-  }, [certType, courseId]);
+  }, [courseId]);
 
   // Select All
   const allSelected  = students.length > 0 && selected.length === students.length;
@@ -77,17 +77,20 @@ function IssueCertModal({ onClose, onSaved }: { onClose: () => void; onSaved: ()
 
   const handleSubmit = async () => {
     if (selected.length === 0) { toast.error('Select at least one student'); return; }
+    if (certTypes.size === 0) { toast.error('Select at least one certificate type'); return; }
     setLoading(true);
     let success = 0, failed = 0;
     for (const sid of selected) {
-      try {
-        await institutionApi.issueCertificate({
-          studentId: sid,
-          courseId: courseId ? parseInt(courseId) : undefined,
-          type: certType,
-        });
-        success++;
-      } catch { failed++; }
+      for (const cType of certTypes) {
+        try {
+          await institutionApi.issueCertificate({
+            studentId: sid,
+            courseId: courseId ? parseInt(courseId) : undefined,
+            type: cType,
+          });
+          success++;
+        } catch { failed++; }
+      }
     }
     if (success > 0) toast.success(`${success} certificate${success > 1 ? 's' : ''} issued!`);
     if (failed > 0) toast.error(`${failed} failed`);
@@ -106,11 +109,22 @@ function IssueCertModal({ onClose, onSaved }: { onClose: () => void; onSaved: ()
         {/* Type & Course selectors */}
         <div className="px-5 py-4 space-y-3" style={{borderBottom:"1px solid rgba(255,255,255,0.08)"}}>
           <div>
-            <label className="block text-xs font-medium mb-1" style={{color:"#64748b"}}>Certificate Type *</label>
-            <select value={certType} onChange={e => setCertType(e.target.value as CertType)}
-              className="w-full px-3 py-2 rounded-lg text-sm focus:outline-none dark-input">
-              {CERT_TYPES.map(t => <option key={t}>{t}</option>)}
-            </select>
+            <label className="block text-xs font-medium mb-2" style={{color:"#64748b"}}>Certificate Type *</label>
+            <div style={{display:'flex',gap:10,flexWrap:'wrap'}}>
+              {CERT_TYPES.map(t => {
+                const checked = certTypes.has(t);
+                const style = TYPE_STYLE[t];
+                return (
+                  <label key={t} onClick={()=>setCertTypes(prev=>{const n=new Set(prev);n.has(t)?n.delete(t):n.add(t);return n;})}
+                    style={{display:'flex',alignItems:'center',gap:8,padding:'8px 14px',borderRadius:10,cursor:'pointer',border:`1px solid ${checked?style.color+'55':'rgba(255,255,255,0.08)'}`,background:checked?style.background:'transparent',transition:'all 0.15s'}}>
+                    <div style={{width:16,height:16,borderRadius:4,border:`2px solid ${checked?style.color:'rgba(255,255,255,0.2)'}`,background:checked?style.color:'transparent',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                      {checked && <span style={{color:'#fff',fontSize:10,fontWeight:900}}>✓</span>}
+                    </div>
+                    <span style={{color:checked?style.color:'#94a3b8',fontSize:12,fontWeight:600,whiteSpace:'nowrap'}}>{t}</span>
+                  </label>
+                );
+              })}
+            </div>
           </div>
           <div>
             <label className="block text-xs font-medium mb-1" style={{color:"#64748b"}}>Course (optional)</label>
@@ -166,7 +180,7 @@ function IssueCertModal({ onClose, onSaved }: { onClose: () => void; onSaved: ()
 
         <div className="p-4 flex items-center justify-between" style={{borderTop:"1px solid rgba(255,255,255,0.08)"}}>
           <p className="text-xs" style={{color:"#64748b"}}>
-            {selected.length > 0 ? `${selected.length} certificate${selected.length > 1 ? 's' : ''} will be issued` : 'Select students to issue certificates'}
+            {selected.length > 0 && certTypes.size > 0 ? `${selected.length * certTypes.size} certificate${selected.length * certTypes.size > 1 ? 's' : ''} will be issued (${selected.length} students × ${certTypes.size} types)` : 'Select students and certificate types'}
           </p>
           <div className="flex gap-3">
             <button onClick={onClose} className="px-4 py-2 text-sm rounded-lg transition text-gray-400 hover:bg-white/10" style={{border:"1px solid rgba(255,255,255,0.1)"}}>Cancel</button>
@@ -183,101 +197,32 @@ function IssueCertModal({ onClose, onSaved }: { onClose: () => void; onSaved: ()
 
 // ── Main Page ─────────────────────────────────────────────────────
 export function InstitutionCertificates() {
-  const [certs, setCerts]     = useState<InstitutionCertificate[]>([]);
-  const [batches, setBatches] = useState<any[]>([]);
-  const [batchStudentsMap, setBatchStudentsMap] = useState<Record<number,any[]>>({});
-  const [total, setTotal]     = useState(0);
+  const [certs, setCerts]   = useState<InstitutionCertificate[]>([]);
+  const [total, setTotal]   = useState(0);
+  const [page, setPage]     = useState(1);
   const [loading, setLoading] = useState(true);
-  const [modal, setModal]     = useState(false);
-  const [expanded, setExpanded] = useState<Set<number>>(new Set([0]));
+  const [modal, setModal]   = useState(false);
+  const LIMIT = 15;
 
   const load = () => {
     setLoading(true);
-    Promise.all([
-      institutionApi.getCertificates({ page: 1, limit: 500 }),
-      institutionApi.getBatches(),
-    ]).then(async ([certsRes, batchesRes]) => {
-      setCerts(certsRes.data || []);
-      setTotal(certsRes.total || 0);
-      const bList = batchesRes.data || [];
-      setBatches(bList);
-      // Fetch students for each batch
-      const map: Record<number,any[]> = {};
-      await Promise.all(bList.map(async (b: any) => {
-        try {
-          const r = await institutionApi.getBatchStudents(b.id);
-          map[b.id] = r.data || [];
-        } catch { map[b.id] = []; }
-      }));
-      setBatchStudentsMap(map);
-    }).catch(() => toast.error('Failed to load data'))
+    institutionApi.getCertificates({ page, limit: LIMIT })
+      .then(r => { setCerts(r.data); setTotal(r.total); })
+      .catch(() => toast.error('Failed to load certificates'))
       .finally(() => setLoading(false));
   };
-
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [page]);
 
   const downloadPdf = (cert: InstitutionCertificate) => {
     window.open(institutionApi.downloadCertPdf(cert.certificateId), '_blank');
   };
-
-  const toggleExpand = (id: number) => {
-    setExpanded(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
-  };
-
-  const certsByStudent = certs.reduce((acc: Record<number,any>, c) => {
-    if (!acc[c.studentId]) acc[c.studentId] = { name: c.studentName, careerId: c.student?.careerId || '—', certs: [] };
-    acc[c.studentId].certs.push(c);
-    return acc;
-  }, {});
-
-  const allBatchStudentIds = new Set(
-    Object.values(batchStudentsMap).flat().map((s:any) => Number(s.id))
-  );
-  const noBatchStudents = Object.entries(certsByStudent).filter(
-    ([sid]) => !allBatchStudentIds.has(Number(sid))
-  );
-
-  const StudentRow = ({ s }: { s: any }) => {
-    const skill    = s.certs.find((c:any)=>c.type==='Skill Assessment');
-    const course   = s.certs.find((c:any)=>c.type==='Course Completion');
-    const training = s.certs.find((c:any)=>c.type==='Training Completion');
-    return (
-      <div style={{display:'grid',gridTemplateColumns:'2fr 2fr 1fr 1fr 1fr 1fr',padding:'10px 18px',alignItems:'center',borderBottom:'1px solid rgba(255,255,255,0.04)'}}
-        onMouseEnter={e=>(e.currentTarget.style.background='rgba(255,255,255,0.03)')}
-        onMouseLeave={e=>(e.currentTarget.style.background='')}>
-        <div style={{color:'#fff',fontSize:13,fontWeight:600}}>{s.name}</div>
-        <div style={{color:'#6366f1',fontSize:11,fontFamily:'monospace'}}>{s.careerId}</div>
-        <div style={{textAlign:'center'}}>{skill?<button onClick={()=>downloadPdf(skill)} style={{background:'none',border:'none',cursor:'pointer'}}><CheckCircle2 size={18} style={{color:'#c084fc'}}/></button>:<span style={{color:'#334155'}}>—</span>}</div>
-        <div style={{textAlign:'center'}}>{course?<button onClick={()=>downloadPdf(course)} style={{background:'none',border:'none',cursor:'pointer'}}><CheckCircle2 size={18} style={{color:'#34d399'}}/></button>:<span style={{color:'#334155'}}>—</span>}</div>
-        <div style={{textAlign:'center'}}>{training?<button onClick={()=>downloadPdf(training)} style={{background:'none',border:'none',cursor:'pointer'}}><CheckCircle2 size={18} style={{color:'#60a5fa'}}/></button>:<span style={{color:'#334155'}}>—</span>}</div>
-        <div style={{display:'flex',justifyContent:'center',gap:4}}>
-          {s.certs.map((c:any)=>(
-            <button key={c.id} onClick={()=>downloadPdf(c)} title={c.type}
-              style={{padding:'4px',borderRadius:6,border:'none',background:'rgba(99,102,241,0.1)',color:'#818cf8',cursor:'pointer'}}>
-              <Download size={13}/>
-            </button>
-          ))}
-        </div>
-      </div>
-    );
-  };
-
-  const TableHeader = () => (
-    <div style={{display:'grid',gridTemplateColumns:'2fr 2fr 1fr 1fr 1fr 1fr',padding:'8px 18px',color:'#475569',fontSize:11,fontWeight:700,textTransform:'uppercase' as const,letterSpacing:'0.05em',borderBottom:'1px solid rgba(255,255,255,0.05)'}}>
-      <div>Student</div><div>Career ID</div>
-      <div style={{textAlign:'center' as const}}>Skill</div>
-      <div style={{textAlign:'center' as const}}>Course</div>
-      <div style={{textAlign:'center' as const}}>Training</div>
-      <div style={{textAlign:'center' as const}}>Downloads</div>
-    </div>
-  );
 
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-white">Certificate Management</h1>
-          <p className="text-sm" style={{color:"#64748b"}}>{batches.length} batches · {total} certificates issued</p>
+          <p className="text-sm" style={{color:"#64748b"}}>{total} certificates issued</p>
         </div>
         <button onClick={() => setModal(true)}
           className="flex items-center gap-2 px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
@@ -285,60 +230,69 @@ export function InstitutionCertificates() {
         </button>
       </div>
 
-      {loading
-        ? <div className="text-center py-12" style={{color:'#475569'}}>Loading...</div>
-        : <div className="space-y-4">
-          {batches.map((batch:any) => {
-            const bStudents = (batchStudentsMap[batch.id] || [])
-              .map((s:any) => certsByStudent[s.id]).filter(Boolean);
-            const certCount = bStudents.reduce((a:number,s:any)=>a+s.certs.length,0);
-            const isOpen = expanded.has(batch.id);
-            return (
-              <div key={batch.id} style={{backdropFilter:'blur(20px)',background:'linear-gradient(135deg,rgba(99,102,241,0.08),rgba(139,92,246,0.05))',border:'1px solid rgba(99,102,241,0.25)',borderRadius:16,overflow:'hidden',boxShadow:'0 8px 32px rgba(0,0,0,0.3),inset 0 1px 0 rgba(255,255,255,0.06)'}}>
-                {/* Glass Card Header */}
-                <div onClick={()=>toggleExpand(batch.id)} style={{cursor:'pointer'}}>
-                  <div style={{padding:'20px 22px',display:'flex',alignItems:'center',gap:16}}>
-                    {/* Icon square */}
-                    <div style={{width:52,height:52,borderRadius:14,background:'linear-gradient(135deg,rgba(99,102,241,0.3),rgba(139,92,246,0.2))',border:'1px solid rgba(99,102,241,0.3)',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 4px 12px rgba(99,102,241,0.2)',flexShrink:0}}>
-                      <Award size={22} style={{color:'#a5b4fc'}}/>
-                    </div>
-                    <div style={{flex:1}}>
-                      <p style={{color:'#fff',fontWeight:800,fontSize:16,margin:'0 0 3px',letterSpacing:'0.01em'}}>{batch.name}</p>
-                      <div style={{display:'flex',gap:12}}>
-                        <span style={{background:'rgba(99,102,241,0.15)',color:'#a5b4fc',fontSize:11,fontWeight:600,padding:'2px 8px',borderRadius:6}}>{bStudents.length} students</span>
-                        <span style={{background:'rgba(16,185,129,0.12)',color:'#34d399',fontSize:11,fontWeight:600,padding:'2px 8px',borderRadius:6}}>{certCount} certificates</span>
-                      </div>
-                    </div>
-                    <div style={{width:28,height:28,borderRadius:8,background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.08)',display:'flex',alignItems:'center',justifyContent:'center',color:'#64748b',fontSize:11}}>
-                      {isOpen?'▲':'▼'}
-                    </div>
-                  </div>
-                  {/* Bottom shine line */}
-                  <div style={{height:1,background:'linear-gradient(90deg,transparent,rgba(99,102,241,0.4),rgba(139,92,246,0.4),transparent)'}}/>
-                </div>
-                {isOpen && (
-                  <div style={{borderTop:'1px solid rgba(255,255,255,0.06)'}}>
-                    {bStudents.length===0
-                      ? <div style={{padding:'16px 18px',color:'#334155',fontSize:12}}>No certificates issued for this batch yet</div>
-                      : <><TableHeader/>{bStudents.map((s:any,i:number)=><StudentRow key={i} s={s}/>)}</>
-                    }
-                  </div>
-                )}
-              </div>
-            );
-          })}
+      <div className="rounded-xl overflow-x-auto" style={{background:"linear-gradient(135deg,rgba(15,23,42,0.95),rgba(20,30,55,0.95))",border:"1px solid rgba(255,255,255,0.1)"}}>
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-left text-xs uppercase tracking-wide" style={{color:"#475569",borderBottom:"1px solid rgba(255,255,255,0.08)"}}>
+              <th className="px-4 py-3">Certificate ID</th>
+              <th className="px-4 py-3">Student</th>
+              <th className="px-4 py-3">Career ID</th>
+              <th className="px-4 py-3">Type</th>
+              <th className="px-4 py-3">Course</th>
+              <th className="px-4 py-3">Issued</th>
+              <th className="px-4 py-3">Status</th>
+              <th className="px-4 py-3 text-center">PDF</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading
+              ? <tr><td colSpan={8} className="text-center py-12" style={{color:"#475569"}}>Loading...</td></tr>
+              : certs.length === 0
+              ? <tr><td colSpan={8} className="text-center py-12" style={{color:"#475569"}}>No certificates issued yet</td></tr>
+              : certs.map(c => (
+                <tr key={c.id} className="transition" style={{borderBottom:"1px solid rgba(255,255,255,0.05)"}} onMouseEnter={e=>(e.currentTarget.style.background="rgba(255,255,255,0.04)")} onMouseLeave={e=>(e.currentTarget.style.background="")}>
+                  <td className="px-4 py-3">
+                    <span className="font-mono text-xs px-2 py-0.5 rounded" style={{background:"rgba(99,102,241,0.15)",color:"#818cf8"}}>{c.certificateId}</span>
+                  </td>
+                  <td className="px-4 py-3 font-medium text-white">{c.studentName}</td>
+                  <td className="px-4 py-3">
+                    <span className="font-mono text-xs" style={{color:"#64748b"}}>{c.student?.careerId || '—'}</span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className={"text-xs px-2 py-0.5 rounded-full font-medium"}>
+                      {c.type}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3" style={{color:"#64748b"}}>{c.courseName || '—'}</td>
+                  <td className="px-4 py-3" style={{color:"#64748b"}}>{new Date(c.issuedAt).toLocaleDateString('en-IN')}</td>
+                  <td className="px-4 py-3">
+                    {c.isValid
+                      ? <span className="flex items-center gap-1 text-xs font-medium" style={{color:"#34d399"}}><CheckCircle2 size={13} /> Valid</span>
+                      : <span className="text-xs" style={{color:"#f87171"}}>Revoked</span>}
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    <button onClick={() => downloadPdf(c)}
+                      className="p-1.5 hover:bg-indigo-500/20 text-indigo-400 rounded-lg transition" title="Download PDF">
+                      <Download size={15} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+          </tbody>
+        </table>
+      </div>
 
-          {noBatchStudents.length>0 && (
-            <div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:14,overflow:'hidden'}}>
-              <div style={{padding:'12px 18px',borderBottom:'1px solid rgba(255,255,255,0.06)'}}>
-                <p style={{color:'#64748b',fontWeight:700,fontSize:12,margin:0,textTransform:'uppercase',letterSpacing:'0.05em'}}>No Batch Assigned</p>
-              </div>
-              <TableHeader/>
-              {noBatchStudents.map(([sid,s]:any)=><StudentRow key={sid} s={s}/>)}
-            </div>
-          )}
+      {total > LIMIT && (
+        <div className="flex items-center justify-between text-sm" style={{color:"#64748b"}}>
+          <span>Showing {Math.min((page-1)*LIMIT+1, total)}–{Math.min(page*LIMIT, total)} of {total}</span>
+          <div className="flex gap-2">
+            <button disabled={page===1} onClick={() => setPage(p=>p-1)}
+              className="p-1.5 rounded disabled:opacity-40 hover:bg-white/10 text-gray-400 transition" style={{border:"1px solid rgba(255,255,255,0.1)"}}><ChevronLeft size={16} /></button>
+            <button disabled={page*LIMIT>=total} onClick={() => setPage(p=>p+1)}
+              className="p-1.5 rounded disabled:opacity-40 hover:bg-white/10 text-gray-400 transition" style={{border:"1px solid rgba(255,255,255,0.1)"}}><ChevronRight size={16} /></button>
+          </div>
         </div>
-      }
+      )}
 
       {modal && <IssueCertModal onClose={() => setModal(false)} onSaved={() => { setModal(false); load(); }} />}
     </div>
