@@ -2089,4 +2089,4 @@ module.exports = {
   getStats, getEnrolledStudents, getAllEnrollments,
   verifyCertificate, verifyOfferLetter, verifyRecommendationLetter,
   generateAppointmentLetter, generateJoiningLetter, generateStipendSlip,
-}
+};
