@@ -287,8 +287,7 @@ export function InstitutionCertificates() {
 
       {loading
         ? <div className="text-center py-12" style={{color:'#475569'}}>Loading...</div>
-        : <>
-          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(200px,1fr))',gap:16}}>
+        : <div className="space-y-4">
           {batches.map((batch:any) => {
             const bStudents = (batchStudentsMap[batch.id] || [])
               .map((s:any) => certsByStudent[s.id]).filter(Boolean);
@@ -296,25 +295,26 @@ export function InstitutionCertificates() {
             const isOpen = expanded.has(batch.id);
             return (
               <div key={batch.id} style={{backdropFilter:'blur(20px)',background:'linear-gradient(135deg,rgba(99,102,241,0.08),rgba(139,92,246,0.05))',border:'1px solid rgba(99,102,241,0.25)',borderRadius:16,overflow:'hidden',boxShadow:'0 8px 32px rgba(0,0,0,0.3),inset 0 1px 0 rgba(255,255,255,0.06)'}}>
-                {/* Glass Card Header — Square */}
-                <div onClick={()=>toggleExpand(batch.id)} style={{cursor:'pointer',padding:'28px 24px',display:'flex',flexDirection:'column',alignItems:'center',gap:14,minHeight:140,justifyContent:'center',position:'relative'}}>
-                  {/* Expand arrow top right */}
-                  <div style={{position:'absolute',top:14,right:14,width:26,height:26,borderRadius:8,background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.08)',display:'flex',alignItems:'center',justifyContent:'center',color:'#64748b',fontSize:10}}>
-                    {isOpen?'▲':'▼'}
+                {/* Glass Card Header */}
+                <div onClick={()=>toggleExpand(batch.id)} style={{cursor:'pointer'}}>
+                  <div style={{padding:'20px 22px',display:'flex',alignItems:'center',gap:16}}>
+                    {/* Icon square */}
+                    <div style={{width:52,height:52,borderRadius:14,background:'linear-gradient(135deg,rgba(99,102,241,0.3),rgba(139,92,246,0.2))',border:'1px solid rgba(99,102,241,0.3)',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 4px 12px rgba(99,102,241,0.2)',flexShrink:0}}>
+                      <Award size={22} style={{color:'#a5b4fc'}}/>
+                    </div>
+                    <div style={{flex:1}}>
+                      <p style={{color:'#fff',fontWeight:800,fontSize:16,margin:'0 0 3px',letterSpacing:'0.01em'}}>{batch.name}</p>
+                      <div style={{display:'flex',gap:12}}>
+                        <span style={{background:'rgba(99,102,241,0.15)',color:'#a5b4fc',fontSize:11,fontWeight:600,padding:'2px 8px',borderRadius:6}}>{bStudents.length} students</span>
+                        <span style={{background:'rgba(16,185,129,0.12)',color:'#34d399',fontSize:11,fontWeight:600,padding:'2px 8px',borderRadius:6}}>{certCount} certificates</span>
+                      </div>
+                    </div>
+                    <div style={{width:28,height:28,borderRadius:8,background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.08)',display:'flex',alignItems:'center',justifyContent:'center',color:'#64748b',fontSize:11}}>
+                      {isOpen?'▲':'▼'}
+                    </div>
                   </div>
-                  {/* Icon */}
-                  <div style={{width:56,height:56,borderRadius:16,background:'linear-gradient(135deg,rgba(99,102,241,0.3),rgba(139,92,246,0.2))',border:'1px solid rgba(99,102,241,0.3)',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 4px 16px rgba(99,102,241,0.25)'}}>
-                    <Award size={24} style={{color:'#a5b4fc'}}/>
-                  </div>
-                  {/* Name */}
-                  <p style={{color:'#fff',fontWeight:800,fontSize:17,margin:0,textAlign:'center',letterSpacing:'0.01em'}}>{batch.name}</p>
-                  {/* Badges */}
-                  <div style={{display:'flex',gap:8,justifyContent:'center'}}>
-                    <span style={{background:'rgba(99,102,241,0.15)',color:'#a5b4fc',fontSize:11,fontWeight:600,padding:'3px 10px',borderRadius:8}}>{bStudents.length} students</span>
-                    <span style={{background:'rgba(16,185,129,0.12)',color:'#34d399',fontSize:11,fontWeight:600,padding:'3px 10px',borderRadius:8}}>{certCount} certs</span>
-                  </div>
-                  {/* Bottom shine */}
-                  <div style={{position:'absolute',bottom:0,left:0,right:0,height:1,background:'linear-gradient(90deg,transparent,rgba(99,102,241,0.4),rgba(139,92,246,0.4),transparent)'}}/>
+                  {/* Bottom shine line */}
+                  <div style={{height:1,background:'linear-gradient(90deg,transparent,rgba(99,102,241,0.4),rgba(139,92,246,0.4),transparent)'}}/>
                 </div>
                 {isOpen && (
                   <div style={{borderTop:'1px solid rgba(255,255,255,0.06)'}}>
@@ -324,23 +324,6 @@ export function InstitutionCertificates() {
                     }
                   </div>
                 )}
-              </div>
-            );
-          })}
-          </div>
-
-          {/* Expanded students shown below grid */}
-          {batches.filter((b:any)=>expanded.has(b.id)).map((batch:any)=>{
-            const bStudents = (batchStudentsMap[batch.id]||[]).map((s:any)=>certsByStudent[s.id]).filter(Boolean);
-            if(!bStudents.length) return null;
-            return (
-              <div key={`exp-${batch.id}`} style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(99,102,241,0.2)',borderRadius:14,overflow:'hidden',marginTop:8}}>
-                <div style={{padding:'10px 18px',borderBottom:'1px solid rgba(255,255,255,0.05)',display:'flex',alignItems:'center',gap:8}}>
-                  <Award size={13} style={{color:'#818cf8'}}/> 
-                  <span style={{color:'#a5b4fc',fontSize:12,fontWeight:700}}>{batch.name}</span>
-                </div>
-                <TableHeader/>
-                {bStudents.map((s:any,i:number)=><StudentRow key={i} s={s}/>)}
               </div>
             );
           })}
@@ -354,7 +337,7 @@ export function InstitutionCertificates() {
               {noBatchStudents.map(([sid,s]:any)=><StudentRow key={sid} s={s}/>)}
             </div>
           )}
-        </>
+        </div>
       }
 
       {modal && <IssueCertModal onClose={() => setModal(false)} onSaved={() => { setModal(false); load(); }} />}
