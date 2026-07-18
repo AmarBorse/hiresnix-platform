@@ -1707,19 +1707,19 @@ const generateAppointmentLetter = asyncHandler(async (req, res) => {
   // ── Signature ─────────────────────────────────────────────────────
   doc.moveDown(0.8);
   doc.fillColor(DARK).fontSize(10).font('Helvetica').text('Yours sincerely,', M);
-  doc.moveDown(0.3);
-  const sigY = doc.y + 8;
+  doc.moveDown(1.5);
+  const sigY = doc.y;
   signatureLine(doc, 'Mr. A.S. Borse', 'Founder & CEO, Hiresnix', M, sigY, getSignaturePath('ceo.png'), 1.2);
 
   // ── Acceptance ────────────────────────────────────────────────────
-  const accY = sigY + 68;
-  doc.rect(M, accY - 4, W - M*2, 0.5).fill('#cccccc');
-  doc.y = accY + 6;
+  doc.y = sigY + 75;
+  doc.rect(M, doc.y, W - M*2, 0.5).fill('#cccccc');
+  doc.y += 10;
   doc.fillColor(DARK).fontSize(10).font('Helvetica-Bold').text('ACCEPTANCE:', M);
   doc.moveDown(0.3);
   doc.fillColor(GRAY).fontSize(10).font('Helvetica')
      .text(`I, ${candidateName}, hereby accept this ${isInternship ? 'internship offer' : 'appointment'} and agree to abide by all the terms and conditions mentioned above.`, M, doc.y, { width: W - M*2 });
-  doc.moveDown(0.8);
+  doc.moveDown(1);
 
   const slY = doc.y;
   doc.moveTo(M, slY).lineTo(M + 200, slY).strokeColor('#888').lineWidth(0.5).stroke();
