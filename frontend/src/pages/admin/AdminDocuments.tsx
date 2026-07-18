@@ -93,9 +93,20 @@ export function AdminDocuments() {
     const domain = enrollment.domain?.name || 'Intern';
     const dept = domainToDept[domain.toLowerCase()] || domain.split(' ').map((w:string)=>w.charAt(0).toUpperCase()+w.slice(1)).join(' ');
     const start = enrollment.startDate ? enrollment.startDate.split('T')[0] : '';
-    const end   = enrollment.endDate   ? enrollment.endDate.split('T')[0]   : '';
     const stipendAmt = enrollment.stipend || '';
     const designation = `${domain} Intern`;
+
+    // Calculate end date from domain duration
+    let end = '';
+    if (start && enrollment.domain?.duration) {
+      const dur = enrollment.domain.duration.toLowerCase();
+      const months = dur.includes('month') ? parseInt(dur) : dur.includes('week') ? Math.ceil(parseInt(dur) / 4) : 0;
+      if (months > 0) {
+        const endDate = new Date(start);
+        endDate.setMonth(endDate.getMonth() + months);
+        end = endDate.toISOString().split('T')[0];
+      }
+    }
 
     setApt(p => ({ ...p, candidateName: name, designation, department: dept, startDate: start, endDate: end, stipend: stipendAmt, employmentType: 'internship' }));
     setJl(p => ({ ...p, candidateName: name, designation, department: dept, joiningDate: start, stipend: stipendAmt, employmentType: 'internship' }));
