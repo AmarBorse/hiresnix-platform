@@ -99,11 +99,15 @@ export function AdminDocuments() {
     // Calculate end date from domain duration
     let end = '';
     if (start && enrollment.domain?.duration) {
-      const dur = enrollment.domain.duration.toLowerCase();
-      const months = dur.includes('month') ? parseInt(dur) : dur.includes('week') ? Math.ceil(parseInt(dur) / 4) : 0;
-      if (months > 0) {
+      const dur = enrollment.domain.duration.toLowerCase().trim();
+      const num = parseInt(dur);
+      let totalMonths = 0;
+      if (dur.includes('month')) totalMonths = num;
+      else if (dur.includes('week')) totalMonths = Math.round(num / 4.33);
+      else if (dur.includes('year')) totalMonths = num * 12;
+      if (totalMonths > 0) {
         const endDate = new Date(start);
-        endDate.setMonth(endDate.getMonth() + months);
+        endDate.setMonth(endDate.getMonth() + totalMonths);
         end = endDate.toISOString().split('T')[0];
       }
     }
