@@ -523,11 +523,16 @@ function pdfHeader(doc, title) {
 }
 
 function pdfFooter(doc) {
-  const bottom = doc.page.height - 60;
-  doc.rect(0, bottom - 10, doc.page.width, 70).fill('#0f172a');
-  doc.fillColor('#94a3b8').fontSize(9).font('Helvetica')
-     .text(`${COMPANY.email}  |  ${COMPANY.website}  |  ${COMPANY.address}`,
-       0, bottom + 5, { align: 'center' });
+  const W = doc.page.width;
+  const bottom = doc.page.height - 65;
+  doc.rect(0, bottom - 10, W, 75).fill('#0f172a');
+  doc.fillColor('#cbd5e1').fontSize(7.5).font('Helvetica-Bold')
+     .text('Operated by SR PATIL INFRASTRUCTURE PRIVATE LIMITED  |  CIN: U42909MH2024PTC429260',
+       0, bottom - 2, { align: 'center', width: W });
+  doc.moveTo(W*0.2, bottom + 10).lineTo(W*0.8, bottom + 10).strokeColor('#334155').lineWidth(0.4).stroke();
+  doc.fillColor('#94a3b8').fontSize(8).font('Helvetica')
+     .text('support@hiresnix.co.in  |  hr@hiresnix.co.in  |  www.hiresnix.co.in  |  Shirpur, Maharashtra, India',
+       0, bottom + 16, { align: 'center', width: W });
 }
 
 function signatureLine(doc, name, title, x, y, imagePath = null, sizeMultiplier = 1) {
@@ -553,6 +558,8 @@ function signatureLine(doc, name, title, x, y, imagePath = null, sizeMultiplier 
      .text(name, x, y + 6, { width: 200 });
   doc.fillColor('#64748b').fontSize(9).font('Helvetica')
      .text(title, x, y + 20, { width: 200 });
+  doc.fillColor('#9ca3af').fontSize(7.5).font('Helvetica')
+     .text('For SR PATIL INFRASTRUCTURE PRIVATE LIMITED', x, y + 33, { width: 270 });
 }
 
 // Helper to flexibly find an enrollment whether an Enrollment ID, Certificate ID, or Certificate No is passed
@@ -1514,8 +1521,9 @@ const generateAppointmentLetter = asyncHandler(async (req, res) => {
   const isInternship = employmentType === 'internship';
   const issueDate    = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
   const fmtDate      = (d) => d ? new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) : 'N/A';
-  const docNo        = `HX-APT-${Date.now().toString().slice(-6)}`;
-  const stipendStr   = stipend ? `Rs. ${Number(stipend).toLocaleString('en-IN')} per month` : 'As per agreement';
+  const year       = new Date().getFullYear();
+  const seqNo      = String(Date.now()).slice(-4);
+  const docNo      = `HSN-APT-${year}-${seqNo}`;
   const ctcStr       = ctc    ? `Rs. ${Number(ctc).toLocaleString('en-IN')} per annum`     : 'As per agreement';
 
   const doc = new PDFDocument({ size: 'A4', margin: 0, bufferPages: true });
@@ -1541,7 +1549,8 @@ const generateAppointmentLetter = asyncHandler(async (req, res) => {
     doc.rect(0, 0, W, 85).fill(NAVY);
     // Left: company name
     doc.fillColor(WHT).fontSize(20).font('Helvetica-Bold').text('HIRESNIX', M, 18);
-    doc.fillColor('#93c5fd').fontSize(8.5).font('Helvetica').text('Empowering Future Professionals', M, 46);
+    doc.fillColor('#93c5fd').fontSize(8.5).font('Helvetica').text('Empowering Future Professionals', M, 38);
+    doc.fillColor('#64748b').fontSize(7).font('Helvetica').text('Operated by SR Patil Infrastructure Pvt. Ltd. | CIN: U42909MH2024PTC429260', M, 52);
     // Thin vertical divider
     doc.moveTo(W/2, 10).lineTo(W/2, 74).strokeColor('rgba(255,255,255,0.12)').lineWidth(0.5).stroke();
     // Right: contact block
@@ -1635,7 +1644,7 @@ const generateAppointmentLetter = asyncHandler(async (req, res) => {
     ['Work Location',    location || 'Shirpur, Maharashtra / Remote'],
     ['Working Days',     workingDays || 'Monday to Saturday'],
     ['Working Hours',    workingHours || '9:00 AM to 6:00 PM'],
-    ['Reporting To',     reportingManager || 'Mr. A.S. Borse, Founder & CEO'],
+    ['Reporting To',     (reportingManager || 'Mr. Jayesh Badgujar') + '\nProgram Director'],
   ];
 
   const col1 = 160;
@@ -1668,11 +1677,11 @@ const generateAppointmentLetter = asyncHandler(async (req, res) => {
        .text('As part of this internship, you will be entitled to the following stipend:', M, doc.y, { width: W - M*2 });
     doc.moveDown(0.3);
     doc.fillColor(GRAY).fontSize(10).font('Helvetica')
-       .text('Monthly Stipend  :  ', M + 12, doc.y, { continued: true });
-    doc.fillColor(DARK).font('Helvetica-Bold').text(stipendStr);
+       .text('Monthly Compensation  :  ', M + 12, doc.y, { continued: true });
+    doc.fillColor(DARK).font('Helvetica-Bold').text(stipend ? `\u20b9${Number(stipend).toLocaleString('en-IN')} per month` : 'As per agreement');
     doc.moveDown(0.15);
     doc.fillColor(GRAY).font('Helvetica').fontSize(9)
-       .text('* Stipend will be credited to your registered bank account on or before the 5th of each calendar month, subject to satisfactory attendance and performance.', M + 12, doc.y, { width: W - M*2 - 12 });
+       .text('* Payable on or before the 5th working day of every month, subject to satisfactory attendance and performance.', M + 12, doc.y, { width: W - M*2 - 12 });
   } else {
     doc.fillColor(GRAY).fontSize(10).font('Helvetica')
        .text('Your compensation package for this role is structured as follows:', M, doc.y, { width: W - M*2 });
@@ -1728,6 +1737,9 @@ const generateAppointmentLetter = asyncHandler(async (req, res) => {
     'The intern is expected to maintain professional conduct and adhere to all company policies, guidelines, and code of conduct at all times.',
     'All work, deliverables, code, designs, or content produced during the internship remain the exclusive intellectual property of Hiresnix.',
     'The intern shall not engage in any activity that conflicts with the interests of Hiresnix during the internship period.',
+    'Data Protection: The intern shall comply with all applicable data protection, information security, and confidentiality policies of the Company.',
+    'Return of Company Assets: Upon completion or termination of the internship, the intern shall return all company assets, documents, credentials, software access, and confidential materials.',
+    'Remote Work: If the internship is conducted remotely, the intern shall maintain confidentiality, professional communication, and comply with all reporting requirements as stipulated by the Company.',
   ] : [
     `This appointment is subject to a probation period of ${probationPeriod || '3 months'}. Confirmation of employment will be based on satisfactory performance review.`,
     `A notice period of ${noticePeriod || '30 days'} is applicable from either party. Salary in lieu of notice may be considered at the sole discretion of the company.`,
@@ -1761,6 +1773,9 @@ const generateAppointmentLetter = asyncHandler(async (req, res) => {
     'Updated Resume / Curriculum Vitae',
     'Educational qualification certificates (for verification purposes)',
     'Bank account details for stipend / salary transfer (Account No., IFSC Code, Branch)',
+    'Passport Size Photograph (2 copies)',
+    'Cancelled Cheque / Bank Passbook Copy (if stipend is applicable)',
+    'PAN Card copy (if applicable)',
   ].forEach(d => {
     doc.fillColor(GRAY).fontSize(10).font('Helvetica')
        .text(`\u2022  ${d}`, M + 10, doc.y, { width: W - M*2 - 10 });
@@ -1805,16 +1820,16 @@ const generateAppointmentLetter = asyncHandler(async (req, res) => {
        { width: W - M*2 });
 
   // Intern's Signature line
-  doc.moveDown(1.6);
+  doc.moveDown(2.2);
   const slY = doc.y;
-  doc.moveTo(M, slY).lineTo(M + 240, slY).strokeColor('#9ca3af').lineWidth(0.6).stroke();
+  doc.moveTo(M, slY).lineTo(M + 260, slY).strokeColor('#9ca3af').lineWidth(0.6).stroke();
   doc.fillColor(MID).fontSize(9).font('Helvetica').text("Intern's Signature:", M, slY + 5);
   doc.fillColor(DARK).fontSize(9).font('Helvetica-Bold').text(candidateName.trim(), M, slY + 18);
 
-  // Date line (below, separate)
-  doc.moveDown(2.4);
+  // Date line (more space)
+  doc.moveDown(3.0);
   const dtY = doc.y;
-  doc.moveTo(M, dtY).lineTo(M + 180, dtY).strokeColor('#9ca3af').lineWidth(0.6).stroke();
+  doc.moveTo(M, dtY).lineTo(M + 200, dtY).strokeColor('#9ca3af').lineWidth(0.6).stroke();
   doc.fillColor(MID).fontSize(9).font('Helvetica').text('Date:', M, dtY + 5);
 
   // ── Footer page 2 ────────────────────────────────────────────────
