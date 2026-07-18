@@ -1728,10 +1728,14 @@ const generateAppointmentLetter = asyncHandler(async (req, res) => {
   ];
 
   terms.forEach((t, i) => {
+    const numX = M + 6;
+    const textX = M + 24;
+    const textW = W - M*2 - 24;
+    const startY = doc.y;
     doc.fillColor(DARK).fontSize(10).font('Helvetica-Bold')
-       .text(`${i+1}.`, M + 6, doc.y, { continued: true, width: 16 });
+       .text(`${i+1}.`, numX, startY, { width: 18, lineBreak: false });
     doc.fillColor(GRAY).font('Helvetica')
-       .text(`  ${t}`, { width: W - M*2 - 22, align: 'justify' });
+       .text(t, textX, startY, { width: textW, align: 'justify' });
     doc.moveDown(0.35);
   });
 
