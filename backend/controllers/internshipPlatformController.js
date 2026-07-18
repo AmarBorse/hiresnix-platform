@@ -1659,20 +1659,30 @@ const generateAppointmentLetter = asyncHandler(async (req, res) => {
   });
   doc.y = ty + 10;
 
-  // ── Compensation ─────────────────────────────────────────────────
-  doc.fillColor(DARK).fontSize(10).font('Helvetica-Bold').text('Compensation:', M, doc.y, { continued: true });
+  // Compensation
+  doc.moveDown(0.3);
+  doc.fillColor(DARK).fontSize(10).font('Helvetica-Bold').text('Compensation & Remuneration:', M);
+  doc.moveDown(0.2);
   if (isInternship) {
-    doc.fillColor(GRAY).font('Helvetica')
-       .text(` You will receive a monthly stipend of `, { continued: true });
-    doc.fillColor(DARK).font('Helvetica-Bold').text(stipendStr, { continued: true });
-    doc.fillColor(GRAY).font('Helvetica')
-       .text(`. Stipend will be credited by the 5th of each month, subject to satisfactory performance and attendance.`);
+    doc.fillColor(GRAY).fontSize(10).font('Helvetica')
+       .text('As part of this internship, you will be entitled to the following stipend:', M, doc.y, { width: W - M*2 });
+    doc.moveDown(0.3);
+    doc.fillColor(GRAY).fontSize(10).font('Helvetica')
+       .text('Monthly Stipend  :  ', M + 12, doc.y, { continued: true });
+    doc.fillColor(DARK).font('Helvetica-Bold').text(stipendStr);
+    doc.moveDown(0.15);
+    doc.fillColor(GRAY).font('Helvetica').fontSize(9)
+       .text('* Stipend will be credited to your registered bank account on or before the 5th of each calendar month, subject to satisfactory attendance and performance.', M + 12, doc.y, { width: W - M*2 - 12 });
   } else {
-    doc.fillColor(GRAY).font('Helvetica')
-       .text(` Your annual Cost to Company (CTC) will be `, { continued: true });
-    doc.fillColor(DARK).font('Helvetica-Bold').text(ctcStr, { continued: true });
-    doc.fillColor(GRAY).font('Helvetica')
-       .text(`. Applicable taxes (TDS) will be deducted as per statutory requirements.`);
+    doc.fillColor(GRAY).fontSize(10).font('Helvetica')
+       .text('Your compensation package for this role is structured as follows:', M, doc.y, { width: W - M*2 });
+    doc.moveDown(0.3);
+    doc.fillColor(GRAY).fontSize(10).font('Helvetica')
+       .text('Annual CTC  :  ', M + 12, doc.y, { continued: true });
+    doc.fillColor(DARK).font('Helvetica-Bold').text(ctcStr);
+    doc.moveDown(0.15);
+    doc.fillColor(GRAY).font('Helvetica').fontSize(9)
+       .text('* Applicable taxes (TDS) will be deducted at source as per prevailing statutory requirements. The salary breakup will be shared separately by the HR department.', M + 12, doc.y, { width: W - M*2 - 12 });
   }
 
   // ── Benefits ─────────────────────────────────────────────────────
