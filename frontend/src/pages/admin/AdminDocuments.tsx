@@ -26,7 +26,7 @@ export function AdminDocuments() {
     candidateName:'', designation:'', department:'', employmentType:'internship',
     startDate:'', endDate:'', stipend:'', ctc:'',
     location:'Shirpur, Maharashtra / Remote',
-    reportingManager:'Mr. A.S. Borse (Founder & CEO)',
+    reportingManager:'Mr. Jayesh Badgujar',
     workingHours:'9:00 AM – 6:00 PM', workingDays:'Monday to Saturday',
     probationPeriod:'3 months', noticePeriod:'30 days',
   });
@@ -36,7 +36,7 @@ export function AdminDocuments() {
     candidateName:'', designation:'', department:'', employmentType:'internship',
     joiningDate:'', stipend:'', ctc:'',
     location:'Shirpur, Maharashtra / Remote',
-    reportingManager:'Mr. A.S. Borse (Founder & CEO)',
+    reportingManager:'Mr. Jayesh Badgujar',
   });
 
   // Stipend fields
@@ -114,7 +114,7 @@ export function AdminDocuments() {
 
     setApt(p => ({ ...p, candidateName: name, designation, department: dept, startDate: start, endDate: end, stipend: stipendAmt, employmentType: 'internship' }));
     setJl(p => ({ ...p, candidateName: name, designation, department: dept, joiningDate: start, stipend: stipendAmt, employmentType: 'internship' }));
-    setSs(p => ({ ...p, candidateName: name, designation, department: dept, basicStipend: stipendAmt }));
+    setSs(p => ({ ...p, candidateName: name, designation, department: dept, basicStipend: stipendAmt, employeeId: `HX-INT-${new Date().getFullYear()}-${String(enrollment.id).padStart(4,'0')}` }));
     setSearch(name);
     setShowDropdown(false);
   };
