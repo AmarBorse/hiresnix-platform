@@ -1500,7 +1500,7 @@ const verifyRecommendationLetter = asyncHandler(async (req, res) => {
 // ── APPOINTMENT LETTER (Admin Only) ──────────────────────────────
 const generateAppointmentLetter = asyncHandler(async (req, res) => {
   const {
-    candidateName, designation, department, employmentType, // 'fulltime' | 'internship'
+    candidateName, designation, department, employmentType,
     startDate, endDate, stipend, ctc,
     workingHours, workingDays, reportingManager, location,
     probationPeriod, noticePeriod,
@@ -1512,132 +1512,205 @@ const generateAppointmentLetter = asyncHandler(async (req, res) => {
 
   const isInternship = employmentType === 'internship';
   const issueDate = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+  const fmtDate = (d) => new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
   const docNo = `HX-APT-${Date.now().toString().slice(-6)}`;
 
-  const doc = new PDFDocument({ size: 'A4', margin: 0 });
+  const doc = new PDFDocument({ size: 'A4', margin: 0, bufferPages: true });
   res.setHeader('Content-Type', 'application/pdf');
   res.setHeader('Content-Disposition', `attachment; filename="Appointment_Letter_${candidateName.replace(/\s+/g,'_')}.pdf"`);
   doc.pipe(res);
 
   const W = doc.page.width;
-  const MARGIN = 50;
-  const NAVY = '#0f172a';
-  const GOLD = '#d4af37';
+  const M = 50;
+  const NAVY = '#1a3a5c';
   const BLUE = '#1e40af';
-  const GRAY = '#475569';
-  const LIGHT = '#f8fafc';
+  const DARK = '#1a1a2e';
+  const GRAY = '#4a4a4a';
+  const LGRAY = '#f5f5f5';
+  const WHITE = '#ffffff';
 
-  // ── Header ──────────────────────────────────────────────────────
-  doc.rect(0, 0, W, 110).fill(NAVY);
-  doc.fillColor('#ffffff').fontSize(24).font('Helvetica-Bold').text('Hiresnix', MARGIN, 28);
-  doc.fillColor('#94a3b8').fontSize(9).font('Helvetica').text('Empowering Future Professionals', MARGIN, 57);
-  doc.fillColor('#60a5fa').fontSize(12).font('Helvetica-Bold')
-     .text(isInternship ? 'INTERNSHIP APPOINTMENT LETTER' : 'APPOINTMENT LETTER', 0, 46, { align: 'right', width: W - MARGIN });
-  doc.rect(0, 110, W, 3).fill(GOLD);
+  // ── White background ─────────────────────────────────────────────
+  doc.rect(0, 0, W, doc.page.height).fill(WHITE);
 
-  // ── Doc Info ────────────────────────────────────────────────────
-  doc.y = 130;
+  // ── Top header bar ───────────────────────────────────────────────
+  doc.rect(0, 0, W, 90).fill(NAVY);
+
+  // Company name left
+  doc.fillColor(WHITE).fontSize(22).font('Helvetica-Bold').text('HIRESNIX', M, 22);
+  doc.fillColor('#94c5e8').fontSize(9).font('Helvetica').text('Empowering Future Professionals', M, 50);
+
+  // Divider line in header
+  doc.moveTo(W/2, 15).lineTo(W/2, 75).strokeColor('rgba(255,255,255,0.2)').lineWidth(0.5).stroke();
+
+  // Contact info right side
+  const cx = W/2 + 20;
+  doc.fillColor('#cbd5e1').fontSize(8).font('Helvetica');
+  doc.text('📍 Shirpur, Maharashtra - 425405', cx, 18, { width: W - cx - M });
+  doc.text('📞 +91 98765 43210', cx, 32, { width: W - cx - M });
+  doc.text('✉  hr@hiresnix.co.in', cx, 46, { width: W - cx - M });
+  doc.text('🌐 www.hiresnix.co.in', cx, 60, { width: W - cx - M });
+
+  // Blue bottom line
+  doc.rect(0, 90, W, 4).fill('#2563eb');
+
+  // ── Title ────────────────────────────────────────────────────────
+  doc.y = 115;
+  doc.fillColor(NAVY).fontSize(14).font('Helvetica-Bold')
+     .text(isInternship ? 'APPOINTMENT LETTER FOR INTERNSHIP' : 'APPOINTMENT LETTER', 0, 115, { align: 'center', width: W });
+
+  // Underline
+  const titleW = 260;
+  doc.moveTo((W - titleW) / 2, 135).lineTo((W + titleW) / 2, 135).strokeColor(NAVY).lineWidth(1).stroke();
+
+  // ── Ref & Date ───────────────────────────────────────────────────
   doc.fillColor(GRAY).fontSize(9).font('Helvetica')
-     .text(`Ref No: ${docNo}`, MARGIN, 130)
-     .text(`Date: ${issueDate}`, 0, 130, { align: 'right', width: W - MARGIN });
+     .text(`Ref No: ${docNo}`, M, 148)
+     .text(`Date: ${issueDate}`, 0, 148, { align: 'right', width: W - M });
 
-  // ── Subject ─────────────────────────────────────────────────────
-  doc.moveDown(1.5);
-  doc.fillColor(NAVY).fontSize(11).font('Helvetica-Bold')
-     .text(`Dear ${candidateName},`, MARGIN);
-  doc.moveDown(0.5);
+  // ── Salutation ───────────────────────────────────────────────────
+  doc.y = 168;
+  doc.fillColor(DARK).fontSize(10).font('Helvetica').text(`Dear ${candidateName},`, M);
+  doc.moveDown(0.6);
   doc.fillColor(GRAY).fontSize(10).font('Helvetica')
-     .text(`Sub: ${isInternship ? 'Internship' : 'Appointment'} Letter — ${designation}`, MARGIN);
-  doc.moveDown(0.5);
-  doc.fillColor('#334155').fontSize(10).font('Helvetica')
-     .text(`We are pleased to ${isInternship ? 'offer you an internship' : 'appoint you'} at Hiresnix on the following terms and conditions:`, MARGIN, doc.y, { width: W - MARGIN * 2 });
+     .text(`On behalf of Hiresnix, we are pleased to offer you the position of ${designation}. This letter outlines the terms and conditions of your ${isInternship ? 'internship' : 'employment'} with our company.`, M, doc.y, { width: W - M * 2 });
 
-  // ── Details Table ───────────────────────────────────────────────
-  doc.moveDown(1);
-  const tableTop = doc.y;
-  doc.rect(MARGIN, tableTop, W - MARGIN * 2, 14).fill(NAVY);
-  doc.fillColor('#ffffff').fontSize(9).font('Helvetica-Bold')
-     .text('EMPLOYMENT DETAILS', MARGIN + 10, tableTop + 3);
+  // ── Role title ───────────────────────────────────────────────────
+  doc.moveDown(0.8);
+  doc.fillColor(DARK).fontSize(10).font('Helvetica-Bold').text(`${isInternship ? 'Internship' : 'Job'} Title: `, M, doc.y, { continued: true });
+  doc.font('Helvetica').fillColor(GRAY).text(designation);
 
-  const rows = [
-    ['Candidate Name', candidateName],
-    ['Designation / Role', designation],
-    ['Department', department || 'Technology'],
-    ['Employment Type', isInternship ? 'Internship' : 'Full-Time Employee'],
-    ['Date of Joining', new Date(startDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })],
-    ...(endDate && isInternship ? [['Internship End Date', new Date(endDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })]] : []),
-    ['Work Location', location || 'Shirpur, Maharashtra / Remote'],
-    ['Reporting To', reportingManager || 'Mr. A.S. Borse (Founder & CEO)'],
-    ['Working Hours', workingHours || '9:00 AM – 6:00 PM'],
-    ['Working Days', workingDays || 'Monday to Saturday'],
-    ...(isInternship
-      ? [['Monthly Stipend', stipend ? `₹${Number(stipend).toLocaleString('en-IN')}/month` : 'As per agreement']]
-      : [
-          ['Annual CTC', ctc ? `₹${Number(ctc).toLocaleString('en-IN')} per annum` : 'As per agreement'],
-          ['Probation Period', probationPeriod || '3 months'],
-          ['Notice Period', noticePeriod || '30 days'],
-        ]
-    ),
-  ];
+  // ── Responsibilities ─────────────────────────────────────────────
+  doc.moveDown(0.6);
+  doc.fillColor(GRAY).fontSize(10).font('Helvetica')
+     .text(`As a ${designation}, you will be working with the ${department || 'Technology'} team. Your responsibilities will include:`, M, doc.y, { width: W - M * 2 });
+  doc.moveDown(0.4);
 
-  let rowY = tableTop + 18;
-  rows.forEach((row, i) => {
-    const bg = i % 2 === 0 ? LIGHT : '#ffffff';
-    doc.rect(MARGIN, rowY, W - MARGIN * 2, 18).fill(bg);
-    doc.fillColor(NAVY).fontSize(9).font('Helvetica-Bold').text(row[0], MARGIN + 10, rowY + 5, { width: 180 });
-    doc.fillColor('#334155').fontSize(9).font('Helvetica').text(row[1], MARGIN + 200, rowY + 5, { width: W - MARGIN * 2 - 210 });
-    rowY += 18;
-  });
-  doc.rect(MARGIN, tableTop, W - MARGIN * 2, rowY - tableTop).stroke('#e2e8f0');
-
-  // ── Terms ────────────────────────────────────────────────────────
-  doc.y = rowY + 16;
-  doc.rect(MARGIN, doc.y, W - MARGIN * 2, 14).fill(NAVY);
-  doc.fillColor('#ffffff').fontSize(9).font('Helvetica-Bold').text('TERMS & CONDITIONS', MARGIN + 10, doc.y + 3);
-  doc.moveDown(0.2);
-
-  const terms = isInternship ? [
-    'This internship appointment is valid only for the period mentioned above.',
-    'The intern shall maintain confidentiality of all company information and data.',
-    'The intern is expected to adhere to company policies, working hours, and code of conduct.',
-    'Stipend (if applicable) will be disbursed at the end of each month upon satisfactory performance.',
-    'Hiresnix reserves the right to terminate this internship with prior notice in case of misconduct.',
-    'An internship certificate will be provided upon successful completion.',
+  const responsibilities = isInternship ? [
+    'Assisting the team with assigned projects and tasks.',
+    'Collaborating with team members and reporting progress.',
+    'Contributing to problem-solving and innovation initiatives.',
+    'Preparing reports and documentation as required.',
+    'Following company processes and best practices.',
   ] : [
-    'Your appointment is subject to verification of all original documents and educational certificates.',
-    'You will be on probation for the period mentioned above; employment will be confirmed based on performance.',
-    'You are required to maintain strict confidentiality of all company and client information.',
-    'Salary/CTC will be disbursed as per company payroll cycle after deduction of applicable taxes.',
-    'You must give the notice period mentioned above before resignation; otherwise salary in lieu will be deducted.',
-    'Violation of company policies may result in disciplinary action including termination.',
-    'This letter is issued subject to your joining on the date mentioned and submission of all required documents.',
+    'Leading and executing projects within the assigned domain.',
+    'Collaborating with cross-functional teams effectively.',
+    'Maintaining quality standards and meeting project deadlines.',
+    'Reporting progress to the reporting manager regularly.',
+    'Contributing to company growth and innovation initiatives.',
   ];
 
-  terms.forEach((t, i) => {
-    doc.fillColor('#334155').fontSize(9).font('Helvetica')
-       .text(`${i + 1}. ${t}`, MARGIN + 10, doc.y + 4, { width: W - MARGIN * 2 - 20 });
+  responsibilities.forEach(r => {
+    doc.fillColor(GRAY).fontSize(10).font('Helvetica')
+       .text(`•  ${r}`, M + 10, doc.y, { width: W - M * 2 - 10 });
     doc.moveDown(0.3);
   });
 
-  // ── Acceptance line ─────────────────────────────────────────────
+  // ── Work Schedule ─────────────────────────────────────────────────
+  doc.moveDown(0.4);
+  doc.fillColor(GRAY).fontSize(10).font('Helvetica').text('Find the work schedule details below:', M, doc.y, { width: W - M * 2 });
+  doc.moveDown(0.4);
+
+  const schedule = [
+    ['Duration', isInternship && endDate ? `${fmtDate(startDate)} to ${fmtDate(endDate)}` : 'As per agreement'],
+    ['Start Date', fmtDate(startDate)],
+    ['Work Type', isInternship ? 'Internship' : 'Full-Time'],
+    ['Weekly Schedule', `${workingDays || 'Monday to Saturday'} [${workingHours || '9:00 AM – 6:00 PM'}]`],
+    ['Work Location', location || 'Shirpur, Maharashtra / Remote'],
+  ];
+
+  schedule.forEach(([k, v]) => {
+    doc.fillColor(DARK).fontSize(10).font('Helvetica-Bold').text(`•  ${k}: `, M + 10, doc.y, { continued: true, width: 160 });
+    doc.fillColor(GRAY).font('Helvetica').text(v, { width: W - M * 2 - 170 });
+    doc.moveDown(0.3);
+  });
+
+  // ── Stipend/CTC ───────────────────────────────────────────────────
+  doc.moveDown(0.4);
+  if (isInternship) {
+    doc.fillColor(GRAY).fontSize(10).font('Helvetica')
+       .text(`This is a paid internship position, and you will report directly to ${reportingManager || 'Mr. A.S. Borse (Founder & CEO)'}.`, M, doc.y, { width: W - M * 2 });
+    doc.moveDown(0.5);
+    doc.fillColor(GRAY).fontSize(10).font('Helvetica')
+       .text(`You will receive a monthly stipend of ${stipend ? `₹${Number(stipend).toLocaleString('en-IN')}` : 'as per agreement'}. As an intern, you will be entitled to the following benefits:`, M, doc.y, { width: W - M * 2 });
+  } else {
+    doc.fillColor(GRAY).fontSize(10).font('Helvetica')
+       .text(`This is a full-time position, and you will report directly to ${reportingManager || 'Mr. A.S. Borse (Founder & CEO)'}. Your annual CTC will be ${ctc ? `₹${Number(ctc).toLocaleString('en-IN')}` : 'as per agreement'}.`, M, doc.y, { width: W - M * 2 });
+  }
+  doc.moveDown(0.4);
+
+  const benefits = [
+    'Access to company resources and learning materials.',
+    'Certificate of completion / experience letter upon successful tenure.',
+    'Opportunity to work on real-world projects with the core team.',
+  ];
+  benefits.forEach(b => {
+    doc.fillColor(GRAY).fontSize(10).font('Helvetica')
+       .text(`•  ${b}`, M + 10, doc.y, { width: W - M * 2 - 10 });
+    doc.moveDown(0.3);
+  });
+
+  // ── Confidentiality ───────────────────────────────────────────────
+  doc.moveDown(0.4);
+  doc.fillColor(GRAY).fontSize(10).font('Helvetica')
+     .text('During your tenure, you will have access to confidential information. You agree to maintain the confidentiality of all proprietary information and not disclose it to any third party without prior written consent from Hiresnix. This obligation continues even after the completion of your tenure.', M, doc.y, { width: W - M * 2 });
+
+  // ── Probation / Terms ─────────────────────────────────────────────
+  doc.moveDown(0.5);
+  if (isInternship) {
+    doc.fillColor(GRAY).fontSize(10).font('Helvetica')
+       .text('Your first 30 days will be considered a probationary period. Either party can terminate this internship with two weeks\' notice. You are expected to follow all company policies and procedures.', M, doc.y, { width: W - M * 2 });
+  } else {
+    doc.fillColor(GRAY).fontSize(10).font('Helvetica')
+       .text(`Your first ${probationPeriod || '3 months'} will be on probation. A notice period of ${noticePeriod || '30 days'} is required before resignation. You are expected to follow all company policies and procedures.`, M, doc.y, { width: W - M * 2 });
+  }
+
+  // ── Documents Required ────────────────────────────────────────────
+  doc.moveDown(0.5);
+  doc.fillColor(GRAY).fontSize(10).font('Helvetica')
+     .text('To accept this offer, please sign and return a copy of this letter. You will need to provide the following documents:', M, doc.y, { width: W - M * 2 });
+  doc.moveDown(0.3);
+  ['Valid ID proof (Aadhar / PAN)', 'Updated Resume', 'Bank account details (Account No., IFSC, Branch)'].forEach(d => {
+    doc.fillColor(GRAY).fontSize(10).font('Helvetica').text(`•  ${d}`, M + 10, doc.y, { width: W - M * 2 - 10 });
+    doc.moveDown(0.3);
+  });
+
+  // ── Closing ───────────────────────────────────────────────────────
+  doc.moveDown(0.5);
+  doc.fillColor(GRAY).fontSize(10).font('Helvetica')
+     .text(`We look forward to welcoming you to Hiresnix and are excited about the contributions you'll make. If you have any questions, please contact us at hr@hiresnix.co.in.`, M, doc.y, { width: W - M * 2 });
+
+  // ── Signatures ────────────────────────────────────────────────────
+  doc.moveDown(1);
+  doc.fillColor(DARK).fontSize(10).font('Helvetica').text('Sincerely,', M);
+  doc.moveDown(0.3);
+
+  const sigY = doc.y + 10;
+  signatureLine(doc, 'Mr. A.S. Borse', 'Founder & CEO, Hiresnix', M, sigY, getSignaturePath('ceo.png'), 1.2);
+
+  // ── Acceptance Section ────────────────────────────────────────────
+  const accY = sigY + 70;
+  doc.rect(M, accY, W - M * 2, 1).fill('#cccccc');
+  doc.moveDown(0.5);
+  doc.y = accY + 10;
+  doc.fillColor(DARK).fontSize(10).font('Helvetica-Bold').text('ACCEPTANCE:', M);
+  doc.moveDown(0.3);
+  doc.fillColor(GRAY).fontSize(10).font('Helvetica')
+     .text(`I, ${candidateName}, hereby accept this ${isInternship ? 'internship' : 'appointment'} offer and agree to all the terms and conditions outlined above.`, M, doc.y, { width: W - M * 2 });
   doc.moveDown(0.8);
-  doc.fillColor('#334155').fontSize(9).font('Helvetica')
-     .text('Please sign and return a copy of this letter as your acceptance of the above terms.', MARGIN, doc.y, { width: W - MARGIN * 2 });
 
-  // ── Signatures ──────────────────────────────────────────────────
-  const sigY = doc.y + 30;
-  signatureLine(doc, 'Mr. A.S. Borse', 'Founder & CEO, Hiresnix', MARGIN, sigY, getSignaturePath('ceo.png'), 1.4);
+  // Signature lines
+  const sigLineY = doc.y;
+  doc.moveTo(M, sigLineY).lineTo(M + 200, sigLineY).strokeColor('#888').lineWidth(0.5).stroke();
+  doc.moveTo(W - M - 150, sigLineY).lineTo(W - M, sigLineY).strokeColor('#888').lineWidth(0.5).stroke();
+  doc.fillColor(GRAY).fontSize(9).font('Helvetica')
+     .text("Intern's Signature", M, sigLineY + 5)
+     .text('Date: _________________', W - M - 150, sigLineY + 5);
 
-  // Candidate acceptance block
-  const candX = W / 2 + 20;
-  doc.moveTo(candX, sigY).lineTo(candX + 160, sigY).stroke('#334155');
-  doc.fillColor('#1e293b').fontSize(10).font('Helvetica-Bold').text(candidateName, candX, sigY + 6, { width: 160, align: 'center' });
-  doc.fillColor('#64748b').fontSize(9).font('Helvetica').text("Candidate's Signature & Date", candX, sigY + 20, { width: 160, align: 'center' });
-
-  // ── Footer ───────────────────────────────────────────────────────
+  // ── Footer ────────────────────────────────────────────────────────
   pdfFooter(doc);
   doc.end();
 });
+
 
 // ── JOINING LETTER (Admin Only) ───────────────────────────────────
 const generateJoiningLetter = asyncHandler(async (req, res) => {
