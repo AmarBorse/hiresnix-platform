@@ -1802,9 +1802,10 @@ const generateAppointmentLetter = asyncHandler(async (req, res) => {
   const sigY = doc.y;
   signatureLine(doc, signatoryName, signatoryTitle, M, sigY, signatoryImg, 1.2);
 
-  doc.y = sigY + 55;
-  doc.rect(M, doc.y, W - M*2, 0.6).fill('#d1d5db');
-  doc.y += 14;
+  // Pin acceptance section to fixed Y so date always fits above footer
+  const acceptY = Math.max(sigY + 55, H - 280);
+  doc.rect(M, acceptY, W - M*2, 0.6).fill('#d1d5db');
+  doc.y = acceptY + 14;
 
   doc.fillColor(DARK).fontSize(10).font('Helvetica-Bold').text('ACCEPTANCE BY CANDIDATE:', M);
   doc.moveDown(0.4);
