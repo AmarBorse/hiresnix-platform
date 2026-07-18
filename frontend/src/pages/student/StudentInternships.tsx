@@ -80,15 +80,14 @@ function IPlatformPanel() {
     if (!selected) return;
     setApplying(true);
     try {
-      const isInstStudent = !!localStorage.getItem('hx_inst_student_id');
+      // isInstStudent only if they have inst student token (not just hx_inst_student_id)
+      const isInstStudent = !!localStorage.getItem('hx_inst_student_token');
+      const token = localStorage.getItem('hirenix_token') || localStorage.getItem('hx_student_token');
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
       if (isInstStudent) {
         await instInternshipClient.post('/iplatform/apply', { domainId: selected.id, ...form });
       } else {
-        // Use student token directly — avoid any token conflict
-        const token = localStorage.getItem('hirenix_token') || localStorage.getItem('hx_student_token');
-        await client.post('/iplatform/apply', { domainId: selected.id, ...form }, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {}
-        });
+        await client.post('/iplatform/apply', { domainId: selected.id, ...form }, { headers });
       }
       toast.success('Application submitted! Admin will review soon.');
       load();
