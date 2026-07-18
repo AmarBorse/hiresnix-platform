@@ -550,9 +550,9 @@ function signatureLine(doc, name, title, x, y, imagePath = null, sizeMultiplier 
   }
   doc.moveTo(x, y).lineTo(x + 160, y).stroke('#334155');
   doc.fillColor('#1e293b').fontSize(10).font('Helvetica-Bold')
-     .text(name, x, y + 6, { width: 160, align: 'center' });
+     .text(name, x, y + 6, { width: 200 });
   doc.fillColor('#64748b').fontSize(9).font('Helvetica')
-     .text(title, x, y + 20, { width: 160, align: 'center' });
+     .text(title, x, y + 20, { width: 200 });
 }
 
 // Helper to flexibly find an enrollment whether an Enrollment ID, Certificate ID, or Certificate No is passed
@@ -1768,14 +1768,19 @@ const generateAppointmentLetter = asyncHandler(async (req, res) => {
   doc.fillColor(GRAY).font('Helvetica').text(' or call us at +91 9529120977.');
 
   // ── Signature block ──────────────────────────────────────────────
+  const isCEO = !reportingManager || reportingManager.toLowerCase().includes('borse') || reportingManager.toLowerCase().includes('ceo') || reportingManager.trim() === '';
+  const signatoryName  = isCEO ? 'Mr. A.S. Borse' : 'Mr. Jayesh Badgujar';
+  const signatoryTitle = isCEO ? 'Founder & CEO, Hiresnix' : 'Program Director, Hiresnix';
+  const signatoryImg   = isCEO ? getSignaturePath('ceo.png') : getSignaturePath('Director.png');
+
   doc.moveDown(0.9);
   doc.fillColor(DARK).fontSize(10).font('Helvetica').text('Yours sincerely,', M);
   doc.moveDown(1.6);
   const sigY = doc.y;
-  signatureLine(doc, 'Mr. A.S. Borse', 'Founder & CEO, Hiresnix', M, sigY, getSignaturePath('ceo.png'), 1.2);
+  signatureLine(doc, signatoryName, signatoryTitle, M, sigY, signatoryImg, 1.2);
 
   // ── Acceptance section ───────────────────────────────────────────
-  doc.y = sigY + 80;
+  doc.y = sigY + 50;
   doc.rect(M, doc.y, W - M*2, 0.6).fill('#d1d5db');
   doc.y += 12;
 
