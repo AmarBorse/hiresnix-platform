@@ -1820,7 +1820,7 @@ const generateAppointmentLetter = asyncHandler(async (req, res) => {
   doc.fillColor(MID).fontSize(9).font('Helvetica').text("Intern's Signature:", M, slY + 5);
   doc.fillColor(DARK).fontSize(9).font('Helvetica-Bold').text(candidateName.trim(), M, slY + 18);
 
-  const dtY = slY + 55;
+  const dtY = slY + 25;
   doc.moveTo(M, dtY).lineTo(M + 200, dtY).strokeColor('#9ca3af').lineWidth(0.6).stroke();
   doc.fillColor(MID).fontSize(9).font('Helvetica').text('Date:', M, dtY + 5);
 
