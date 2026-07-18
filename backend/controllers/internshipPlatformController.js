@@ -1877,16 +1877,15 @@ const generateJoiningLetter = asyncHandler(async (req, res) => {
 
   // Body
   doc.y = 155;
-  doc.fillColor(NAVY).fontSize(11).font('Helvetica-Bold').text(`Dear ${candidateName},`, MARGIN);
-  doc.moveDown(0.8);
+  // Salutation + opening
+  doc.fillColor(NAVY).fontSize(11).font('Helvetica-Bold').text('Dear ' + candidateName + ',', MARGIN);
+  doc.moveDown(0.6);
   doc.fillColor('#334155').fontSize(10).font('Helvetica')
-     .text(
-       `With reference to your acceptance of the ${isInternship ? 'internship' : 'appointment'} offer, we are pleased to confirm your joining at Hiresnix as ${designation} effective ${fmtJoining}.`,
-       MARGIN, doc.y, { width: W - MARGIN * 2 }
-     );
+     .text('On behalf of Hiresnix (SR Patil Infrastructure Private Limited), we are thrilled to offer you the position of ' + designation + ' in our ' + (department || 'Technology') + ' Department. We were highly impressed with your skills and are excited to welcome you to our team.',
+       MARGIN, doc.y, { width: W - MARGIN * 2 });
 
   // Joining details box
-  doc.moveDown(1.2);
+  doc.moveDown(0.9);
   const boxTop = doc.y;
   doc.rect(MARGIN, boxTop, W - MARGIN * 2, 14).fill(NAVY);
   doc.fillColor('#ffffff').fontSize(9).font('Helvetica-Bold').text('JOINING DETAILS', MARGIN + 10, boxTop + 3);
@@ -1895,13 +1894,13 @@ const generateJoiningLetter = asyncHandler(async (req, res) => {
     ['Name', candidateName],
     ['Designation', designation],
     ['Department', department || 'Technology'],
-    ['Type', isInternship ? 'Internship' : 'Full-Time'],
+    ['Type', isInternship ? 'Internship (Remote / On-site)' : 'Full-Time'],
     ['Date of Joining', fmtJoining],
     ['Work Location', location || 'Shirpur, Maharashtra / Remote'],
-    ['Reporting To', reportingManager || 'Mr. Jayesh Badgujar'],
+    ['Reporting Manager', reportingManager || 'Mr. Jayesh Badgujar, Program Director'],
     [isInternship ? 'Monthly Compensation' : 'CTC',
       isInternship
-        ? (stipend ? 'Rs. ' + Number(stipend).toLocaleString('en-IN') + ' per month' : 'As per agreement')
+        ? (stipend ? 'Rs. ' + Number(stipend).toLocaleString('en-IN') + ' per month' : 'Unpaid / As per agreement')
         : (ctc ? 'Rs. ' + Number(ctc).toLocaleString('en-IN') + ' per annum' : 'As per agreement')],
   ];
 
@@ -1914,35 +1913,43 @@ const generateJoiningLetter = asyncHandler(async (req, res) => {
   });
   doc.rect(MARGIN, boxTop, W - MARGIN * 2, rowY - boxTop).stroke('#e2e8f0');
 
-  // Documents to carry
-  doc.y = rowY + 16;
+  // Remote Work & Communication
+  doc.y = rowY + 10;
+  doc.fillColor(NAVY).fontSize(9.5).font('Helvetica-Bold').text('Remote Work & Communication', MARGIN);
+  doc.moveDown(0.2);
+  doc.fillColor('#334155').fontSize(9).font('Helvetica')
+     .text('You are expected to stay active and accessible during working hours via our official communication channels (Email / WhatsApp). Maintain professional conduct and confidentiality of all company data and client information at all times.',
+       MARGIN, doc.y, { width: W - MARGIN * 2 });
+
+  // Documents to submit
+  doc.moveDown(0.7);
   doc.rect(MARGIN, doc.y, W - MARGIN * 2, 14).fill(NAVY);
   doc.fillColor('#ffffff').fontSize(9).font('Helvetica-Bold').text('DOCUMENTS TO SUBMIT ON JOINING', MARGIN + 10, doc.y + 3);
   doc.moveDown(0.2);
   const docs = [
     'Signed copy of this Joining Letter',
     'Signed copy of Appointment Letter',
-    'Aadhar Card (original + 1 photocopy)',
+    'Updated Resume / CV',
+    'Aadhaar Card (original + 1 photocopy)',
     'PAN Card (original + 1 photocopy)',
-    '2 recent passport-size photographs',
     'Educational certificates (original for verification)',
-    'Bank account details for stipend/salary transfer',
+    'Bank account details for stipend / salary transfer',
     'Passport Size Photograph (2 copies)',
     'Cancelled Cheque / Bank Passbook Copy (if stipend is applicable)',
   ];
   docs.forEach((d, i) => {
     doc.fillColor('#334155').fontSize(9).font('Helvetica')
-       .text(`${i + 1}. ${d}`, MARGIN + 10, doc.y + 4, { width: W - MARGIN * 2 - 20 });
-    doc.moveDown(0.3);
+       .text((i + 1) + '. ' + d, MARGIN + 10, doc.y + 3, { width: W - MARGIN * 2 - 20 });
+    doc.moveDown(0.28);
   });
 
   // Closing
-  doc.moveDown(0.8);
+  doc.moveDown(0.6);
   doc.fillColor('#334155').fontSize(10).font('Helvetica')
      .text('We are delighted to welcome you to the Hiresnix team and wish you a successful and rewarding internship journey. We look forward to your valuable contributions, continuous learning, and professional growth with our organization.', MARGIN, doc.y, { width: W - MARGIN * 2 });
-  doc.moveDown(0.5);
+  doc.moveDown(0.4);
   doc.fillColor('#334155').fontSize(9).font('Helvetica')
-     .text('Please sign and return a copy of this letter on or before your joining date.', MARGIN, doc.y, { width: W - MARGIN * 2 });
+     .text('To accept this offer, please sign and return a copy of this letter on or before your joining date.', MARGIN, doc.y, { width: W - MARGIN * 2 });
 
   // Signatures
   const sigY = doc.y + 25;

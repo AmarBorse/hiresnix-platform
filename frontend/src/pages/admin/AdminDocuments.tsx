@@ -93,7 +93,7 @@ export function AdminDocuments() {
     const domain = enrollment.domain?.name || 'Intern';
     const dept = domainToDept[domain.toLowerCase()] || domain.split(' ').map((w:string)=>w.charAt(0).toUpperCase()+w.slice(1)).join(' ');
     const start = enrollment.startDate ? enrollment.startDate.split('T')[0] : '';
-    const stipendAmt = enrollment.stipend || '';
+    const stipendAmt = String(enrollment.stipend || '').replace(/[^\d.]/g, '').trim();
     const designation = `${domain} Intern`;
 
     // Calculate end date from domain duration
