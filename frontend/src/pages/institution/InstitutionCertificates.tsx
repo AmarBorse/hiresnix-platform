@@ -230,8 +230,12 @@ export function InstitutionCertificates() {
     return acc;
   }, {});
 
-  const allBatchStudentIds = new Set(Object.values(batchStudentsMap).flat().map((s:any)=>s.id));
-  const noBatchStudents = Object.entries(certsByStudent).filter(([sid]) => !allBatchStudentIds.has(Number(sid)));
+  const allBatchStudentIds = new Set(
+    Object.values(batchStudentsMap).flat().map((s:any) => Number(s.id))
+  );
+  const noBatchStudents = Object.entries(certsByStudent).filter(
+    ([sid]) => !allBatchStudentIds.has(Number(sid))
+  );
 
   const StudentRow = ({ s }: { s: any }) => {
     const skill    = s.certs.find((c:any)=>c.type==='Skill Assessment');
