@@ -927,6 +927,7 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
       offerJoiningDate: application.offerJoiningDate || stableJoiningDate,
       offerLetterId: application.offerLetterId || stableOfferId,
       offerEndDate: application.offerEndDate || toIsoDateOnly(endDateObj),
+      offerSalary: stipendText,
     };
     await application.update(offerUpdate);
   }

@@ -351,7 +351,7 @@ export function AdminIPlatform() {
                       candidateName: app.studentName || '',
                       role: `${app.domain?.name || 'Internship'} Intern`,
                       companyName: 'Hiresnix',
-                      salary: 'Unpaid Internship',
+                      salary: app.offerSalary || app.salary || 'Unpaid Internship',
                       offerLetterDate: app.offerLetterDate || todayInputValue(),
                       joiningDate: app.offerJoiningDate || '',
                       endDate: app.offerEndDate || '',
@@ -930,7 +930,7 @@ export function AdminIPlatform() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold mb-1" style={{color:"#64748b"}}>Stipend / Salary</label>
-                  <select required className="w-full rounded-xl px-3 py-2 text-sm focus:outline-none dark-input"
+                  <select required disabled={offerModal.datesLocked} className="w-full rounded-xl px-3 py-2 text-sm focus:outline-none dark-input disabled:opacity-50"
                     value={offerModal.salary} onChange={e => setOfferModal({ ...offerModal, salary: e.target.value })}>
                     <option value="Unpaid Internship">Unpaid Internship</option>
                     <option value="Paid Internship">Paid Internship</option>
