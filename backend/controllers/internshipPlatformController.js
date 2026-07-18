@@ -1759,54 +1759,53 @@ const generateAppointmentLetter = asyncHandler(async (req, res) => {
 
   // ── Closing para ─────────────────────────────────────────────────
   doc.moveDown(0.4);
-  doc.fillColor(GRAY).fontSize(10).font('Helvetica')
-     .text(
-       `We look forward to welcoming you to the Hiresnix family and are confident that you will make valuable contributions to our team. Should you have any questions or require clarification, please feel free to contact us at `,
-       M, doc.y, { width: W - M*2, continued: true }
-     );
-  doc.fillColor(DARK).font('Helvetica-Bold').text('hr@hiresnix.co.in', { continued: true });
-  doc.fillColor(GRAY).font('Helvetica').text(' or call us at +91 9529120977.');
-
-  // ── Signature block ──────────────────────────────────────────────
   const isCEO = !reportingManager || reportingManager.toLowerCase().includes('borse') || reportingManager.toLowerCase().includes('ceo') || reportingManager.trim() === '';
   const signatoryName  = isCEO ? 'Mr. A.S. Borse' : 'Mr. Jayesh Badgujar';
   const signatoryTitle = isCEO ? 'Founder & CEO, Hiresnix' : 'Program Director, Hiresnix';
   const signatoryImg   = isCEO ? getSignaturePath('ceo.png') : getSignaturePath('Director.png');
 
+  const contactEmail = isCEO ? 'hr@hiresnix.co.in' : 'manager@hiresnix.co.in';
+  doc.fillColor(GRAY).fontSize(10).font('Helvetica')
+     .text(
+       `We look forward to welcoming you to the Hiresnix family and are excited about the contributions you'll make to our team while gaining valuable experience. If you have any questions or concerns, please don't hesitate to contact us at `,
+       M, doc.y, { width: W - M*2, continued: true }
+     );
+  doc.fillColor(DARK).font('Helvetica-Bold').text(contactEmail, { continued: true });
+  doc.fillColor(GRAY).font('Helvetica').text(' or call us at +91 9529120977.');
+
+  // Signature block
   doc.moveDown(0.9);
-  doc.fillColor(DARK).fontSize(10).font('Helvetica').text('Yours sincerely,', M);
+  doc.fillColor(DARK).fontSize(10).font('Helvetica').text('Sincerely,', M);
   doc.moveDown(1.6);
   const sigY = doc.y;
   signatureLine(doc, signatoryName, signatoryTitle, M, sigY, signatoryImg, 1.2);
 
-  // ── Acceptance section ───────────────────────────────────────────
-  doc.y = sigY + 50;
+  // Acceptance section
+  doc.y = sigY + 55;
   doc.rect(M, doc.y, W - M*2, 0.6).fill('#d1d5db');
-  doc.y += 12;
+  doc.y += 14;
 
   doc.fillColor(DARK).fontSize(10).font('Helvetica-Bold').text('ACCEPTANCE BY CANDIDATE:', M);
-  doc.moveDown(0.35);
+  doc.moveDown(0.4);
   doc.fillColor(GRAY).fontSize(10).font('Helvetica')
-     .text(
-       `I, `,
-       M, doc.y, { continued: true }
-     );
+     .text(`I, `, M, doc.y, { continued: true });
   doc.fillColor(DARK).font('Helvetica-Bold').text(`${candidateName.trim()}`, { continued: true });
   doc.fillColor(GRAY).font('Helvetica')
      .text(`, hereby accept this ${isInternship ? 'internship offer' : 'appointment'} at Hiresnix and agree to abide by all the terms and conditions mentioned in this letter.`,
        { width: W - M*2 });
-  doc.moveDown(1.2);
 
-  // Signature lines
+  // Intern's Signature line
+  doc.moveDown(1.6);
   const slY = doc.y;
-  // Left: candidate
-  doc.moveTo(M, slY).lineTo(M + 210, slY).strokeColor('#9ca3af').lineWidth(0.6).stroke();
-  doc.fillColor(MID).fontSize(8.5).font('Helvetica').text('Candidate Signature', M, slY + 5);
-  doc.text(candidateName.trim(), M, slY + 16);
-  // Right: date
-  doc.moveTo(W - M - 170, slY).lineTo(W - M, slY).strokeColor('#9ca3af').lineWidth(0.6).stroke();
-  doc.fillColor(MID).fontSize(8.5).font('Helvetica').text('Date of Acceptance', W - M - 170, slY + 5);
-  doc.text('___________________', W - M - 170, slY + 16);
+  doc.moveTo(M, slY).lineTo(M + 240, slY).strokeColor('#9ca3af').lineWidth(0.6).stroke();
+  doc.fillColor(MID).fontSize(9).font('Helvetica').text("Intern's Signature:", M, slY + 5);
+  doc.fillColor(DARK).fontSize(9).font('Helvetica-Bold').text(candidateName.trim(), M, slY + 18);
+
+  // Date line (below, separate)
+  doc.moveDown(2.4);
+  const dtY = doc.y;
+  doc.moveTo(M, dtY).lineTo(M + 180, dtY).strokeColor('#9ca3af').lineWidth(0.6).stroke();
+  doc.fillColor(MID).fontSize(9).font('Helvetica').text('Date:', M, dtY + 5);
 
   // ── Footer page 2 ────────────────────────────────────────────────
   pdfFooter(doc);
