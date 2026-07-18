@@ -60,24 +60,38 @@ export function AdminDocuments() {
   );
 
   const domainToDept: Record<string,string> = {
-    'frontend development': 'Web Development',
-    'backend development': 'Technology',
-    'full stack development': 'Technology',
-    'python development': 'Technology',
-    'data science': 'Data & Analytics',
-    'machine learning': 'Data & Analytics',
-    'digital marketing': 'Marketing',
-    'ui/ux design': 'Design',
-    'android development': 'Mobile Development',
-    'flutter development': 'Mobile Development',
-    'devops': 'Infrastructure',
-    'cybersecurity': 'Security',
+    'frontend development': 'Software Development',
+    'backend development': 'Software Development',
+    'full stack development': 'Software Development',
+    'python development': 'Software Development',
+    'javascript development': 'Software Development',
+    'java development': 'Software Development',
+    'android development': 'Mobile Application Development',
+    'flutter development': 'Mobile Application Development',
+    'ios development': 'Mobile Application Development',
+    'data science': 'Data Science & Analytics',
+    'machine learning': 'Artificial Intelligence & ML',
+    'artificial intelligence': 'Artificial Intelligence & ML',
+    'data analytics': 'Data Science & Analytics',
+    'ui/ux design': 'Design & User Experience',
+    'graphic design': 'Design & User Experience',
+    'digital marketing': 'Digital Marketing',
+    'social media marketing': 'Digital Marketing',
+    'content writing': 'Content & Communications',
+    'devops': 'DevOps & Infrastructure',
+    'cloud computing': 'DevOps & Infrastructure',
+    'cybersecurity': 'Information Security',
+    'ethical hacking': 'Information Security',
+    'database management': 'Database Administration',
+    'sql': 'Database Administration',
+    'business development': 'Business Development',
+    'hr management': 'Human Resources',
   };
 
   const autoFill = (enrollment: any) => {
     const name = enrollment.studentName || '';
     const domain = enrollment.domain?.name || 'Intern';
-    const dept = domainToDept[domain.toLowerCase()] || 'Technology';
+    const dept = domainToDept[domain.toLowerCase()] || domain.split(' ').map((w:string)=>w.charAt(0).toUpperCase()+w.slice(1)).join(' ');
     const start = enrollment.startDate ? enrollment.startDate.split('T')[0] : '';
     const end   = enrollment.endDate   ? enrollment.endDate.split('T')[0]   : '';
     const stipendAmt = enrollment.stipend || '';
