@@ -930,8 +930,14 @@ export function AdminIPlatform() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold mb-1" style={{color:"#64748b"}}>Stipend / Salary</label>
-                  <input required className="w-full rounded-xl px-3 py-2 text-sm focus:outline-none dark-input"
-                    placeholder="e.g. Unpaid or ₹5000" value={offerModal.salary} onChange={e => setOfferModal({ ...offerModal, salary: e.target.value })} />
+                  <select required className="w-full rounded-xl px-3 py-2 text-sm focus:outline-none dark-input"
+                    value={offerModal.salary} onChange={e => setOfferModal({ ...offerModal, salary: e.target.value })}>
+                    <option value="Unpaid Internship">Unpaid Internship</option>
+                    <option value="Paid Internship">Paid Internship</option>
+                    {[1000,2000,3000,4000,5000,6000,7000,8000,9000,10000,11000,12000,13000,14000,15000,16000,17000,18000,19000,20000].map(a=>(
+                      <option key={a} value={`₹${a.toLocaleString('en-IN')}/month`}>₹{a.toLocaleString('en-IN')}/month</option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label className="block text-xs font-semibold mb-1" style={{color:"#64748b"}}>Joining Date</label>
