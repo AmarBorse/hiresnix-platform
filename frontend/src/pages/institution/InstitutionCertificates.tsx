@@ -294,21 +294,27 @@ export function InstitutionCertificates() {
             const certCount = bStudents.reduce((a:number,s:any)=>a+s.certs.length,0);
             const isOpen = expanded.has(batch.id);
             return (
-              <div key={batch.id} style={{background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:14,overflow:'hidden'}}>
-                <div onClick={()=>toggleExpand(batch.id)}
-                  style={{padding:'14px 18px',display:'flex',alignItems:'center',justifyContent:'space-between',cursor:'pointer',background:isOpen?'rgba(99,102,241,0.06)':''}}
-                  onMouseEnter={e=>(e.currentTarget.style.background='rgba(255,255,255,0.04)')}
-                  onMouseLeave={e=>(e.currentTarget.style.background=isOpen?'rgba(99,102,241,0.06)':'')}>
-                  <div style={{display:'flex',alignItems:'center',gap:12}}>
-                    <div style={{width:38,height:38,borderRadius:10,background:'rgba(99,102,241,0.15)',display:'flex',alignItems:'center',justifyContent:'center'}}>
-                      <Award size={17} style={{color:'#818cf8'}}/>
+              <div key={batch.id} style={{backdropFilter:'blur(20px)',background:'linear-gradient(135deg,rgba(99,102,241,0.08),rgba(139,92,246,0.05))',border:'1px solid rgba(99,102,241,0.25)',borderRadius:16,overflow:'hidden',boxShadow:'0 8px 32px rgba(0,0,0,0.3),inset 0 1px 0 rgba(255,255,255,0.06)'}}>
+                {/* Glass Card Header */}
+                <div onClick={()=>toggleExpand(batch.id)} style={{cursor:'pointer'}}>
+                  <div style={{padding:'20px 22px',display:'flex',alignItems:'center',gap:16}}>
+                    {/* Icon square */}
+                    <div style={{width:52,height:52,borderRadius:14,background:'linear-gradient(135deg,rgba(99,102,241,0.3),rgba(139,92,246,0.2))',border:'1px solid rgba(99,102,241,0.3)',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 4px 12px rgba(99,102,241,0.2)',flexShrink:0}}>
+                      <Award size={22} style={{color:'#a5b4fc'}}/>
                     </div>
-                    <div>
-                      <p style={{color:'#fff',fontWeight:700,fontSize:14,margin:0}}>{batch.name}</p>
-                      <p style={{color:'#475569',fontSize:11,margin:0}}>{bStudents.length} students · {certCount} certificates</p>
+                    <div style={{flex:1}}>
+                      <p style={{color:'#fff',fontWeight:800,fontSize:16,margin:'0 0 3px',letterSpacing:'0.01em'}}>{batch.name}</p>
+                      <div style={{display:'flex',gap:12}}>
+                        <span style={{background:'rgba(99,102,241,0.15)',color:'#a5b4fc',fontSize:11,fontWeight:600,padding:'2px 8px',borderRadius:6}}>{bStudents.length} students</span>
+                        <span style={{background:'rgba(16,185,129,0.12)',color:'#34d399',fontSize:11,fontWeight:600,padding:'2px 8px',borderRadius:6}}>{certCount} certificates</span>
+                      </div>
+                    </div>
+                    <div style={{width:28,height:28,borderRadius:8,background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.08)',display:'flex',alignItems:'center',justifyContent:'center',color:'#64748b',fontSize:11}}>
+                      {isOpen?'▲':'▼'}
                     </div>
                   </div>
-                  <span style={{color:'#475569',fontSize:14}}>{isOpen?'▲':'▼'}</span>
+                  {/* Bottom shine line */}
+                  <div style={{height:1,background:'linear-gradient(90deg,transparent,rgba(99,102,241,0.4),rgba(139,92,246,0.4),transparent)'}}/>
                 </div>
                 {isOpen && (
                   <div style={{borderTop:'1px solid rgba(255,255,255,0.06)'}}>
