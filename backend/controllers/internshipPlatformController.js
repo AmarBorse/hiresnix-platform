@@ -918,8 +918,8 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
   const endDateStr = formatDateOnly(endDateObj);
   const stipendValue = String(stipend || salary || '').trim();
   const stipendText = stipendValue && !/^unpaid/i.test(stipendValue)
-    ? `${stipendValue} per month, payable on or before the 5th day of each month`
-    : 'Unpaid Internship';
+    ? `Rs. ${stipendValue.replace(/[₹]/g, '').trim()} per month, payable on or before the 5th day of each month`
+    : 'Unpaid (Learning & Project-Based Internship)';
 
   if (application && (!application.offerLetterDate || !application.offerJoiningDate || !application.offerLetterId || !application.offerEndDate)) {
     const offerUpdate = {
