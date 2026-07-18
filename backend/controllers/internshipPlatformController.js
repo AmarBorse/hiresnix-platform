@@ -1820,7 +1820,7 @@ const generateAppointmentLetter = asyncHandler(async (req, res) => {
   doc.fillColor(MID).fontSize(9).font('Helvetica').text("Intern's Signature:", M, slY + 5);
   doc.fillColor(DARK).fontSize(9).font('Helvetica-Bold').text(candidateName.trim(), M, slY + 18);
 
-  const dtY = slY + 45;
+  const dtY = slY + 35;
   doc.moveTo(M, dtY).lineTo(M + 200, dtY).strokeColor('#9ca3af').lineWidth(0.6).stroke();
   doc.fillColor(MID).fontSize(9).font('Helvetica').text('Date:', M, dtY + 5);
 
@@ -1846,7 +1846,9 @@ const generateJoiningLetter = asyncHandler(async (req, res) => {
   const isInternship = employmentType === 'internship';
   const issueDate = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
   const fmtJoining = new Date(joiningDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
-  const docNo = `HX-JL-${Date.now().toString().slice(-6)}`;
+  const jlYear = new Date().getFullYear();
+  const jlSeq = String(Date.now()).slice(-4);
+  const docNo = `HSN-JL-${jlYear}-${jlSeq}`;
 
   const doc = new PDFDocument({ size: 'A4', margin: 0 });
   res.setHeader('Content-Type', 'application/pdf');
@@ -1896,11 +1898,11 @@ const generateJoiningLetter = asyncHandler(async (req, res) => {
     ['Type', isInternship ? 'Internship' : 'Full-Time'],
     ['Date of Joining', fmtJoining],
     ['Work Location', location || 'Shirpur, Maharashtra / Remote'],
-    ['Reporting To', reportingManager || 'Mr. A.S. Borse (Founder & CEO)'],
-    [isInternship ? 'Monthly Stipend' : 'CTC',
+    ['Reporting To', reportingManager || 'Mr. Jayesh Badgujar'],
+    [isInternship ? 'Monthly Compensation' : 'CTC',
       isInternship
-        ? (stipend ? `₹${Number(stipend).toLocaleString('en-IN')}/month` : 'As per agreement')
-        : (ctc ? `₹${Number(ctc).toLocaleString('en-IN')} per annum` : 'As per agreement')],
+        ? (stipend ? 'Rs. ' + Number(stipend).toLocaleString('en-IN') + ' per month' : 'As per agreement')
+        : (ctc ? 'Rs. ' + Number(ctc).toLocaleString('en-IN') + ' per annum' : 'As per agreement')],
   ];
 
   let rowY = boxTop + 18;
@@ -1925,6 +1927,8 @@ const generateJoiningLetter = asyncHandler(async (req, res) => {
     '2 recent passport-size photographs',
     'Educational certificates (original for verification)',
     'Bank account details for stipend/salary transfer',
+    'Passport Size Photograph (2 copies)',
+    'Cancelled Cheque / Bank Passbook Copy (if stipend is applicable)',
   ];
   docs.forEach((d, i) => {
     doc.fillColor('#334155').fontSize(9).font('Helvetica')
@@ -1935,17 +1939,23 @@ const generateJoiningLetter = asyncHandler(async (req, res) => {
   // Closing
   doc.moveDown(0.8);
   doc.fillColor('#334155').fontSize(10).font('Helvetica')
-     .text("We look forward to welcoming you to the Hiresnix family. Wishing you a successful journey with us!", MARGIN, doc.y, { width: W - MARGIN * 2 });
+     .text('We are delighted to welcome you to the Hiresnix team and wish you a successful and rewarding internship journey. We look forward to your valuable contributions, continuous learning, and professional growth with our organization.', MARGIN, doc.y, { width: W - MARGIN * 2 });
   doc.moveDown(0.5);
-  doc.text("Please sign and return a copy of this letter on or before your joining date.", MARGIN, doc.y, { width: W - MARGIN * 2 });
+  doc.fillColor('#334155').fontSize(9).font('Helvetica')
+     .text('Please sign and return a copy of this letter on or before your joining date.', MARGIN, doc.y, { width: W - MARGIN * 2 });
 
   // Signatures
-  const sigY = doc.y + 30;
-  signatureLine(doc, 'Mr. A.S. Borse', 'Founder & CEO, Hiresnix', MARGIN, sigY, getSignaturePath('ceo.png'), 1.4);
+  const sigY = doc.y + 25;
+  // Left: CEO
+  signatureLine(doc, 'Mr. A S Borse', 'Founder & CEO - Hiresnix', MARGIN, sigY, getSignaturePath('ceo.png'), 1.4);
+  doc.fillColor('#9ca3af').fontSize(7.5).font('Helvetica')
+     .text('For SR PATIL INFRASTRUCTURE PRIVATE LIMITED', MARGIN, sigY + 35, { width: 220 });
+  // Right: Candidate sig + date separately
   const candX = W / 2 + 20;
-  doc.moveTo(candX, sigY).lineTo(candX + 160, sigY).stroke('#334155');
-  doc.fillColor('#1e293b').fontSize(10).font('Helvetica-Bold').text(candidateName, candX, sigY + 6, { width: 160, align: 'center' });
-  doc.fillColor('#64748b').fontSize(9).font('Helvetica').text("Candidate's Signature & Date", candX, sigY + 20, { width: 160, align: 'center' });
+  doc.moveTo(candX, sigY).lineTo(candX + 180, sigY).strokeColor('#334155').lineWidth(0.6).stroke();
+  doc.fillColor('#64748b').fontSize(9).font('Helvetica').text('Candidate Signature', candX, sigY + 5, { width: 180 });
+  doc.moveTo(candX, sigY + 45).lineTo(candX + 180, sigY + 45).strokeColor('#334155').lineWidth(0.6).stroke();
+  doc.fillColor('#64748b').fontSize(9).font('Helvetica').text('Date', candX, sigY + 50, { width: 180 });
 
   pdfFooter(doc);
   doc.end();
