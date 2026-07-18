@@ -1776,7 +1776,6 @@ const generateAppointmentLetter = asyncHandler(async (req, res) => {
     'Bank account details for stipend / salary transfer (Account No., IFSC Code, Branch)',
     'Passport Size Photograph (2 copies)',
     'Cancelled Cheque / Bank Passbook Copy (if stipend is applicable)',
-    'PAN Card copy (if applicable)',
   ].forEach(d => {
     doc.fillColor(GRAY).fontSize(10).font('Helvetica')
        .text(`\u2022  ${d}`, M + 10, doc.y, { width: W - M*2 - 10 });
@@ -1974,7 +1973,7 @@ const generateJoiningLetter = asyncHandler(async (req, res) => {
   // Left: CEO
   signatureLine(doc, 'Mr. A S Borse', 'Founder & CEO - Hiresnix', MARGIN, sigY, getSignaturePath('ceo.png'), 1.4);
   doc.fillColor('#9ca3af').fontSize(7.5).font('Helvetica')
-     .text('For SR PATIL INFRASTRUCTURE PRIVATE LIMITED', MARGIN, sigY + 35 );
+     .text('For SR PATIL INFRASTRUCTURE PRIVATE LIMITED', sigY + 35, { width: 220 });
   // Right: Candidate sig + date separately
   const candX = W / 2 + 20;
   doc.moveTo(candX, sigY).lineTo(candX + 180, sigY).strokeColor('#334155').lineWidth(0.6).stroke();
