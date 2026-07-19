@@ -10,7 +10,6 @@ import {
 import { instStudentApi } from '../../api/instStudent';
 import { useInstStudentStore } from '../../store/useInstStudentStore';
 
-const GROQ = (import.meta as any).env.VITE_GROQ_API_KEY || '';
 
 // ── Video + Timestamp Map ─────────────────────────────────────────
 // Format: [videoId, startSeconds]
@@ -968,29 +967,30 @@ function getLevel(xp: number) { for (let i = LEVELS.length-1; i >= 0; i--) if (x
 // ── Groq API ──────────────────────────────────────────────────────
 async function groq(prompt: string): Promise<string> {
   try {
-    const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${GROQ}`},
-      body:JSON.stringify({ model:'llama-3.1-8b-instant', messages:[{role:'user',content:prompt}], temperature:0.7, max_tokens:4000 }),
+    const token = localStorage.getItem('hx_inst_student_token') || localStorage.getItem('hirenix_token') || '';
+    const r = await fetch(`${(import.meta as any).env.VITE_API_URL}/groq/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ messages: [{ role: 'user', content: prompt }], temperature: 0.7, max_tokens: 1000 }),
     });
+    if (!r.ok) throw new Error('Groq proxy failed');
     const d = await r.json();
-    return d?.choices?.[0]?.message?.content || 'No response';
-  } catch { return 'Error. Please try again.'; }
+    return d.content || '';
+  } catch { return ''; }
 }
 
 async function groqStream(prompt: string, onChunk: (t:string)=>void) {
   try {
-    const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${GROQ}`},
-      body:JSON.stringify({ model:'llama-3.3-70b-versatile', messages:[{role:'user',content:prompt}], temperature:0.7, max_tokens:1500, stream:true }),
+    const token = localStorage.getItem('hx_inst_student_token') || localStorage.getItem('hirenix_token') || '';
+    const r = await fetch(`${(import.meta as any).env.VITE_API_URL}/groq/chat`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},
+      body:JSON.stringify({ messages:[{role:'user',content:prompt}], temperature:0.7, max_tokens:1500 }),
     });
-    const reader = r.body!.getReader(); const dec = new TextDecoder(); let full = '';
-    while (true) {
-      const { done, value } = await reader.read(); if (done) break;
-      for (const line of dec.decode(value).split('\n')) {
-        if (!line.startsWith('data: ') || line.includes('[DONE]')) continue;
-        try { const d = JSON.parse(line.slice(6)); const t = d.choices?.[0]?.delta?.content||''; full += t; onChunk(full); } catch {}
-      }
-    }
+    if (!r.ok) throw new Error('proxy failed');
+    const d = await r.json();
+    const full = d.content || '';
+    onChunk(full);
     return full;
   } catch { return 'Error connecting to AI.'; }
 }
@@ -1005,16 +1005,16 @@ const LANG_CFG: Record<string,{lang:string,ver:string,ext:string,starter:string}
 };
 async function runCode(language: string, code: string) {
   const cfg = LANG_CFG[language] || LANG_CFG.python;
-  const GROQ_KEY = (import.meta as any).env?.VITE_GROQ_API_KEY || '';
   try {
     const prompt = `Execute this ${cfg.lang} code and return ONLY the exact output. No explanation, no markdown, just raw output:\n\`\`\`${cfg.lang}\n${code}\n\`\`\``;
-    const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    const token = localStorage.getItem('hx_inst_student_token') || localStorage.getItem('hirenix_token') || '';
+    const r = await fetch(`${(import.meta as any).env.VITE_API_URL}/groq/chat`, {
       method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':`Bearer ${GROQ_KEY}`},
-      body:JSON.stringify({ model:'llama-3.1-8b-instant', messages:[{role:'user',content:prompt}], temperature:0, max_tokens:500 }),
+      headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},
+      body:JSON.stringify({ messages:[{role:'user',content:prompt}], model:'llama-3.1-8b-instant', temperature:0, max_tokens:500 }),
     });
     const d = await r.json();
-    const out = d?.choices?.[0]?.message?.content?.trim() || '(no output)';
+    const out = d?.content?.trim() || '(no output)';
     return { out, err: out.toLowerCase().includes('error') || out.toLowerCase().includes('exception') };
   } catch (e:any) { return { out:`Error: ${e.message}`, err:true }; }
 }

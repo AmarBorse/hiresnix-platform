@@ -10,7 +10,6 @@ const ROUNDS = [
   { id:'apt',   label:'Aptitude Round',  icon:'🧠', desc:'Logical reasoning & problem solving' },
   { id:'behav', label:'Behavioral Round',icon:'🎯', desc:'Situation-based STAR questions' },
 ];
-const GROQ_KEY = (import.meta as any).env?.VITE_GROQ_API_KEY || '';
 
 interface Message  { role:'user'|'assistant'; content:string; }
 interface QResult  { question:string; answer:string; score:number; feedback:string; round:string; }
@@ -308,13 +307,14 @@ FEEDBACK STYLE:
 - Never say "Thank you for your response" - too robotic
 
 Respond ONLY in JSON: {"nextQuestion":"...","feedback":"...","score":0-10,"isComplete":false,"scoreBreakdown":{"communication":0-10,"technical":0-10,"confidence":0-10,"grammar":0-10,"problemSolving":0-10}}`;
-    const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+    const token = localStorage.getItem('hx_student_token') || localStorage.getItem('hirenix_token') || '';
+    const res=await fetch(`${(import.meta as any).env.VITE_API_URL}/groq/chat`,{
       method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':`Bearer ${GROQ_KEY}`},
-      body:JSON.stringify({model:'llama-3.3-70b-versatile',messages:[{role:'system',content:sys},...msgs],temperature:0.85,max_tokens:500}),
+      headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},
+      body:JSON.stringify({system:sys,messages:msgs,model:'llama-3.3-70b-versatile',temperature:0.85,max_tokens:500}),
     });
     const d=await res.json();
-    const raw=d.choices[0].message.content;
+    const raw=d.content;
     try{return JSON.parse(raw.replace(/```json|```/g,'').trim());}
     catch{return{nextQuestion:raw,feedback:'',score:7,isComplete:false,scoreBreakdown:{communication:7,technical:7,confidence:7,grammar:7,problemSolving:7}};}
   };

@@ -31,7 +31,7 @@ const allowedOrigins = [
 
 const corsOptions = {
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.vercel.app') || origin.endsWith('.onrender.com')) {
+    if (!origin || allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
     return callback(new Error('Not allowed by CORS'));
@@ -41,6 +41,15 @@ const corsOptions = {
 
 app.use(helmet());
 app.use(rateLimit({ windowMs: 10 * 60 * 1000, max: 200 }));
+
+// Strict rate limit for auth routes - prevent brute force
+const authLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 10,
+  message: { success: false, message: 'Too many attempts, please try again after 1 minute' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 app.set('trust proxy', 1);
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
@@ -51,7 +60,8 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // ── Routes ────────────────────────────────────────────────────────
 app.use('/api/public',        require('./routes/publicRoutes'));
-app.use('/api/auth',          require('./routes/authRoutes'));
+app.use('/api/auth',          authLimiter, require('./routes/authRoutes'));
+app.use('/api/groq',          require('./routes/groqRoutes'));
 app.use('/api/students',      require('./routes/studentRoutes'));
 app.use('/api/companies',     require('./routes/companyRoutes'));
 app.use('/api/jobs',          require('./routes/jobRoutes'));
