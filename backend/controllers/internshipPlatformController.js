@@ -953,7 +953,7 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
   const endDateStr = formatDateOnly(endDateObj);
   const stipendValue = String(stipend || salary || '').trim();
   const stipendText = stipendValue && !/^unpaid/i.test(stipendValue)
-    ? `Rs. ${stipendValue.replace(/[₹]/g, '').trim()} per month, payable on or before the 5th day of each month`
+    ? `Rs. ${stipendValue.replace(/[RS.]/g, '').trim()} per month, payable on or before the 5th day of each month`
     : 'Unpaid (Learning & Project-Based Internship)';
 
   if (application && (!application.offerLetterDate || !application.offerJoiningDate || !application.offerLetterId || !application.offerEndDate)) {
@@ -1909,8 +1909,8 @@ const generateJoiningLetter = asyncHandler(async (req, res) => {
     ['Reporting To', reportingManager || 'Mr. A.S. Borse (Founder & CEO)'],
     [isInternship ? 'Monthly Stipend' : 'CTC',
       isInternship
-        ? (stipend ? `₹${Number(stipend).toLocaleString('en-IN')}/month` : 'As per agreement')
-        : (ctc ? `₹${Number(ctc).toLocaleString('en-IN')} per annum` : 'As per agreement')],
+        ? (stipend ? `RS.${Number(stipend).toLocaleString('en-IN')}/month` : 'As per agreement')
+        : (ctc ? `RS.${Number(ctc).toLocaleString('en-IN')} per annum` : 'As per agreement')],
   ];
 
   let rowY = boxTop + 18;
@@ -2045,8 +2045,8 @@ const generateStipendSlip = asyncHandler(async (req, res) => {
 
   const earningsY = doc.y + 18;
   // Earnings rows
-  [['Basic Stipend', `₹${basic.toLocaleString('en-IN')}`],
-   ['Allowances', `₹${allow.toLocaleString('en-IN')}`]
+  [['Basic Stipend', `RS.${basic.toLocaleString('en-IN')}`],
+   ['Allowances', `RS.${allow.toLocaleString('en-IN')}`]
   ].forEach((row, i) => {
     doc.rect(leftX, earningsY + i * 18, halfW, 18).fill(i % 2 === 0 ? LIGHT : '#ffffff');
     doc.fillColor('#334155').fontSize(9).font('Helvetica').text(row[0], leftX + 10, earningsY + i * 18 + 5);
@@ -2054,8 +2054,8 @@ const generateStipendSlip = asyncHandler(async (req, res) => {
   });
 
   // Deductions rows
-  [['Tax / TDS', `₹${deduct.toLocaleString('en-IN')}`],
-   ['Other Deductions', '₹0']
+  [['Tax / TDS', `RS.${deduct.toLocaleString('en-IN')}`],
+   ['Other Deductions', 'RS.0']
   ].forEach((row, i) => {
     doc.rect(rightX, earningsY + i * 18, halfW, 18).fill(i % 2 === 0 ? LIGHT : '#ffffff');
     doc.fillColor('#334155').fontSize(9).font('Helvetica').text(row[0], rightX + 10, earningsY + i * 18 + 5);
@@ -2066,17 +2066,17 @@ const generateStipendSlip = asyncHandler(async (req, res) => {
   const totY = earningsY + 36 + 4;
   doc.rect(leftX, totY, halfW, 20).fill('#dcfce7');
   doc.fillColor(GREEN).fontSize(9).font('Helvetica-Bold').text('Gross Earnings', leftX + 10, totY + 5);
-  doc.text(`₹${gross.toLocaleString('en-IN')}`, leftX, totY + 5, { align: 'right', width: halfW - 10 });
+  doc.text(`RS.${gross.toLocaleString('en-IN')}`, leftX, totY + 5, { align: 'right', width: halfW - 10 });
 
   doc.rect(rightX, totY, halfW, 20).fill('#fee2e2');
   doc.fillColor('#dc2626').fontSize(9).font('Helvetica-Bold').text('Total Deductions', rightX + 10, totY + 5);
-  doc.text(`₹${deduct.toLocaleString('en-IN')}`, rightX, totY + 5, { align: 'right', width: halfW - 10 });
+  doc.text(`RS.${deduct.toLocaleString('en-IN')}`, rightX, totY + 5, { align: 'right', width: halfW - 10 });
 
   // Net Pay
   doc.y = totY + 30;
   doc.rect(MARGIN, doc.y, W - MARGIN * 2, 28).fill(NAVY);
   doc.fillColor('#ffffff').fontSize(11).font('Helvetica-Bold')
-     .text(`NET STIPEND PAYABLE:  ₹${net.toLocaleString('en-IN')}`, MARGIN + 10, doc.y + 8, { width: W - MARGIN * 2 - 20, align: 'center' });
+     .text(`NET STIPEND PAYABLE:  RS.${net.toLocaleString('en-IN')}`, MARGIN + 10, doc.y + 8, { width: W - MARGIN * 2 - 20, align: 'center' });
 
   // Note
   doc.y += 40;

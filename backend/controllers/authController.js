@@ -7,6 +7,11 @@ const asyncHandler = require('express-async-handler');
 const { User, Student, Company, Institution } = require('../models');
 const { sequelize } = require('../config/db');
 const { updateUserPassword } = require('../utils/passwords');
+const {
+  createVerificationToken,
+  sendStudentVerificationEmail,
+  STUDENT_VERIFY_SENT_MESSAGE,
+} = require('../utils/studentEmailVerification');
 
 const sendToken = (user, code, res) => {
   const token = user.getSignedJwtToken();
@@ -49,12 +54,58 @@ const register = asyncHandler(async (req, res) => {
   });
 
   if (role === 'institution') {
-    // Return success but NOT a token — they must wait for approval
     return res.status(201).json({
       success: true,
       message: 'Registration submitted. Your account is pending admin approval. You will be notified once approved.',
       pendingApproval: true,
     });
+  }
+
+  // Student email verification
+  // If student provided Career ID - link to institution
+  if (role === 'student' && req.body.careerId) {
+    try {
+      const { InstitutionStudent } = require('../models');
+      const instStudent = await InstitutionStudent.findOne({
+        where: { careerId: req.body.careerId.trim().toUpperCase() }
+      });
+      if (instStudent) {
+        // Update inst student with linked user id
+        await instStudent.update({ linkedUserId: user.id });
+        // Update user password to match
+        const bcrypt = require('bcryptjs');
+        const hashed = await bcrypt.hash(req.body.password, 10);
+        await instStudent.update({ password: hashed });
+        console.log(`Linked user ${user.id} to inst student ${instStudent.careerId}`);
+      }
+    } catch (err) {
+      console.error('Career ID link failed:', err.message);
+    }
+  }
+
+  if (role === 'student') {
+    try {
+      const token = createVerificationToken();
+      await user.update({
+        emailVerified: false,
+        emailVerificationToken: token,
+        emailVerificationSentAt: new Date(),
+      });
+      await sendStudentVerificationEmail({ ...user.toJSON(), emailVerificationToken: token });
+      return res.status(201).json({
+        success: true,
+        message: 'Registration successful! Please check your email to verify your account before logging in.',
+        emailVerificationSent: true,
+      });
+    } catch (emailErr) {
+      console.error('Verification email failed:', emailErr.message);
+      // Still register but warn
+      return res.status(201).json({
+        success: true,
+        message: 'Registration successful! (Email verification unavailable, contact admin.)',
+        emailVerificationSent: false,
+      });
+    }
   }
 
   sendToken(user, 201, res);
@@ -134,4 +185,60 @@ const updatePassword = asyncHandler(async (req, res) => {
   sendToken(user, 200, res);
 });
 
-module.exports = { register, login, getMe, updatePassword };
+// GET /api/auth/verify-email?token=xxx
+const verifyEmail = asyncHandler(async (req, res) => {
+  const { token } = req.query;
+  if (!token) { res.status(400); throw new Error('Verification token required'); }
+
+  const user = await User.findOne({ where: { emailVerificationToken: token } });
+  if (!user) { res.status(400); throw new Error('Invalid or expired verification link'); }
+
+  // Check token not older than 24 hours
+  const tokenAge = Date.now() - new Date(user.emailVerificationSentAt).getTime();
+  if (tokenAge > 24 * 60 * 60 * 1000) {
+    res.status(400); throw new Error('Verification link expired. Please register again or contact support.');
+  }
+
+  await user.update({
+    emailVerified: true,
+    emailVerificationToken: null,
+    emailVerificationSentAt: null,
+  });
+
+  res.json({ success: true, message: 'Email verified successfully! You can now log in.' });
+});
+
+// POST /api/auth/resend-verification
+const resendVerification = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+  if (!email) { res.status(400); throw new Error('Email required'); }
+
+  const user = await User.findOne({ where: sequelize.where(sequelize.fn('LOWER', sequelize.col('email')), email.trim().toLowerCase()) });
+  if (!user) { res.status(404); throw new Error('No account found with this email'); }
+  if (user.emailVerified) { res.status(400); throw new Error('Email already verified'); }
+
+  const token = createVerificationToken();
+  await user.update({
+    emailVerificationToken: token,
+    emailVerificationSentAt: new Date(),
+  });
+  await sendStudentVerificationEmail({ ...user.toJSON(), emailVerificationToken: token });
+
+  res.json({ success: true, message: STUDENT_VERIFY_SENT_MESSAGE });
+});
+
+// Admin: clear lockout for specific email
+const clearLockout = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+  if (!email) { res.status(400); throw new Error('Email required'); }
+  loginAttempts.delete(email.trim().toLowerCase());
+  res.json({ success: true, message: `Lockout cleared for ${email}` });
+});
+
+// Admin: clear ALL lockouts
+const clearAllLockouts = asyncHandler(async (req, res) => {
+  loginAttempts.clear();
+  res.json({ success: true, message: 'All lockouts cleared' });
+});
+
+module.exports = { register, login, getMe, updatePassword, verifyEmail, resendVerification, clearLockout, clearAllLockouts };

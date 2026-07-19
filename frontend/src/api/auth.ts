@@ -10,7 +10,7 @@ interface RegisterPayload {
   institutionName?: string; type?: string;
 }
 interface AuthResponse { success: boolean; token: string; instStudentToken?: string; user: AuthUser & { careerId?: string }; }
-interface RegisterResponse extends Partial<AuthResponse> { pendingApproval?: boolean; message?: string; }
+interface RegisterResponse extends Partial<AuthResponse> { pendingApproval?: boolean; message?: string; emailVerificationSent?: boolean; }
 
 export const authApi = {
   login: async (data: LoginPayload): Promise<AuthResponse> => {

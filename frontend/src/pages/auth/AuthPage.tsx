@@ -23,12 +23,18 @@ export function AuthPage() {
   const [loading, setLoading]   = useState(false);
   const [showPass, setShowPass] = useState(false);
   const [registerRole, setRegisterRole] = useState<RegisterRole>('student');
+  const [emailVerifSent, setEmailVerifSent] = useState(false);
+  const [verifyingEmail, setVerifyingEmail] = useState(false);
+  const [verifyMsg, setVerifyMsg] = useState('');
   const [showForgot, setShowForgot]     = useState(false);
   const [pendingApproval, setPendingApproval] = useState(false);
 
   const [loginForm, setLoginForm]         = useState({ email: '', password: '' });
   const [loginErrors, setLoginErrors]     = useState({ email: '', password: '' });
-  const [registerForm, setRegisterForm]   = useState({ name: '', email: '', password: '', companyName: '', industry: '', institutionName: '', institutionType: '' });
+  const [registerForm, setRegisterForm]   = useState({ name: '', email: '', password: '', companyName: '', industry: '', institutionName: '', institutionType: '', careerId: '', institutionId: '' });
+  const [institutions, setInstitutions] = React.useState<any[]>([]);
+  const [careerIdValid, setCareerIdValid] = React.useState<null|boolean>(null);
+  const [isInstStudent, setIsInstStudent] = React.useState(false);
   const [registerErrors, setRegisterErrors] = useState({ name: '', email: '', password: '', companyName: '', institutionName: '' });
 
   const roleRedirect: Record<string, string> = {
@@ -71,11 +77,16 @@ export function AuthPage() {
     if (hasError) return;
     setLoading(true);
     try {
-      const payload: any = { name: registerForm.name, email: cleanEmail, password: registerForm.password, role: registerRole };
+      const payload: any = { name: registerForm.name, email: cleanEmail, password: registerForm.password, role: registerRole, careerId: registerForm.careerId || undefined, institutionId: registerForm.institutionId || undefined };
       if (registerRole === 'company') { payload.companyName = registerForm.companyName; payload.industry = registerForm.industry; }
       if (registerRole === 'institution') { payload.institutionName = registerForm.institutionName; payload.type = registerForm.institutionType; }
       const res = await authApi.register(payload);
       if (res.pendingApproval) { setPendingApproval(true); return; }
+      if ((res as any).emailVerificationSent) {
+        setEmailVerifSent(true);
+        toast.success('Registration successful! Check your email to verify your account.');
+        return;
+      }
       if (res.token && res.user) {
         setAuth(res.user, res.token);
         toast.success(`Account created! Welcome, ${res.user.name}!`);
@@ -84,6 +95,34 @@ export function AuthPage() {
     } catch (err: any) { toast.error(err.response?.data?.message || err.message || 'Registration failed'); }
     finally { setLoading(false); }
   };
+
+  // Load institutions list for registration
+  React.useEffect(() => {
+    fetch(`${(import.meta as any).env.VITE_API_URL}/auth/institutions`)
+      .then(r => r.json())
+      .then(d => setInstitutions(d.data || []))
+      .catch(() => {});
+  }, []);
+
+  // Handle email verification token from URL
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('studentEmailVerificationToken');
+    if (token) {
+      setVerifyingEmail(true);
+      fetch(`${(import.meta as any).env.VITE_API_URL}/auth/verify-email?token=${token}`)
+          .then(r => r.json())
+          .then(data => {
+            setVerifyMsg(data.message || 'Email verified!');
+            setVerifyingEmail(false);
+            window.history.replaceState({}, '', '/auth');
+          })
+          .catch(() => {
+            setVerifyMsg('Verification failed. Link may be expired.');
+            setVerifyingEmail(false);
+          });
+    }
+  }, []);
 
   // Forgot password screen
   const [forgotEmail, setForgotEmail]     = useState('');
@@ -134,6 +173,52 @@ export function AuthPage() {
   );
 
   // Pending approval screen for institution
+  // Email verification sent screen
+  if (emailVerifSent) return (
+    <div className="min-h-screen flex items-center justify-center px-4" style={{ background: 'linear-gradient(135deg,#060910,#0f172a,#060910)' }}>
+      <div className="w-full max-w-md text-center space-y-6">
+        <img src="/hiresnix-logo.png" alt="Hiresnix" style={{ height: 80, objectFit: 'contain', margin: '0 auto', filter: 'drop-shadow(0 0 20px rgba(99,102,241,0.5))' }} />
+        <div style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(24px)', borderRadius: 20, border: '1px solid rgba(255,255,255,0.09)', padding: '2.5rem', boxShadow: '0 25px 60px rgba(0,0,0,0.5)' }}>
+          <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span style={{fontSize:32}}>📧</span>
+          </div>
+          <h2 className="text-white font-bold text-xl mb-2">Check Your Email!</h2>
+          <p className="text-gray-400 text-sm mb-4">We've sent a verification link to your email address. Please click the link to verify your account before logging in.</p>
+          <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-4 mb-5">
+            <p className="text-green-300 text-xs">✅ Registration successful<br />📧 Verification email sent<br />🔗 Click the link in email to verify</p>
+          </div>
+          <button onClick={() => { setEmailVerifSent(false); setTab('login'); }}
+            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl text-sm transition">
+            Go to Login
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Email verification result screen
+  if (verifyMsg) return (
+    <div className="min-h-screen flex items-center justify-center px-4" style={{ background: 'linear-gradient(135deg,#060910,#0f172a,#060910)' }}>
+      <div className="w-full max-w-md text-center space-y-6">
+        <img src="/hiresnix-logo.png" alt="Hiresnix" style={{ height: 80, objectFit: 'contain', margin: '0 auto' }} />
+        <div style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(24px)', borderRadius: 20, border: '1px solid rgba(255,255,255,0.09)', padding: '2.5rem' }}>
+          <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
+            style={{ background: verifyingEmail ? 'rgba(99,102,241,0.2)' : verifyMsg.includes('fail') || verifyMsg.includes('expired') ? 'rgba(239,68,68,0.2)' : 'rgba(34,197,94,0.2)' }}>
+            <span style={{fontSize:32}}>{verifyingEmail ? '⏳' : verifyMsg.includes('fail') || verifyMsg.includes('expired') ? '❌' : '✅'}</span>
+          </div>
+          <h2 className="text-white font-bold text-xl mb-2">{verifyingEmail ? 'Verifying...' : 'Email Verification'}</h2>
+          <p className="text-gray-400 text-sm mb-5">{verifyMsg}</p>
+          {!verifyingEmail && (
+            <button onClick={() => { setVerifyMsg(''); setTab('login'); }}
+              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl text-sm transition">
+              Go to Login
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
   if (pendingApproval) return (
     <div className="min-h-screen flex items-center justify-center px-4" style={{ background: 'linear-gradient(135deg,#060910,#0f172a,#060910)' }}>
       <div className="w-full max-w-md text-center space-y-6">
@@ -301,6 +386,39 @@ export function AuthPage() {
                 ))}
 
                 {/* Company-specific */}
+                {/* Institution Student fields */}
+                {registerRole === 'student' && (
+                  <div style={{ background:'rgba(59,130,246,0.06)', border:'1px solid rgba(59,130,246,0.15)', borderRadius:12, padding:'14px 16px' }}>
+                    <div style={{ color:'#60a5fa', fontSize:12, fontWeight:700, marginBottom:10 }}>
+                      🏫 Institution Student? (Optional)
+                    </div>
+                    <div style={{ marginBottom:10 }}>
+                      <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Select Institution</label>
+                      <select value={registerForm.institutionId}
+                        onChange={e => { setRegisterForm(p => ({ ...p, institutionId: e.target.value })); setIsInstStudent(!!e.target.value); }}
+                        style={{ background:'#1e293b' }}
+                        className="w-full border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-blue-500">
+                        <option value="">-- Not an institution student --</option>
+                        {institutions.map((inst: any) => (
+                          <option key={inst.id} value={inst.id}>{inst.institutionName}</option>
+                        ))}
+                      </select>
+                    </div>
+                    {isInstStudent && (
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Career ID</label>
+                        <input type="text"
+                          value={registerForm.careerId}
+                          onChange={e => { setRegisterForm(p => ({ ...p, careerId: e.target.value.toUpperCase() })); setCareerIdValid(null); }}
+                          style={{ background:'#1e293b' }}
+                          className="w-full border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-blue-500"
+                          placeholder="e.g. HX-HIR-2026-0001" />
+                        <p style={{ color:'#64748b', fontSize:11, marginTop:4 }}>Career ID aapki institution ne di hogi</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {registerRole === 'company' && (
                   <>
                     <div>
