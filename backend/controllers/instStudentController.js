@@ -190,17 +190,44 @@ const changePassword = asyncHandler(async (req, res) => {
   if (!match) { res.status(401); throw new Error('Current password is incorrect'); }
   await student.update({ password: newPassword });
 
-  // Also update linked Hiresnix user password so internship portal works
+  // Create or update Hiresnix account with actual email + new password
   try {
+    const bcrypt = require('bcryptjs');
+    const { Student } = require('../models');
+    const actualEmail = student.email;
     const syntheticEmail = `${student.careerId.toLowerCase()}@inst.hiresnix.co.in`;
-    const hiresnixUser = await User.findOne({ where: { email: syntheticEmail } });
-    if (hiresnixUser) {
-      const bcrypt = require('bcryptjs');
-      const hashed = await bcrypt.hash(newPassword, 10);
-      await hiresnixUser.update({ password: hashed });
+    const hashed = await bcrypt.hash(newPassword, 10);
+
+    // Find by actual email or synthetic email
+    let hiresnixUser = await User.findOne({ where: { email: actualEmail } })
+      || await User.findOne({ where: { email: syntheticEmail } });
+
+    if (!hiresnixUser) {
+      // Create new account with actual email
+      hiresnixUser = await User.create({
+        name: student.name,
+        email: actualEmail,
+        password: hashed,
+        role: 'student',
+        isActive: true,
+        isApproved: true,
+        emailVerified: true,
+      });
+      await Student.findOrCreate({
+        where: { userId: hiresnixUser.id },
+        defaults: { userId: hiresnixUser.id, isProfileComplete: false },
+      });
+      console.log(`Created Hiresnix account for ${actualEmail}`);
+    } else {
+      // Update existing - sync email to actual + new password
+      await hiresnixUser.update({
+        email: actualEmail,
+        password: hashed,
+      });
+      console.log(`Updated Hiresnix account for ${actualEmail}`);
     }
   } catch (err) {
-    console.error('Linked user password sync failed:', err.message);
+    console.error('Hiresnix account sync failed:', err.message);
   }
 
   res.json({ success: true, message: 'Password updated successfully' });
