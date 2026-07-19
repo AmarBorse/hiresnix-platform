@@ -135,14 +135,31 @@ export function StudentMockInterview() {
     setCamError('');
     try {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        setCamError('Camera API not supported in this browser.');
+        setCamError('Camera not supported. Use Chrome on HTTPS.');
         return;
       }
-      const constraints = { video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' } };
-      const s = await navigator.mediaDevices.getUserMedia(constraints);
-      streamRef.current = s;
+      // Check permission status first if API available
+      if (navigator.permissions) {
+        try {
+          const perm = await navigator.permissions.query({ name: 'camera' as PermissionName });
+          if (perm.state === 'denied') {
+            setCamError('Camera blocked. Go to browser Settings > Site Settings > Camera > Allow hiresnix.co.in');
+            return;
+          }
+        } catch {} // permissions API not supported on some browsers
+      }
+      // Try front camera first, fallback to any camera
+      let s: MediaStream | null = null;
+      try {
+        s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } } });
+      } catch {
+        s = await navigator.mediaDevices.getUserMedia({ video: true });
+      }
+      const constraints = { video: true }; // unused but kept for reference
+      const s2 = s;
+      streamRef.current = s2;
       if (videoRef.current) {
-        videoRef.current.srcObject = s;
+        videoRef.current.srcObject = s2;
         videoRef.current.onloadedmetadata = () => videoRef.current?.play().catch(() => {});
       }
       setCamOn(true);
@@ -231,15 +248,30 @@ export function StudentMockInterview() {
     setMicError('');
     const SR=(window as any).SpeechRecognition||(window as any).webkitSpeechRecognition;
     const r=new SR(); recognRef.current=r;
-    r.continuous=true;r.interimResults=true;r.lang='en-US';
+    r.continuous=true;r.interimResults=true;r.lang='en-US';r.maxAlternatives=1;
+    let lastFinalIdx = -1;
     r.onresult=(e:any)=>{
       if(!micActiveRef.current) return;
       let f='',im='';
-      for(let i=e.resultIndex;i<e.results.length;i++) if(e.results[i].isFinal) f+=e.results[i][0].transcript; else im+=e.results[i][0].transcript;
-      if(f){finalTextRef.current+=f+' ';setAnswer(finalTextRef.current+im);}else setAnswer(finalTextRef.current+im);
+      for(let i=e.resultIndex;i<e.results.length;i++){
+        if(e.results[i].isFinal){
+          // Only add if we haven't processed this result index yet (prevents duplicates on Android)
+          if(i > lastFinalIdx){ f+=e.results[i][0].transcript.trim()+' '; lastFinalIdx=i; }
+        } else { im+=e.results[i][0].transcript; }
+      }
+      if(f){finalTextRef.current+=f;setAnswer(finalTextRef.current+im);}else setAnswer(finalTextRef.current+im);
     };
-    r.onerror=(e:any)=>{if(e.error!=='no-speech')setMicError(`Mic: ${e.error}`);};
-    r.onend=()=>{if(micActiveRef.current)r.start();};
+    r.onerror=(e:any)=>{
+      if(e.error==='not-allowed'){setCamError('Microphone permission denied.');}
+      else if(e.error!=='no-speech')setMicError(`Mic: ${e.error}`);
+    };
+    r.onend=()=>{
+      if(micActiveRef.current){
+        // Reset lastFinalIdx on restart to prevent duplicate detection across sessions
+        lastFinalIdx=-1;
+        setTimeout(()=>{ try{ r.start(); }catch{} },100);
+      }
+    };
     try{r.start();setMicOn(true);}catch{setMicError('Could not start mic.');}
   },[]);
 
