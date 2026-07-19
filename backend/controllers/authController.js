@@ -60,16 +60,49 @@ const register = asyncHandler(async (req, res) => {
   sendToken(user, 201, res);
 });
 
+// In-memory login attempt tracker (resets on server restart)
+// Key: email, Value: { count, lockedUntil }
+const loginAttempts = new Map();
+const MAX_ATTEMPTS = 5;
+const LOCK_DURATION = 15 * 60 * 1000; // 15 minutes
+
 // POST /api/auth/login
 const login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) { res.status(400); throw new Error('Provide email and password'); }
 
   const cleanEmail = email.trim().toLowerCase();
-  const user = await User.findOne({ where: sequelize.where(sequelize.fn('LOWER', sequelize.col('email')), cleanEmail) });
-  if (!user || !(await user.matchPassword(password))) {
-    res.status(401); throw new Error('Invalid credentials');
+
+  // Check lockout
+  const attempt = loginAttempts.get(cleanEmail);
+  if (attempt?.lockedUntil && Date.now() < attempt.lockedUntil) {
+    const minsLeft = Math.ceil((attempt.lockedUntil - Date.now()) / 60000);
+    res.status(429);
+    throw new Error(`Account locked due to too many failed attempts. Try again in ${minsLeft} minute(s).`);
   }
+
+  const user = await User.findOne({ where: sequelize.where(sequelize.fn('LOWER', sequelize.col('email')), cleanEmail) });
+
+  if (!user || !(await user.matchPassword(password))) {
+    // Track failed attempt
+    const current = loginAttempts.get(cleanEmail) || { count: 0 };
+    current.count += 1;
+    if (current.count >= MAX_ATTEMPTS) {
+      current.lockedUntil = Date.now() + LOCK_DURATION;
+      current.count = 0;
+      loginAttempts.set(cleanEmail, current);
+      res.status(429);
+      throw new Error(`Too many failed attempts. Account locked for 15 minutes.`);
+    }
+    loginAttempts.set(cleanEmail, current);
+    const remaining = MAX_ATTEMPTS - current.count;
+    res.status(401);
+    throw new Error(`Invalid credentials. ${remaining} attempt(s) remaining before lockout.`);
+  }
+
+  // Success - clear attempts
+  loginAttempts.delete(cleanEmail);
+
   if (!user.isActive) { res.status(401); throw new Error('Account deactivated. Contact admin.'); }
 
   // Institution: block login if not approved
