@@ -22,6 +22,19 @@ function downloadCSV(data: any[], filename: string) {
 
 type InternTab = 'all' | 'not_applied' | 'active' | 'rejected';
 
+// ── Follow-up Box (localStorage) ─────────────────────────────────
+const FOLLOWUP_KEY = 'hx_admin_followup_box';
+interface FollowupBox {
+  month: string; // e.g. "2026-07"
+  students: { id: number; name: string; email: string; reason: string; addedAt: string }[];
+}
+function getFollowupBox(): FollowupBox {
+  try { return JSON.parse(localStorage.getItem(FOLLOWUP_KEY) || 'null') || { month: getCurrentMonth(), students: [] }; }
+  catch { return { month: getCurrentMonth(), students: [] }; }
+}
+function getCurrentMonth() { return new Date().toISOString().slice(0, 7); }
+function saveFollowupBox(box: FollowupBox) { localStorage.setItem(FOLLOWUP_KEY, JSON.stringify(box)); }
+
 export function AdminStudents() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
@@ -39,6 +52,48 @@ export function AdminStudents() {
   const [resetModal, setResetModal] = useState<any | null>(null);
   const [resetForm, setResetForm] = useState({ newPassword: '', confirmPassword: '' });
   const [resetting, setResetting] = useState(false);
+
+  // Follow-up Box state
+  const [followupBox, setFollowupBox] = React.useState<FollowupBox>(getFollowupBox());
+  const [showFollowup, setShowFollowup] = React.useState(false);
+
+  // Auto-add eligible students to followup box
+  const processFollowup = React.useCallback((allStudents: any[], apps: any[]) => {
+    const box = getFollowupBox();
+    const currentMonth = getCurrentMonth();
+    // Reset box if new month
+    if (box.month !== currentMonth) {
+      const newBox = { month: currentMonth, students: [] };
+      saveFollowupBox(newBox);
+      setFollowupBox(newBox);
+      return;
+    }
+    const appliedIds = new Set(apps.map((a: any) => a.userId));
+    const existingIds = new Set(box.students.map((s: any) => s.id));
+    let updated = false;
+    allStudents.forEach((s: any) => {
+      if (existingIds.has(s.id)) return; // already in box
+      if (appliedIds.has(s.id)) return;  // applied - don't touch
+      // Check 48 hours since registration
+      const regTime = new Date(s.createdAt).getTime();
+      const hoursSince = (Date.now() - regTime) / (1000 * 60 * 60);
+      if (hoursSince >= 48) {
+        box.students.push({ id: s.id, name: s.name, email: s.email, reason: 'Not Applied (48h+)', addedAt: new Date().toISOString() });
+        updated = true;
+      }
+    });
+    // Also add rejected students
+    apps.filter((a: any) => a.status === 'Rejected').forEach((a: any) => {
+      if (!existingIds.has(a.userId)) {
+        const s = allStudents.find((st: any) => st.id === a.userId);
+        if (s) {
+          box.students.push({ id: s.id, name: s.name, email: s.email, reason: 'Application Rejected', addedAt: new Date().toISOString() });
+          updated = true;
+        }
+      }
+    });
+    if (updated) { saveFollowupBox(box); setFollowupBox({ ...box }); }
+  }, []);
 
   const [students, setStudents] = React.useState<any[]>([]);
   const [total, setTotal]       = React.useState(0);
@@ -61,10 +116,13 @@ export function AdminStudents() {
       adminApi.getIPlatformEnrollments(),
     ])
       .then(([studRes, appRes, enrRes]: any) => {
-        setStudents(studRes.data || []);
+        const allStudents = studRes.data || [];
+        const allApps = appRes.data || [];
+        setStudents(allStudents);
         setTotal(studRes.total || 0);
-        setApplications(appRes.data || []);
+        setApplications(allApps);
         setEnrollments(enrRes.data || []);
+        processFollowup(allStudents, allApps);
       })
       .catch((err: any) => setError(err.message || 'Failed to load'))
       .finally(() => { setLoading(false); setSearching(false); });
