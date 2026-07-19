@@ -130,8 +130,37 @@ export function StudentMockInterview() {
   };
 
   // Camera
-  const startCamera = async ()=>{ try { const s=await navigator.mediaDevices.getUserMedia({video:true}); streamRef.current=s; if(videoRef.current) videoRef.current.srcObject=s; setCamOn(true); } catch {} };
-  const stopCamera  = ()=>{ streamRef.current?.getTracks().forEach(t=>t.stop()); if(videoRef.current) videoRef.current.srcObject=null; setCamOn(false); };
+  const [camError, setCamError] = useState('');
+  const startCamera = async () => {
+    setCamError('');
+    try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setCamError('Camera API not supported in this browser.');
+        return;
+      }
+      const constraints = { video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' } };
+      const s = await navigator.mediaDevices.getUserMedia(constraints);
+      streamRef.current = s;
+      if (videoRef.current) {
+        videoRef.current.srcObject = s;
+        videoRef.current.onloadedmetadata = () => videoRef.current?.play().catch(() => {});
+      }
+      setCamOn(true);
+    } catch (err: any) {
+      const msg = err?.name === 'NotAllowedError' ? 'Camera permission denied. Allow camera access in browser settings.'
+        : err?.name === 'NotFoundError' ? 'No camera found on this device.'
+        : err?.name === 'NotReadableError' ? 'Camera is in use by another application.'
+        : `Camera error: ${err?.message || err?.name || 'Unknown error'}`;
+      setCamError(msg);
+      setCamOn(false);
+    }
+  };
+  const stopCamera = () => {
+    streamRef.current?.getTracks().forEach(t => t.stop());
+    if (videoRef.current) videoRef.current.srcObject = null;
+    setCamOn(false);
+    setCamError('');
+  };
 
   // Face detection
   const detectFaces = useCallback(()=>{
@@ -536,7 +565,10 @@ Respond ONLY in JSON: {"nextQuestion":"...","feedback":"...","score":0-10,"isCom
           <div className="relative bg-gray-900 rounded-2xl overflow-hidden" style={{aspectRatio:'4/3'}}>
             <video ref={videoRef} autoPlay muted playsInline className="w-full h-full object-cover"/>
             <canvas ref={canvasRef} className="hidden"/>
-            {!camOn&&<div className="absolute inset-0 flex flex-col items-center justify-center gap-2"><VideoOff size={32} className="text-gray-600"/><p className="text-gray-500 text-xs">Camera off</p></div>}
+            {!camOn&&<div className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-3 text-center">
+              <VideoOff size={32} className="text-gray-600"/>
+              {camError ? <p className="text-red-400 text-xs font-semibold">{camError}</p> : <p className="text-gray-500 text-xs">Camera off</p>}
+            </div>}
             {faceWarning&&camOn&&<div className="absolute inset-0 border-4 border-red-500 rounded-2xl pointer-events-none"><div className="absolute top-0 left-0 right-0 bg-red-500/90 text-white text-xs font-bold px-3 py-2 flex items-center gap-2"><AlertTriangle size={13}/> Look at camera! ({lookAwayCount}/3)</div></div>}
             {camOn&&!faceWarning&&<div className="absolute top-3 left-3 flex items-center gap-1.5 bg-green-500/80 text-white text-[10px] font-bold px-2 py-1 rounded-full"><div className="w-1.5 h-1.5 bg-white rounded-full"/> 👁️ Good</div>}
             <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-sm px-2 py-1 rounded-lg"><p className="text-white text-xs font-semibold">You {lookAwayCount>0&&<span className="text-red-300 text-[10px]">· {lookAwayCount} warn</span>}</p></div>
