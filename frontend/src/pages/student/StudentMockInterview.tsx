@@ -138,25 +138,14 @@ export function StudentMockInterview() {
         setCamError('Camera not supported. Use Chrome on HTTPS.');
         return;
       }
-      // Check permission status first if API available
-      if (navigator.permissions) {
-        try {
-          const perm = await navigator.permissions.query({ name: 'camera' as PermissionName });
-          if (perm.state === 'denied') {
-            setCamError('Camera blocked. Go to browser Settings > Site Settings > Camera > Allow hiresnix.co.in');
-            return;
-          }
-        } catch {} // permissions API not supported on some browsers
-      }
-      // Try front camera first, fallback to any camera
-      let s: MediaStream | null = null;
+      // Directly request camera - browser will prompt if needed
+      let s2: MediaStream | null = null;
       try {
-        s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } } });
+        s2 = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } } });
       } catch {
-        s = await navigator.mediaDevices.getUserMedia({ video: true });
+        // Fallback: try without constraints
+        s2 = await navigator.mediaDevices.getUserMedia({ video: true });
       }
-      const constraints = { video: true }; // unused but kept for reference
-      const s2 = s;
       streamRef.current = s2;
       if (videoRef.current) {
         videoRef.current.srcObject = s2;
@@ -164,10 +153,12 @@ export function StudentMockInterview() {
       }
       setCamOn(true);
     } catch (err: any) {
-      const msg = err?.name === 'NotAllowedError' ? 'Camera permission denied. Allow camera access in browser settings.'
+      const domain = window.location.hostname;
+      const msg = err?.name === 'NotAllowedError'
+        ? `Camera blocked for ${domain}. Click the lock icon in address bar > Site settings > Camera > Allow > then reload.`
         : err?.name === 'NotFoundError' ? 'No camera found on this device.'
-        : err?.name === 'NotReadableError' ? 'Camera is in use by another application.'
-        : `Camera error: ${err?.message || err?.name || 'Unknown error'}`;
+        : err?.name === 'NotReadableError' ? 'Camera in use by another app. Close other tabs/apps and try again.'
+        : `Camera error: ${err?.message || err?.name || 'Unknown'}`;
       setCamError(msg);
       setCamOn(false);
     }
