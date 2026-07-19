@@ -1974,18 +1974,7 @@ const generateJoiningLetter = asyncHandler(async (req, res) => {
   const rawSigY = doc.y + 55;
   const sigY = isNaN(rawSigY) || rawSigY > H_JL - 180 ? H_JL - 180 : rawSigY;
   // Left: Authorized signatory - no box outline
-  const boxW = 220;
-  // Signature image - larger size
-  try {
-    const sigPath = getSignaturePath('ceo.png');
-    if (require('fs').existsSync(sigPath)) {
-      doc.image(sigPath, MARGIN, sigY - 10, { fit: [130, 50] });
-    }
-  } catch(e) {}
-  doc.moveTo(MARGIN, sigY + 44).lineTo(MARGIN + boxW, sigY + 44).strokeColor('#94a3b8').lineWidth(0.4).stroke();
-  doc.fillColor('#1e293b').fontSize(10).font('Helvetica-Bold').text('Mr. A S Borse', MARGIN, sigY + 48);
-  doc.fillColor('#64748b').fontSize(8.5).font('Helvetica').text('Founder & CEO - Hiresnix', MARGIN, sigY + 61);
-  doc.fillColor('#9ca3af').fontSize(7.5).font('Helvetica').text('For SR PATIL INFRASTRUCTURE PRIVATE LIMITED', MARGIN, sigY + 73, { width: boxW });
+  signatureLine(doc, 'Mr. A S Borse', 'Founder & CEO - Hiresnix', MARGIN, sigY + 44, getSignaturePath('ceo.png'), 1.3);
 
   // Right: Candidate sig + date - no box outline
   const candX = W / 2 + 20;
