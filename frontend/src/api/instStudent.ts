@@ -70,6 +70,13 @@ export const instStudentApi = {
       localStorage.setItem('hx_inst_student_id', data.student?.id || '');
       localStorage.setItem('hx_institution_id', data.student?.institutionId || '');
       localStorage.setItem('hx_institution_name', data.student?.institutionName || '');
+      // Save actual student email (not synthetic) so internship portal shows correct email
+      localStorage.setItem('hirenix_user', JSON.stringify({
+        id: data.hiresnixUserId,
+        name: data.student?.name,
+        email: data.student?.email, // actual Gmail, not @inst.hiresnix.co.in
+        role: 'student',
+      }));
     }
     return data;
   },

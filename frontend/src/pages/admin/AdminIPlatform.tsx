@@ -296,7 +296,9 @@ export function AdminIPlatform() {
           const isInstitutionApp = 
             app.source === 'institution' || 
             (app.email || '').includes('@inst.hiresnix.co.in') || 
-            !!app.instStudentId;
+            !!app.instStudentId ||
+            !!(app.institutionId) ||
+            !!(app.institutionName);
 
           const matchSource = appSourceFilter === 'All' || 
             (appSourceFilter === 'institution' ? isInstitutionApp : !isInstitutionApp);

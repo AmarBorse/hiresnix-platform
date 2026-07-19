@@ -122,7 +122,7 @@ const login = asyncHandler(async (req, res) => {
       id: student.id,
       careerId: student.careerId,
       name: student.name,
-      email: student.email,
+      email: student.email,  // actual Gmail/email, not synthetic
       institutionId: student.institutionId,
       institutionName: student.institution?.institutionName,
     },
@@ -183,6 +183,20 @@ const changePassword = asyncHandler(async (req, res) => {
   const match = await student.matchPassword(currentPassword);
   if (!match) { res.status(401); throw new Error('Current password is incorrect'); }
   await student.update({ password: newPassword });
+
+  // Also update linked Hiresnix user password so internship portal works
+  try {
+    const syntheticEmail = `${student.careerId.toLowerCase()}@inst.hiresnix.co.in`;
+    const hiresnixUser = await User.findOne({ where: { email: syntheticEmail } });
+    if (hiresnixUser) {
+      const bcrypt = require('bcryptjs');
+      const hashed = await bcrypt.hash(newPassword, 10);
+      await hiresnixUser.update({ password: hashed });
+    }
+  } catch (err) {
+    console.error('Linked user password sync failed:', err.message);
+  }
+
   res.json({ success: true, message: 'Password updated successfully' });
 });
 
