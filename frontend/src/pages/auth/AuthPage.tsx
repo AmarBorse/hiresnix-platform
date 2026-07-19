@@ -96,12 +96,14 @@ export function AuthPage() {
     finally { setLoading(false); }
   };
 
-  // Load institutions list for registration
+  // Load institutions list for registration (non-blocking)
   React.useEffect(() => {
-    fetch(`${(import.meta as any).env.VITE_API_URL}/auth/institutions`)
+    const controller = new AbortController();
+    fetch(`${(import.meta as any).env.VITE_API_URL}/auth/institutions`, { signal: controller.signal })
       .then(r => r.json())
       .then(d => setInstitutions(d.data || []))
       .catch(() => {});
+    return () => controller.abort();
   }, []);
 
   // Handle email verification token from URL
