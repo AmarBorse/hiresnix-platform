@@ -281,31 +281,51 @@ export function StudentMockInterview() {
   // AI call
   const callAI = async (msgs:Message[]) => {
     const rl=ROUNDS.find(r=>r.id===round)?.label||'HR';
-    const sys=`You are Alex, a professional ${rl} interviewer at Hiresnix for a ${domain} role.
-Experience: ${experience}. Difficulty: ${difficulty}.${resumeText?` Resume: ${resumeText.slice(0,500)}`:''}
-Ask one question at a time. Give brief feedback after each answer. Ask follow-up questions naturally.
-Total: 15 questions. ${rl} style questions for ${experience} level.
+    const sys=`You are Alex - a warm, experienced ${rl} interviewer at Hiresnix. You've been doing interviews for 8+ years and you genuinely enjoy helping candidates succeed.
+
+PERSONALITY:
+- Talk like a real human interviewer, not a chatbot or robot
+- Use casual, conversational language. Say things like "That's interesting!", "Nice, tell me more about that", "Hmm, okay I get it", "Great point!"
+- React naturally to answers - if answer is good, say so genuinely. If weak, gently probe deeper
+- Occasionally use fillers like "So,", "Alright,", "Got it,", "Right," to sound natural
+- Never say "As an AI" or anything that sounds robotic
+- Ask follow-up questions like a curious human would, not like a checklist
+
+INTERVIEW CONTEXT:
+- Role: ${domain} | Round: ${rl} | Level: ${experience} | Difficulty: ${difficulty}
+${resumeText ? `- Candidate resume snippet: ${resumeText.slice(0,400)}` : ''}
+
+QUESTION STYLE:
+- Keep questions short and conversational, not essay-style
+- Mix question types: situational ("Tell me about a time..."), opinion ("What do you think about..."), practical ("How would you approach...")
+- Build on previous answers naturally, like a real conversation
+- For ${experience === 'Fresher' ? 'freshers: focus on learning attitude, projects, basics - be encouraging' : 'experienced: dig into real scenarios, decisions made, lessons learned'}
+- Total 15 questions across the interview
+
+FEEDBACK STYLE:
+- Keep feedback to 1-2 short sentences max
+- Sound genuine: "That's a solid answer!" / "Good thinking, though I'd add..." / "Hmm, let's explore that a bit more"
+- Never say "Thank you for your response" - too robotic
+
 Respond ONLY in JSON: {"nextQuestion":"...","feedback":"...","score":0-10,"isComplete":false,"scoreBreakdown":{"communication":0-10,"technical":0-10,"confidence":0-10,"grammar":0-10,"problemSolving":0-10}}`;
     const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':`Bearer ${GROQ_KEY}`},
-      body:JSON.stringify({model:'llama-3.3-70b-versatile',messages:[{role:'system',content:sys},...msgs],temperature:0.7,max_tokens:600}),
+      body:JSON.stringify({model:'llama-3.3-70b-versatile',messages:[{role:'system',content:sys},...msgs],temperature:0.85,max_tokens:500}),
     });
     const d=await res.json();
     const raw=d.choices[0].message.content;
     try{return JSON.parse(raw.replace(/```json|```/g,'').trim());}
     catch{return{nextQuestion:raw,feedback:'',score:7,isComplete:false,scoreBreakdown:{communication:7,technical:7,confidence:7,grammar:7,problemSolving:7}};}
   };
-
   const startCountdown = ()=>{
     setStage('countdown');setCountdown(3);
     const t=setInterval(()=>setCountdown(c=>{if(c<=1){clearInterval(t);beginInterview();return 3;}return c-1;}),1000);
   };
-
   const beginInterview = async ()=>{
     setStage('interview');setAiThinking(true);
     const rl=ROUNDS.find(r=>r.id===round)?.label||'HR';
-    await speak(`Hello! I'm Alex, your Hiresnix ${rl} interviewer. ${difficulty} level, ${domain} role. ${experience==='Fresher'?'Focus on fundamentals.':'Focus on experience.'} Let's begin!`);
+    await speak(`Hey! I'm Alex. So we're doing a ${rl} round today for a ${domain} role - ${experience === 'Fresher' ? "since you're starting out, no worries, just be yourself!" : 'given your experience, we\'ll dive into some real scenarios.'}  Alright, let's get started!`);
     const init:Message={role:'user',content:`Start ${rl} interview. Domain: ${domain}. Experience: ${experience}. Difficulty: ${difficulty}.${resumeText?` Resume: ${resumeText.slice(0,300)}`:''}. Ask first question.`};
     try{
       const res=await callAI([init]);
@@ -317,7 +337,6 @@ Respond ONLY in JSON: {"nextQuestion":"...","feedback":"...","score":0-10,"isCom
       setTimer(90);setTimerActive(true);
     }catch{setAiThinking(false);alert('AI connection failed.');}
   };
-
   const exitInterview = (reason?:string)=>{
     stopMic();stopCamera();window.speechSynthesis.cancel();
     if(timerRef.current) clearTimeout(timerRef.current);
@@ -326,7 +345,6 @@ Respond ONLY in JSON: {"nextQuestion":"...","feedback":"...","score":0-10,"isCom
     setStage('setup');setResults([]);setMessages([]);setQNumber(0);resetAnswer();setFeedback(null);
     setScores({communication:0,technical:0,confidence:0,grammar:0,problemSolving:0});setLookAwayCount(0);
   };
-
   const handleSkip = useCallback(async ()=>{
     stopMic();setMicOn(false);setTimerActive(false);window.speechSynthesis.cancel();
     setResults(prev=>[...prev,{question:currentQ,answer:'(Skipped)',score:0,feedback:'Skipped.',round}]);
@@ -344,7 +362,6 @@ Respond ONLY in JSON: {"nextQuestion":"...","feedback":"...","score":0-10,"isCom
       setTimer(90);setTimerActive(true);
     }catch{setAiThinking(false);}
   },[currentQ,messages,qNumber,round,stopMic,startMic,speak]);
-
   const handleSubmit = useCallback(async ()=>{
     const ans=(finalTextRef.current+answer).trim()||answer.trim();
     micActiveRef.current=false;stopMic();setMicOn(false);
@@ -390,18 +407,14 @@ Respond ONLY in JSON: {"nextQuestion":"...","feedback":"...","score":0-10,"isCom
       setTimer(90);setTimerActive(true);
     }catch{setAiThinking(false);alert('AI error.');}
   },[answer,messages,currentQ,qNumber,round,scores,domain,difficulty,experience,results,stopMic,startMic,speak]);
-
   useEffect(()=>()=>{stopCamera();stopMic();window.speechSynthesis.cancel();},[]);
-
   const roundInfo = ROUNDS.find(r=>r.id===round);
-
   // ── LOADING ───────────────────────────────────────────────────────
   if(isEnrolled===null) return (
     <div className="flex items-center justify-center min-h-[60vh]">
       <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"/>
     </div>
   );
-
   // ── LOCKED ────────────────────────────────────────────────────────
   if(isEnrolled===false) return (
     <div className="flex items-center justify-center min-h-[60vh] px-4">
@@ -415,7 +428,6 @@ Respond ONLY in JSON: {"nextQuestion":"...","feedback":"...","score":0-10,"isCom
       </div>
     </div>
   );
-
   // ── SETUP ─────────────────────────────────────────────────────────
   if(stage==='setup') return (
     <div className="max-w-3xl mx-auto space-y-5 pb-8">
@@ -423,7 +435,6 @@ Respond ONLY in JSON: {"nextQuestion":"...","feedback":"...","score":0-10,"isCom
         <h1 className="text-2xl font-bold text-white">🎙️ AI Mock Interview</h1>
         <p className="text-gray-400 text-sm mt-1">Configure your session and start practicing</p>
       </div>
-
       <div className="bg-gradient-to-br from-gray-900 to-indigo-950 rounded-2xl p-6 flex items-center gap-6">
         <AIAvatar speaking={false} thinking={false}/>
         <div>
@@ -436,7 +447,6 @@ Respond ONLY in JSON: {"nextQuestion":"...","feedback":"...","score":0-10,"isCom
           </div>
         </div>
       </div>
-
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Resume Upload */}
         <div className="bg-gray-900 rounded-2xl p-5 border border-gray-800">
@@ -449,7 +459,6 @@ Respond ONLY in JSON: {"nextQuestion":"...","feedback":"...","score":0-10,"isCom
             {resumeName&&<span className="text-xs text-green-400">✓ AI will personalize questions from resume</span>}
           </button>
         </div>
-
         {/* Job Role */}
         <div className="bg-gray-900 rounded-2xl p-5 border border-gray-800">
           <h3 className="text-white font-semibold text-sm mb-3">💼 Job Role / Domain</h3>
@@ -460,7 +469,6 @@ Respond ONLY in JSON: {"nextQuestion":"...","feedback":"...","score":0-10,"isCom
             ))}
           </div>
         </div>
-
         {/* Experience + Difficulty */}
         <div className="bg-gray-900 rounded-2xl p-5 border border-gray-800">
           <h3 className="text-white font-semibold text-sm mb-3">👤 Experience Level</h3>
@@ -482,7 +490,6 @@ Respond ONLY in JSON: {"nextQuestion":"...","feedback":"...","score":0-10,"isCom
             ))}
           </div>
         </div>
-
         {/* Round Selection */}
         <div className="bg-gray-900 rounded-2xl p-5 border border-gray-800">
           <h3 className="text-white font-semibold text-sm mb-3">🎯 Interview Round</h3>
@@ -501,14 +508,12 @@ Respond ONLY in JSON: {"nextQuestion":"...","feedback":"...","score":0-10,"isCom
           </div>
         </div>
       </div>
-
       <div className="bg-indigo-950/40 border border-indigo-800/40 rounded-2xl p-4">
         <p className="text-indigo-300 text-xs font-bold mb-2">📋 Before You Start</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-xs text-indigo-200/70">
           {['Use Chrome for best voice recognition','Stay in this tab — switching exits interview','Allow microphone access when prompted','Camera optional but improves experience','90 seconds per question • 15 questions total'].map((t,i)=><p key={i}>• {t}</p>)}
         </div>
       </div>
-
       <div className="flex gap-3">
         <button onClick={()=>setMuted(m=>!m)}
           className={`flex items-center gap-2 px-5 py-3 rounded-xl border text-sm font-medium transition ${!muted?'bg-emerald-900/30 border-emerald-600 text-emerald-400':'bg-gray-800 border-gray-700 text-gray-400'}`}>
@@ -521,7 +526,6 @@ Respond ONLY in JSON: {"nextQuestion":"...","feedback":"...","score":0-10,"isCom
       </div>
     </div>
   );
-
   // ── COUNTDOWN ─────────────────────────────────────────────────────
   if(stage==='countdown') return (
     <div className="min-h-[60vh] flex flex-col items-center justify-center gap-6">
@@ -536,7 +540,6 @@ Respond ONLY in JSON: {"nextQuestion":"...","feedback":"...","score":0-10,"isCom
       </div>
     </div>
   );
-
   // ── INTERVIEW ─────────────────────────────────────────────────────
   if(stage==='interview') return (
     <div className="max-w-5xl mx-auto">
@@ -547,7 +550,6 @@ Respond ONLY in JSON: {"nextQuestion":"...","feedback":"...","score":0-10,"isCom
         </div>
       )}
       {micError&&<div className="mb-3 bg-amber-900/30 border border-amber-500/40 text-amber-300 px-4 py-2 rounded-xl text-sm">{micError}</div>}
-
       <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
         <div className="flex items-center gap-3">
           <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"/>
@@ -567,11 +569,9 @@ Respond ONLY in JSON: {"nextQuestion":"...","feedback":"...","score":0-10,"isCom
             className="px-3 py-1.5 rounded-lg bg-red-900/30 text-red-400 text-xs font-medium hover:bg-red-900/50 transition">✕ Exit</button>
         </div>
       </div>
-
       <div className="w-full bg-gray-800 rounded-full h-1.5 mb-5">
         <div className="bg-indigo-500 h-1.5 rounded-full transition-all" style={{width:`${((qNumber-1)/15)*100}%`}}/>
       </div>
-
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="bg-gradient-to-br from-gray-900 to-indigo-950 rounded-2xl p-6 flex flex-col items-center justify-between min-h-[400px]">
           <div className="flex-1 flex flex-col items-center justify-center space-y-5 w-full">
@@ -591,7 +591,6 @@ Respond ONLY in JSON: {"nextQuestion":"...","feedback":"...","score":0-10,"isCom
             <SoundWave active={aiSpeaking} color="#818cf8"/>
           </div>
         </div>
-
         <div className="space-y-3">
           <div className="relative bg-gray-900 rounded-2xl overflow-hidden" style={{aspectRatio:'4/3'}}>
             <video ref={videoRef} autoPlay muted playsInline className="w-full h-full object-cover"/>
@@ -636,17 +635,14 @@ Respond ONLY in JSON: {"nextQuestion":"...","feedback":"...","score":0-10,"isCom
       </div>
     </div>
   );
-
   // ── RESULT ────────────────────────────────────────────────────────
   const avgScore = results.length?Math.round(results.reduce((s,r)=>s+r.score,0)/results.length):0;
   const overallScore = Math.round(avgScore*10);
   const weakTopics = results.filter(r=>r.score<5).map(r=>r.question.split(' ').slice(0,5).join(' ')+'...');
-
   if(stage==='result'&&results.length===0){
     setTimeout(()=>setStage('setup'),100);
     return <div className="flex items-center justify-center min-h-[60vh]"><div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"/></div>;
   }
-
   return (
     <div className="max-w-3xl mx-auto space-y-5 pb-8">
       <div className={`rounded-2xl p-7 text-center text-white ${overallScore>=70?'bg-gradient-to-br from-emerald-600 to-teal-700':overallScore>=50?'bg-gradient-to-br from-amber-500 to-orange-600':'bg-gradient-to-br from-red-500 to-rose-700'}`}>
@@ -656,7 +652,6 @@ Respond ONLY in JSON: {"nextQuestion":"...","feedback":"...","score":0-10,"isCom
         <p className="text-lg font-semibold">{overallScore>=80?'🌟 Excellent!':overallScore>=60?'👍 Good Job!':overallScore>=40?'📚 Keep Practicing!':'💪 Keep Going!'}</p>
         <p className="text-sm opacity-75 mt-1">{roundInfo?.label} • {domain} • {difficulty} • {results.length}/15 Questions</p>
       </div>
-
       <div className="bg-gray-900 rounded-2xl p-5 border border-gray-800">
         <h3 className="text-white font-bold mb-4 flex items-center gap-2"><BarChart2 size={16} className="text-indigo-400"/> Score Breakdown</h3>
         <div className="space-y-3">
@@ -673,7 +668,6 @@ Respond ONLY in JSON: {"nextQuestion":"...","feedback":"...","score":0-10,"isCom
           ))}
         </div>
       </div>
-
       {weakTopics.length>0&&(
         <div className="bg-red-900/20 border border-red-800/40 rounded-2xl p-5">
           <h3 className="text-red-300 font-bold mb-3">⚠️ Weak Areas to Improve</h3>
@@ -682,7 +676,6 @@ Respond ONLY in JSON: {"nextQuestion":"...","feedback":"...","score":0-10,"isCom
           </ul>
         </div>
       )}
-
       <div className="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-800 flex items-center gap-2">
           <BarChart2 size={16} className="text-indigo-400"/>
@@ -702,7 +695,6 @@ Respond ONLY in JSON: {"nextQuestion":"...","feedback":"...","score":0-10,"isCom
           ))}
         </div>
       </div>
-
       <div className="flex gap-3 flex-wrap">
         <button onClick={()=>exitInterview()}
           className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition">
