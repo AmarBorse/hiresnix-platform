@@ -967,7 +967,7 @@ function getLevel(xp: number) { for (let i = LEVELS.length-1; i >= 0; i--) if (x
 // ── Groq API ──────────────────────────────────────────────────────
 async function groq(prompt: string): Promise<string> {
   try {
-    const token = localStorage.getItem('hx_inst_student_token') || localStorage.getItem('hirenix_token') || '';
+    const token = localStorage.getItem('hx_inst_hiresnix_token') || localStorage.getItem('hx_inst_student_token') || localStorage.getItem('hx_student_token') || localStorage.getItem('hirenix_token') || '';
     const r = await fetch(`${(import.meta as any).env.VITE_API_URL}/groq/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -981,7 +981,7 @@ async function groq(prompt: string): Promise<string> {
 
 async function groqStream(prompt: string, onChunk: (t:string)=>void) {
   try {
-    const token = localStorage.getItem('hx_inst_student_token') || localStorage.getItem('hirenix_token') || '';
+    const token = localStorage.getItem('hx_inst_hiresnix_token') || localStorage.getItem('hx_inst_student_token') || localStorage.getItem('hx_student_token') || localStorage.getItem('hirenix_token') || '';
     const r = await fetch(`${(import.meta as any).env.VITE_API_URL}/groq/chat`, {
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},
@@ -1007,7 +1007,7 @@ async function runCode(language: string, code: string) {
   const cfg = LANG_CFG[language] || LANG_CFG.python;
   try {
     const prompt = `Execute this ${cfg.lang} code and return ONLY the exact output. No explanation, no markdown, just raw output:\n\`\`\`${cfg.lang}\n${code}\n\`\`\``;
-    const token = localStorage.getItem('hx_inst_student_token') || localStorage.getItem('hirenix_token') || '';
+    const token = localStorage.getItem('hx_inst_hiresnix_token') || localStorage.getItem('hx_inst_student_token') || localStorage.getItem('hx_student_token') || localStorage.getItem('hirenix_token') || '';
     const r = await fetch(`${(import.meta as any).env.VITE_API_URL}/groq/chat`, {
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},
