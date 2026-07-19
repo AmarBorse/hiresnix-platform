@@ -153,9 +153,7 @@ export function StudentMockInterview() {
       }
       setCamOn(true);
     } catch (err: any) {
-      const domain = window.location.hostname;
-      const msg = err?.name === 'NotAllowedError'
-        ? `Camera blocked for ${domain}. Click the lock icon in address bar > Site settings > Camera > Allow > then reload.`
+      const msg = err?.name === 'NotAllowedError' ? 'Camera permission denied. Please reload the page and click Allow when prompted.'
         : err?.name === 'NotFoundError' ? 'No camera found on this device.'
         : err?.name === 'NotReadableError' ? 'Camera in use by another app. Close other tabs/apps and try again.'
         : `Camera error: ${err?.message || err?.name || 'Unknown'}`;
