@@ -1238,14 +1238,47 @@ function LessonPage({ course, onBack }: { course:any; onBack:()=>void }) {
     setNotes(res); setNotesLoading(false);
   },[lesson]);
 
+  const getFallbackQuiz = (lessonName: string, courseName: string) => [
+    {q:`What is ${lessonName}?`, opts:[`A core concept in ${courseName}`,`An unrelated tool`,`A database`,`A framework`], ans:0, exp:`${lessonName} is a fundamental concept in ${courseName}.`},
+    {q:`Which of the following best describes ${lessonName}?`, opts:[`Used in ${courseName} for core functionality`,`Used only in mobile apps`,`A type of database`,`A cloud service`], ans:0, exp:`${lessonName} is used in ${courseName} for core functionality.`},
+    {q:`When should you use ${lessonName}?`, opts:[`When working with ${courseName} concepts`,`Only in backend development`,`Only in frontend development`,`Never in modern programming`], ans:0, exp:`${lessonName} is applicable when working with ${courseName}.`},
+    {q:`What is the primary benefit of ${lessonName}?`, opts:[`Improves code efficiency`,`Slows down the program`,`Increases memory usage`,`Reduces code readability`], ans:0, exp:`${lessonName} primarily improves code efficiency.`},
+    {q:`${lessonName} is most commonly used in which scenario?`, opts:[`${courseName} development`,`Hardware programming`,`Network administration`,`Database design only`], ans:0, exp:`${lessonName} is most common in ${courseName} development.`},
+    {q:`Which statement about ${lessonName} is TRUE?`, opts:[`It is a key part of ${courseName}`,`It is deprecated in modern usage`,`It only works on Windows`,`It requires special hardware`], ans:0, exp:`${lessonName} is indeed a key part of ${courseName}.`},
+    {q:`How does ${lessonName} help developers?`, opts:[`Makes code more organized and efficient`,`Makes code harder to read`,`Increases development time significantly`,`Only works with paid tools`], ans:0, exp:`${lessonName} helps by making code more organized and efficient.`},
+    {q:`What should you know before learning ${lessonName}?`, opts:[`Basic ${courseName} fundamentals`,`Advanced machine learning`,`Hardware assembly`,`Network protocols only`], ans:0, exp:`Basic ${courseName} fundamentals are needed before ${lessonName}.`},
+    {q:`${lessonName} is an example of which programming concept?`, opts:[`Core ${courseName} principle`,`An operating system feature`,`A hardware component`,`A network protocol`], ans:0, exp:`${lessonName} demonstrates core ${courseName} principles.`},
+    {q:`After mastering ${lessonName}, what should you learn next?`, opts:[`Advanced ${courseName} topics`,`Unrelated technologies first`,`Nothing, it is the final topic`,`Only practice old concepts`], ans:0, exp:`After ${lessonName}, advancing to other ${courseName} topics is recommended.`},
+  ];
+
   const loadQuiz = useCallback(async()=>{
     setQuizLoading(true); setQuizAll([]); setQuizIdx(0); setSelectedAns(null); setQuizScore(0); setQuizDone(false);
-    const res = await groq(`Generate exactly 10 MCQ quiz questions about "${lesson}" in ${course.title}. Simple English.\nReturn ONLY a valid JSON array, no markdown, no explanation:\n[{"q":"question text","opts":["option A","option B","option C","option D"],"ans":0,"exp":"brief explanation"}]\nMix difficulty: 3 easy, 5 medium, 2 hard. ans is 0-based index of correct option.`);
+    const prompt = `Generate exactly 10 MCQ quiz questions about "${lesson}" topic in ${course.title} course.
+Rules:
+- Return ONLY a valid JSON array, no markdown, no explanation, no text before or after
+- Each question must have exactly 4 options
+- ans is 0-based index (0=A, 1=B, 2=C, 3=D)
+- Mix: 3 easy, 5 medium, 2 hard questions
+- Questions should be practical and relevant to ${lesson}
+Format: [{"q":"question","opts":["A","B","C","D"],"ans":0,"exp":"why this answer"}]`;
     try {
+      const res = await groq(prompt);
       const clean = res.replace(/```json?|```/g,'').trim();
       const s = clean.indexOf('['), e = clean.lastIndexOf(']');
-      setQuizAll(JSON.parse(clean.slice(s,e+1)).slice(0,10));
-    } catch { setQuizAll([{q:`What is the main use of ${lesson}?`,opts:['Store data','Run loops','Define functions','Import modules'],ans:0,exp:`${lesson} is fundamental in ${course.title}.`}]); }
+      if (s === -1 || e === -1) throw new Error('No JSON array found');
+      const parsed = JSON.parse(clean.slice(s, e+1));
+      if (!Array.isArray(parsed) || parsed.length === 0) throw new Error('Empty array');
+      setQuizAll(parsed.slice(0, 10));
+    } catch {
+      // Retry once with simpler prompt
+      try {
+        const res2 = await groq(`Create 10 multiple choice questions about ${lesson}. JSON array only: [{"q":"...","opts":["A","B","C","D"],"ans":0,"exp":"..."}]`);
+        const clean2 = res2.replace(/```json?|```/g,'').trim();
+        const s2 = clean2.indexOf('['), e2 = clean2.lastIndexOf(']');
+        const parsed2 = JSON.parse(clean2.slice(s2, e2+1));
+        setQuizAll(Array.isArray(parsed2) && parsed2.length > 0 ? parsed2.slice(0,10) : getFallbackQuiz(lesson, course.title));
+      } catch { setQuizAll(getFallbackQuiz(lesson, course.title)); }
+    }
     setQuizLoading(false);
   },[lesson,course.title]);
 
