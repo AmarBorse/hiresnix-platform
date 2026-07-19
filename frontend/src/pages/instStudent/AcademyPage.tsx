@@ -1239,16 +1239,16 @@ function LessonPage({ course, onBack }: { course:any; onBack:()=>void }) {
   },[lesson]);
 
   const getFallbackQuiz = (lessonName: string, courseName: string) => [
-    {q:`What is ${lessonName}?`, opts:[`A core concept in ${courseName}`,`An unrelated tool`,`A database`,`A framework`], ans:0, exp:`${lessonName} is a fundamental concept in ${courseName}.`},
-    {q:`Which of the following best describes ${lessonName}?`, opts:[`Used in ${courseName} for core functionality`,`Used only in mobile apps`,`A type of database`,`A cloud service`], ans:0, exp:`${lessonName} is used in ${courseName} for core functionality.`},
-    {q:`When should you use ${lessonName}?`, opts:[`When working with ${courseName} concepts`,`Only in backend development`,`Only in frontend development`,`Never in modern programming`], ans:0, exp:`${lessonName} is applicable when working with ${courseName}.`},
-    {q:`What is the primary benefit of ${lessonName}?`, opts:[`Improves code efficiency`,`Slows down the program`,`Increases memory usage`,`Reduces code readability`], ans:0, exp:`${lessonName} primarily improves code efficiency.`},
-    {q:`${lessonName} is most commonly used in which scenario?`, opts:[`${courseName} development`,`Hardware programming`,`Network administration`,`Database design only`], ans:0, exp:`${lessonName} is most common in ${courseName} development.`},
-    {q:`Which statement about ${lessonName} is TRUE?`, opts:[`It is a key part of ${courseName}`,`It is deprecated in modern usage`,`It only works on Windows`,`It requires special hardware`], ans:0, exp:`${lessonName} is indeed a key part of ${courseName}.`},
-    {q:`How does ${lessonName} help developers?`, opts:[`Makes code more organized and efficient`,`Makes code harder to read`,`Increases development time significantly`,`Only works with paid tools`], ans:0, exp:`${lessonName} helps by making code more organized and efficient.`},
-    {q:`What should you know before learning ${lessonName}?`, opts:[`Basic ${courseName} fundamentals`,`Advanced machine learning`,`Hardware assembly`,`Network protocols only`], ans:0, exp:`Basic ${courseName} fundamentals are needed before ${lessonName}.`},
-    {q:`${lessonName} is an example of which programming concept?`, opts:[`Core ${courseName} principle`,`An operating system feature`,`A hardware component`,`A network protocol`], ans:0, exp:`${lessonName} demonstrates core ${courseName} principles.`},
-    {q:`After mastering ${lessonName}, what should you learn next?`, opts:[`Advanced ${courseName} topics`,`Unrelated technologies first`,`Nothing, it is the final topic`,`Only practice old concepts`], ans:0, exp:`After ${lessonName}, advancing to other ${courseName} topics is recommended.`},
+    {q:`What is ${lessonName}?`, opts:[`An unrelated tool`,`A core concept in ${courseName}`,`A database`,`A framework`], ans:1, exp:`${lessonName} is a fundamental concept in ${courseName}.`},
+    {q:`Which best describes ${lessonName}?`, opts:[`A cloud service`,`A type of database`,`Used in ${courseName} for core functionality`,`Used only in mobile apps`], ans:2, exp:`${lessonName} is used in ${courseName} for core functionality.`},
+    {q:`When should you use ${lessonName}?`, opts:[`Only in backend development`,`Never in modern programming`,`Only in frontend development`,`When working with ${courseName} concepts`], ans:3, exp:`${lessonName} is applicable when working with ${courseName}.`},
+    {q:`What is the primary benefit of ${lessonName}?`, opts:[`Slows down the program`,`Improves code efficiency`,`Increases memory usage`,`Reduces code readability`], ans:1, exp:`${lessonName} primarily improves code efficiency.`},
+    {q:`${lessonName} is most commonly used in which field?`, opts:[`Hardware programming`,`Network administration`,`Database design only`,`${courseName} development`], ans:3, exp:`${lessonName} is most common in ${courseName} development.`},
+    {q:`Which statement about ${lessonName} is TRUE?`, opts:[`It is deprecated in modern usage`,`It only works on Windows`,`It is a key part of ${courseName}`,`It requires special hardware`], ans:2, exp:`${lessonName} is indeed a key part of ${courseName}.`},
+    {q:`How does ${lessonName} help developers?`, opts:[`Makes code harder to read`,`Only works with paid tools`,`Increases development time significantly`,`Makes code more organized and efficient`], ans:3, exp:`${lessonName} helps by making code more organized and efficient.`},
+    {q:`What should you know before learning ${lessonName}?`, opts:[`Advanced machine learning`,`Basic ${courseName} fundamentals`,`Hardware assembly`,`Network protocols only`], ans:1, exp:`Basic ${courseName} fundamentals are needed before ${lessonName}.`},
+    {q:`${lessonName} is related to which concept?`, opts:[`An operating system feature`,`A hardware component`,`A network protocol`,`Core ${courseName} principle`], ans:3, exp:`${lessonName} demonstrates core ${courseName} principles.`},
+    {q:`After learning ${lessonName}, what should you explore next?`, opts:[`Unrelated technologies first`,`Nothing, it is the final topic`,`Advanced ${courseName} topics`,`Only practice old concepts`], ans:2, exp:`After ${lessonName}, advancing to other ${courseName} topics is recommended.`},
   ];
 
   const loadQuiz = useCallback(async()=>{
