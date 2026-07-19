@@ -274,7 +274,17 @@ export function StudentMockInterview() {
   },[]);
 
   const stopMic = useCallback(()=>{micActiveRef.current=false;recognRef.current?.stop();setMicOn(false);},[]);
-  const toggleMic = useCallback(()=>{if(micOn)stopMic();else{micActiveRef.current=true;startMic();}},[micOn,stopMic,startMic]);
+  const toggleMic = useCallback(()=>{
+    if(micOn){
+      stopMic();
+    } else {
+      // Stop any existing recognition first
+      try { recognRef.current?.stop(); } catch {}
+      recognRef.current = null;
+      micActiveRef.current = true;
+      setTimeout(() => startMic(), 150); // slight delay to ensure clean start
+    }
+  },[micOn,stopMic,startMic]);
   const resetAnswer = ()=>{setAnswer('');finalTextRef.current='';};
 
   // AI call
