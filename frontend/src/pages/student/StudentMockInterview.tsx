@@ -250,17 +250,27 @@ export function StudentMockInterview() {
       }
       if(f){finalTextRef.current+=f;setAnswer(finalTextRef.current+im);}else setAnswer(finalTextRef.current+im);
     };
+    let restartTimeout: any = null;
+    const restartMic = () => {
+      if (!micActiveRef.current) return;
+      if (restartTimeout) clearTimeout(restartTimeout);
+      lastFinalIdx = -1;
+      restartTimeout = setTimeout(() => {
+        if (!micActiveRef.current) return;
+        try { r.start(); } catch(e: any) {
+          // If aborted/busy, wait longer and retry
+          if (micActiveRef.current) {
+            restartTimeout = setTimeout(() => { try { r.start(); } catch {} }, 500);
+          }
+        }
+      }, 200);
+    };
     r.onerror=(e:any)=>{
-      if(e.error==='not-allowed'){setCamError('Microphone permission denied.');}
-      else if(e.error!=='no-speech')setMicError(`Mic: ${e.error}`);
+      if(e.error==='not-allowed'){ setMicError('Microphone permission denied. Allow mic in browser settings.'); micActiveRef.current=false; setMicOn(false); }
+      else if(e.error==='aborted'||e.error==='no-speech'){ restartMic(); } // auto-restart on abort/silence
+      else { setMicError(`Mic: ${e.error}`); restartMic(); }
     };
-    r.onend=()=>{
-      if(micActiveRef.current){
-        // Reset lastFinalIdx on restart to prevent duplicate detection across sessions
-        lastFinalIdx=-1;
-        setTimeout(()=>{ try{ r.start(); }catch{} },100);
-      }
-    };
+    r.onend=()=>{ restartMic(); };
     try{r.start();setMicOn(true);}catch{setMicError('Could not start mic.');}
   },[]);
 
