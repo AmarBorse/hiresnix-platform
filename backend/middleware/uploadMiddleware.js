@@ -19,9 +19,21 @@ const storage = multer.diskStorage({
   }
 });
 
-// 3. Initialize multer with the storage config and a 5MB size limit
+// 3. File type filter - only allow PDF and Word docs
+const fileFilter = (req, file, cb) => {
+  const allowed = ['.pdf', '.doc', '.docx'];
+  const ext = path.extname(file.originalname).toLowerCase();
+  if (allowed.includes(ext)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Only PDF and Word documents (.pdf, .doc, .docx) are allowed'), false);
+  }
+};
+
+// 4. Initialize multer with storage, file filter and 5MB size limit
 const upload = multer({ 
   storage,
+  fileFilter,
   limits: {
     fileSize: 5 * 1024 * 1024, // 5MB
   }
