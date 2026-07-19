@@ -1,7 +1,20 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
+const rateLimit = require('express-rate-limit');
 
 const r = express.Router();
+
+// 60 Groq calls per minute per user (generous for Academy doubts)
+const groqLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,
+  keyGenerator: (req) => {
+    return req.headers.authorization || req.ip;
+  },
+  message: { error: 'Too many AI requests, please wait a minute' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 // Soft auth - accepts any valid JWT (student, inst-student, admin, institution)
 const softAuth = (req, res, next) => {
@@ -19,9 +32,16 @@ const softAuth = (req, res, next) => {
 
 // All Groq calls proxied through backend
 // GROQ_API_KEY is stored ONLY in backend .env - never exposed to frontend
-r.post('/chat', softAuth, async (req, res) => {
+r.post('/chat', softAuth, groqLimiter, async (req, res) => {
   try {
     const { messages, model, temperature, max_tokens, system } = req.body;
+    // Sanitize system prompt - remove jailbreak attempts
+    const cleanSystem = system
+      ? system.slice(0, 2000) // max 2000 chars
+          .replace(/ignore (all |previous |above |prior )?instructions?/gi, '')
+          .replace(/you are now|pretend to be|act as if|forget your/gi, '')
+          .replace(/DAN|jailbreak|JAILBREAK|bypass/g, '')
+      : null;
     if (!messages || !Array.isArray(messages)) {
       return res.status(400).json({ error: 'messages array required' });
     }
@@ -32,8 +52,8 @@ r.post('/chat', softAuth, async (req, res) => {
       model: model || 'llama-3.3-70b-versatile',
       max_tokens: Math.min(max_tokens || 1000, 2000), // cap at 2000
       temperature: temperature || 0.7,
-      messages: system
-        ? [{ role: 'system', content: system }, ...messages]
+      messages: cleanSystem
+        ? [{ role: 'system', content: cleanSystem }, ...messages]
         : messages,
     };
 
