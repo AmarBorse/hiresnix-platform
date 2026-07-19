@@ -23,12 +23,17 @@ function setLockedDoc(key: string, data: any, pdfBlob?: Blob) {
   const all = getLockedDocs();
   all[key] = { ...data, lockedAt: new Date().toISOString() };
   localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
-  // Store blob as base64
+  // Store blob as base64 - silently ignore if localStorage is full
   if (pdfBlob) {
     const reader = new FileReader();
     reader.onload = () => {
-      const b64 = (reader.result as string).split(',')[1];
-      localStorage.setItem(`${STORAGE_KEY}_blob_${key}`, b64);
+      try {
+        const b64 = (reader.result as string).split(',')[1];
+        localStorage.setItem(`${STORAGE_KEY}_blob_${key}`, b64);
+      } catch (e) {
+        // localStorage full - blob not stored, re-generate on demand
+        console.warn('PDF blob too large for localStorage, will re-generate on download');
+      }
     };
     reader.readAsDataURL(pdfBlob);
   }
@@ -150,30 +155,92 @@ export function AdminDocuments() {
     } finally { setLoading(false); }
   };
 
-  const reDownload = (lkey: string, filename: string) => {
+  const reDownload = async (lkey: string, filename: string) => {
     const b64 = getStoredBlob(lkey);
-    if (!b64) { setError('Stored PDF not found. Unlock and re-generate.'); return; }
-    const byteArr = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
-    const blob = new Blob([byteArr], { type: 'application/pdf' });
-    const url = URL.createObjectURL(blob);
-    window.open(url, '_blank');
-    const a = document.createElement('a'); a.href = url; a.download = filename; a.click();
-    setTimeout(() => URL.revokeObjectURL(url), 5000);
+    if (b64) {
+      // Blob found in localStorage - use it directly
+      const byteArr = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+      const blob = new Blob([byteArr], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+      const a = document.createElement('a'); a.href = url; a.download = filename; a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+      return;
+    }
+    // Blob not in localStorage (too large) - re-generate from locked data
+    const lockedData = getLockedDocs()[lkey];
+    if (!lockedData) { setError('Document data not found. Unlock and re-generate.'); return; }
+    const type = lkey.split('__')[0];
+    const endpointMap: Record<string, string> = {
+      apt: '/iplatform/generate-appointment',
+      jl:  '/iplatform/generate-joining',
+      ss:  '/iplatform/generate-stipend',
+    };
+    const ep = endpointMap[type];
+    if (!ep) return;
+    setLoading(true);
+    try {
+      const res = await client.post(ep, lockedData, { responseType: 'blob' });
+      const blob = new Blob([res.data], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+      const a = document.createElement('a'); a.href = url; a.download = filename; a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+    } catch (e: any) {
+      setError('Re-generate failed: ' + (e?.response?.data?.message || e.message));
+    } finally { setLoading(false); }
   };
 
-  const downloadAllZip = (candidateName: string) => {
+  const downloadAllZip = async (candidateName: string) => {
+    const locked = getLockedDocs();
     const aptK = lockKey('apt', candidateName, apt.startDate);
     const jlK  = lockKey('jl',  candidateName, jl.joiningDate);
     const ssK  = lockKey('ss',  candidateName, `${ss.month}_${ss.year}`);
-    const files: { name: string; b64: string }[] = [];
-    const ab = getStoredBlob(aptK); if (ab) files.push({ name: `Appointment_Letter_${candidateName}.pdf`, b64: ab });
-    const jb = getStoredBlob(jlK);  if (jb) files.push({ name: `Joining_Letter_${candidateName}.pdf`, b64: jb });
-    const sb = getStoredBlob(ssK);  if (sb) files.push({ name: `Stipend_Slip_${candidateName}.pdf`, b64: sb });
-    if (!files.length) { setError('No generated documents found.'); return; }
-    const zipBlob = buildZip(files);
-    const url = URL.createObjectURL(zipBlob);
-    const a = document.createElement('a'); a.href = url; a.download = `Hiresnix_Documents_${candidateName}.html`; a.click();
-    setTimeout(() => URL.revokeObjectURL(url), 3000);
+    const endpointMap: Record<string, string> = {
+      apt: '/iplatform/generate-appointment',
+      jl:  '/iplatform/generate-joining',
+      ss:  '/iplatform/generate-stipend',
+    };
+    const nameMap: Record<string, string> = {
+      apt: `Appointment_Letter_${candidateName}.pdf`,
+      jl:  `Joining_Letter_${candidateName}.pdf`,
+      ss:  `Stipend_Slip_${candidateName}.pdf`,
+    };
+    const lockedKeys = [
+      { key: aptK, type: 'apt' },
+      { key: jlK,  type: 'jl'  },
+      { key: ssK,  type: 'ss'  },
+    ].filter(x => !!locked[x.key]);
+
+    if (!lockedKeys.length) { setError('No generated documents found.'); return; }
+
+    setLoading(true);
+    try {
+      const files: { name: string; b64: string }[] = [];
+      for (const { key, type } of lockedKeys) {
+        const b64 = getStoredBlob(key);
+        if (b64) {
+          files.push({ name: nameMap[type], b64 });
+        } else {
+          // Re-generate from locked data
+          const data = locked[key];
+          const res = await client.post(endpointMap[type], data, { responseType: 'blob' });
+          const blob = new Blob([res.data], { type: 'application/pdf' });
+          const b64new = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve((reader.result as string).split(',')[1]);
+            reader.readAsDataURL(blob);
+          });
+          files.push({ name: nameMap[type], b64: b64new });
+        }
+      }
+      const zipBlob = buildZip(files);
+      const url = URL.createObjectURL(zipBlob);
+      const a = document.createElement('a'); a.href = url; a.download = `Hiresnix_Documents_${candidateName}.html`; a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 3000);
+    } catch (e: any) {
+      setError('Download failed: ' + (e?.response?.data?.message || e.message));
+    } finally { setLoading(false); }
   };
 
   const aptKey = apt.candidateName ? lockKey('apt', apt.candidateName, apt.startDate) : '';
@@ -191,7 +258,7 @@ export function AdminDocuments() {
     const doc = lockedDocs[lkey];
     if (!doc) return null;
     const lockedAt = doc.lockedAt ? new Date(doc.lockedAt).toLocaleString('en-IN') : '';
-    const hasBlob = !!getStoredBlob(lkey);
+    const hasBlob = true; // Always show download - will re-generate if blob not cached
     return (
       <div style={{ background:'rgba(30,64,175,0.08)', border:'1px solid rgba(30,64,175,0.2)', borderRadius:12, padding:'14px 16px', marginBottom:10 }}>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12 }}>
