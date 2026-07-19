@@ -1971,7 +1971,7 @@ const generateJoiningLetter = asyncHandler(async (req, res) => {
 
   // Signatures - pin to safe Y to prevent NaN from overflow
   const H_JL = doc.page.height;
-  const rawSigY = doc.y + 25;
+  const rawSigY = doc.y + 55;
   const sigY = isNaN(rawSigY) || rawSigY > H_JL - 180 ? H_JL - 180 : rawSigY;
   // Left: CEO
   signatureLine(doc, 'Mr. A S Borse', 'Founder & CEO - Hiresnix', MARGIN, sigY, getSignaturePath('ceo.png'), 1.4);
