@@ -1973,16 +1973,31 @@ const generateJoiningLetter = asyncHandler(async (req, res) => {
   const H_JL = doc.page.height;
   const rawSigY = doc.y + 55;
   const sigY = isNaN(rawSigY) || rawSigY > H_JL - 180 ? H_JL - 180 : rawSigY;
-  // Left: CEO
-  signatureLine(doc, 'Mr. A S Borse', 'Founder & CEO - Hiresnix', MARGIN, sigY, getSignaturePath('ceo.png'), 1.4);
-  doc.fillColor('#9ca3af').fontSize(7.5).font('Helvetica')
-     .text('For SR PATIL INFRASTRUCTURE PRIVATE LIMITED', MARGIN, sigY + 35, { width: 220 });
-  // Right: Candidate sig + date separately
+  // Left: Authorized signatory box
+  const boxW = 220;
+  const boxH = 90;
+  doc.rect(MARGIN, sigY - 10, boxW, boxH).strokeColor('#334155').lineWidth(0.5).stroke();
+  // Try signature image, fallback to empty space
+  try {
+    const sigPath = getSignaturePath('ceo.png');
+    if (require('fs').existsSync(sigPath)) {
+      doc.image(sigPath, MARGIN + 8, sigY - 5, { fit: [90, 35] });
+    }
+  } catch(e) {}
+  doc.moveTo(MARGIN + 8, sigY + 32).lineTo(MARGIN + boxW - 8, sigY + 32).strokeColor('#94a3b8').lineWidth(0.4).stroke();
+  doc.fillColor('#1e293b').fontSize(10).font('Helvetica-Bold').text('Mr. A S Borse', MARGIN + 8, sigY + 36);
+  doc.fillColor('#64748b').fontSize(8.5).font('Helvetica').text('Founder & CEO - Hiresnix', MARGIN + 8, sigY + 49);
+  doc.fillColor('#9ca3af').fontSize(7.5).font('Helvetica').text('For SR PATIL INFRASTRUCTURE PRIVATE LIMITED', MARGIN + 8, sigY + 61, { width: boxW - 16 });
+
+  // Right: Candidate sig + date boxes
   const candX = W / 2 + 20;
-  doc.moveTo(candX, sigY).lineTo(candX + 180, sigY).strokeColor('#334155').lineWidth(0.6).stroke();
-  doc.fillColor('#64748b').fontSize(9).font('Helvetica').text('Candidate Signature', candX, sigY + 5, { width: 180 });
-  doc.moveTo(candX, sigY + 45).lineTo(candX + 180, sigY + 45).strokeColor('#334155').lineWidth(0.6).stroke();
-  doc.fillColor('#64748b').fontSize(9).font('Helvetica').text('Date', candX, sigY + 50, { width: 180 });
+  const candBoxW = 220;
+  // Signature box
+  doc.rect(candX, sigY - 10, candBoxW, 42).strokeColor('#334155').lineWidth(0.5).stroke();
+  doc.fillColor('#64748b').fontSize(8.5).font('Helvetica').text('Candidate Signature', candX + 8, sigY + 20);
+  // Date box
+  doc.rect(candX, sigY + 38, candBoxW, 42).strokeColor('#334155').lineWidth(0.5).stroke();
+  doc.fillColor('#64748b').fontSize(8.5).font('Helvetica').text('Date', candX + 8, sigY + 57);
 
   pdfFooter(doc);
   doc.end();
