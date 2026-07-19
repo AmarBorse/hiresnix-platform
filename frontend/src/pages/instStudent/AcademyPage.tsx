@@ -1248,17 +1248,16 @@ function LessonPage({ course, onBack }: { course:any; onBack:()=>void }) {
     {q:`How does ${lessonName} help developers?`, opts:[`Makes code harder to read`,`Only works with paid tools`,`Increases development time significantly`,`Makes code more organized and efficient`], ans:3, exp:`${lessonName} helps by making code more organized and efficient.`},
     {q:`What should you know before learning ${lessonName}?`, opts:[`Advanced machine learning`,`Basic ${courseName} fundamentals`,`Hardware assembly`,`Network protocols only`], ans:1, exp:`Basic ${courseName} fundamentals are needed before ${lessonName}.`},
     {q:`${lessonName} is related to which concept?`, opts:[`An operating system feature`,`A hardware component`,`A network protocol`,`Core ${courseName} principle`], ans:3, exp:`${lessonName} demonstrates core ${courseName} principles.`},
-    {q:`After learning ${lessonName}, what should you explore next?`, opts:[`Unrelated technologies first`,`Nothing, it is the final topic`,`Advanced ${courseName} topics`,`Only practice old concepts`], ans:2, exp:`After ${lessonName}, advancing to other ${courseName} topics is recommended.`},
   ];
 
   const loadQuiz = useCallback(async()=>{
     setQuizLoading(true); setQuizAll([]); setQuizIdx(0); setSelectedAns(null); setQuizScore(0); setQuizDone(false);
-    const prompt = `Generate exactly 10 MCQ quiz questions about "${lesson}" topic in ${course.title} course.
+    const prompt = `Generate exactly 9 MCQ quiz questions about "${lesson}" topic in ${course.title} course.
 Rules:
 - Return ONLY a valid JSON array, no markdown, no explanation, no text before or after
 - Each question must have exactly 4 options
 - ans is 0-based index (0=A, 1=B, 2=C, 3=D)
-- Mix: 3 easy, 5 medium, 2 hard questions
+- Mix: 3 easy, 4 medium, 2 hard questions
 - Questions should be practical and relevant to ${lesson}
 Format: [{"q":"question","opts":["A","B","C","D"],"ans":0,"exp":"why this answer"}]`;
     try {
@@ -1269,23 +1268,23 @@ Format: [{"q":"question","opts":["A","B","C","D"],"ans":0,"exp":"why this answer
       const parsed = JSON.parse(clean.slice(s, e+1));
       if (!Array.isArray(parsed) || parsed.length === 0) throw new Error('Empty array');
       // If less than 10, pad with fallback questions
-      const questions = parsed.slice(0, 10);
-      if (questions.length < 10) {
+      const questions = parsed.slice(0, 9);
+      if (questions.length < 9) {
         const fallback = getFallbackQuiz(lesson, course.title);
-        const needed = 10 - questions.length;
+        const needed = 9 - questions.length;
         questions.push(...fallback.slice(0, needed));
       }
       setQuizAll(questions);
     } catch {
       // Retry once with simpler prompt
       try {
-        const res2 = await groq(`Create 10 multiple choice questions about ${lesson}. JSON array only: [{"q":"...","opts":["A","B","C","D"],"ans":0,"exp":"..."}]`);
+        const res2 = await groq(`Create 9 multiple choice questions about ${lesson}. JSON array only: [{"q":"...","opts":["A","B","C","D"],"ans":0,"exp":"..."}]`);
         const clean2 = res2.replace(/```json?|```/g,'').trim();
         const s2 = clean2.indexOf('['), e2 = clean2.lastIndexOf(']');
         const parsed2 = JSON.parse(clean2.slice(s2, e2+1));
         if (Array.isArray(parsed2) && parsed2.length > 0) {
-          const q2 = parsed2.slice(0,10);
-          if (q2.length < 10) q2.push(...getFallbackQuiz(lesson, course.title).slice(0, 10 - q2.length));
+          const q2 = parsed2.slice(0,9);
+          if (q2.length < 9) q2.push(...getFallbackQuiz(lesson, course.title).slice(0, 9 - q2.length));
           setQuizAll(q2);
         } else { setQuizAll(getFallbackQuiz(lesson, course.title)); }
       } catch { setQuizAll(getFallbackQuiz(lesson, course.title)); }
