@@ -63,8 +63,8 @@ const register = asyncHandler(async (req, res) => {
 // In-memory login attempt tracker (resets on server restart)
 // Key: email, Value: { count, lockedUntil }
 const loginAttempts = new Map();
-const MAX_ATTEMPTS = 5;
-const LOCK_DURATION = 15 * 60 * 1000; // 15 minutes
+const MAX_ATTEMPTS = 10;
+const LOCK_DURATION = 2 * 60 * 1000; // 15 minutes
 
 // POST /api/auth/login
 const login = asyncHandler(async (req, res) => {
@@ -92,7 +92,7 @@ const login = asyncHandler(async (req, res) => {
       current.count = 0;
       loginAttempts.set(cleanEmail, current);
       res.status(429);
-      throw new Error(`Too many failed attempts. Account locked for 15 minutes.`);
+      throw new Error(`Too many failed attempts. Account locked for 2 minutes.`);
     }
     loginAttempts.set(cleanEmail, current);
     const remaining = MAX_ATTEMPTS - current.count;
