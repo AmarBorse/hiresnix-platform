@@ -324,6 +324,12 @@ export function AdminIPlatform() {
                   <p className="text-xs mt-0.5" style={{color:"#475569"}}>{app.email} · {app.phone}</p>
                   <p className="text-xs" style={{color:"#475569"}}>{app.college} · {app.year}</p>
                   <p className="text-xs font-semibold mt-0.5" style={{color:"#60a5fa"}}>{app.domain?.name}</p>
+                  {app.institutionName && (
+                    <p className="text-[11px] mt-0.5 font-semibold" style={{color:"#f59e0b"}}>🏫 {app.institutionName}</p>
+                  )}
+                  {app.adminNote && app.adminNote.startsWith('Career ID:') && (
+                    <p className="text-[11px] mt-0.5 font-mono" style={{color:"#a78bfa"}}>🪪 {app.adminNote}</p>
+                  )}
                   <p className="text-[11px] mt-0.5" style={{color:"#475569"}}>Applied: {new Date(app.createdAt).toLocaleDateString('en-IN')}</p>
                 </div>
               </div>
