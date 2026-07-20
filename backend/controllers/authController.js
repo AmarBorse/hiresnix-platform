@@ -29,7 +29,19 @@ const register = asyncHandler(async (req, res) => {
 
   const cleanEmail = email.trim().toLowerCase();
   const exists = await User.findOne({ where: sequelize.where(sequelize.fn('LOWER', sequelize.col('email')), cleanEmail) });
-  if (exists) { res.status(400); throw new Error('Email already registered'); }
+  if (exists) {
+    // Check if this is an inst-student linked account — if so, just update it instead of blocking
+    const { InstitutionStudent } = require('../models');
+    const instStudent = await InstitutionStudent.findOne({ where: { email: cleanEmail } });
+    if (instStudent && exists.role === 'student') {
+      // Update the linked account with new password and mark as real student
+      exists.name = name;
+      exists.password = password; // will be hashed by beforeUpdate hook
+      await exists.save();
+      return sendToken(exists, 200, res);
+    }
+    res.status(400); throw new Error('Email already registered');
+  }
 
   let user;
   await sequelize.transaction(async (transaction) => {
