@@ -197,21 +197,43 @@ const changePassword = asyncHandler(async (req, res) => {
     const bcrypt = require('bcryptjs');
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    // Find by real email
+    // Find by real email first
     let linkedUser = await User.findOne({ where: { email: realEmail } });
 
-    // Also check old synthetic email and migrate
+    // Check old synthetic email and migrate to real email
     if (!linkedUser) {
       const syntheticEmail = `${student.careerId.toLowerCase()}@inst.hiresnix.co.in`;
       linkedUser = await User.findOne({ where: { email: syntheticEmail } });
       if (linkedUser) {
+        // Migrate synthetic -> real email AND update password
         await linkedUser.update({ email: realEmail, password: hashedPassword, name: student.name });
-        linkedUser = null; // already updated
+        console.log('Migrated synthetic user to real email:', realEmail);
+        linkedUser = null; // done, no need to update again below
       }
     }
 
+    // Update password if found by real email
     if (linkedUser) {
       await linkedUser.update({ password: hashedPassword });
+      console.log('Password synced for:', realEmail);
+    }
+
+    if (!linkedUser) {
+      // User not found at all — create fresh with real email
+      const { Student } = require('../models');
+      const newUser = await User.create({
+        name: student.name,
+        email: realEmail,
+        password: hashedPassword,
+        role: 'student',
+        isActive: true,
+        isApproved: true,
+      });
+      await Student.findOrCreate({
+        where: { userId: newUser.id },
+        defaults: { userId: newUser.id, isProfileComplete: false },
+      });
+      console.log('Created new linked user for:', realEmail);
     }
   } catch (err) {
     console.error('Linked user sync failed:', err.message);
