@@ -32,7 +32,6 @@ export function AuthPage() {
   const [loginForm, setLoginForm]         = useState({ email: '', password: '' });
   const [loginErrors, setLoginErrors]     = useState({ email: '', password: '' });
   const [registerForm, setRegisterForm]   = useState({ name: '', email: '', password: '', companyName: '', industry: '', institutionName: '', institutionType: '', careerId: '', institutionId: '' });
-  const [institutions, setInstitutions] = React.useState<any[]>([]);
 
   const [registerErrors, setRegisterErrors] = useState({ name: '', email: '', password: '', companyName: '', institutionName: '' });
 
@@ -88,22 +87,18 @@ export function AuthPage() {
       }
       if (res.token && res.user) {
         setAuth(res.user, res.token);
-        toast.success(`Account created! Welcome, ${res.user.name}!`);
+        toast.success(`🎉 Account created! Welcome, ${res.user.name}!`);
         navigate(roleRedirect[res.user.role] || '/');
+      } else {
+        // Account created but no token returned - redirect to login
+        toast.success('✅ Account created successfully! Please login.');
+        setTab('login');
       }
     } catch (err: any) { toast.error(err.response?.data?.message || err.message || 'Registration failed'); }
     finally { setLoading(false); }
   };
 
-  // Load institutions list for registration (non-blocking)
-  React.useEffect(() => {
-    const controller = new AbortController();
-    fetch(`${(import.meta as any).env.VITE_API_URL}/auth/institutions`, { signal: controller.signal })
-      .then(r => r.json())
-      .then(d => setInstitutions(d.data || []))
-      .catch(() => {});
-    return () => controller.abort();
-  }, []);
+  // institutions loaded on apply page only
 
   // Handle email verification token from URL
   useEffect(() => {
