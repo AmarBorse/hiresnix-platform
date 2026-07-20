@@ -33,8 +33,7 @@ export function AuthPage() {
   const [loginErrors, setLoginErrors]     = useState({ email: '', password: '' });
   const [registerForm, setRegisterForm]   = useState({ name: '', email: '', password: '', companyName: '', industry: '', institutionName: '', institutionType: '', careerId: '', institutionId: '' });
   const [institutions, setInstitutions] = React.useState<any[]>([]);
-  const [careerIdValid, setCareerIdValid] = React.useState<null|boolean>(null);
-  const [isInstStudent, setIsInstStudent] = React.useState(false);
+
   const [registerErrors, setRegisterErrors] = useState({ name: '', email: '', password: '', companyName: '', institutionName: '' });
 
   const roleRedirect: Record<string, string> = {
@@ -388,39 +387,6 @@ export function AuthPage() {
                 ))}
 
                 {/* Company-specific */}
-                {/* Institution Student fields */}
-                {registerRole === 'student' && (
-                  <div style={{ background:'rgba(59,130,246,0.06)', border:'1px solid rgba(59,130,246,0.15)', borderRadius:12, padding:'14px 16px' }}>
-                    <div style={{ color:'#60a5fa', fontSize:12, fontWeight:700, marginBottom:10 }}>
-                      🏫 Institution Student? (Optional)
-                    </div>
-                    <div style={{ marginBottom:10 }}>
-                      <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Select Institution</label>
-                      <select value={registerForm.institutionId}
-                        onChange={e => { setRegisterForm(p => ({ ...p, institutionId: e.target.value })); setIsInstStudent(!!e.target.value); }}
-                        style={{ background:'#1e293b' }}
-                        className="w-full border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-blue-500">
-                        <option value="">-- Not an institution student --</option>
-                        {institutions.map((inst: any) => (
-                          <option key={inst.id} value={inst.id}>{inst.institutionName}</option>
-                        ))}
-                      </select>
-                    </div>
-                    {isInstStudent && (
-                      <div>
-                        <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Career ID</label>
-                        <input type="text"
-                          value={registerForm.careerId}
-                          onChange={e => { setRegisterForm(p => ({ ...p, careerId: e.target.value.toUpperCase() })); setCareerIdValid(null); }}
-                          style={{ background:'#1e293b' }}
-                          className="w-full border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-blue-500"
-                          placeholder="e.g. HX-HIR-2026-0001" />
-                        <p style={{ color:'#64748b', fontSize:11, marginTop:4 }}>Career ID aapki institution ne di hogi</p>
-                      </div>
-                    )}
-                  </div>
-                )}
-
                 {registerRole === 'company' && (
                   <>
                     <div>

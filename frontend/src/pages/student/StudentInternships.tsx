@@ -23,7 +23,9 @@ function IPlatformPanel() {
   const [loading, setLoading]     = useState(true);
   const [applying, setApplying]   = useState(false);
   const [downloading, setDownloading] = useState<string | null>(null);
-  const [form, setForm] = useState({ phone: '', college: '', year: '4th Year', whyJoin: '' });
+  const [form, setForm] = useState({ phone: '', college: '', year: '4th Year', whyJoin: '', careerId: '', institutionId: '' });
+  const [institutions, setInstitutions] = React.useState<any[]>([]);
+  const [isInstStudent, setIsInstStudent] = React.useState(false);
   const [taskForm, setTaskForm] = useState({ title: '', description: '', url: '', week: 1 });
   const [submittingTask, setSubmittingTask] = useState(false);
   const [showTaskForm, setShowTaskForm] = useState(false);
@@ -73,7 +75,14 @@ function IPlatformPanel() {
     finally { setLoading(false); }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { 
+    load(); 
+    // Load institutions list
+    fetch(`${(import.meta as any).env.VITE_API_URL}/auth/institutions`)
+      .then(r => r.json())
+      .then(d => setInstitutions(d.data || []))
+      .catch(() => {});
+  }, []);
 
   const handleApply = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -87,7 +96,7 @@ function IPlatformPanel() {
       if (isInstStudent) {
         await instInternshipClient.post('/iplatform/apply', { domainId: selected.id, ...form });
       } else {
-        await client.post('/iplatform/apply', { domainId: selected.id, ...form }, { headers });
+        await client.post('/iplatform/apply', { domainId: selected.id, ...form, careerId: form.careerId || undefined, institutionId: form.institutionId || undefined }, { headers });
       }
       toast.success('Application submitted! Admin will review soon.');
       load();
@@ -392,6 +401,31 @@ function IPlatformPanel() {
           <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Why do you want to join?</label>
           <textarea required rows={3} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 resize-none"
             placeholder="Tell us about your motivation..." value={form.whyJoin} onChange={e => setForm(p => ({ ...p, whyJoin: e.target.value }))} />
+        </div>
+        {/* Institution Student Section */}
+        <div style={{ background:'#eff6ff', border:'1px solid #bfdbfe', borderRadius:12, padding:'12px 14px' }}>
+          <div style={{ color:'#2563eb', fontSize:12, fontWeight:700, marginBottom:8 }}>🏫 Institution Student? (Optional)</div>
+          <div style={{ marginBottom:8 }}>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Select Institution</label>
+            <select className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500"
+              value={form.institutionId}
+              onChange={e => { setForm(p => ({ ...p, institutionId: e.target.value })); setIsInstStudent(!!e.target.value); }}>
+              <option value="">-- Not an institution student --</option>
+              {institutions.map((inst: any) => (
+                <option key={inst.id} value={inst.id}>{inst.institutionName}</option>
+              ))}
+            </select>
+          </div>
+          {isInstStudent && (
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Career ID</label>
+              <input className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500"
+                placeholder="e.g. HX-HIR-2026-0001"
+                value={form.careerId}
+                onChange={e => setForm(p => ({ ...p, careerId: e.target.value.toUpperCase() }))} />
+              <p style={{ color:'#6b7280', fontSize:11, marginTop:4 }}>Career ID aapki institution ne di hogi</p>
+            </div>
+          )}
         </div>
         <button type="submit" disabled={applying}
           className="w-full flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 disabled:opacity-60 text-white font-bold py-2.5 rounded-xl text-sm transition">
