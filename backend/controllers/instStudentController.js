@@ -71,41 +71,46 @@ const login = asyncHandler(async (req, res) => {
   if (!match) { res.status(401); throw new Error('Invalid Career ID or password'); }
 
   // ── Auto-create or find linked Hiresnix User account ──────────
-  // Always use synthetic email (guaranteed unique per student)
-  const syntheticEmail = `${student.careerId.toLowerCase()}@inst.hiresnix.co.in`;
+  // Always use real email so student can login via /auth after password change
+  const realEmail = student.email;
   let hiresnixUser = null;
   let hiresnixToken = null;
 
   try {
-    // Find by synthetic email (safe, always unique)
-    hiresnixUser = await User.findOne({ where: { email: syntheticEmail } });
+    // 1. Find existing user by real email
+    hiresnixUser = await User.findOne({ where: { email: realEmail } });
 
+    // 2. Also check old synthetic email accounts and migrate them
     if (!hiresnixUser) {
-      // Create new Hiresnix User for this inst student
-      const tempPassword = crypto.randomBytes(16).toString('hex');
+      const syntheticEmail = `${student.careerId.toLowerCase()}@inst.hiresnix.co.in`;
+      const oldSyntheticUser = await User.findOne({ where: { email: syntheticEmail } });
+      if (oldSyntheticUser) {
+        // Migrate synthetic → real email
+        await oldSyntheticUser.update({ email: realEmail, name: student.name });
+        hiresnixUser = oldSyntheticUser;
+      }
+    }
+
+    // 3. Create fresh if still not found
+    if (!hiresnixUser) {
       hiresnixUser = await User.create({
         name: student.name,
-        email: syntheticEmail,
-        password: tempPassword,
+        email: realEmail,
+        password: crypto.randomBytes(16).toString('hex'),
         role: 'student',
         isActive: true,
         isApproved: true,
       });
 
-      // Also create Student profile entry so internship APIs work
       const { Student } = require('../models');
       await Student.findOrCreate({
         where: { userId: hiresnixUser.id },
-        defaults: {
-          userId: hiresnixUser.id,
-          isProfileComplete: false,
-        },
+        defaults: { userId: hiresnixUser.id, isProfileComplete: false },
       });
     }
 
     hiresnixToken = hiresnixUser.getSignedJwtToken();
   } catch (err) {
-    // If user creation fails, still allow inst portal login
     console.error('Hiresnix user link failed:', err.message);
   }
 
@@ -186,24 +191,27 @@ const changePassword = asyncHandler(async (req, res) => {
   // 1. Update inst student password
   await student.update({ password: newPassword });
 
-  // 2. Sync linked Hiresnix User — update to real email + new password
+  // 2. Sync linked Hiresnix User — update password so /auth login works
   try {
-    const syntheticEmail = `${student.careerId.toLowerCase()}@inst.hiresnix.co.in`;
     const realEmail = student.email;
     const bcrypt = require('bcryptjs');
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    // Find by synthetic email first
-    let linkedUser = await User.findOne({ where: { email: syntheticEmail } });
-    if (linkedUser) {
-      // Migrate to real email + update password
-      await linkedUser.update({ email: realEmail, password: hashedPassword, name: student.name });
-    } else {
-      // Try real email
-      linkedUser = await User.findOne({ where: { email: realEmail } });
+    // Find by real email
+    let linkedUser = await User.findOne({ where: { email: realEmail } });
+
+    // Also check old synthetic email and migrate
+    if (!linkedUser) {
+      const syntheticEmail = `${student.careerId.toLowerCase()}@inst.hiresnix.co.in`;
+      linkedUser = await User.findOne({ where: { email: syntheticEmail } });
       if (linkedUser) {
-        await linkedUser.update({ password: hashedPassword });
+        await linkedUser.update({ email: realEmail, password: hashedPassword, name: student.name });
+        linkedUser = null; // already updated
       }
+    }
+
+    if (linkedUser) {
+      await linkedUser.update({ password: hashedPassword });
     }
   } catch (err) {
     console.error('Linked user sync failed:', err.message);
