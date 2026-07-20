@@ -13,7 +13,6 @@ const NAV = [
   { to: '/inst-student/courses',      icon: BookOpen,        label: 'My Courses'      },
   { to: '/inst-student/batches',      icon: Layers,          label: 'My Batch'        },
   { to: '/inst-student/certificates', icon: Award,           label: 'My Certificates' },
-  { to: '/inst-student/internship',   icon: Briefcase,       label: 'Internship 🆕'   },
   { to: '/inst-student/academy',      icon: Sparkles,        label: '🎓 AI Academy',  badge: 'NEW' },
 ];
 
