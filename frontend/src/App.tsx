@@ -41,6 +41,7 @@ const StudentCertificates = lazy(() => import('./pages/student/StudentCertificat
 const StudentProfile      = lazy(() => import('./pages/student/StudentProfile').then(m => ({ default: m.StudentProfile })));
 const StudentMockInterview= lazy(() => import('./pages/student/StudentMockInterview').then(m => ({ default: m.StudentMockInterview })));
 const StudentMockDashboard= lazy(() => import('./pages/student/StudentMockDashboard').then(m => ({ default: m.StudentMockDashboard })));
+const StudentResumeBuilder= lazy(() => import('./pages/student/StudentResumeBuilder').then(m => ({ default: m.StudentResumeBuilder })));
 
 // Academy
 
@@ -165,6 +166,7 @@ export default function App() {
             <Route path="applications"   element={<StudentApplications />} />
             <Route path="resources"      element={<StudentResources />} />
             <Route path="mock-interview" element={<StudentMockInterview />} />
+            <Route path="resume-builder" element={<StudentResumeBuilder />} />
             <Route path="mock-dashboard" element={<StudentMockDashboard />} />
             <Route path="certificates"   element={<StudentCertificates />} />
             <Route path="profile"        element={<StudentProfile />} />

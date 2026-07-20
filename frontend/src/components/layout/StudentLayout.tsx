@@ -14,6 +14,7 @@ const NAV = [
   { to: '/student/applications',  icon: FileText,         label: 'Applications'   },
   { to: '/student/resources',     icon: BookOpen,         label: 'Resources'      },
   { to: '/student/mock-interview', icon: BotMessageSquare, label: 'Mock Interview' },
+  { to: '/student/resume-builder', icon: FileText, label: 'Resume AI 🆕' },
   { to: '/student/mock-dashboard', icon: BarChart2, label: 'Interview Stats' },
   { to: '/student/certificates',  icon: Award,            label: 'Certificates'   },
   { to: '/student/profile',       icon: User,             label: 'Profile'        },
