@@ -32,10 +32,7 @@ const authorize = (...roles) => (req, res, next) => {
     res.status(403);
     throw new Error(`Role '${req.user.role}' is not authorized for this action`);
   }
-  if (req.user.role === 'student' && roles.includes('student') && req.user.emailVerified === false) {
-    res.status(403);
-    throw new Error(STUDENT_UNVERIFIED_MESSAGE);
-  }
+  // Email verification disabled
   next();
 };
 

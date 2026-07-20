@@ -80,11 +80,6 @@ export function AuthPage() {
       if (registerRole === 'institution') { payload.institutionName = registerForm.institutionName; payload.type = registerForm.institutionType; }
       const res = await authApi.register(payload);
       if (res.pendingApproval) { setPendingApproval(true); return; }
-      if ((res as any).emailVerificationSent) {
-        setEmailVerifSent(true);
-        toast.success('Registration successful! Check your email to verify your account.');
-        return;
-      }
       if (res.token && res.user) {
         setAuth(res.user, res.token);
         toast.success(`🎉 Account created! Welcome, ${res.user.name}!`);
@@ -98,7 +93,6 @@ export function AuthPage() {
     finally { setLoading(false); }
   };
 
-  // institutions loaded on apply page only
 
   // Handle email verification token from URL
   useEffect(() => {
@@ -169,52 +163,6 @@ export function AuthPage() {
   );
 
   // Pending approval screen for institution
-  // Email verification sent screen
-  if (emailVerifSent) return (
-    <div className="min-h-screen flex items-center justify-center px-4" style={{ background: 'linear-gradient(135deg,#060910,#0f172a,#060910)' }}>
-      <div className="w-full max-w-md text-center space-y-6">
-        <img src="/hiresnix-logo.png" alt="Hiresnix" style={{ height: 80, objectFit: 'contain', margin: '0 auto', filter: 'drop-shadow(0 0 20px rgba(99,102,241,0.5))' }} />
-        <div style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(24px)', borderRadius: 20, border: '1px solid rgba(255,255,255,0.09)', padding: '2.5rem', boxShadow: '0 25px 60px rgba(0,0,0,0.5)' }}>
-          <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-            <span style={{fontSize:32}}>📧</span>
-          </div>
-          <h2 className="text-white font-bold text-xl mb-2">Check Your Email!</h2>
-          <p className="text-gray-400 text-sm mb-4">We've sent a verification link to your email address. Please click the link to verify your account before logging in.</p>
-          <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-4 mb-5">
-            <p className="text-green-300 text-xs">✅ Registration successful<br />📧 Verification email sent<br />🔗 Click the link in email to verify</p>
-          </div>
-          <button onClick={() => { setEmailVerifSent(false); setTab('login'); }}
-            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl text-sm transition">
-            Go to Login
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-
-  // Email verification result screen
-  if (verifyMsg) return (
-    <div className="min-h-screen flex items-center justify-center px-4" style={{ background: 'linear-gradient(135deg,#060910,#0f172a,#060910)' }}>
-      <div className="w-full max-w-md text-center space-y-6">
-        <img src="/hiresnix-logo.png" alt="Hiresnix" style={{ height: 80, objectFit: 'contain', margin: '0 auto' }} />
-        <div style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(24px)', borderRadius: 20, border: '1px solid rgba(255,255,255,0.09)', padding: '2.5rem' }}>
-          <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
-            style={{ background: verifyingEmail ? 'rgba(99,102,241,0.2)' : verifyMsg.includes('fail') || verifyMsg.includes('expired') ? 'rgba(239,68,68,0.2)' : 'rgba(34,197,94,0.2)' }}>
-            <span style={{fontSize:32}}>{verifyingEmail ? '⏳' : verifyMsg.includes('fail') || verifyMsg.includes('expired') ? '❌' : '✅'}</span>
-          </div>
-          <h2 className="text-white font-bold text-xl mb-2">{verifyingEmail ? 'Verifying...' : 'Email Verification'}</h2>
-          <p className="text-gray-400 text-sm mb-5">{verifyMsg}</p>
-          {!verifyingEmail && (
-            <button onClick={() => { setVerifyMsg(''); setTab('login'); }}
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl text-sm transition">
-              Go to Login
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-
   if (pendingApproval) return (
     <div className="min-h-screen flex items-center justify-center px-4" style={{ background: 'linear-gradient(135deg,#060910,#0f172a,#060910)' }}>
       <div className="w-full max-w-md text-center space-y-6">

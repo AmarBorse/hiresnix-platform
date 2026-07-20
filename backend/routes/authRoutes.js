@@ -6,8 +6,6 @@ const {
   login,
   getMe,
   updatePassword,
-  verifyEmail,
-  resendVerification,
   clearLockout,
   clearAllLockouts,
 } = require('../controllers/authController');
@@ -38,8 +36,6 @@ r.get('/institutions', async (req, res) => {
   }
 });
 
-r.get('/verify-email', verifyEmail);
-r.post('/resend-verification', resendVerification);
 r.post('/clear-lockout', protect, authorize('admin'), clearLockout);
 r.post('/clear-all-lockouts', protect, authorize('admin'), clearAllLockouts);
 module.exports = r;
