@@ -39,38 +39,6 @@ r.get('/institutions/:id/students', ...admin, async (req, res) => {
   res.json({ success: true, data: students });
 });
 
-// Manual student account creation (for fixing access issues)
-r.post('/create-student-account', ...admin, async (req, res) => {
-  try {
-    const { User, Student } = require('../models');
-    const bcrypt = require('bcryptjs');
-    const { name, email, password } = req.body;
-    if (!name || !email || !password) {
-      return res.status(400).json({ success: false, message: 'name, email, password required' });
-    }
-    let user = await User.findOne({ where: { email: email.trim().toLowerCase() } });
-    if (user) {
-      // Update password only
-      const hashed = await bcrypt.hash(password, 10);
-      await user.update({ password: hashed, isActive: true, isApproved: true, emailVerified: true });
-      return res.json({ success: true, message: 'Account updated', userId: user.id });
-    }
-    const hashed = await bcrypt.hash(password, 10);
-    user = await User.create({
-      name, email: email.trim().toLowerCase(),
-      password: hashed, role: 'student',
-      isActive: true, isApproved: true, emailVerified: true,
-    });
-    await Student.findOrCreate({
-      where: { userId: user.id },
-      defaults: { userId: user.id, isProfileComplete: false },
-    });
-    res.json({ success: true, message: 'Account created', userId: user.id });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-});
-
 // Enquiries
 r.get('/enquiries',              ...admin, getAllEnquiries);
 r.put('/enquiries/:id/read',     ...admin, markAsRead);

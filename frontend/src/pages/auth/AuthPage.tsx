@@ -23,16 +23,12 @@ export function AuthPage() {
   const [loading, setLoading]   = useState(false);
   const [showPass, setShowPass] = useState(false);
   const [registerRole, setRegisterRole] = useState<RegisterRole>('student');
-  const [emailVerifSent, setEmailVerifSent] = useState(false);
-  const [verifyingEmail, setVerifyingEmail] = useState(false);
-  const [verifyMsg, setVerifyMsg] = useState('');
   const [showForgot, setShowForgot]     = useState(false);
   const [pendingApproval, setPendingApproval] = useState(false);
 
   const [loginForm, setLoginForm]         = useState({ email: '', password: '' });
   const [loginErrors, setLoginErrors]     = useState({ email: '', password: '' });
-  const [registerForm, setRegisterForm]   = useState({ name: '', email: '', password: '', companyName: '', industry: '', institutionName: '', institutionType: '', careerId: '', institutionId: '' });
-
+  const [registerForm, setRegisterForm]   = useState({ name: '', email: '', password: '', companyName: '', industry: '', institutionName: '', institutionType: '' });
   const [registerErrors, setRegisterErrors] = useState({ name: '', email: '', password: '', companyName: '', institutionName: '' });
 
   const roleRedirect: Record<string, string> = {
@@ -75,44 +71,19 @@ export function AuthPage() {
     if (hasError) return;
     setLoading(true);
     try {
-      const payload: any = { name: registerForm.name, email: cleanEmail, password: registerForm.password, role: registerRole, careerId: registerForm.careerId || undefined, institutionId: registerForm.institutionId || undefined };
+      const payload: any = { name: registerForm.name, email: cleanEmail, password: registerForm.password, role: registerRole };
       if (registerRole === 'company') { payload.companyName = registerForm.companyName; payload.industry = registerForm.industry; }
       if (registerRole === 'institution') { payload.institutionName = registerForm.institutionName; payload.type = registerForm.institutionType; }
       const res = await authApi.register(payload);
       if (res.pendingApproval) { setPendingApproval(true); return; }
       if (res.token && res.user) {
         setAuth(res.user, res.token);
-        toast.success(`🎉 Account created! Welcome, ${res.user.name}!`);
+        toast.success(`Account created! Welcome, ${res.user.name}!`);
         navigate(roleRedirect[res.user.role] || '/');
-      } else {
-        // Account created but no token returned - redirect to login
-        toast.success('✅ Account created successfully! Please login.');
-        setTab('login');
       }
     } catch (err: any) { toast.error(err.response?.data?.message || err.message || 'Registration failed'); }
     finally { setLoading(false); }
   };
-
-
-  // Handle email verification token from URL
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const token = params.get('studentEmailVerificationToken');
-    if (token) {
-      setVerifyingEmail(true);
-      fetch(`${(import.meta as any).env.VITE_API_URL}/auth/verify-email?token=${token}`)
-          .then(r => r.json())
-          .then(data => {
-            setVerifyMsg(data.message || 'Email verified!');
-            setVerifyingEmail(false);
-            window.history.replaceState({}, '', '/auth');
-          })
-          .catch(() => {
-            setVerifyMsg('Verification failed. Link may be expired.');
-            setVerifyingEmail(false);
-          });
-    }
-  }, []);
 
   // Forgot password screen
   const [forgotEmail, setForgotEmail]     = useState('');

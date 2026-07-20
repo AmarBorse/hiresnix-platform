@@ -71,47 +71,41 @@ const login = asyncHandler(async (req, res) => {
   if (!match) { res.status(401); throw new Error('Invalid Career ID or password'); }
 
   // ── Auto-create or find linked Hiresnix User account ──────────
-  // Use actual student email so they can login to internship portal with Gmail
+  // Email format: careerId@inst.hiresnix.co.in (unique, internal)
   const syntheticEmail = `${student.careerId.toLowerCase()}@inst.hiresnix.co.in`;
-  const actualEmail = student.email; // real Gmail
   let hiresnixUser = null;
   let hiresnixToken = null;
 
   try {
-    // Find by actual email first, then synthetic email (for old accounts)
-    hiresnixUser = await User.findOne({ where: { email: actualEmail } })
-      || await User.findOne({ where: { email: syntheticEmail } });
+    // Try to find existing linked user
+    hiresnixUser = await User.findOne({ where: { email: syntheticEmail } });
 
     if (!hiresnixUser) {
-      // Create new Hiresnix User with actual email so student can login with Gmail
+      // Create new Hiresnix User for this inst student
+      const tempPassword = crypto.randomBytes(16).toString('hex'); // random internal password
       hiresnixUser = await User.create({
         name: student.name,
-        email: actualEmail, // use real Gmail
-        password: req.body.password, // same password as inst portal
+        email: syntheticEmail,
+        password: tempPassword,
         role: 'student',
         isActive: true,
         isApproved: true,
-        emailVerified: true,
       });
 
+      // Also create Student profile entry so internship APIs work
       const { Student } = require('../models');
       await Student.findOrCreate({
         where: { userId: hiresnixUser.id },
-        defaults: { userId: hiresnixUser.id, isProfileComplete: false },
+        defaults: {
+          userId: hiresnixUser.id,
+          isProfileComplete: false,
+        },
       });
-    } else {
-      // Update existing user - sync email to actual if still synthetic
-      if (hiresnixUser.email === syntheticEmail && actualEmail) {
-        await hiresnixUser.update({ email: actualEmail });
-      }
-      // Sync password so Gmail login works
-      const bcrypt = require('bcryptjs');
-      const hashed = await bcrypt.hash(req.body.password, 10);
-      await hiresnixUser.update({ password: hashed });
     }
 
     hiresnixToken = hiresnixUser.getSignedJwtToken();
   } catch (err) {
+    // If user creation fails, still allow inst portal login
     console.error('Hiresnix user link failed:', err.message);
   }
 
@@ -128,7 +122,7 @@ const login = asyncHandler(async (req, res) => {
       id: student.id,
       careerId: student.careerId,
       name: student.name,
-      email: student.email,  // actual Gmail/email, not synthetic
+      email: student.email,
       institutionId: student.institutionId,
       institutionName: student.institution?.institutionName,
     },
@@ -189,47 +183,6 @@ const changePassword = asyncHandler(async (req, res) => {
   const match = await student.matchPassword(currentPassword);
   if (!match) { res.status(401); throw new Error('Current password is incorrect'); }
   await student.update({ password: newPassword });
-
-  // Create or update Hiresnix account with actual email + new password
-  try {
-    const bcrypt = require('bcryptjs');
-    const { Student } = require('../models');
-    const actualEmail = student.email;
-    const syntheticEmail = `${student.careerId.toLowerCase()}@inst.hiresnix.co.in`;
-    const hashed = await bcrypt.hash(newPassword, 10);
-
-    // Find by actual email or synthetic email
-    let hiresnixUser = await User.findOne({ where: { email: actualEmail } })
-      || await User.findOne({ where: { email: syntheticEmail } });
-
-    if (!hiresnixUser) {
-      // Create new account with actual email
-      hiresnixUser = await User.create({
-        name: student.name,
-        email: actualEmail,
-        password: hashed,
-        role: 'student',
-        isActive: true,
-        isApproved: true,
-        emailVerified: true,
-      });
-      await Student.findOrCreate({
-        where: { userId: hiresnixUser.id },
-        defaults: { userId: hiresnixUser.id, isProfileComplete: false },
-      });
-      console.log(`Created Hiresnix account for ${actualEmail}`);
-    } else {
-      // Update existing - sync email to actual + new password
-      await hiresnixUser.update({
-        email: actualEmail,
-        password: hashed,
-      });
-      console.log(`Updated Hiresnix account for ${actualEmail}`);
-    }
-  } catch (err) {
-    console.error('Hiresnix account sync failed:', err.message);
-  }
-
   res.json({ success: true, message: 'Password updated successfully' });
 });
 

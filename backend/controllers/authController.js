@@ -49,6 +49,7 @@ const register = asyncHandler(async (req, res) => {
   });
 
   if (role === 'institution') {
+    // Return success but NOT a token — they must wait for approval
     return res.status(201).json({
       success: true,
       message: 'Registration submitted. Your account is pending admin approval. You will be notified once approved.',
@@ -56,7 +57,6 @@ const register = asyncHandler(async (req, res) => {
     });
   }
 
-  // Student email verification
   sendToken(user, 201, res);
 });
 
@@ -134,19 +134,4 @@ const updatePassword = asyncHandler(async (req, res) => {
   sendToken(user, 200, res);
 });
 
-
-// Admin: clear lockout for specific email
-const clearLockout = asyncHandler(async (req, res) => {
-  const { email } = req.body;
-  if (!email) { res.status(400); throw new Error('Email required'); }
-  loginAttempts.delete(email.trim().toLowerCase());
-  res.json({ success: true, message: `Lockout cleared for ${email}` });
-});
-
-// Admin: clear ALL lockouts
-const clearAllLockouts = asyncHandler(async (req, res) => {
-  loginAttempts.clear();
-  res.json({ success: true, message: 'All lockouts cleared' });
-});
-
-module.exports = { register, login, getMe, updatePassword, clearLockout, clearAllLockouts };
+module.exports = { register, login, getMe, updatePassword };
