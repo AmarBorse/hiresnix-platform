@@ -1,7 +1,7 @@
 // src/pages/student/StudentResumeBuilder.tsx
 import { useState, useRef, useCallback } from 'react';
 import { Upload, FileText, Zap, Download, RefreshCw, CheckCircle, AlertCircle, XCircle, ChevronDown, ChevronUp, Sparkles, Target, Brain } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 
 // ── ATS Keywords Database ─────────────────────────────────────────
 const ATS_KEYWORDS: Record<string, string[]> = {
@@ -183,7 +183,7 @@ export function StudentResumeBuilder() {
     if (!resumeText.trim()) { toast.error('Please upload your resume first'); return; }
     setAnalyzing(true);
     try {
-      const apiKey = import.meta.env.VITE_GROQ_API_KEY;
+      const apiKey = (import.meta as any).env?.VITE_GROQ_API_KEY;
       if (!apiKey) throw new Error('No API key');
 
       const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
