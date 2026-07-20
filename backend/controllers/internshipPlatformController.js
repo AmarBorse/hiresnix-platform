@@ -47,7 +47,7 @@ const deleteDomain = asyncHandler(async (req, res) => {
 // ────────────────────────────────────────────────────────────────────
 
 const applyInternship = asyncHandler(async (req, res) => {
-  const { domainId, phone, college, year, whyJoin, institutionName: bodyInstitutionName, careerId: bodyCareerID } = req.body;
+  const { domainId, phone, college, year, whyJoin } = req.body;
 
   const user = await User.findByPk(req.user.id);
   if (!user) { res.status(404); throw new Error('User not found'); }
@@ -65,12 +65,11 @@ const applyInternship = asyncHandler(async (req, res) => {
     res.status(400); throw new Error('No seats available in this domain');
   }
 
-  // Check if this is an institution student (via x-inst-student-id header OR body fields)
+  // Check if this is an institution student (via x-inst-student-id header)
   const instStudentId   = req.headers['x-inst-student-id'] || null;
   const institutionId   = req.headers['x-institution-id'] || null;
-  const institutionName = req.headers['x-institution-name'] || bodyInstitutionName || null;
-  const careerId        = bodyCareerID || null;
-  const source = (instStudentId || institutionName) ? 'institution' : 'hiresnix';
+  const institutionName = req.headers['x-institution-name'] || null;
+  const source = instStudentId ? 'institution' : 'hiresnix';
 
   const application = await InternshipApplication.create({
     userId: req.user.id,
@@ -83,8 +82,6 @@ const applyInternship = asyncHandler(async (req, res) => {
     instStudentId: instStudentId ? parseInt(instStudentId) : null,
     institutionId: institutionId ? parseInt(institutionId) : null,
     institutionName: institutionName || null,
-    // careerId stored in adminNote for now (no separate column yet)
-    adminNote: careerId ? `Career ID: ${careerId}` : null,
   });
 
   res.status(201).json({ success: true, data: application, message: 'Application submitted! Admin will review soon.' });
