@@ -71,21 +71,29 @@ const login = asyncHandler(async (req, res) => {
   if (!match) { res.status(401); throw new Error('Invalid Career ID or password'); }
 
   // ── Auto-create or find linked Hiresnix User account ──────────
-  // Email format: careerId@inst.hiresnix.co.in (unique, internal)
+  // Use real email if available, else fallback to synthetic
+  const realEmail = student.email;
   const syntheticEmail = `${student.careerId.toLowerCase()}@inst.hiresnix.co.in`;
   let hiresnixUser = null;
   let hiresnixToken = null;
 
   try {
-    // Try to find existing linked user
-    hiresnixUser = await User.findOne({ where: { email: syntheticEmail } });
+    // Try real email first, then synthetic (for existing accounts)
+    hiresnixUser = await User.findOne({ where: { email: realEmail } });
+    if (!hiresnixUser) {
+      hiresnixUser = await User.findOne({ where: { email: syntheticEmail } });
+      // If found with synthetic email, update to real email
+      if (hiresnixUser) {
+        await hiresnixUser.update({ email: realEmail });
+      }
+    }
 
     if (!hiresnixUser) {
-      // Create new Hiresnix User for this inst student
-      const tempPassword = crypto.randomBytes(16).toString('hex'); // random internal password
+      // Create new Hiresnix User with real email
+      const tempPassword = crypto.randomBytes(16).toString('hex');
       hiresnixUser = await User.create({
         name: student.name,
-        email: syntheticEmail,
+        email: realEmail,
         password: tempPassword,
         role: 'student',
         isActive: true,
