@@ -33,10 +33,9 @@ function IPlatformPanel() {
     const token = localStorage.getItem('hirenix_token') || localStorage.getItem('hx_student_token');
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
     try {
-      const [d, a, p, instApp] = await Promise.all([
+      const [d, a, instApp] = await Promise.all([
         client.get('/iplatform/domains', { headers }).then(r => r.data),
         client.get('/iplatform/my-application', { headers }).then(r => r.data).catch(() => ({ data: null })),
-        client.get('/iplatform/my-progress', { headers }).then(r => r.data).catch(() => ({ data: null })),
         client.get('/iplatform/institution-student-app', { headers }).then(r => r.data).catch(() => ({ data: null })),
       ]);
       setDomains(d.data || []);
@@ -68,7 +67,7 @@ function IPlatformPanel() {
           enrollment: enrollmentData,
         });
       }
-      setResources(p.data?.resources || []);
+      setResources([]);
     } catch {}
     finally { setLoading(false); }
   };
