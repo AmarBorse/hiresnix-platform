@@ -371,7 +371,7 @@ export function AdminDocuments() {
                   <User size={14} style={{ color:'#60a5fa' }}/>
                   <div>
                     <div style={{ color:'#fff', fontSize:13, fontWeight:600 }}>{s.studentName}</div>
-                    <div style={{ color:'#64748b', fontSize:11 }}>{s.domain?.name} • {s.startDate?.split('T')[0]} {s.stipend ? `• ₹${s.stipend}/mo` : ''}</div>
+                    <div style={{ color:'#64748b', fontSize:11 }}>{s.domain?.name} • {s.startDate?.split('T')[0]} {s.stipend ? `• RS. ${s.stipend}/mo` : ''}</div>
                   </div>
                 </div>
               ))}
@@ -436,8 +436,8 @@ export function AdminDocuments() {
                 <div><label className={labelCls}>Start Date *</label><input className={aptLocked?lockedInputCls:inputCls} type="date" disabled={aptLocked} value={apt.startDate} onChange={e=>setApt(p=>({...p,startDate:e.target.value}))}/></div>
                 {apt.employmentType==='internship'
                   ? <div><label className={labelCls}>End Date</label><input className={aptLocked?lockedInputCls:inputCls} type="date" disabled={aptLocked} value={apt.endDate} onChange={e=>setApt(p=>({...p,endDate:e.target.value}))}/></div>
-                  : <div><label className={labelCls}>Annual CTC (₹)</label><input className={aptLocked?lockedInputCls:inputCls} disabled={aptLocked} value={apt.ctc} onChange={e=>setApt(p=>({...p,ctc:e.target.value}))}/></div>}
-                {apt.employmentType==='internship' && <div><label className={labelCls}>Monthly Stipend (₹)</label><input className={aptLocked?lockedInputCls:inputCls} disabled={aptLocked} value={apt.stipend} onChange={e=>setApt(p=>({...p,stipend:e.target.value}))}/></div>}
+                  : <div><label className={labelCls}>Annual CTC (RS. )</label><input className={aptLocked?lockedInputCls:inputCls} disabled={aptLocked} value={apt.ctc} onChange={e=>setApt(p=>({...p,ctc:e.target.value}))}/></div>}
+                {apt.employmentType==='internship' && <div><label className={labelCls}>Monthly Stipend (RS. )</label><input className={aptLocked?lockedInputCls:inputCls} disabled={aptLocked} value={apt.stipend} onChange={e=>setApt(p=>({...p,stipend:e.target.value}))}/></div>}
                 <div><label className={labelCls}>Location</label><input className={aptLocked?lockedInputCls:inputCls} disabled={aptLocked} value={apt.location} onChange={e=>setApt(p=>({...p,location:e.target.value}))}/></div>
                 <div><label className={labelCls}>Reporting Manager</label><input className={aptLocked?lockedInputCls:inputCls} disabled={aptLocked} value={apt.reportingManager} onChange={e=>setApt(p=>({...p,reportingManager:e.target.value}))}/></div>
                 <div><label className={labelCls}>Working Hours</label><input className={aptLocked?lockedInputCls:inputCls} disabled={aptLocked} value={apt.workingHours} onChange={e=>setApt(p=>({...p,workingHours:e.target.value}))}/></div>
@@ -465,7 +465,7 @@ export function AdminDocuments() {
                     <option value="internship">Internship</option><option value="fulltime">Full-Time</option>
                   </select></div>
                 <div><label className={labelCls}>Date of Joining *</label><input className={jlLocked?lockedInputCls:inputCls} type="date" disabled={jlLocked} value={jl.joiningDate} onChange={e=>setJl(p=>({...p,joiningDate:e.target.value}))}/></div>
-                <div><label className={labelCls}>{jl.employmentType==='internship'?'Monthly Stipend (₹)':'Annual CTC (₹)'}</label>
+                <div><label className={labelCls}>{jl.employmentType==='internship'?'Monthly Stipend (RS. )':'Annual CTC (RS. )'}</label>
                   <input className={jlLocked?lockedInputCls:inputCls} disabled={jlLocked}
                     value={jl.employmentType==='internship'?jl.stipend:jl.ctc}
                     onChange={e=>setJl(p=>jl.employmentType==='internship'?{...p,stipend:e.target.value}:{...p,ctc:e.target.value})}/></div>
@@ -497,16 +497,16 @@ export function AdminDocuments() {
                     ))}
                   </select></div>
                 <div><label className={labelCls}>Year *</label><input className={ssLocked?lockedInputCls:inputCls} disabled={ssLocked} value={ss.year} onChange={e=>setSs(p=>({...p,year:e.target.value}))}/></div>
-                <div><label className={labelCls}>Basic Stipend (₹) *</label><input className={ssLocked?lockedInputCls:inputCls} disabled={ssLocked} value={ss.basicStipend} onChange={e=>setSs(p=>({...p,basicStipend:e.target.value}))}/></div>
-                <div><label className={labelCls}>Allowances (₹)</label><input className={ssLocked?lockedInputCls:inputCls} disabled={ssLocked} value={ss.allowances} onChange={e=>setSs(p=>({...p,allowances:e.target.value}))}/></div>
-                <div><label className={labelCls}>Deductions / TDS (₹)</label><input className={ssLocked?lockedInputCls:inputCls} disabled={ssLocked} value={ss.deductions} onChange={e=>setSs(p=>({...p,deductions:e.target.value}))}/></div>
+                <div><label className={labelCls}>Basic Stipend (RS. ) *</label><input className={ssLocked?lockedInputCls:inputCls} disabled={ssLocked} value={ss.basicStipend} onChange={e=>setSs(p=>({...p,basicStipend:e.target.value}))}/></div>
+                <div><label className={labelCls}>Allowances (RS. )</label><input className={ssLocked?lockedInputCls:inputCls} disabled={ssLocked} value={ss.allowances} onChange={e=>setSs(p=>({...p,allowances:e.target.value}))}/></div>
+                <div><label className={labelCls}>Deductions / TDS (RS. )</label><input className={ssLocked?lockedInputCls:inputCls} disabled={ssLocked} value={ss.deductions} onChange={e=>setSs(p=>({...p,deductions:e.target.value}))}/></div>
                 {ss.basicStipend && (
                   <div style={{ background:'rgba(22,163,74,0.08)', border:'1px solid rgba(22,163,74,0.2)', borderRadius:10, padding:12 }}>
                     <div style={{ color:'#94a3b8', fontSize:11, marginBottom:6, fontWeight:700 }}>PREVIEW</div>
-                    <div style={{ color:'#cbd5e1', fontSize:11 }}>Gross: ₹{(Number(ss.basicStipend||0)+Number(ss.allowances||0)).toLocaleString('en-IN')}</div>
-                    <div style={{ color:'#f87171', fontSize:11 }}>Deductions: ₹{Number(ss.deductions||0).toLocaleString('en-IN')}</div>
+                    <div style={{ color:'#cbd5e1', fontSize:11 }}>Gross: RS. {(Number(ss.basicStipend||0)+Number(ss.allowances||0)).toLocaleString('en-IN')}</div>
+                    <div style={{ color:'#f87171', fontSize:11 }}>Deductions: RS. {Number(ss.deductions||0).toLocaleString('en-IN')}</div>
                     <div style={{ color: ssLocked?'#475569':'#4ade80', fontSize:13, fontWeight:800, marginTop:4 }}>
-                      Net Pay: ₹{(Number(ss.basicStipend||0)+Number(ss.allowances||0)-Number(ss.deductions||0)).toLocaleString('en-IN')}
+                      Net Pay: RS. {(Number(ss.basicStipend||0)+Number(ss.allowances||0)-Number(ss.deductions||0)).toLocaleString('en-IN')}
                       {ssLocked && <Lock size={12} style={{ marginLeft:6, display:'inline' }}/>}
                     </div>
                   </div>
