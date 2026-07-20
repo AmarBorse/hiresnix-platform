@@ -23,7 +23,7 @@ function IPlatformPanel() {
   const [loading, setLoading]     = useState(true);
   const [applying, setApplying]   = useState(false);
   const [downloading, setDownloading] = useState<string | null>(null);
-  const [form, setForm] = useState({ phone: '', college: '', year: '4th Year', whyJoin: '' });
+  const [form, setForm] = useState({ phone: '', college: '', year: '4th Year', whyJoin: '', institutionName: '', careerId: '' });
   const [taskForm, setTaskForm] = useState({ title: '', description: '', url: '', week: 1 });
   const [submittingTask, setSubmittingTask] = useState(false);
   const [showTaskForm, setShowTaskForm] = useState(false);
@@ -84,10 +84,19 @@ function IPlatformPanel() {
       const isInstStudent = !!localStorage.getItem('hx_inst_student_token');
       const token = localStorage.getItem('hirenix_token') || localStorage.getItem('hx_student_token');
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const payload = {
+        domainId: selected.id,
+        phone: form.phone,
+        college: form.college,
+        year: form.year,
+        whyJoin: form.whyJoin,
+        ...(form.institutionName && { institutionName: form.institutionName }),
+        ...(form.careerId && { careerId: form.careerId }),
+      };
       if (isInstStudent) {
-        await instInternshipClient.post('/iplatform/apply', { domainId: selected.id, ...form });
+        await instInternshipClient.post('/iplatform/apply', payload);
       } else {
-        await client.post('/iplatform/apply', { domainId: selected.id, ...form }, { headers });
+        await client.post('/iplatform/apply', payload, { headers });
       }
       toast.success('Application submitted! Admin will review soon.');
       load();
@@ -381,6 +390,24 @@ function IPlatformPanel() {
           <input required className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500"
             placeholder="Your college name" value={form.college} onChange={e => setForm(p => ({ ...p, college: e.target.value }))} />
         </div>
+
+        {/* Institution fields — optional, for inst students applying via student portal */}
+        <div className="rounded-xl border border-blue-100 bg-blue-50 p-3 space-y-3">
+          <p className="text-xs text-blue-600 font-semibold flex items-center gap-1">🏫 Institution Details <span className="font-normal text-blue-400">(Optional — fill if you belong to a partner institution)</span></p>
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Institution / Training Center Name</label>
+            <input className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 bg-white"
+              placeholder="e.g. ABC Institute of Technology"
+              value={form.institutionName} onChange={e => setForm(p => ({ ...p, institutionName: e.target.value }))} />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Career ID / Student ID</label>
+            <input className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 bg-white"
+              placeholder="e.g. HX-ABC-2026-0001"
+              value={form.careerId} onChange={e => setForm(p => ({ ...p, careerId: e.target.value.toUpperCase() }))} />
+          </div>
+        </div>
+
         <div>
           <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Current Year</label>
           <select className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500"
