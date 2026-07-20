@@ -182,7 +182,33 @@ const changePassword = asyncHandler(async (req, res) => {
   const student = await InstitutionStudent.findByPk(req.instStudent.id);
   const match = await student.matchPassword(currentPassword);
   if (!match) { res.status(401); throw new Error('Current password is incorrect'); }
+
+  // 1. Update inst student password
   await student.update({ password: newPassword });
+
+  // 2. Sync linked Hiresnix User — update to real email + new password
+  try {
+    const syntheticEmail = `${student.careerId.toLowerCase()}@inst.hiresnix.co.in`;
+    const realEmail = student.email;
+    const bcrypt = require('bcryptjs');
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Find by synthetic email first
+    let linkedUser = await User.findOne({ where: { email: syntheticEmail } });
+    if (linkedUser) {
+      // Migrate to real email + update password
+      await linkedUser.update({ email: realEmail, password: hashedPassword, name: student.name });
+    } else {
+      // Try real email
+      linkedUser = await User.findOne({ where: { email: realEmail } });
+      if (linkedUser) {
+        await linkedUser.update({ password: hashedPassword });
+      }
+    }
+  } catch (err) {
+    console.error('Linked user sync failed:', err.message);
+  }
+
   res.json({ success: true, message: 'Password updated successfully' });
 });
 
