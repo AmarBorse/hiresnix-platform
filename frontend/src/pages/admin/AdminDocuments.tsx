@@ -497,16 +497,16 @@ export function AdminDocuments() {
                     ))}
                   </select></div>
                 <div><label className={labelCls}>Year *</label><input className={ssLocked?lockedInputCls:inputCls} disabled={ssLocked} value={ss.year} onChange={e=>setSs(p=>({...p,year:e.target.value}))}/></div>
-                <div><label className={labelCls}>Basic Stipend (RS. ) *</label><input className={ssLocked?lockedInputCls:inputCls} disabled={ssLocked} value={ss.basicStipend} onChange={e=>setSs(p=>({...p,basicStipend:e.target.value}))}/></div>
-                <div><label className={labelCls}>Allowances (RS. )</label><input className={ssLocked?lockedInputCls:inputCls} disabled={ssLocked} value={ss.allowances} onChange={e=>setSs(p=>({...p,allowances:e.target.value}))}/></div>
-                <div><label className={labelCls}>Deductions / TDS (RS. )</label><input className={ssLocked?lockedInputCls:inputCls} disabled={ssLocked} value={ss.deductions} onChange={e=>setSs(p=>({...p,deductions:e.target.value}))}/></div>
+                <div><label className={labelCls}>Basic Stipend (Rs. ) *</label><input className={ssLocked?lockedInputCls:inputCls} disabled={ssLocked} value={ss.basicStipend} onChange={e=>setSs(p=>({...p,basicStipend:e.target.value}))}/></div>
+                <div><label className={labelCls}>Allowances (Rs. )</label><input className={ssLocked?lockedInputCls:inputCls} disabled={ssLocked} value={ss.allowances} onChange={e=>setSs(p=>({...p,allowances:e.target.value}))}/></div>
+                <div><label className={labelCls}>Deductions / TDS (Rs. )</label><input className={ssLocked?lockedInputCls:inputCls} disabled={ssLocked} value={ss.deductions} onChange={e=>setSs(p=>({...p,deductions:e.target.value}))}/></div>
                 {ss.basicStipend && (
                   <div style={{ background:'rgba(22,163,74,0.08)', border:'1px solid rgba(22,163,74,0.2)', borderRadius:10, padding:12 }}>
                     <div style={{ color:'#94a3b8', fontSize:11, marginBottom:6, fontWeight:700 }}>PREVIEW</div>
-                    <div style={{ color:'#cbd5e1', fontSize:11 }}>Gross: RS. {(Number(ss.basicStipend||0)+Number(ss.allowances||0)).toLocaleString('en-IN')}</div>
-                    <div style={{ color:'#f87171', fontSize:11 }}>Deductions: RS. {Number(ss.deductions||0).toLocaleString('en-IN')}</div>
+                    <div style={{ color:'#cbd5e1', fontSize:11 }}>Gross: Rs. {(Number(ss.basicStipend||0)+Number(ss.allowances||0)).toLocaleString('en-IN')}</div>
+                    <div style={{ color:'#f87171', fontSize:11 }}>Deductions: Rs. {Number(ss.deductions||0).toLocaleString('en-IN')}</div>
                     <div style={{ color: ssLocked?'#475569':'#4ade80', fontSize:13, fontWeight:800, marginTop:4 }}>
-                      Net Pay: RS. {(Number(ss.basicStipend||0)+Number(ss.allowances||0)-Number(ss.deductions||0)).toLocaleString('en-IN')}
+                      Net Pay: Rs. {(Number(ss.basicStipend||0)+Number(ss.allowances||0)-Number(ss.deductions||0)).toLocaleString('en-IN')}
                       {ssLocked && <Lock size={12} style={{ marginLeft:6, display:'inline' }}/>}
                     </div>
                   </div>
