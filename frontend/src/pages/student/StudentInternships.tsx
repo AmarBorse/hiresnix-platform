@@ -83,10 +83,11 @@ function IPlatformPanel() {
     if (!selected) return;
     setApplying(true);
     try {
-      // isInstStudent only if they have inst student token (not just hx_inst_student_id)
-      const isInstStudent = !!localStorage.getItem('hx_inst_student_token');
-      const token = localStorage.getItem('hirenix_token') || localStorage.getItem('hx_student_token');
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      // Only use instInternshipClient if user is ACTUALLY logged in as inst-student (has hx_inst_student_token AND hx_student_token is absent)
+      const instToken = localStorage.getItem('hx_inst_student_token');
+      const studentToken = localStorage.getItem('hx_student_token') || localStorage.getItem('hirenix_token');
+      const isInstStudent = !!instToken && !studentToken;
+      const headers = studentToken ? { Authorization: `Bearer ${studentToken}` } : {};
       const payload = {
         domainId: selected.id,
         phone: form.phone,
