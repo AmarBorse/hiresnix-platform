@@ -100,10 +100,13 @@ export function StudentResumeBuilder() {
   const [dragging, setDragging] = useState(false);
   const [expandedSection, setExpandedSection] = useState<string | null>('personal');
   const [activeTab, setActiveTab] = useState<'scan' | 'build' | 'advanced'>('scan');
-  const [activeAdvanced, setActiveAdvanced] = useState<'jd' | 'cover' | 'interview' | 'linkedin'>('jd');
+  const [activeAdvanced, setActiveAdvanced] = useState<'jd' | 'cover' | 'interview' | 'linkedin' | 'roadmap' | 'coldemail'>('jd');
   const [jdText, setJdText] = useState('');
   const [jdResult, setJdResult] = useState('');
   const [advancedLoading, setAdvancedLoading] = useState(false);
+  const [coldEmailData, setColdEmailData] = useState({ hrName: '', company: '', jobRole: '', yourName: '', yourRole: '' });
+  const [roadmapRole, setRoadmapRole] = useState('React Developer');
+  const [roadmapLevel, setRoadmapLevel] = useState('beginner');
   const [sectionLoading, setSectionLoading] = useState('');
   const [autoFillLoading, setAutoFillLoading] = useState(false);
   const [roleGenLoading, setRoleGenLoading] = useState(false);
@@ -368,8 +371,9 @@ Achievements: ${parsed.achievements || ''}`
 
   // ── Advanced Features ─────────────────────────────────────────
   const handleAdvanced = async (type: string) => {
-    if (!resumeText.trim() && type !== 'linkedin') { toast.error('Upload resume first'); return; }
+    if (!resumeText.trim() && !['linkedin', 'roadmap', 'coldemail'].includes(type)) { toast.error('Upload resume first'); return; }
     if (type === 'jd' && !jdText.trim()) { toast.error('Paste job description first'); return; }
+    if (type === 'coldemail' && !coldEmailData.company) { toast.error('Fill company details first'); return; }
     setAdvancedLoading(true);
     setJdResult('');
     try {
@@ -383,6 +387,68 @@ Achievements: ${parsed.achievements || ''}`
         prompt = `Based on this resume for ${effectiveRole} role, generate 10 likely interview questions with brief answer tips for each.\n\nResume:\n${resumeText.slice(0,1500)}`;
       } else if (type === 'linkedin') {
         prompt = `Write a compelling LinkedIn "About" section (300 words) for a ${effectiveRole}. Professional, first person, engaging.\n\nResume:\n${resumeText.slice(0,1000)}`;
+      } else if (type === 'roadmap') {
+        prompt = `Create a detailed career roadmap for becoming a ${roadmapRole} from ${roadmapLevel} level. Include:
+
+**Phase 1: Foundation (Month 1-2)**
+- Core concepts to learn
+- Free resources (YouTube, docs)
+- Mini projects to build
+
+**Phase 2: Core Skills (Month 3-4)**
+- Key technologies/frameworks
+- Paid/free courses
+- Projects to add to portfolio
+
+**Phase 3: Advanced (Month 5-6)**
+- Advanced topics
+- Real-world projects
+- Open source contribution
+
+**Phase 4: Job Ready (Month 7-8)**
+- Portfolio checklist
+- Resume keywords
+- Interview preparation
+- Job platforms to use
+
+**Tools & Technologies Checklist:**
+- Must know
+- Good to know
+- Nice to have
+
+**Monthly Salary Range in India:**
+- Fresher: 
+- 2-3 years:
+- 5+ years:
+
+Make it practical, specific, and actionable for Indian job market.`;
+        system = 'You are an expert career counselor specializing in tech careers in India. Give practical, actionable advice.';
+      } else if (type === 'coldemail') {
+        const { hrName, company, jobRole, yourName, yourRole } = coldEmailData;
+        prompt = `Write a professional cold email to HR for a job opportunity. 
+
+Details:
+- HR Name: ${hrName || 'Hiring Manager'}
+- Company: ${company}
+- Job Role applying for: ${jobRole || effectiveRole}
+- My Name: ${yourName || builder.name || 'Candidate'}
+- My Current Role/Background: ${yourRole || effectiveRole}
+${resumeText ? `- My Resume Summary: ${resumeText.slice(0, 500)}` : ''}
+
+Write a compelling cold email that:
+1. Has a catchy subject line
+2. Opens with a strong hook
+3. Shows knowledge about the company
+4. Highlights 2-3 key achievements
+5. Has a clear call to action
+6. Is concise (150-200 words max)
+7. Professional yet personable tone
+
+Format:
+Subject: [subject line]
+
+[email body]`;
+        system = 'You are an expert at writing cold emails that get responses. Write emails that stand out.';
       }
       const result = await groqCall(prompt, system);
       setJdResult(result);
@@ -890,16 +956,18 @@ Achievements: ${parsed.achievements || ''}`
       {/* ── AI TOOLS ── */}
       {activeTab === 'advanced' && (
         <div className="space-y-5">
-          {/* Sub tabs — glassmorphism pills */}
-          <div className="flex gap-2 flex-wrap p-1 rounded-2xl" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+          {/* Sub tabs */}
+          <div className="flex gap-1.5 flex-wrap p-1 rounded-2xl" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
             {[
               { id: 'jd', label: '🎯 JD Match' },
               { id: 'cover', label: '✉️ Cover Letter' },
               { id: 'interview', label: '🎤 Interview Prep' },
               { id: 'linkedin', label: '💼 LinkedIn' },
+              { id: 'roadmap', label: '🗺️ Career Roadmap' },
+              { id: 'coldemail', label: '📧 Cold Email' },
             ].map(t => (
               <button key={t.id} onClick={() => { setActiveAdvanced(t.id as any); setJdResult(''); }}
-                className="flex-1 px-3 py-2 rounded-xl text-sm font-semibold transition-all"
+                className="flex-1 px-3 py-2 rounded-xl text-xs font-semibold transition-all"
                 style={activeAdvanced === t.id ? {
                   background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
                   color: 'white',
@@ -912,53 +980,116 @@ Achievements: ${parsed.achievements || ''}`
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-
             {/* Left Panel */}
             <div className="space-y-4">
-              {/* Feature description card */}
+              {/* Feature card */}
               <div className="rounded-2xl p-4" style={{
                 background: 'linear-gradient(135deg, rgba(99,102,241,0.15), rgba(139,92,246,0.1))',
                 border: '1px solid rgba(99,102,241,0.25)',
-                backdropFilter: 'blur(10px)',
               }}>
                 <div className="flex items-center gap-3 mb-2">
                   <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: ACCENT }}>
-                    <span className="text-base">{activeAdvanced === 'jd' ? '🎯' : activeAdvanced === 'cover' ? '✉️' : activeAdvanced === 'interview' ? '🎤' : '💼'}</span>
+                    <span className="text-base">{
+                      activeAdvanced === 'jd' ? '🎯' : activeAdvanced === 'cover' ? '✉️' :
+                      activeAdvanced === 'interview' ? '🎤' : activeAdvanced === 'linkedin' ? '💼' :
+                      activeAdvanced === 'roadmap' ? '🗺️' : '📧'
+                    }</span>
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-white">
-                      {activeAdvanced === 'jd' ? 'Job Description Match' : activeAdvanced === 'cover' ? 'Cover Letter Generator' : activeAdvanced === 'interview' ? 'Interview Preparation' : 'LinkedIn Summary'}
-                    </p>
-                    <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>
-                      {activeAdvanced === 'jd' ? 'Compare your resume with job requirements' : activeAdvanced === 'cover' ? 'Create personalized cover letter' : activeAdvanced === 'interview' ? '10 questions with answer tips' : 'Professional About section'}
-                    </p>
+                    <p className="text-sm font-bold text-white">{
+                      activeAdvanced === 'jd' ? 'Job Description Match' :
+                      activeAdvanced === 'cover' ? 'Cover Letter Generator' :
+                      activeAdvanced === 'interview' ? 'Interview Preparation' :
+                      activeAdvanced === 'linkedin' ? 'LinkedIn Summary' :
+                      activeAdvanced === 'roadmap' ? 'Career Roadmap' : 'Cold Email to HR'
+                    }</p>
+                    <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>{
+                      activeAdvanced === 'jd' ? 'Compare resume with job requirements' :
+                      activeAdvanced === 'cover' ? 'Create personalized cover letter' :
+                      activeAdvanced === 'interview' ? '10 questions with answer tips' :
+                      activeAdvanced === 'linkedin' ? 'Professional About section' :
+                      activeAdvanced === 'roadmap' ? 'Step-by-step learning path to your dream role' :
+                      'Get a response-worthy email to HR'
+                    }</p>
                   </div>
                 </div>
-                {resumeText ? (
-                  <div className="flex items-center gap-2 mt-2 px-3 py-2 rounded-xl" style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)' }}>
-                    <CheckCircle size={13} style={{ color: '#4ade80' }} />
-                    <span className="text-xs" style={{ color: '#4ade80' }}>Resume loaded: {fileName} ({resumeText.length} chars)</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2 mt-2 px-3 py-2 rounded-xl" style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)' }}>
-                    <XCircle size={13} style={{ color: '#f87171' }} />
-                    <span className="text-xs" style={{ color: '#f87171' }}>Upload resume in ATS Scanner tab first</span>
-                  </div>
+                {!['roadmap', 'coldemail'].includes(activeAdvanced) && (
+                  resumeText ? (
+                    <div className="flex items-center gap-2 mt-2 px-3 py-2 rounded-xl" style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)' }}>
+                      <CheckCircle size={13} style={{ color: '#4ade80' }} />
+                      <span className="text-xs" style={{ color: '#4ade80' }}>Resume loaded: {fileName}</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 mt-2 px-3 py-2 rounded-xl" style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)' }}>
+                      <XCircle size={13} style={{ color: '#f87171' }} />
+                      <span className="text-xs" style={{ color: '#f87171' }}>Upload resume in ATS Scanner tab first</span>
+                    </div>
+                  )
                 )}
               </div>
 
               {/* JD Textarea */}
               {activeAdvanced === 'jd' && (
-                <div className="rounded-2xl p-4" style={{
-                  background: 'rgba(255,255,255,0.03)',
-                  border: '1px solid rgba(255,255,255,0.08)',
-                  backdropFilter: 'blur(10px)',
-                }}>
+                <div className="rounded-2xl p-4" style={GLASS}>
                   <label className="block text-xs font-bold mb-2 uppercase tracking-wider" style={{ color: 'rgba(255,255,255,0.4)' }}>Paste Job Description</label>
                   <textarea value={jdText} onChange={e => setJdText(e.target.value)}
                     placeholder="Paste the full job description here..." rows={8}
                     className="w-full text-sm outline-none resize-none rounded-xl p-3"
                     style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.8)' }} />
+                </div>
+              )}
+
+              {/* Career Roadmap Inputs */}
+              {activeAdvanced === 'roadmap' && (
+                <div className="rounded-2xl p-4 space-y-3" style={GLASS}>
+                  <label className="block text-xs font-bold uppercase tracking-wider" style={{ color: 'rgba(255,255,255,0.4)' }}>Roadmap Settings</label>
+                  <div>
+                    <label className="block text-xs mb-1" style={{ color: 'rgba(255,255,255,0.5)' }}>Target Role</label>
+                    <select value={roadmapRole} onChange={e => setRoadmapRole(e.target.value)}
+                      className="w-full rounded-xl px-3 py-2.5 text-sm text-white outline-none"
+                      style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                      {Object.keys(ATS_KEYWORDS).map(r => <option key={r} value={r} style={{ background: '#1a1f35' }}>{r}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs mb-1" style={{ color: 'rgba(255,255,255,0.5)' }}>Current Level</label>
+                    <select value={roadmapLevel} onChange={e => setRoadmapLevel(e.target.value)}
+                      className="w-full rounded-xl px-3 py-2.5 text-sm text-white outline-none"
+                      style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                      <option value="beginner" style={{ background: '#1a1f35' }}>🟢 Beginner (No experience)</option>
+                      <option value="intermediate" style={{ background: '#1a1f35' }}>🟡 Intermediate (Some basics)</option>
+                      <option value="career-switch" style={{ background: '#1a1f35' }}>🔄 Career Switch</option>
+                    </select>
+                  </div>
+                  <div className="px-3 py-2 rounded-xl text-xs" style={{ background: 'rgba(99,102,241,0.1)', color: '#a5b4fc' }}>
+                    💡 Get a 8-month roadmap with resources, projects, and salary info
+                  </div>
+                </div>
+              )}
+
+              {/* Cold Email Inputs */}
+              {activeAdvanced === 'coldemail' && (
+                <div className="rounded-2xl p-4 space-y-3" style={GLASS}>
+                  <label className="block text-xs font-bold uppercase tracking-wider" style={{ color: 'rgba(255,255,255,0.4)' }}>Email Details</label>
+                  {[
+                    { key: 'yourName', label: 'Your Name', placeholder: 'Amar Borse' },
+                    { key: 'yourRole', label: 'Your Background', placeholder: 'React Developer, 2 years exp' },
+                    { key: 'hrName', label: 'HR Name (optional)', placeholder: 'Priya Sharma' },
+                    { key: 'company', label: 'Company Name *', placeholder: 'Google, TCS, Infosys...' },
+                    { key: 'jobRole', label: 'Job Role Applying For *', placeholder: 'Senior React Developer' },
+                  ].map(f => (
+                    <div key={f.key}>
+                      <label className="block text-xs mb-1" style={{ color: 'rgba(255,255,255,0.5)' }}>{f.label}</label>
+                      <input placeholder={f.placeholder}
+                        className="w-full rounded-xl px-3 py-2 text-sm text-white outline-none"
+                        style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
+                        value={coldEmailData[f.key as keyof typeof coldEmailData]}
+                        onChange={e => setColdEmailData(p => ({ ...p, [f.key]: e.target.value }))} />
+                    </div>
+                  ))}
+                  <div className="px-3 py-2 rounded-xl text-xs" style={{ background: 'rgba(99,102,241,0.1)', color: '#a5b4fc' }}>
+                    💡 Upload resume in ATS Scanner for a more personalized email
+                  </div>
                 </div>
               )}
 
@@ -972,11 +1103,17 @@ Achievements: ${parsed.achievements || ''}`
                   border: '1px solid rgba(99,102,241,0.3)',
                 }}>
                 {advancedLoading ? <RefreshCw size={16} className="animate-spin" /> : <Sparkles size={16} />}
-                {advancedLoading ? 'AI is generating...' : `✨ Generate ${activeAdvanced === 'jd' ? 'Match Report' : activeAdvanced === 'cover' ? 'Cover Letter' : activeAdvanced === 'interview' ? 'Interview Questions' : 'LinkedIn Summary'}`}
+                {advancedLoading ? 'AI is generating...' : `✨ Generate ${
+                  activeAdvanced === 'jd' ? 'Match Report' :
+                  activeAdvanced === 'cover' ? 'Cover Letter' :
+                  activeAdvanced === 'interview' ? 'Interview Questions' :
+                  activeAdvanced === 'linkedin' ? 'LinkedIn Summary' :
+                  activeAdvanced === 'roadmap' ? 'Career Roadmap' : 'Cold Email'
+                }`}
               </button>
             </div>
 
-            {/* Result Panel — glassmorphism */}
+            {/* Result Panel */}
             <div className="rounded-2xl overflow-hidden" style={{
               background: 'rgba(15, 20, 40, 0.8)',
               border: '1px solid rgba(99,102,241,0.2)',
@@ -986,34 +1123,40 @@ Achievements: ${parsed.achievements || ''}`
             }}>
               {jdResult ? (
                 <div className="h-full flex flex-col">
-                  {/* Result header */}
                   <div className="flex items-center justify-between px-5 py-3 border-b" style={{ borderColor: 'rgba(99,102,241,0.2)', background: 'rgba(99,102,241,0.08)' }}>
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 rounded-full" style={{ background: '#22c55e' }} />
-                      <span className="text-sm font-bold text-white">
-                        {activeAdvanced === 'jd' ? '🎯 JD Match Report' : activeAdvanced === 'cover' ? '✉️ Cover Letter' : activeAdvanced === 'interview' ? '🎤 Interview Questions' : '💼 LinkedIn Summary'}
-                      </span>
+                      <span className="text-sm font-bold text-white">{
+                        activeAdvanced === 'jd' ? '🎯 JD Match Report' :
+                        activeAdvanced === 'cover' ? '✉️ Cover Letter' :
+                        activeAdvanced === 'interview' ? '🎤 Interview Questions' :
+                        activeAdvanced === 'linkedin' ? '💼 LinkedIn Summary' :
+                        activeAdvanced === 'roadmap' ? '🗺️ Career Roadmap' : '📧 Cold Email'
+                      }</span>
                     </div>
-                    <button onClick={() => { navigator.clipboard.writeText(jdResult); toast.success('Copied to clipboard!'); }}
-                      className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-semibold transition-all"
+                    <button onClick={() => { navigator.clipboard.writeText(jdResult); toast.success('Copied!'); }}
+                      className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-semibold"
                       style={{ background: 'rgba(99,102,241,0.25)', color: '#a5b4fc', border: '1px solid rgba(99,102,241,0.3)' }}>
                       📋 Copy
                     </button>
                   </div>
-                  {/* Result content */}
                   <div className="flex-1 overflow-y-auto p-5">
                     <div className="text-sm leading-relaxed whitespace-pre-wrap" style={{ color: 'rgba(255,255,255,0.8)' }}
                       dangerouslySetInnerHTML={{ __html: jdResult
                         .replace(/\*\*(.*?)\*\*/g, '<strong style="color:white;font-weight:700">$1</strong>')
                         .replace(/\*(.*?)\*/g, '<em style="color:#a5b4fc">$1</em>')
-                        .replace(/^(\d+\.|•|-)\s/gm, '<span style="color:#6366f1;font-weight:bold">$1</span> ')
+                        .replace(/^(#{1,3})\s(.+)$/gm, '<p style="color:#a5b4fc;font-weight:700;font-size:13px;margin-top:12px">$2</p>')
+                        .replace(/^(\d+\.)\s/gm, '<span style="color:#6366f1;font-weight:bold">$1</span> ')
+                        .replace(/^[-•]\s/gm, '<span style="color:#6366f1">▸</span> ')
                       }} />
                   </div>
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center h-full" style={{ minHeight: '350px' }}>
                   <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4" style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)' }}>
-                    <Sparkles size={28} style={{ color: 'rgba(99,102,241,0.5)' }} />
+                    <span className="text-3xl">{
+                      activeAdvanced === 'roadmap' ? '🗺️' : activeAdvanced === 'coldemail' ? '📧' : '✨'
+                    }</span>
                   </div>
                   <p className="text-sm font-semibold text-white mb-1">Result will appear here</p>
                   <p className="text-xs" style={{ color: 'rgba(255,255,255,0.25)' }}>Click Generate to start</p>
