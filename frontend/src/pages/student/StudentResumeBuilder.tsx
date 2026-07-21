@@ -106,7 +106,62 @@ export function StudentResumeBuilder() {
   const [advancedLoading, setAdvancedLoading] = useState(false);
   const [sectionLoading, setSectionLoading] = useState('');
   const [autoFillLoading, setAutoFillLoading] = useState(false);
+  const [roleGenLoading, setRoleGenLoading] = useState(false);
+  const [expLevel, setExpLevel] = useState('fresher');
   const builderFileRef = useRef<HTMLInputElement>(null);
+
+  // ── Role Based Resume Generator ───────────────────────────────
+  const generateRoleBasedResume = async () => {
+    const targetRole = role === 'custom' ? customRole : role;
+    if (!targetRole) { toast.error('Select a role first'); return; }
+    if (!builder.name) { toast.error('Enter your name first'); return; }
+    setRoleGenLoading(true);
+    toast('AI is building your resume...', { duration: 5000 });
+    try {
+      const token = localStorage.getItem('hx_student_token') || localStorage.getItem('hirenix_token');
+      const res = await fetch(`${API_URL}/groq/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          system: 'You are an expert ATS resume writer. Return ONLY valid JSON, no markdown, no explanation.',
+          messages: [{
+            role: 'user',
+            content: `Create a complete ATS-optimized resume for a ${expLevel} ${targetRole}. Name: ${builder.name}. Return ONLY this JSON:
+{
+  "summary": "3-4 line professional summary with keywords",
+  "objective": "2-line career objective for ${expLevel}",
+  "experience": "${expLevel === 'fresher' ? 'Write internship/training experience section' : 'Write 2 realistic job experience entries with action verbs and quantified results'}",
+  "education": "B.Tech/BCA/MCA Computer Science, [University Name], [Year], CGPA: 8.5/10",
+  "skills": "List 20+ ATS keywords for ${targetRole} including tools, languages, frameworks, soft skills",
+  "projects": "Write 2-3 impressive project descriptions with tech stack and impact for ${targetRole}",
+  "certifications": "List 3 relevant certifications for ${targetRole}",
+  "achievements": "Write 3 quantified achievements relevant to ${targetRole}",
+  "languages": "English (Fluent), Hindi (Native), Marathi (Proficient)",
+  "hobbies": "List 4-5 relevant hobbies for a ${targetRole}"
+}`
+          }]
+        })
+      });
+      const data = await res.json();
+      const raw = (data.content || '{}').replace(/```json|```/g, '').trim();
+      const parsed = JSON.parse(raw);
+      setBuilder(p => ({
+        ...p,
+        summary: parsed.summary || p.summary,
+        objective: parsed.objective || p.objective,
+        experience: parsed.experience || p.experience,
+        education: parsed.education || p.education,
+        skills: parsed.skills || p.skills,
+        projects: parsed.projects || p.projects,
+        certifications: parsed.certifications || p.certifications,
+        achievements: parsed.achievements || p.achievements,
+        languages: parsed.languages || p.languages,
+        hobbies: parsed.hobbies || p.hobbies,
+      }));
+      toast.success(`${targetRole} resume generated! 🎉`);
+    } catch { toast.error('Generation failed. Try again.'); }
+    finally { setRoleGenLoading(false); }
+  };
 
   // ── Auto Fill from Resume ─────────────────────────────────────
   const autoFillFromResume = async (file: File) => {
@@ -585,6 +640,65 @@ Achievements: ${parsed.achievements || ''}`
       {activeTab === 'build' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           <div className="space-y-3">
+
+            {/* Role Based Resume Generator */}
+            <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.15), rgba(5,150,105,0.1))', border: '1px solid rgba(16,185,129,0.3)' }}>
+              <div className="flex items-start gap-3">
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}>
+                  <Briefcase size={16} className="text-white" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-bold text-white">🎯 Role-Based Resume Generator</p>
+                  <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.45)' }}>Select your target role → AI builds a complete ATS-optimized resume structure instantly</p>
+                  <div className="mt-3 space-y-2">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-xs mb-1" style={{ color: 'rgba(255,255,255,0.4)' }}>Your Name</label>
+                        <input placeholder="Full Name"
+                          className="w-full rounded-xl px-3 py-2 text-sm text-white outline-none"
+                          style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)' }}
+                          value={builder.name}
+                          onChange={e => setBuilder(p => ({ ...p, name: e.target.value }))} />
+                      </div>
+                      <div>
+                        <label className="block text-xs mb-1" style={{ color: 'rgba(255,255,255,0.4)' }}>Experience Level</label>
+                        <select value={expLevel} onChange={e => setExpLevel(e.target.value)}
+                          className="w-full rounded-xl px-3 py-2 text-sm text-white outline-none"
+                          style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)' }}>
+                          <option value="fresher" style={{ background: '#1a1f35' }}>Fresher (0-1 yr)</option>
+                          <option value="junior" style={{ background: '#1a1f35' }}>Junior (1-3 yrs)</option>
+                          <option value="mid" style={{ background: '#1a1f35' }}>Mid-Level (3-5 yrs)</option>
+                          <option value="senior" style={{ background: '#1a1f35' }}>Senior (5+ yrs)</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs mb-1" style={{ color: 'rgba(255,255,255,0.4)' }}>Target Role</label>
+                      <select value={role} onChange={e => setRole(e.target.value)}
+                        className="w-full rounded-xl px-3 py-2 text-sm text-white outline-none"
+                        style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)' }}>
+                        {Object.keys(ATS_KEYWORDS).map(r => <option key={r} value={r} style={{ background: '#1a1f35' }}>{r}</option>)}
+                        <option value="custom" style={{ background: '#1a1f35' }}>Custom Role...</option>
+                      </select>
+                    </div>
+                    {role === 'custom' && (
+                      <input placeholder="Enter your target role..."
+                        className="w-full rounded-xl px-3 py-2 text-sm text-white outline-none"
+                        style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)' }}
+                        value={customRole} onChange={e => setCustomRole(e.target.value)} />
+                    )}
+                    <button
+                      onClick={generateRoleBasedResume}
+                      disabled={roleGenLoading}
+                      className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all"
+                      style={{ background: 'linear-gradient(135deg, #10b981, #059669)', color: 'white', opacity: roleGenLoading ? 0.7 : 1 }}>
+                      {roleGenLoading ? <RefreshCw size={14} className="animate-spin" /> : <Sparkles size={14} />}
+                      {roleGenLoading ? 'Building Resume...' : '⚡ Generate Full Resume'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
 
             {/* Auto-Fill Banner */}
             <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.2), rgba(139,92,246,0.15))', border: '1px solid rgba(99,102,241,0.35)' }}>
