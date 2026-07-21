@@ -578,8 +578,27 @@ export function AdminIPlatform() {
                   </button>
                   <div className="flex-1">
                     <p className="font-bold text-white">{selectedBatch}</p>
-                    <p className="text-xs text-gray-400">{groups[selectedBatch]?.length} students</p>
+                    <p className="text-xs text-gray-400">{groups[selectedBatch]?.length} students · {(groups[selectedBatch] || []).filter((e:any) => e.status === 'Active').length} active</p>
                   </div>
+                  {/* Bulk Mark Complete Button */}
+                  {(groups[selectedBatch] || []).some((e: any) => e.status === 'Active') && (
+                    <button onClick={async () => {
+                      const activeStudents = (groups[selectedBatch] || []).filter((e: any) => e.status === 'Active');
+                      if (!window.confirm(`Mark all ${activeStudents.length} active students as Complete and issue certificates?`)) return;
+                      let success = 0, failed = 0;
+                      for (const e of activeStudents) {
+                        try {
+                          await adminApi.markEnrollmentComplete(e.id, { adminRemark: 'Batch completed', lorPerformance: 'Good', lorHighlights: 'Completed internship program' });
+                          success++;
+                        } catch { failed++; }
+                      }
+                      alert(`✅ ${success} certificates issued${failed > 0 ? `, ❌ ${failed} failed` : ''}!`);
+                      load();
+                    }}
+                    className="flex items-center gap-1.5 text-xs font-bold bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition">
+                      <Award size={13} /> Mark All Complete 🎓
+                    </button>
+                  )}
                   <button onClick={() => {
                       const batchStudents = groups[selectedBatch] || [];
                       const rows = batchStudents.map((e: any) => ({
