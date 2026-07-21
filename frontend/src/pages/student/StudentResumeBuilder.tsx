@@ -775,67 +775,134 @@ Achievements: ${parsed.achievements || ''}`
 
       {/* ── AI TOOLS ── */}
       {activeTab === 'advanced' && (
-        <div className="space-y-4">
-          {/* Sub tabs */}
-          <div className="flex gap-2 flex-wrap">
+        <div className="space-y-5">
+          {/* Sub tabs — glassmorphism pills */}
+          <div className="flex gap-2 flex-wrap p-1 rounded-2xl" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
             {[
-              { id: 'jd', label: '🎯 JD Match', icon: Target },
-              { id: 'cover', label: '✉️ Cover Letter', icon: MessageSquare },
-              { id: 'interview', label: '🎤 Interview Questions', icon: HelpCircle },
-              { id: 'linkedin', label: '💼 LinkedIn Summary', icon: Linkedin },
+              { id: 'jd', label: '🎯 JD Match' },
+              { id: 'cover', label: '✉️ Cover Letter' },
+              { id: 'interview', label: '🎤 Interview Prep' },
+              { id: 'linkedin', label: '💼 LinkedIn' },
             ].map(t => (
-              <button key={t.id} onClick={() => setActiveAdvanced(t.id as any)}
-                className="px-4 py-2 rounded-xl text-sm font-medium transition-all"
-                style={bStyle(activeAdvanced === t.id)}>{t.label}</button>
+              <button key={t.id} onClick={() => { setActiveAdvanced(t.id as any); setJdResult(''); }}
+                className="flex-1 px-3 py-2 rounded-xl text-sm font-semibold transition-all"
+                style={activeAdvanced === t.id ? {
+                  background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                  color: 'white',
+                  boxShadow: '0 4px 15px rgba(99,102,241,0.4)',
+                } : {
+                  background: 'transparent',
+                  color: 'rgba(255,255,255,0.4)',
+                }}>{t.label}</button>
             ))}
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-            <div className="space-y-3">
+
+            {/* Left Panel */}
+            <div className="space-y-4">
+              {/* Feature description card */}
+              <div className="rounded-2xl p-4" style={{
+                background: 'linear-gradient(135deg, rgba(99,102,241,0.15), rgba(139,92,246,0.1))',
+                border: '1px solid rgba(99,102,241,0.25)',
+                backdropFilter: 'blur(10px)',
+              }}>
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: ACCENT }}>
+                    <span className="text-base">{activeAdvanced === 'jd' ? '🎯' : activeAdvanced === 'cover' ? '✉️' : activeAdvanced === 'interview' ? '🎤' : '💼'}</span>
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-white">
+                      {activeAdvanced === 'jd' ? 'Job Description Match' : activeAdvanced === 'cover' ? 'Cover Letter Generator' : activeAdvanced === 'interview' ? 'Interview Preparation' : 'LinkedIn Summary'}
+                    </p>
+                    <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                      {activeAdvanced === 'jd' ? 'Compare your resume with job requirements' : activeAdvanced === 'cover' ? 'Create personalized cover letter' : activeAdvanced === 'interview' ? '10 questions with answer tips' : 'Professional About section'}
+                    </p>
+                  </div>
+                </div>
+                {resumeText ? (
+                  <div className="flex items-center gap-2 mt-2 px-3 py-2 rounded-xl" style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)' }}>
+                    <CheckCircle size={13} style={{ color: '#4ade80' }} />
+                    <span className="text-xs" style={{ color: '#4ade80' }}>Resume loaded: {fileName} ({resumeText.length} chars)</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 mt-2 px-3 py-2 rounded-xl" style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)' }}>
+                    <XCircle size={13} style={{ color: '#f87171' }} />
+                    <span className="text-xs" style={{ color: '#f87171' }}>Upload resume in ATS Scanner tab first</span>
+                  </div>
+                )}
+              </div>
+
+              {/* JD Textarea */}
               {activeAdvanced === 'jd' && (
-                <div className="rounded-2xl p-4" style={GLASS}>
-                  <label className="block text-xs font-semibold mb-2" style={{ color: 'rgba(255,255,255,0.45)' }}>PASTE JOB DESCRIPTION</label>
+                <div className="rounded-2xl p-4" style={{
+                  background: 'rgba(255,255,255,0.03)',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  backdropFilter: 'blur(10px)',
+                }}>
+                  <label className="block text-xs font-bold mb-2 uppercase tracking-wider" style={{ color: 'rgba(255,255,255,0.4)' }}>Paste Job Description</label>
                   <textarea value={jdText} onChange={e => setJdText(e.target.value)}
-                    placeholder="Paste the full job description here..." rows={10}
+                    placeholder="Paste the full job description here..." rows={8}
                     className="w-full text-sm outline-none resize-none rounded-xl p-3"
                     style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.8)' }} />
                 </div>
               )}
 
-              {activeAdvanced !== 'jd' && (
-                <div className="rounded-2xl p-4" style={GLASS}>
-                  <p className="text-sm text-white mb-1 font-semibold">Resume loaded: {fileName || 'No file'}</p>
-                  <p className="text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>
-                    {resumeText ? `${resumeText.length} characters extracted` : 'Go to ATS Scanner tab and upload your resume first'}
-                  </p>
-                </div>
-              )}
-
+              {/* Generate Button */}
               <button onClick={() => handleAdvanced(activeAdvanced)} disabled={advancedLoading}
-                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm"
-                style={{ background: ACCENT, color: 'white', opacity: advancedLoading ? 0.7 : 1 }}>
-                {advancedLoading ? <RefreshCw size={15} className="animate-spin" /> : <Sparkles size={15} />}
-                {advancedLoading ? 'Generating...' : `Generate ${activeAdvanced === 'jd' ? 'JD Match Report' : activeAdvanced === 'cover' ? 'Cover Letter' : activeAdvanced === 'interview' ? 'Interview Questions' : 'LinkedIn Summary'}`}
+                className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl font-bold text-sm transition-all"
+                style={{
+                  background: advancedLoading ? 'rgba(99,102,241,0.3)' : ACCENT,
+                  color: 'white',
+                  boxShadow: advancedLoading ? 'none' : '0 4px 20px rgba(99,102,241,0.4)',
+                  border: '1px solid rgba(99,102,241,0.3)',
+                }}>
+                {advancedLoading ? <RefreshCw size={16} className="animate-spin" /> : <Sparkles size={16} />}
+                {advancedLoading ? 'AI is generating...' : `✨ Generate ${activeAdvanced === 'jd' ? 'Match Report' : activeAdvanced === 'cover' ? 'Cover Letter' : activeAdvanced === 'interview' ? 'Interview Questions' : 'LinkedIn Summary'}`}
               </button>
             </div>
 
-            {/* Result */}
-            <div className="rounded-2xl p-4" style={{ ...GLASS, minHeight: '300px' }}>
+            {/* Result Panel — glassmorphism */}
+            <div className="rounded-2xl overflow-hidden" style={{
+              background: 'rgba(15, 20, 40, 0.8)',
+              border: '1px solid rgba(99,102,241,0.2)',
+              backdropFilter: 'blur(20px)',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+              minHeight: '350px',
+            }}>
               {jdResult ? (
-                <>
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-bold text-white text-sm">Result</h3>
-                    <button onClick={() => { navigator.clipboard.writeText(jdResult); toast.success('Copied!'); }}
-                      className="text-xs px-3 py-1 rounded-lg font-medium"
-                      style={{ background: 'rgba(99,102,241,0.2)', color: '#a5b4fc' }}>Copy</button>
+                <div className="h-full flex flex-col">
+                  {/* Result header */}
+                  <div className="flex items-center justify-between px-5 py-3 border-b" style={{ borderColor: 'rgba(99,102,241,0.2)', background: 'rgba(99,102,241,0.08)' }}>
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full" style={{ background: '#22c55e' }} />
+                      <span className="text-sm font-bold text-white">
+                        {activeAdvanced === 'jd' ? '🎯 JD Match Report' : activeAdvanced === 'cover' ? '✉️ Cover Letter' : activeAdvanced === 'interview' ? '🎤 Interview Questions' : '💼 LinkedIn Summary'}
+                      </span>
+                    </div>
+                    <button onClick={() => { navigator.clipboard.writeText(jdResult); toast.success('Copied to clipboard!'); }}
+                      className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-semibold transition-all"
+                      style={{ background: 'rgba(99,102,241,0.25)', color: '#a5b4fc', border: '1px solid rgba(99,102,241,0.3)' }}>
+                      📋 Copy
+                    </button>
                   </div>
-                  <div className="text-xs leading-relaxed whitespace-pre-wrap" style={{ color: 'rgba(255,255,255,0.7)' }}>{jdResult}</div>
-                </>
+                  {/* Result content */}
+                  <div className="flex-1 overflow-y-auto p-5">
+                    <div className="text-sm leading-relaxed whitespace-pre-wrap" style={{ color: 'rgba(255,255,255,0.8)' }}
+                      dangerouslySetInnerHTML={{ __html: jdResult
+                        .replace(/\*\*(.*?)\*\*/g, '<strong style="color:white;font-weight:700">$1</strong>')
+                        .replace(/\*(.*?)\*/g, '<em style="color:#a5b4fc">$1</em>')
+                        .replace(/^(\d+\.|•|-)\s/gm, '<span style="color:#6366f1;font-weight:bold">$1</span> ')
+                      }} />
+                  </div>
+                </div>
               ) : (
-                <div className="flex flex-col items-center justify-center h-full" style={{ minHeight: '250px' }}>
-                  <Sparkles size={32} className="mb-3" style={{ color: 'rgba(255,255,255,0.1)' }} />
-                  <p className="text-sm text-white">Result will appear here</p>
-                  <p className="text-xs mt-1" style={{ color: 'rgba(255,255,255,0.25)' }}>Click Generate to start</p>
+                <div className="flex flex-col items-center justify-center h-full" style={{ minHeight: '350px' }}>
+                  <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4" style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)' }}>
+                    <Sparkles size={28} style={{ color: 'rgba(99,102,241,0.5)' }} />
+                  </div>
+                  <p className="text-sm font-semibold text-white mb-1">Result will appear here</p>
+                  <p className="text-xs" style={{ color: 'rgba(255,255,255,0.25)' }}>Click Generate to start</p>
                 </div>
               )}
             </div>
