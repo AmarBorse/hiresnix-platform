@@ -1,261 +1,276 @@
 // src/pages/public/ProjectPortfolio.tsx
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router';
-import { ExternalLink, Github, Mail, Linkedin, Globe, Code2, Star, Download } from 'lucide-react';
 
 const API = (import.meta as any).env?.VITE_API_URL || 'https://hirenix-backend.onrender.com/api';
 
-const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
-  live:        { label: '● Live', color: '#22c55e', bg: 'rgba(34,197,94,0.12)' },
-  in_progress: { label: '◐ In Progress', color: '#f59e0b', bg: 'rgba(245,158,11,0.12)' },
-  completed:   { label: '✓ Completed', color: '#6366f1', bg: 'rgba(99,102,241,0.12)' },
-};
+const CARD_BG = [
+  'linear-gradient(135deg,rgba(99,102,241,0.2),rgba(139,92,246,0.08))',
+  'linear-gradient(135deg,rgba(212,175,55,0.15),rgba(245,214,128,0.04))',
+  'linear-gradient(135deg,rgba(34,197,94,0.15),rgba(16,185,129,0.04))',
+  'linear-gradient(135deg,rgba(239,68,68,0.15),rgba(248,113,113,0.04))',
+  'linear-gradient(135deg,rgba(14,165,233,0.15),rgba(56,189,248,0.04))',
+];
 
-const PROJECT_EMOJIS: Record<string, string> = {
-  'e-commerce': '🛒', 'shop': '🛒', 'ai': '🤖', 'ml': '🧠', 'chat': '💬',
-  'dashboard': '📊', 'analytics': '📈', 'mobile': '📱', 'app': '📱',
-  'web': '🌐', 'portfolio': '💼', 'blog': '📝', 'game': '🎮',
-  'auth': '🔐', 'api': '⚡', 'cloud': '☁️', 'social': '👥',
+const EMOJIS: Record<string,string> = {
+  'e-commerce':'🛒','shop':'🛒','ai':'🤖','ml':'🧠','chat':'💬',
+  'dashboard':'📊','analytics':'📈','mobile':'📱','stock':'📈',
+  'web':'🌐','portfolio':'💼','blog':'📝','game':'🎮',
+  'auth':'🔐','api':'⚡','cloud':'☁️','social':'👥',
 };
-function getEmoji(title: string) {
-  const lower = title.toLowerCase();
-  for (const [key, emoji] of Object.entries(PROJECT_EMOJIS)) {
-    if (lower.includes(key)) return emoji;
-  }
+const getEmoji = (t: string) => {
+  const l = t.toLowerCase();
+  for (const [k,v] of Object.entries(EMOJIS)) if (l.includes(k)) return v;
   return '🚀';
-}
+};
 
 export function ProjectPortfolio() {
   const { username } = useParams<{ username: string }>();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [contactOpen, setContactOpen] = useState(false);
 
   useEffect(() => {
     fetch(`${API}/projects/u/${username}`)
       .then(r => r.json())
-      .then(d => {
-        if (d.success) setData(d.data);
-        else setNotFound(true);
-      })
+      .then(d => { if (d.success) setData(d.data); else setNotFound(true); })
       .catch(() => setNotFound(true))
       .finally(() => setLoading(false));
   }, [username]);
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background: '#0a0f1e' }}>
-      <div className="w-10 h-10 rounded-full border-2 border-indigo-500 border-t-transparent animate-spin" />
+    <div style={{background:'#030508',minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center'}}>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+      <div style={{width:40,height:40,borderRadius:'50%',border:'2px solid #6366f1',borderTopColor:'transparent',animation:'spin 0.8s linear infinite'}} />
     </div>
   );
 
   if (notFound || !data) return (
-    <div className="min-h-screen flex flex-col items-center justify-center" style={{ background: '#0a0f1e' }}>
-      <p className="text-6xl mb-4">🔍</p>
-      <h1 className="text-2xl font-bold text-white mb-2">Portfolio not found</h1>
-      <p style={{ color: 'rgba(255,255,255,0.4)' }}>No portfolio found for <strong className="text-white">@{username}</strong></p>
-      <a href="/" className="mt-6 px-6 py-3 rounded-xl text-sm font-semibold text-white" style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>
-        Go to Hiresnix
-      </a>
+    <div style={{background:'#030508',minHeight:'100vh',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',fontFamily:'Inter,sans-serif'}}>
+      <div style={{fontSize:64,marginBottom:16}}>🔍</div>
+      <h1 style={{color:'#fff',fontSize:24,fontWeight:800,marginBottom:8}}>Portfolio not found</h1>
+      <p style={{color:'rgba(255,255,255,0.4)',marginBottom:24}}>No portfolio found for <strong style={{color:'#a5b4fc'}}>@{username}</strong></p>
+      <a href="/" style={{padding:'12px 28px',borderRadius:12,background:'linear-gradient(135deg,#6366f1,#8b5cf6)',color:'#fff',textDecoration:'none',fontWeight:700,fontSize:14}}>Go to Hiresnix</a>
     </div>
   );
 
   const { user, student, projects } = data;
-  const initials = user.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase();
-  const liveProjects = projects.filter((p: any) => p.status === 'live').length;
+  const initials = user.name.split(' ').map((n:string)=>n[0]).join('').slice(0,2).toUpperCase();
+  const liveProjects = projects.filter((p:any)=>p.status==='live').length;
+  const skills = student.skills ? (Array.isArray(student.skills) ? student.skills : student.skills.split(',')).map((s:string)=>s.trim()).filter(Boolean) : [];
+  const firstName = user.name.split(' ')[0];
+
+  const S: React.CSSProperties = {fontFamily:'Inter,sans-serif'};
 
   return (
-    <div className="min-h-screen" style={{ background: '#0a0f1e', fontFamily: 'Inter, sans-serif' }}>
+    <div style={{...S,background:'#030508',minHeight:'100vh',color:'#fff',overflowX:'hidden'}}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+        *{box-sizing:border-box;margin:0;padding:0}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        @keyframes marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+        .pcard{transition:all 0.3s!important}
+        .pcard:hover{transform:translateY(-4px)!important;border-color:rgba(99,102,241,0.5)!important;box-shadow:0 20px 40px rgba(0,0,0,0.5),0 0 30px rgba(99,102,241,0.1)!important}
+        .soc:hover{border-color:rgba(99,102,241,0.5)!important;color:#a5b4fc!important}
+        .spill:hover{background:rgba(99,102,241,0.2)!important;color:#a5b4fc!important}
+        .copt:hover{border-color:rgba(99,102,241,0.4)!important;background:rgba(99,102,241,0.06)!important}
+      `}</style>
+
+      {/* Blobs */}
+      <div style={{position:'fixed',top:-300,left:-200,width:700,height:700,borderRadius:'50%',background:'radial-gradient(circle,rgba(99,102,241,0.12) 0%,transparent 70%)',pointerEvents:'none',zIndex:0}} />
+      <div style={{position:'fixed',bottom:-200,right:-100,width:500,height:500,borderRadius:'50%',background:'radial-gradient(circle,rgba(212,175,55,0.08) 0%,transparent 70%)',pointerEvents:'none',zIndex:0}} />
+
+      {/* Contact Modal */}
+      {contactOpen && (
+        <div onClick={()=>setContactOpen(false)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.8)',backdropFilter:'blur(8px)',zIndex:200,display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
+          <div onClick={e=>e.stopPropagation()} style={{background:'#0d1117',border:'1px solid rgba(255,255,255,0.1)',borderRadius:24,padding:32,maxWidth:420,width:'100%',position:'relative'}}>
+            <div style={{position:'absolute',top:0,left:0,right:0,height:1,background:'linear-gradient(90deg,transparent,rgba(99,102,241,0.8),rgba(212,175,55,0.6),transparent)'}} />
+            <button onClick={()=>setContactOpen(false)} style={{position:'absolute',top:16,right:16,width:32,height:32,borderRadius:8,background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.08)',color:'rgba(255,255,255,0.5)',cursor:'pointer',fontSize:16,display:'flex',alignItems:'center',justifyContent:'center'}}>✕</button>
+            <h3 style={{fontSize:20,fontWeight:800,marginBottom:6}}>Get in Touch</h3>
+            <p style={{fontSize:13,color:'rgba(255,255,255,0.4)',marginBottom:24}}>Pick a way to connect with {firstName}</p>
+            <a href={`mailto:${user.email}`} className="copt" style={{display:'flex',alignItems:'center',gap:14,padding:16,borderRadius:14,border:'1px solid rgba(255,255,255,0.07)',background:'rgba(255,255,255,0.02)',marginBottom:10,cursor:'pointer',textDecoration:'none',transition:'all 0.2s'}}>
+              <div style={{width:42,height:42,borderRadius:12,display:'flex',alignItems:'center',justifyContent:'center',fontSize:20,background:'rgba(99,102,241,0.15)',flexShrink:0}}>✉️</div>
+              <div><p style={{fontSize:14,fontWeight:700,color:'#fff',marginBottom:2}}>Email</p><span style={{fontSize:12,color:'rgba(255,255,255,0.4)'}}>{user.email}</span></div>
+            </a>
+            {student.phone && (
+              <a href={`https://wa.me/91${student.phone.replace(/\D/g,'')}`} target="_blank" rel="noopener noreferrer" className="copt" style={{display:'flex',alignItems:'center',gap:14,padding:16,borderRadius:14,border:'1px solid rgba(255,255,255,0.07)',background:'rgba(255,255,255,0.02)',marginBottom:10,cursor:'pointer',textDecoration:'none',transition:'all 0.2s'}}>
+                <div style={{width:42,height:42,borderRadius:12,display:'flex',alignItems:'center',justifyContent:'center',fontSize:20,background:'rgba(37,211,102,0.12)',flexShrink:0}}>📱</div>
+                <div><p style={{fontSize:14,fontWeight:700,color:'#fff',marginBottom:2}}>WhatsApp</p><span style={{fontSize:12,color:'rgba(255,255,255,0.4)'}}>Chat directly</span></div>
+              </a>
+            )}
+            {student.linkedinUrl && (
+              <a href={student.linkedinUrl} target="_blank" rel="noopener noreferrer" className="copt" style={{display:'flex',alignItems:'center',gap:14,padding:16,borderRadius:14,border:'1px solid rgba(255,255,255,0.07)',background:'rgba(255,255,255,0.02)',cursor:'pointer',textDecoration:'none',transition:'all 0.2s'}}>
+                <div style={{width:42,height:42,borderRadius:12,display:'flex',alignItems:'center',justifyContent:'center',fontSize:16,fontWeight:800,background:'rgba(10,102,194,0.15)',color:'#60a5fa',flexShrink:0}}>in</div>
+                <div><p style={{fontSize:14,fontWeight:700,color:'#fff',marginBottom:2}}>LinkedIn</p><span style={{fontSize:12,color:'rgba(255,255,255,0.4)'}}>View full profile</span></div>
+              </a>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Nav */}
-      <nav className="border-b px-6 py-4 flex items-center justify-between" style={{ borderColor: 'rgba(255,255,255,0.08)', background: 'rgba(10,15,30,0.9)', backdropFilter: 'blur(10px)', position: 'sticky', top: 0, zIndex: 10 }}>
-        <a href="/" className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>
-            <Code2 size={14} className="text-white" />
-          </div>
-          <span className="font-bold text-white text-sm">Hiresnix</span>
+      <nav style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'18px 40px',borderBottom:'1px solid rgba(255,255,255,0.05)',position:'sticky',top:0,background:'rgba(3,5,8,0.9)',backdropFilter:'blur(20px)',zIndex:100}}>
+        <a href="/" style={{display:'flex',alignItems:'center',gap:10,textDecoration:'none'}}>
+          <div style={{width:32,height:32,borderRadius:10,background:'linear-gradient(135deg,#6366f1,#d4af37)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:14,fontWeight:900,color:'#fff'}}>H</div>
+          <span style={{fontSize:15,fontWeight:800,color:'#fff',letterSpacing:-0.5}}>Hiresnix</span>
         </a>
-        <a href="/auth" className="text-xs px-3 py-1.5 rounded-lg font-semibold text-white" style={{ background: 'rgba(99,102,241,0.2)', border: '1px solid rgba(99,102,241,0.3)' }}>
-          Create your portfolio →
-        </a>
+        <div style={{display:'flex',gap:8}}>
+          <button onClick={()=>setContactOpen(true)} style={{fontSize:12,padding:'8px 18px',borderRadius:8,border:'1px solid rgba(212,175,55,0.5)',background:'rgba(212,175,55,0.08)',color:'#d4af37',cursor:'pointer',fontWeight:700}}>✦ Hire {firstName}</button>
+          <a href="/auth" style={{fontSize:12,padding:'8px 18px',borderRadius:8,border:'1px solid rgba(255,255,255,0.08)',background:'rgba(255,255,255,0.04)',color:'rgba(255,255,255,0.5)',textDecoration:'none',fontWeight:600}}>Create yours →</a>
+        </div>
       </nav>
 
-      <div className="max-w-4xl mx-auto px-4 py-10">
-
-        {/* Profile card */}
-        <div className="rounded-2xl p-6 mb-8" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-          <div className="flex items-start gap-5 flex-wrap">
-            {/* Avatar */}
-            {student.profilePic ? (
-              <img src={student.profilePic} alt={user.name} className="w-20 h-20 rounded-2xl object-cover" />
-            ) : (
-              <div className="w-20 h-20 rounded-2xl flex items-center justify-center text-2xl font-bold text-white flex-shrink-0"
-                style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>
-                {initials}
-              </div>
-            )}
-
-            <div className="flex-1">
-              <div className="flex items-center gap-3 flex-wrap mb-1">
-                <h1 className="text-2xl font-bold text-white">{user.name}</h1>
-                {student.domain && (
-                  <span className="text-xs px-3 py-1 rounded-full font-semibold" style={{ background: 'rgba(99,102,241,0.2)', color: '#a5b4fc' }}>
-                    {student.domain}
-                  </span>
-                )}
-              </div>
-              {student.location && <p className="text-sm mb-2" style={{ color: 'rgba(255,255,255,0.5)' }}>📍 {student.location}</p>}
-              {student.bio && <p className="text-sm leading-relaxed mb-3" style={{ color: 'rgba(255,255,255,0.65)' }}>{student.bio}</p>}
-
-              {/* Links */}
-              <div className="flex gap-3 flex-wrap">
-                {student.linkedinUrl && (
-                  <a href={student.linkedinUrl} target="_blank" rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-medium"
-                    style={{ background: 'rgba(10,102,194,0.2)', color: '#60a5fa', border: '1px solid rgba(10,102,194,0.3)' }}>
-                    <Linkedin size={12} /> LinkedIn
-                  </a>
-                )}
-                {student.githubUrl && (
-                  <a href={student.githubUrl} target="_blank" rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-medium"
-                    style={{ background: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.7)', border: '1px solid rgba(255,255,255,0.1)' }}>
-                    <Github size={12} /> GitHub
-                  </a>
-                )}
-                {student.portfolioUrl && (
-                  <a href={student.portfolioUrl} target="_blank" rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-medium"
-                    style={{ background: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.7)', border: '1px solid rgba(255,255,255,0.1)' }}>
-                    <Globe size={12} /> Website
-                  </a>
-                )}
-                <a href={`mailto:${user.email}`}
-                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-medium"
-                  style={{ background: 'rgba(99,102,241,0.15)', color: '#a5b4fc', border: '1px solid rgba(99,102,241,0.25)' }}>
-                  <Mail size={12} /> Contact
-                </a>
-              </div>
+      {/* Hero */}
+      <div style={{padding:'80px 40px 60px',position:'relative',zIndex:1,textAlign:'center',maxWidth:900,margin:'0 auto'}}>
+        <div style={{display:'inline-flex',alignItems:'center',gap:8,fontSize:12,padding:'6px 16px',borderRadius:20,border:'1px solid rgba(212,175,55,0.3)',background:'rgba(212,175,55,0.08)',color:'#d4af37',fontWeight:700,marginBottom:24,letterSpacing:'0.5px'}}>
+          <div style={{width:6,height:6,borderRadius:'50%',background:'#22c55e',boxShadow:'0 0 8px rgba(34,197,94,0.8)'}} />
+          Available for opportunities
+        </div>
+        <div style={{fontSize:'clamp(48px,8vw,80px)',fontWeight:900,letterSpacing:-3,lineHeight:1,marginBottom:16,background:'linear-gradient(135deg,#fff 40%,rgba(255,255,255,0.7))',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>{user.name}</div>
+        <div style={{fontSize:'clamp(20px,3vw,28px)',fontWeight:800,letterSpacing:-1,marginBottom:20}}>
+          <span style={{background:'linear-gradient(135deg,#6366f1,#d4af37)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>{student.domain || 'Developer'}</span>
+        </div>
+        {student.bio && <div style={{fontSize:15,color:'rgba(255,255,255,0.45)',lineHeight:1.7,maxWidth:520,margin:'0 auto 32px'}}>{student.bio}</div>}
+        <div style={{display:'flex',gap:12,justifyContent:'center',flexWrap:'wrap',marginBottom:40}}>
+          <button onClick={()=>setContactOpen(true)} style={{padding:'14px 28px',borderRadius:12,background:'linear-gradient(135deg,#6366f1,#8b5cf6)',color:'#fff',fontSize:14,fontWeight:700,cursor:'pointer',border:'none',boxShadow:'0 4px 20px rgba(99,102,241,0.4)'}}>✉ Get in Touch</button>
+          <button onClick={()=>setContactOpen(true)} style={{padding:'14px 28px',borderRadius:12,background:'linear-gradient(135deg,#d4af37,#f5d680)',color:'#030508',fontSize:14,fontWeight:800,cursor:'pointer',border:'none',boxShadow:'0 4px 20px rgba(212,175,55,0.3)'}}>✦ Hire Me</button>
+          {student.githubUrl && <a href={student.githubUrl} target="_blank" rel="noopener noreferrer" style={{padding:'14px 28px',borderRadius:12,background:'rgba(255,255,255,0.04)',color:'rgba(255,255,255,0.6)',fontSize:14,fontWeight:600,textDecoration:'none',border:'1px solid rgba(255,255,255,0.1)'}}>⌥ GitHub</a>}
+        </div>
+        <div style={{display:'flex',gap:32,justifyContent:'center'}}>
+          {[{num:projects.length,lbl:'Projects',gold:true},{num:liveProjects,lbl:'Live',neon:true},{num:'1+',lbl:'Years exp',white:true}].map(s=>(
+            <div key={s.lbl} style={{textAlign:'center'}}>
+              <div style={{fontSize:28,fontWeight:900,letterSpacing:-1,...(s.gold?{background:'linear-gradient(135deg,#d4af37,#f5d680)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}:s.neon?{color:'#22c55e',textShadow:'0 0 20px rgba(34,197,94,0.6)'}:{color:'#fff'})}}>{s.num}</div>
+              <div style={{fontSize:12,color:'rgba(255,255,255,0.3)',marginTop:2}}>{s.lbl}</div>
             </div>
+          ))}
+        </div>
+      </div>
 
-            {/* Stats */}
-            <div className="flex gap-4">
-              <div className="text-center">
-                <p className="text-2xl font-bold text-white">{projects.length}</p>
-                <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>Projects</p>
+      {/* Marquee */}
+      {skills.length > 0 && (
+        <div style={{padding:'24px 0',borderTop:'1px solid rgba(255,255,255,0.05)',borderBottom:'1px solid rgba(255,255,255,0.05)',overflow:'hidden',position:'relative',zIndex:1}}>
+          <div style={{display:'flex',animation:'marquee 20s linear infinite',width:'max-content'}}>
+            {[...skills,...skills,...skills,...skills].map((s:string,i:number)=>(
+              <span key={i} style={{display:'inline-flex',alignItems:'center',gap:10,padding:'0 28px',fontSize:13,fontWeight:600,color:'rgba(255,255,255,0.3)',whiteSpace:'nowrap'}}>
+                {s} <span style={{width:4,height:4,borderRadius:'50%',background:'rgba(99,102,241,0.6)',display:'inline-block'}} />
+              </span>
+            ))}
+          </div>
+          <div style={{position:'absolute',top:0,bottom:0,left:0,width:100,background:'linear-gradient(90deg,#030508,transparent)',zIndex:2}} />
+          <div style={{position:'absolute',top:0,bottom:0,right:0,width:100,background:'linear-gradient(-90deg,#030508,transparent)',zIndex:2}} />
+        </div>
+      )}
+
+      {/* Profile Card */}
+      <div style={{padding:'40px 40px 0',position:'relative',zIndex:1}}>
+        <div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:24,padding:32,position:'relative',overflow:'hidden',maxWidth:900,margin:'0 auto'}}>
+          <div style={{position:'absolute',top:0,left:0,right:0,height:1,background:'linear-gradient(90deg,transparent,rgba(99,102,241,0.8),rgba(212,175,55,0.6),transparent)'}} />
+          <div style={{display:'flex',gap:24,alignItems:'flex-start',flexWrap:'wrap'}}>
+            <div style={{position:'relative',flexShrink:0}}>
+              {student.profilePic ? (
+                <img src={student.profilePic} alt={user.name} style={{width:72,height:72,borderRadius:20,objectFit:'cover',boxShadow:'0 0 30px rgba(99,102,241,0.4)'}} />
+              ) : (
+                <div style={{width:72,height:72,borderRadius:20,background:'linear-gradient(135deg,#6366f1,#8b5cf6)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:26,fontWeight:900,boxShadow:'0 0 30px rgba(99,102,241,0.4)'}}>{initials}</div>
+              )}
+              <div style={{position:'absolute',bottom:4,right:4,width:14,height:14,borderRadius:'50%',background:'#22c55e',border:'3px solid #030508',boxShadow:'0 0 8px rgba(34,197,94,0.8)'}} />
+            </div>
+            <div style={{flex:1,minWidth:180}}>
+              <div style={{fontSize:22,fontWeight:900,letterSpacing:-0.5,marginBottom:3}}>{user.name}</div>
+              <div style={{fontSize:13,color:'rgba(255,255,255,0.4)',marginBottom:12}}>{student.domain || 'Developer'}{student.location ? ` · ${student.location}` : ''}</div>
+              <div style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:12}}>
+                <span style={{fontSize:10,padding:'4px 10px',borderRadius:20,fontWeight:700,background:'rgba(212,175,55,0.15)',color:'#d4af37',border:'1px solid rgba(212,175,55,0.3)'}}>✦ Hiresnix Verified</span>
+                {student.domain && <span style={{fontSize:10,padding:'4px 10px',borderRadius:20,fontWeight:700,background:'rgba(99,102,241,0.15)',color:'#a5b4fc',border:'1px solid rgba(99,102,241,0.3)'}}>{student.domain}</span>}
+                <span style={{fontSize:10,padding:'4px 10px',borderRadius:20,fontWeight:700,background:'rgba(34,197,94,0.12)',color:'#4ade80',border:'1px solid rgba(34,197,94,0.25)'}}>● Open to work</span>
               </div>
-              <div className="text-center">
-                <p className="text-2xl font-bold" style={{ color: '#22c55e' }}>{liveProjects}</p>
-                <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>Live</p>
+              <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+                {student.githubUrl && <a href={student.githubUrl} target="_blank" rel="noopener noreferrer" className="soc" style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:12,padding:'6px 12px',borderRadius:8,border:'1px solid rgba(255,255,255,0.08)',background:'rgba(255,255,255,0.04)',color:'rgba(255,255,255,0.6)',textDecoration:'none',fontWeight:600,transition:'all 0.2s'}}>⌥ GitHub</a>}
+                {student.linkedinUrl && <a href={student.linkedinUrl} target="_blank" rel="noopener noreferrer" className="soc" style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:12,padding:'6px 12px',borderRadius:8,border:'1px solid rgba(255,255,255,0.08)',background:'rgba(255,255,255,0.04)',color:'rgba(255,255,255,0.6)',textDecoration:'none',fontWeight:600,transition:'all 0.2s'}}>in LinkedIn</a>}
+                {student.phone && <a href={`https://wa.me/91${student.phone.replace(/\D/g,'')}`} target="_blank" rel="noopener noreferrer" style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:12,padding:'6px 12px',borderRadius:8,border:'1px solid rgba(37,211,102,0.3)',background:'rgba(37,211,102,0.08)',color:'#25d366',textDecoration:'none',fontWeight:700}}>📱 WhatsApp</a>}
+                <button onClick={()=>setContactOpen(true)} style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:12,padding:'6px 12px',borderRadius:8,border:'1px solid rgba(212,175,55,0.4)',background:'linear-gradient(135deg,rgba(99,102,241,0.2),rgba(212,175,55,0.15))',color:'#d4af37',cursor:'pointer',fontWeight:700}}>✦ Hire Me</button>
               </div>
             </div>
           </div>
-
-          {/* Skills */}
-          {student.skills && (
-            <div className="mt-4 pt-4 border-t" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
-              <p className="text-xs font-semibold mb-2" style={{ color: 'rgba(255,255,255,0.4)' }}>SKILLS</p>
-              <div className="flex flex-wrap gap-2">
-                {(Array.isArray(student.skills) ? student.skills : student.skills.split(','))
-                  .slice(0, 15)
-                  .map((s: string) => (
-                    <span key={s} className="text-xs px-2.5 py-1 rounded-full" style={{ background: 'rgba(99,102,241,0.12)', color: '#a5b4fc', border: '1px solid rgba(99,102,241,0.2)' }}>
-                      {typeof s === 'string' ? s.trim() : s}
-                    </span>
-                  ))}
-              </div>
+          {skills.length > 0 && (
+            <div style={{marginTop:20,paddingTop:18,borderTop:'1px solid rgba(255,255,255,0.05)'}}>
+              <div style={{fontSize:10,fontWeight:700,color:'rgba(255,255,255,0.2)',textTransform:'uppercase',letterSpacing:'2px',marginBottom:10}}>Tech Stack</div>
+              {skills.slice(0,15).map((s:string)=>(
+                <span key={s} className="spill" style={{display:'inline-block',padding:'5px 12px',borderRadius:7,fontSize:12,fontWeight:600,background:'rgba(99,102,241,0.08)',color:'rgba(165,180,252,0.7)',border:'1px solid rgba(99,102,241,0.12)',margin:'3px 3px 3px 0',cursor:'default',transition:'all 0.2s'}}>{s}</span>
+              ))}
             </div>
           )}
         </div>
+      </div>
 
-        {/* Projects */}
-        <h2 className="text-lg font-bold text-white mb-4">Projects <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '14px', fontWeight: 400 }}>({projects.length})</span></h2>
-
-        {projects.length === 0 ? (
-          <div className="rounded-2xl p-10 text-center" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
-            <p className="text-3xl mb-3">🚀</p>
-            <p className="text-white font-medium">No projects added yet</p>
+      {/* Projects */}
+      <div style={{padding:'40px 40px 0',position:'relative',zIndex:1}}>
+        <div style={{maxWidth:980,margin:'0 auto'}}>
+          <div style={{display:'flex',alignItems:'center',gap:16,marginBottom:24}}>
+            <div style={{fontSize:20,fontWeight:800,letterSpacing:-0.5}}>Projects</div>
+            <div style={{flex:1,height:1,background:'linear-gradient(90deg,rgba(99,102,241,0.4),transparent)'}} />
+            <div style={{fontSize:12,color:'rgba(255,255,255,0.25)',fontWeight:600}}>{projects.length} total</div>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {projects.map((project: any) => (
-              <div key={project.id} className="rounded-2xl overflow-hidden group transition-all" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                {/* Image */}
-                {project.imageUrl ? (
-                  <div className="w-full h-44 overflow-hidden">
-                    <img src={project.imageUrl} alt={project.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                  </div>
-                ) : (
-                  <div className="w-full h-44 flex items-center justify-center text-5xl" style={{ background: 'rgba(99,102,241,0.08)' }}>
-                    {getEmoji(project.title)}
-                  </div>
-                )}
-
-                <div className="p-5">
-                  <div className="flex items-start justify-between gap-2 mb-2">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-bold text-white">{project.title}</h3>
-                        {project.featured && <Star size={13} style={{ color: '#f59e0b' }} fill="#f59e0b" />}
-                      </div>
-                      <span className="text-xs px-2 py-0.5 rounded-full mt-1 inline-block font-medium"
-                        style={{ background: STATUS_CONFIG[project.status]?.bg, color: STATUS_CONFIG[project.status]?.color }}>
-                        {STATUS_CONFIG[project.status]?.label}
-                      </span>
+          {projects.length === 0 ? (
+            <div style={{textAlign:'center',padding:'60px 20px',color:'rgba(255,255,255,0.3)'}}>
+              <div style={{fontSize:48,marginBottom:12}}>🚀</div>
+              <p>No projects yet</p>
+            </div>
+          ) : (
+            <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(260px,1fr))',gap:16}}>
+              {projects.map((p:any,i:number)=>(
+                <div key={p.id} className="pcard" style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:20,overflow:'hidden',cursor:'pointer',position:'relative',transition:'all 0.3s'}}>
+                  {p.imageUrl ? (
+                    <img src={p.imageUrl} alt={p.title} style={{width:'100%',height:130,objectFit:'cover'}} />
+                  ) : (
+                    <div style={{height:130,display:'flex',alignItems:'center',justifyContent:'center',fontSize:44,background:CARD_BG[i%CARD_BG.length],position:'relative'}}>
+                      {getEmoji(p.title)}
+                      {p.featured && <div style={{position:'absolute',top:10,right:10,fontSize:10,padding:'3px 10px',borderRadius:20,background:'rgba(212,175,55,0.2)',color:'#d4af37',border:'1px solid rgba(212,175,55,0.4)',fontWeight:700}}>✦ Featured</div>}
+                    </div>
+                  )}
+                  <div style={{padding:16}}>
+                    <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:8,marginBottom:6}}>
+                      <div style={{fontSize:14,fontWeight:700,letterSpacing:-0.3,lineHeight:1.3}}>{p.title}</div>
+                      {p.status==='live'
+                        ? <span style={{fontSize:10,padding:'3px 8px',borderRadius:6,background:'rgba(34,197,94,0.12)',color:'#4ade80',border:'1px solid rgba(34,197,94,0.2)',fontWeight:700,whiteSpace:'nowrap'}}>● Live</span>
+                        : <span style={{fontSize:10,padding:'3px 8px',borderRadius:6,background:'rgba(99,102,241,0.12)',color:'#a5b4fc',border:'1px solid rgba(99,102,241,0.2)',fontWeight:700}}>✓ Done</span>
+                      }
+                    </div>
+                    <div style={{fontSize:12,color:'rgba(255,255,255,0.4)',lineHeight:1.6,marginBottom:12}}>{p.description.slice(0,100)}{p.description.length>100?'...':''}</div>
+                    <div style={{display:'flex',flexWrap:'wrap',gap:4,marginBottom:14}}>
+                      {p.techStack.slice(0,4).map((t:string)=>(
+                        <span key={t} style={{fontSize:11,padding:'3px 8px',borderRadius:6,background:'rgba(255,255,255,0.04)',color:'rgba(255,255,255,0.35)',border:'1px solid rgba(255,255,255,0.06)'}}>{t}</span>
+                      ))}
+                      {p.techStack.length>4 && <span style={{fontSize:11,padding:'3px 8px',borderRadius:6,background:'rgba(255,255,255,0.04)',color:'rgba(255,255,255,0.3)'}}>+{p.techStack.length-4}</span>}
+                    </div>
+                    <div style={{display:'flex',gap:8}}>
+                      {p.liveUrl && <a href={p.liveUrl} target="_blank" rel="noopener noreferrer" style={{flex:1,padding:9,borderRadius:10,background:'linear-gradient(135deg,#6366f1,#8b5cf6)',color:'#fff',fontSize:12,fontWeight:700,textAlign:'center',textDecoration:'none',boxShadow:'0 4px 15px rgba(99,102,241,0.3)'}}>↗ Live Demo</a>}
+                      {p.githubUrl && <a href={p.githubUrl} target="_blank" rel="noopener noreferrer" style={{padding:'9px 14px',borderRadius:10,background:'rgba(255,255,255,0.04)',color:'rgba(255,255,255,0.5)',fontSize:12,fontWeight:600,textDecoration:'none',border:'1px solid rgba(255,255,255,0.07)'}}>⌥ Code</a>}
+                      {!p.liveUrl && !p.githubUrl && <div style={{flex:1,padding:9,borderRadius:10,background:'rgba(255,255,255,0.04)',color:'rgba(255,255,255,0.25)',fontSize:12,textAlign:'center',border:'1px solid rgba(255,255,255,0.05)'}}>No links</div>}
                     </div>
                   </div>
-
-                  <p className="text-sm mb-4 leading-relaxed" style={{ color: 'rgba(255,255,255,0.6)' }}>{project.description}</p>
-
-                  {/* Tech */}
-                  <div className="flex flex-wrap gap-1.5 mb-4">
-                    {project.techStack.map((t: string) => (
-                      <span key={t} className="text-xs px-2 py-0.5 rounded-full" style={{ background: 'rgba(99,102,241,0.15)', color: '#a5b4fc' }}>{t}</span>
-                    ))}
-                  </div>
-
-                  {/* Buttons */}
-                  <div className="flex gap-2">
-                    {project.liveUrl && (
-                      <a href={project.liveUrl} target="_blank" rel="noopener noreferrer"
-                        className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold text-white"
-                        style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>
-                        <ExternalLink size={14} /> Live Demo
-                      </a>
-                    )}
-                    {project.githubUrl && (
-                      <a href={project.githubUrl} target="_blank" rel="noopener noreferrer"
-                        className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-semibold"
-                        style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.8)', border: '1px solid rgba(255,255,255,0.1)' }}>
-                        <Github size={14} /> Code
-                      </a>
-                    )}
-                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Recruiter CTA */}
-        <div className="mt-10 rounded-2xl p-6 flex items-center justify-between gap-4 flex-wrap"
-          style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.2), rgba(139,92,246,0.15))', border: '1px solid rgba(99,102,241,0.3)' }}>
-          <div>
-            <p className="font-bold text-white text-lg">Interested in hiring {user.name.split(' ')[0]}?</p>
-            <p className="text-sm mt-1" style={{ color: 'rgba(255,255,255,0.5)' }}>Connect directly via email or find more talent on Hiresnix</p>
-          </div>
-          <div className="flex gap-3 flex-wrap">
-            <a href={`mailto:${user.email}`}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white"
-              style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>
-              <Mail size={14} /> Contact {user.name.split(' ')[0]}
-            </a>
-          </div>
+              ))}
+            </div>
+          )}
         </div>
+      </div>
 
-        {/* Footer */}
-        <div className="text-center mt-8">
-          <p className="text-xs" style={{ color: 'rgba(255,255,255,0.25)' }}>Powered by <a href="/" className="text-indigo-400 font-semibold">Hiresnix</a> · Build your portfolio free</p>
+      {/* CTA */}
+      <div style={{margin:'40px 40px 0',background:'linear-gradient(135deg,rgba(212,175,55,0.06),rgba(99,102,241,0.06))',border:'1px solid rgba(212,175,55,0.15)',borderRadius:20,padding:'32px',display:'flex',alignItems:'center',justifyContent:'space-between',gap:20,flexWrap:'wrap',position:'relative',overflow:'hidden',zIndex:1}}>
+        <div style={{position:'absolute',top:0,left:0,right:0,height:1,background:'linear-gradient(90deg,transparent,rgba(212,175,55,0.6),rgba(99,102,241,0.5),transparent)'}} />
+        <div>
+          <h3 style={{fontSize:20,fontWeight:800,letterSpacing:-0.5,marginBottom:4,background:'linear-gradient(135deg,#fff,#d4af37)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>Interested in hiring {firstName}?</h3>
+          <p style={{fontSize:13,color:'rgba(255,255,255,0.4)'}}>Connect directly — let's build something great together</p>
         </div>
+        <div style={{display:'flex',gap:10,flexWrap:'wrap'}}>
+          <button onClick={()=>setContactOpen(true)} style={{padding:'12px 24px',borderRadius:12,background:'linear-gradient(135deg,#6366f1,#8b5cf6)',color:'#fff',fontSize:13,fontWeight:700,cursor:'pointer',border:'none',boxShadow:'0 4px 15px rgba(99,102,241,0.3)'}}>✉ Get in Touch</button>
+          <button onClick={()=>setContactOpen(true)} style={{padding:'12px 24px',borderRadius:12,background:'linear-gradient(135deg,#d4af37,#f5d680)',color:'#030508',fontSize:13,fontWeight:800,cursor:'pointer',border:'none',boxShadow:'0 4px 15px rgba(212,175,55,0.3)'}}>✦ Hire {firstName}</button>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div style={{textAlign:'center',padding:32,fontSize:12,color:'rgba(255,255,255,0.15)',position:'relative',zIndex:1,marginTop:40}}>
+        Powered by <a href="/" style={{color:'rgba(99,102,241,0.5)',textDecoration:'none',fontWeight:600}}>Hiresnix</a> · Build your portfolio free
       </div>
     </div>
   );
