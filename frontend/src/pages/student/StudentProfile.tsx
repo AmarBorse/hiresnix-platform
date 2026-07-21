@@ -30,6 +30,7 @@ export function StudentProfile() {
 
   const [form, setForm] = useState({
     cgpa: '', department: '', domain: '', year: '', skills: [] as string[], projects: [] as string[],
+    phone: '', location: '', bio: '', linkedinUrl: '', githubUrl: '', portfolioUrl: '',
   });
   const [newSkill, setNewSkill] = useState('');
   const [saving, setSaving] = useState(false);
@@ -47,6 +48,12 @@ export function StudentProfile() {
         year: p.year?.toString() || '',
         skills: p.skills || [],
         projects: p.projects || [],
+        phone: p.phone || '',
+        location: p.location || '',
+        bio: p.bio || '',
+        linkedinUrl: p.linkedinUrl || '',
+        githubUrl: p.githubUrl || '',
+        portfolioUrl: p.portfolioUrl || '',
       });
     }
   }, [rawProfile]);
@@ -61,6 +68,12 @@ export function StudentProfile() {
         year: form.year ? parseInt(form.year) : null,
         skills: form.skills,
         projects: form.projects,
+        phone: form.phone || null,
+        location: form.location || null,
+        bio: form.bio || null,
+        linkedinUrl: form.linkedinUrl || null,
+        githubUrl: form.githubUrl || null,
+        portfolioUrl: form.portfolioUrl || null,
       });
       toast.success('Profile updated!');
       refetch();
@@ -239,6 +252,50 @@ export function StudentProfile() {
                 <option key={domain} value={domain}>{domain}</option>
               ))}
             </select>
+          </div>
+        </div>
+      </div>
+
+      {/* Portfolio & Social Links */}
+      <div className="bg-white rounded-xl border border-gray-200 p-5">
+        <h3 className="font-bold text-gray-900 mb-1">Portfolio & Social Links</h3>
+        <p className="text-xs text-gray-400 mb-4">These will appear on your public portfolio page at <span className="text-indigo-500 font-semibold">hiresnix.co.in/projects/{user?.name?.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'')}</span></p>
+        <div className="grid sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Phone Number</label>
+            <input type="tel" value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+              placeholder="e.g. 9876543210" />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Location</label>
+            <input type="text" value={form.location} onChange={e => setForm(p => ({ ...p, location: e.target.value }))}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+              placeholder="e.g. Pune, Maharashtra" />
+          </div>
+          <div className="sm:col-span-2">
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Bio / About</label>
+            <textarea value={form.bio} onChange={e => setForm(p => ({ ...p, bio: e.target.value }))} rows={3}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 resize-none"
+              placeholder="Write a short bio about yourself..." />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">LinkedIn URL</label>
+            <input type="url" value={form.linkedinUrl} onChange={e => setForm(p => ({ ...p, linkedinUrl: e.target.value }))}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+              placeholder="https://linkedin.com/in/yourname" />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">GitHub URL</label>
+            <input type="url" value={form.githubUrl} onChange={e => setForm(p => ({ ...p, githubUrl: e.target.value }))}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+              placeholder="https://github.com/yourusername" />
+          </div>
+          <div className="sm:col-span-2">
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Portfolio / Website URL</label>
+            <input type="url" value={form.portfolioUrl} onChange={e => setForm(p => ({ ...p, portfolioUrl: e.target.value }))}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+              placeholder="https://yourportfolio.com" />
           </div>
         </div>
       </div>
