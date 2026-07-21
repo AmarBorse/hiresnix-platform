@@ -75,7 +75,8 @@ app.use('/api/certificates',  require('./routes/certificateRoutes'));
 app.use('/api/inst-student',   require('./routes/instStudentRoutes'));
 app.use('/api/institution',   require('./routes/institutionRoutes'));
 app.use('/api/mock-interview', require('./routes/mockInterviewRoutes'));
-app.use('/api/chatbot',        require('./routes/chatbotRoutes'));   // NEW
+app.use('/api/chatbot',        require('./routes/chatbotRoutes')); 
+app.use('/api/projects',       require('./routes/projectRoutes'));  // NEW
 
 app.get('/api/health', (req, res) => res.json({ status: 'OK', db: 'MySQL/PostgreSQL (Sequelize)', timestamp: new Date() }));
 
