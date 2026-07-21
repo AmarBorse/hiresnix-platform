@@ -2,8 +2,7 @@ const express = require('express');
 const router = express.Router();
 const asyncHandler = require('express-async-handler');
 const { protect } = require('../middleware/auth');
-const Project = require('../models/Project');
-const { User, Student } = require('../models');
+const { Project, User, Student } = require('../models');
 const { Op } = require('sequelize');
 
 // ── Public: Get user portfolio by username ─────────────────────────
