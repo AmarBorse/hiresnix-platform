@@ -2,6 +2,7 @@
 import { useState, useRef, useCallback } from 'react';
 import { Upload, FileText, Zap, Download, RefreshCw, CheckCircle, XCircle, ChevronDown, ChevronUp, Sparkles, Target, Brain, Plus, Briefcase, MessageSquare, Linkedin, HelpCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { trackFeature } from '../../hooks/useTrackFeature';
 
 // ── ATS Keywords Database ─────────────────────────────────────────
 const ATS_KEYWORDS: Record<string, string[]> = {
@@ -338,7 +339,7 @@ Achievements: ${parsed.achievements || ''}`
   const handleScan = () => {
     if (!resumeText.trim()) { toast.error('Upload or paste resume first'); return; }
     setScanning(true);
-    setTimeout(() => { setAtsScore(calculateATS(resumeText, effectiveRole)); setScanning(false); toast.success('ATS scan complete!'); }, 1200);
+    setTimeout(() => { setAtsScore(calculateATS(resumeText, effectiveRole)); setScanning(false); toast.success('ATS scan complete!'); trackFeature('resume_builder', 'ats_scan'); }, 1200);
   };
 
   // ── Groq Call ────────────────────────────────────────────────
@@ -364,7 +365,7 @@ Achievements: ${parsed.achievements || ''}`
       );
       const parsed = JSON.parse(raw.replace(/```json|```/g, '').trim());
       setAiAnalysis(parsed);
-      toast.success('AI analysis complete!');
+      toast.success('AI analysis complete!'); trackFeature('resume_builder', 'ai_analysis');
     } catch { toast.error('AI analysis failed. Try again.'); }
     finally { setAnalyzing(false); }
   };
@@ -452,6 +453,7 @@ Subject: [subject line]
       }
       const result = await groqCall(prompt, system);
       setJdResult(result);
+      trackFeature(type === 'jd' ? 'jd_match' : type === 'cover' ? 'cover_letter' : type === 'interview' ? 'interview_prep' : type === 'roadmap' ? 'career_roadmap' : type === 'coldemail' ? 'cold_email' : 'linkedin_summary', 'generate');
     } catch { toast.error('Failed. Try again.'); }
     finally { setAdvancedLoading(false); }
   };

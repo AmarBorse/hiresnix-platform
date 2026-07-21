@@ -1185,6 +1185,11 @@ function LessonPage({ course, onBack }: { course:any; onBack:()=>void }) {
   useEffect(() => {
     const loadVoices = () => window.speechSynthesis.getVoices();
     loadVoices(); window.speechSynthesis.onvoiceschanged = loadVoices;
+    // Track academy usage
+    try {
+      const token = localStorage.getItem('hx_inst_student_token') || localStorage.getItem('hirenix_token');
+      if (token) fetch(`${(import.meta as any).env?.VITE_API_URL || 'https://hirenix-backend.onrender.com/api'}/analytics/track`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ feature: 'academy', action: 'view' }) }).catch(()=>{});
+    } catch {}
     return () => { window.speechSynthesis.onvoiceschanged = null; };
   },[]);
 

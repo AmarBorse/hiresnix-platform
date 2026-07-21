@@ -20,6 +20,8 @@ const BatchStudent           = require('./BatchStudent');
 const Course                 = require('./Course');
 const CourseStudent          = require('./CourseStudent');
 const InstitutionCertificate = require('./InstitutionCertificate');
+const Project                = require('./Project');
+const FeatureUsage           = require('./FeatureUsage');
 
 // ── Existing Associations (unchanged) ────────────────────────────
 
@@ -107,6 +109,6 @@ module.exports = {
   Resource, Certificate, Enquiry,
   Institution, InstitutionStudent, Batch, BatchStudent,
   Course, CourseStudent, InstitutionCertificate,
-  MockInterview,
+  MockInterview, Project, FeatureUsage,
 };
 require('./internshipPlatform');
