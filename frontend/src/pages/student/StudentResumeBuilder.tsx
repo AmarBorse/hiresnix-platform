@@ -104,6 +104,137 @@ export function StudentResumeBuilder() {
   const [jdText, setJdText] = useState('');
   const [jdResult, setJdResult] = useState('');
   const [advancedLoading, setAdvancedLoading] = useState(false);
+  const [sectionLoading, setSectionLoading] = useState('');
+  const [autoFillLoading, setAutoFillLoading] = useState(false);
+  const builderFileRef = useRef<HTMLInputElement>(null);
+
+  // ── Auto Fill from Resume ─────────────────────────────────────
+  const autoFillFromResume = async (file: File) => {
+    setAutoFillLoading(true);
+    toast('Extracting resume text...', { duration: 2000 });
+    try {
+      // Step 1: Extract text from PDF
+      let extractedText = '';
+      if (file.name.endsWith('.pdf') || file.type === 'application/pdf') {
+        const formData = new FormData();
+        formData.append('pdf', file);
+        const res = await fetch(`${API_URL}/public/extract-pdf`, { method: 'POST', body: formData });
+        const data = await res.json();
+        extractedText = data.text || '';
+      } else {
+        extractedText = await file.text();
+      }
+
+      if (!extractedText || extractedText.length < 50) {
+        toast.error('Could not extract text from resume. Try a different file.');
+        setAutoFillLoading(false);
+        return;
+      }
+
+      toast('AI is filling your resume fields...', { duration: 4000 });
+
+      // Step 2: AI parse and fill all fields
+      const token = localStorage.getItem('hx_student_token') || localStorage.getItem('hirenix_token');
+      const res = await fetch(`${API_URL}/groq/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          system: 'You are an expert resume parser. Extract information and return ONLY valid JSON. No markdown, no explanation.',
+          messages: [{
+            role: 'user',
+            content: `Parse this resume and extract all information. Return ONLY this JSON structure (fill empty string if not found):
+{
+  "name": "",
+  "email": "",
+  "phone": "",
+  "location": "",
+  "linkedin": "",
+  "github": "",
+  "website": "",
+  "summary": "",
+  "objective": "",
+  "experience": "",
+  "education": "",
+  "skills": "",
+  "projects": "",
+  "certifications": "",
+  "achievements": "",
+  "languages": "",
+  "hobbies": "",
+  "references": ""
+}
+
+Resume text:
+${extractedText.slice(0, 3000)}`
+          }]
+        })
+      });
+      const data = await res.json();
+      const raw = (data.content || '{}').replace(/```json|```/g, '').trim();
+      const parsed = JSON.parse(raw);
+
+      toast('AI is making it ATS-friendly...', { duration: 4000 });
+
+      // Step 3: AI improve each filled section for ATS
+      const improveRes = await fetch(`${API_URL}/groq/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          system: 'You are an expert ATS resume writer. Return ONLY valid JSON, no markdown.',
+          messages: [{
+            role: 'user',
+            content: `Make this resume ATS-friendly for ${effectiveRole} role. Improve the content — add action verbs, quantify achievements, add relevant keywords. Return ONLY this JSON:
+{
+  "summary": "improved summary",
+  "experience": "improved experience with action verbs",
+  "skills": "ATS-optimized skills list",
+  "projects": "improved projects",
+  "achievements": "quantified achievements"
+}
+
+Current content:
+Summary: ${parsed.summary || ''}
+Experience: ${parsed.experience || ''}
+Skills: ${parsed.skills || ''}
+Projects: ${parsed.projects || ''}
+Achievements: ${parsed.achievements || ''}`
+          }]
+        })
+      });
+      const improveData = await improveRes.json();
+      const improveRaw = (improveData.content || '{}').replace(/```json|```/g, '').trim();
+      const improved = JSON.parse(improveRaw);
+
+      // Merge parsed + improved
+      setBuilder({
+        name: parsed.name || '',
+        email: parsed.email || '',
+        phone: parsed.phone || '',
+        location: parsed.location || '',
+        linkedin: parsed.linkedin || '',
+        github: parsed.github || '',
+        website: parsed.website || '',
+        summary: improved.summary || parsed.summary || '',
+        objective: parsed.objective || '',
+        experience: improved.experience || parsed.experience || '',
+        education: parsed.education || '',
+        skills: improved.skills || parsed.skills || '',
+        projects: improved.projects || parsed.projects || '',
+        certifications: parsed.certifications || '',
+        achievements: improved.achievements || parsed.achievements || '',
+        languages: parsed.languages || '',
+        hobbies: parsed.hobbies || '',
+        references: parsed.references || '',
+        photo: '',
+      });
+
+      toast.success('Resume auto-filled & ATS optimized! 🎉');
+    } catch (err) {
+      toast.error('Auto-fill failed. Try again.');
+    } finally {
+      setAutoFillLoading(false);
+    }
+  };
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [builder, setBuilder] = useState({
@@ -454,6 +585,35 @@ export function StudentResumeBuilder() {
       {activeTab === 'build' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           <div className="space-y-3">
+
+            {/* Auto-Fill Banner */}
+            <div className="rounded-2xl p-4" style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.2), rgba(139,92,246,0.15))', border: '1px solid rgba(99,102,241,0.35)' }}>
+              <div className="flex items-start gap-3">
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: ACCENT }}>
+                  <Sparkles size={16} className="text-white" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-bold text-white">🚀 Auto-Fill from Old Resume</p>
+                  <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.5)' }}>Upload your existing resume → AI extracts all info → Makes it ATS-friendly automatically</p>
+                  <div className="flex gap-2 mt-3">
+                    <button
+                      onClick={() => builderFileRef.current?.click()}
+                      disabled={autoFillLoading}
+                      className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
+                      style={{ background: ACCENT, color: 'white', opacity: autoFillLoading ? 0.7 : 1 }}>
+                      {autoFillLoading ? <RefreshCw size={14} className="animate-spin" /> : <Upload size={14} />}
+                      {autoFillLoading ? 'Processing...' : 'Upload & Auto-Fill'}
+                    </button>
+                    <input ref={builderFileRef} type="file" accept=".pdf,.doc,.docx,.txt" className="hidden"
+                      onChange={e => e.target.files?.[0] && autoFillFromResume(e.target.files[0])} />
+                    {autoFillLoading && (
+                      <span className="text-xs self-center" style={{ color: '#a5b4fc' }}>AI is working... please wait</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {BUILDER_SECTIONS.map(section => (
               <div key={section.key} className="rounded-2xl overflow-hidden" style={GLASS}>
                 <button onClick={() => setExpandedSection(expandedSection === section.key ? null : section.key)}
@@ -482,12 +642,72 @@ export function StudentResumeBuilder() {
                         ))}
                       </div>
                     ) : (
-                      <textarea rows={(section as any).rows || 3}
-                        value={builder[section.key as keyof typeof builder]}
-                        onChange={e => setBuilder(p => ({ ...p, [section.key]: e.target.value }))}
-                        placeholder={`Enter your ${section.label.replace(/[^\w\s]/g, '').trim()}...`}
-                        className="w-full text-sm outline-none resize-none rounded-xl p-3"
-                        style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.8)' }} />
+                      <div className="space-y-2">
+                        <textarea rows={(section as any).rows || 3}
+                          value={builder[section.key as keyof typeof builder]}
+                          onChange={e => setBuilder(p => ({ ...p, [section.key]: e.target.value }))}
+                          placeholder={`Enter your ${section.label.replace(/[^\w\s]/g, '').trim()}...`}
+                          className="w-full text-sm outline-none resize-none rounded-xl p-3"
+                          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.8)' }} />
+                        {/* AI Buttons */}
+                        <div className="flex gap-2">
+                          <button
+                            onClick={async () => {
+                              const current = builder[section.key as keyof typeof builder];
+                              setSectionLoading(section.key + '_generate');
+                              try {
+                                const prompts: Record<string, string> = {
+                                  summary: `Write a professional resume summary (3-4 lines) for a ${effectiveRole}. Name: ${builder.name || 'Candidate'}. Skills: ${builder.skills || 'not specified'}. Experience: ${builder.experience?.slice(0,200) || 'fresher'}. Make it ATS-optimized, impactful.`,
+                                  objective: `Write a career objective (2-3 lines) for a ${effectiveRole} fresher/experienced candidate. Name: ${builder.name || 'Candidate'}. Make it focused and professional.`,
+                                  experience: `Write a professional work experience section for ${effectiveRole}. Include 2 job entries with bullet points using action verbs and quantified achievements. Format properly.`,
+                                  education: `Write an education section for a ${effectiveRole}. Include degree, college, year, CGPA placeholders. Format professionally.`,
+                                  skills: `List top 20 technical and soft skills for a ${effectiveRole}. Format as comma-separated. Include tools, languages, frameworks, and soft skills.`,
+                                  projects: `Write 2-3 impressive project descriptions for a ${effectiveRole} portfolio. Include project name, tech stack, and impact. Use bullet points.`,
+                                  certifications: `List 3-4 relevant certifications for a ${effectiveRole} with issuing organization and year placeholders.`,
+                                  achievements: `Write 3-4 professional achievements for a ${effectiveRole}. Include quantified results like percentages, rankings, awards.`,
+                                  languages: `List language proficiencies relevant for a professional. Include English and Indian languages with proficiency levels.`,
+                                  hobbies: `Write a concise hobbies and interests section for a ${effectiveRole}. Include relevant technical hobbies and personal interests. Keep it professional.`,
+                                  references: `Write a references section with 2 professional references format (name, designation, company, contact). Use placeholder data.`,
+                                };
+                                const result = await groqCall(
+                                  prompts[section.key] || `Write professional content for ${section.label} section of a resume for ${effectiveRole}.`,
+                                  'You are an expert resume writer. Write concise, ATS-optimized professional resume content. No extra explanation, just the content.'
+                                );
+                                setBuilder(p => ({ ...p, [section.key]: result }));
+                                toast.success('AI generated!');
+                              } catch { toast.error('Failed. Try again.'); }
+                              finally { setSectionLoading(''); }
+                            }}
+                            disabled={sectionLoading === section.key + '_generate'}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+                            style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', color: 'white', opacity: sectionLoading === section.key + '_generate' ? 0.7 : 1 }}>
+                            {sectionLoading === section.key + '_generate' ? <RefreshCw size={11} className="animate-spin" /> : <Sparkles size={11} />}
+                            {sectionLoading === section.key + '_generate' ? 'Generating...' : '✨ AI Generate'}
+                          </button>
+                          {builder[section.key as keyof typeof builder] && (
+                            <button
+                              onClick={async () => {
+                                const current = builder[section.key as keyof typeof builder];
+                                setSectionLoading(section.key + '_improve');
+                                try {
+                                  const result = await groqCall(
+                                    `Improve this resume ${section.label} section for a ${effectiveRole} role. Make it more impactful, ATS-optimized, use strong action verbs, quantify where possible. Return only the improved content:\n\n${current}`,
+                                    'You are an expert resume writer. Return only the improved resume content, no explanations.'
+                                  );
+                                  setBuilder(p => ({ ...p, [section.key]: result }));
+                                  toast.success('AI improved!');
+                                } catch { toast.error('Failed. Try again.'); }
+                                finally { setSectionLoading(''); }
+                              }}
+                              disabled={sectionLoading === section.key + '_improve'}
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+                              style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)', color: '#4ade80', opacity: sectionLoading === section.key + '_improve' ? 0.7 : 1 }}>
+                              {sectionLoading === section.key + '_improve' ? <RefreshCw size={11} className="animate-spin" /> : <Zap size={11} />}
+                              {sectionLoading === section.key + '_improve' ? 'Improving...' : '⚡ AI Improve'}
+                            </button>
+                          )}
+                        </div>
+                      </div>
                     )}
                   </div>
                 )}
