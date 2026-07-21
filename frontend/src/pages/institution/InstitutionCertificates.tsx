@@ -17,6 +17,9 @@ const TYPE_STYLE: Record<string,{background:string,color:string}> = {
 // ── Issue Modal ───────────────────────────────────────────────────
 function IssueCertModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
   const [students, setStudents] = useState<InstitutionStudent[]>([]);
+  const [batches, setBatches]   = useState<any[]>([]);
+  const [batchStudentsMap, setBatchStudentsMap] = useState<Record<number, any[]>>({});
+  const [selectedBatch, setSelectedBatch] = useState<string>('');
   const [courses, setCourses]   = useState<InstituteCourse[]>([]);
   const [selected, setSelected] = useState<number[]>([]);
   const [certTypes, setCertTypes] = useState<Set<CertType>>(new Set(['Course Completion']));
@@ -28,12 +31,42 @@ function IssueCertModal({ onClose, onSaved }: { onClose: () => void; onSaved: ()
     Promise.all([
       institutionApi.getStudents({ limit: 200 }),
       institutionApi.getCourses(),
-    ]).then(([s, c]) => { setStudents(s.data); setCourses(c.data); })
+      institutionApi.getBatches(),
+    ]).then(([s, c, b]) => {
+      setStudents(s.data);
+      setCourses(c.data);
+      const bList = b.data || [];
+      setBatches(bList);
+      Promise.all(bList.map((batch: any) =>
+        institutionApi.getBatchStudents(batch.id)
+          .then((r: any) => ({ id: batch.id, students: r.data || [] }))
+          .catch(() => ({ id: batch.id, students: [] }))
+      )).then(results => {
+        const map: Record<number, any[]> = {};
+        results.forEach(({ id, students: ss }) => { map[id] = ss; });
+        setBatchStudentsMap(map);
+      });
+    })
       .catch(() => toast.error('Failed to load data'))
       .finally(() => setDataLoading(false));
   }, []);
 
-  const allSelected = students.length > 0 && selected.length === students.length;
+  const filteredStudents = selectedBatch
+    ? students.filter(s => (batchStudentsMap[parseInt(selectedBatch)] || []).some((bs: any) => bs.id === s.id || bs.studentId === s.id))
+    : students;
+
+  const allSelected = filteredStudents.length > 0 && selected.length === filteredStudents.length;
+
+  const handleBatchChange = (batchId: string) => {
+    setSelectedBatch(batchId);
+    if (batchId) {
+      const bStudents = batchStudentsMap[parseInt(batchId)] || [];
+      const ids = students.filter(s => bStudents.some((bs: any) => bs.id === s.id || bs.studentId === s.id)).map(s => s.id);
+      setSelected(ids);
+    } else {
+      setSelected([]);
+    }
+  };
 
   const handleSubmit = async () => {
     if (selected.length === 0) { toast.error('Select at least one student'); return; }
@@ -62,6 +95,18 @@ function IssueCertModal({ onClose, onSaved }: { onClose: () => void; onSaved: ()
         </div>
 
         <div className="px-5 py-4 space-y-3" style={{borderBottom:"1px solid rgba(255,255,255,0.08)"}}>
+          {/* Batch Filter */}
+          <div>
+            <label className="block text-xs font-medium mb-1" style={{color:"#64748b"}}>
+              Select Batch <span style={{color:'rgba(255,255,255,0.25)'}}>(batch select karne pe students auto-select honge)</span>
+            </label>
+            <select value={selectedBatch} onChange={e => handleBatchChange(e.target.value)}
+              className="w-full px-3 py-2 rounded-lg text-sm focus:outline-none dark-input">
+              <option value="">-- All Students --</option>
+              {batches.map((b: any) => <option key={b.id} value={b.id}>{b.name}</option>)}
+            </select>
+          </div>
+
           <div>
             <label className="block text-xs font-medium mb-2" style={{color:"#64748b"}}>Certificate Type *</label>
             <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
@@ -89,17 +134,17 @@ function IssueCertModal({ onClose, onSaved }: { onClose: () => void; onSaved: ()
           </div>
         </div>
 
-        <div className="px-4 py-2.5 flex items-center justify-between" style={{borderBottom:"1px solid rgba(255,255,255,0.08)",background:"rgba(255,255,255,0.03)"}}>
-          <button onClick={()=>allSelected?setSelected([]):setSelected(students.map(s=>s.id))} className="flex items-center gap-2 text-sm font-medium text-indigo-400">
+        <div className="px-4 py-2.5 flex items-center justify-between" style={{borderBottom:"1px solid rgba(255,255,255,0.08)"}}>
+          <button onClick={()=>allSelected?setSelected([]):setSelected(filteredStudents.map(s=>s.id))} className="flex items-center gap-2 text-sm font-medium text-indigo-400">
             {allSelected?<CheckSquare size={18}/>:<Square size={18}/>}
             {allSelected?'Deselect All':'Select All'}
           </button>
-          <span className="text-xs" style={{color:"#64748b"}}>{students.length} students · {selected.length} selected</span>
+          <span className="text-xs" style={{color:"#64748b"}}>{filteredStudents.length} students · {selected.length} selected</span>
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-1">
           {dataLoading ? <div className="text-center py-8 text-gray-400">Loading...</div>
-            : students.map(s=>(
+            : filteredStudents.map(s=>(
               <label key={s.id} className="flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition hover:bg-white/05">
                 <input type="checkbox" checked={selected.includes(s.id)}
                   onChange={e=>setSelected(prev=>e.target.checked?[...prev,s.id]:prev.filter(x=>x!==s.id))}
@@ -129,6 +174,7 @@ function IssueCertModal({ onClose, onSaved }: { onClose: () => void; onSaved: ()
     </div>
   );
 }
+
 
 // ── Main Page ─────────────────────────────────────────────────────
 export function InstitutionCertificates() {
