@@ -128,30 +128,36 @@ export function StudentResumeBuilder() {
   // ── File Parse ───────────────────────────────────────────────
   const parseFile = async (file: File) => {
     setFileName(file.name);
-    if (file.type === 'application/pdf') {
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        try {
-          // @ts-ignore
-          const pdfjsLib = await import('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js');
-          // @ts-ignore
-          pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-          const pdf = await pdfjsLib.getDocument({ data: e.target?.result }).promise;
-          let text = '';
-          for (let i = 1; i <= pdf.numPages; i++) {
-            const page = await pdf.getPage(i);
-            const content = await page.getTextContent();
-            text += content.items.map((item: any) => item.str).join(' ') + '\n';
-          }
-          setResumeText(text);
-          toast.success('Resume parsed successfully!');
-        } catch {
-          // Fallback: read as text
-          const text = await file.text().catch(() => '');
-          setResumeText(text || 'Could not parse PDF. Please paste your resume text below.');
+    if (file.name.endsWith('.pdf') || file.type === 'application/pdf') {
+      toast('Parsing PDF... If text doesn\'t appear, please paste your resume below.', { duration: 3000 });
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        const bytes = new Uint8Array(arrayBuffer);
+        // Decode PDF bytes and extract text between stream markers
+        let pdfStr = '';
+        for (let i = 0; i < bytes.length; i++) {
+          pdfStr += String.fromCharCode(bytes[i]);
         }
-      };
-      reader.readAsArrayBuffer(file);
+        // Extract readable ASCII text from PDF
+        let extractedText = '';
+        // Match text in parentheses (PDF text operators)
+        const matches = pdfStr.match(/\(([^\)]{2,200})\)\s*T[jJ]/g) || [];
+        matches.forEach(m => {
+          const t = m.replace(/^\(/, '').replace(/\)\s*T[jJ]$/, '').trim();
+          // Only keep printable ASCII
+          const clean = t.replace(/[^ -~]/g, ' ').trim();
+          if (clean.length > 2) extractedText += clean + ' ';
+        });
+        
+        if (extractedText.trim().length > 100) {
+          setResumeText(extractedText.trim());
+          toast.success('PDF parsed successfully!');
+        } else {
+          toast.error('Could not extract PDF text. Please paste your resume text below.');
+        }
+      } catch {
+        toast.error('PDF parse failed. Please paste your resume text below.');
+      }
     } else {
       const text = await file.text();
       setResumeText(text);
@@ -183,15 +189,11 @@ export function StudentResumeBuilder() {
     if (!resumeText.trim()) { toast.error('Please upload your resume first'); return; }
     setAnalyzing(true);
     try {
-      const apiKey = (import.meta as any).env?.VITE_GROQ_API_KEY;
-      if (!apiKey) throw new Error('No API key');
-
-      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      const token = localStorage.getItem('hx_student_token') || localStorage.getItem('hirenix_token');
+      const res = await fetch(`${(import.meta as any).env?.VITE_API_URL || 'https://hirenix-backend.onrender.com/api'}/groq/chat`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
-          model: 'llama-3.3-70b-versatile',
-          max_tokens: 1000,
           messages: [{
             role: 'user',
             content: `Analyze this resume for a ${role} position. Return ONLY valid JSON (no markdown):
@@ -205,17 +207,18 @@ export function StudentResumeBuilder() {
 
 Resume text:
 ${resumeText.slice(0, 2000)}`
-          }]
+          }],
+          system: 'You are an expert ATS resume analyzer. Always respond with valid JSON only, no markdown.',
         })
       });
       const data = await res.json();
-      const content = data.choices?.[0]?.message?.content || '{}';
+      const content = data.content || '{}';
       const clean = content.replace(/```json|```/g, '').trim();
       const parsed = JSON.parse(clean);
       setAiAnalysis(parsed);
       toast.success('AI analysis complete!');
     } catch (err) {
-      toast.error('AI analysis failed. Check your API key.');
+      toast.error('AI analysis failed. Try again.');
     } finally {
       setAnalyzing(false);
     }
