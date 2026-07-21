@@ -129,31 +129,21 @@ export function StudentResumeBuilder() {
   const parseFile = async (file: File) => {
     setFileName(file.name);
     if (file.name.endsWith('.pdf') || file.type === 'application/pdf') {
-      toast('Parsing PDF... If text doesn\'t appear, please paste your resume below.', { duration: 3000 });
+      toast('Extracting PDF text...', { duration: 2000 });
       try {
-        const arrayBuffer = await file.arrayBuffer();
-        const bytes = new Uint8Array(arrayBuffer);
-        // Decode PDF bytes and extract text between stream markers
-        let pdfStr = '';
-        for (let i = 0; i < bytes.length; i++) {
-          pdfStr += String.fromCharCode(bytes[i]);
-        }
-        // Extract readable ASCII text from PDF
-        let extractedText = '';
-        // Match text in parentheses (PDF text operators)
-        const matches = pdfStr.match(/\(([^\)]{2,200})\)\s*T[jJ]/g) || [];
-        matches.forEach(m => {
-          const t = m.replace(/^\(/, '').replace(/\)\s*T[jJ]$/, '').trim();
-          // Only keep printable ASCII
-          const clean = t.replace(/[^ -~]/g, ' ').trim();
-          if (clean.length > 2) extractedText += clean + ' ';
+        const formData = new FormData();
+        formData.append('pdf', file);
+        const apiUrl = (import.meta as any).env?.VITE_API_URL || 'https://hirenix-backend.onrender.com/api';
+        const res = await fetch(`${apiUrl}/public/extract-pdf`, {
+          method: 'POST',
+          body: formData,
         });
-        
-        if (extractedText.trim().length > 100) {
-          setResumeText(extractedText.trim());
+        const data = await res.json();
+        if (data.success && data.text && data.text.length > 50) {
+          setResumeText(data.text);
           toast.success('PDF parsed successfully!');
         } else {
-          toast.error('Could not extract PDF text. Please paste your resume text below.');
+          toast.error('Could not extract text. Please paste your resume below.');
         }
       } catch {
         toast.error('PDF parse failed. Please paste your resume text below.');
