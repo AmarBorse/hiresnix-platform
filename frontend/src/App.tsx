@@ -42,6 +42,8 @@ const StudentProfile      = lazy(() => import('./pages/student/StudentProfile').
 const StudentMockInterview= lazy(() => import('./pages/student/StudentMockInterview').then(m => ({ default: m.StudentMockInterview })));
 const StudentMockDashboard= lazy(() => import('./pages/student/StudentMockDashboard').then(m => ({ default: m.StudentMockDashboard })));
 const StudentResumeBuilder= lazy(() => import('./pages/student/StudentResumeBuilder').then(m => ({ default: m.StudentResumeBuilder })));
+const StudentProjects     = lazy(() => import('./pages/student/StudentProjects').then(m => ({ default: m.StudentProjects })));
+const ProjectPortfolio    = lazy(() => import('./pages/public/ProjectPortfolio').then(m => ({ default: m.ProjectPortfolio })));
 
 // Academy
 
@@ -131,6 +133,7 @@ export default function App() {
           <Route path="/disclaimer"           element={<Disclaimer />} />
           <Route path="/refund-policy"        element={<RefundPolicy />} />
           <Route path="/internship-policy"    element={<InternshipPolicy />} />
+          <Route path="/projects/:username"   element={<Suspense fallback={<PageSpinner />}><ProjectPortfolio /></Suspense>} />
           <Route path="/verification"         element={<VerificationPortal />} />
           <Route path="/verification/:type"   element={<VerificationPortal />} />
           <Route path="/verification/:type/:id" element={<VerificationPortal />} />
@@ -167,6 +170,7 @@ export default function App() {
             <Route path="resources"      element={<StudentResources />} />
             <Route path="mock-interview" element={<StudentMockInterview />} />
             <Route path="resume-builder" element={<StudentResumeBuilder />} />
+            <Route path="projects" element={<StudentProjects />} />
             <Route path="mock-dashboard" element={<StudentMockDashboard />} />
             <Route path="certificates"   element={<StudentCertificates />} />
             <Route path="profile"        element={<StudentProfile />} />
