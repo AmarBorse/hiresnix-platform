@@ -340,10 +340,10 @@ Score milega 0-100 ke beech:
 Job description mein jo words hain — wahi apne resume mein daalo.
 
 **Example — React Developer role:**
-```
+\`\`\`
 Job description mein: "React, TypeScript, Redux, REST API"
 Aapke resume mein: React, TypeScript, Redux, REST API
-```
+\`\`\`
 
 **Hiresnix feature:** AI Analysis automatically missing keywords batata hai.
 
@@ -392,32 +392,32 @@ Always PDF submit karein — formatting preserve hoti hai.
 
 ### Tip 7: Contact Info Complete Rakho
 
-```
+\`\`\`
 Name: Rahul Sharma
 Phone: +91 9876543210
 Email: rahul.sharma@gmail.com
 LinkedIn: linkedin.com/in/rahulsharma
 GitHub: github.com/rahulsharma
 Location: Pune, Maharashtra
-```
+\`\`\`
 
 ### Tip 8: Skills Section Properly Likhein
 
-```
+\`\`\`
 Technical Skills: React, JavaScript, TypeScript, Node.js, 
 MongoDB, PostgreSQL, Docker, Git, REST API, HTML, CSS
 
 Soft Skills: Team collaboration, Problem-solving, 
 Communication, Time management
-```
+\`\`\`
 
 ### Tip 9: Education Format Sahi Rakho
 
-```
+\`\`\`
 B.Tech Computer Science
 Pune University, Pune
 2022-2026 | CGPA: 8.5/10
-```
+\`\`\`
 
 ### Tip 10: Job Description Match Karein
 
@@ -552,14 +552,14 @@ Aaj ke time mein placement decide karta hai:
 **Likho:** "React Developer | Building Web Apps | Open to Internships"
 
 **About section:**
-```
+\`\`\`
 Passionate React developer from Shirpur, Maharashtra.
 Currently building [project name] — [what it does].
 Looking for internship opportunities where I can 
 contribute and grow.
 
 Skills: React, JavaScript, Node.js, MongoDB
-```
+\`\`\`
 
 ### Daily LinkedIn routine (15 min):
 - 1 post/week — project update, learning, tip
