@@ -160,6 +160,59 @@ export function LandingPage() {
 
   const TECH_STACK = ['React', 'Next.js', 'Node.js', 'Python', 'Java', 'Supabase', 'PostgreSQL', 'AWS', 'Docker', 'OpenAI', 'Gemini'];
 
+  // Structured Data for SEO
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": "https://hiresnix.co.in/#organization",
+        "name": "Hiresnix",
+        "legalName": "SR Patil Infrastructure Private Limited",
+        "url": "https://hiresnix.co.in",
+        "logo": "https://hiresnix.co.in/hiresnix-logo.png",
+        "contactPoint": {
+          "@type": "ContactPoint",
+          "telephone": "+91-9529120977",
+          "contactType": "customer service",
+          "email": "hr@hiresnix.co.in",
+          "areaServed": "IN",
+          "availableLanguage": ["English", "Hindi"]
+        },
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "Shirpur",
+          "addressRegion": "Maharashtra",
+          "postalCode": "425405",
+          "addressCountry": "IN"
+        },
+        "sameAs": []
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://hiresnix.co.in/#website",
+        "url": "https://hiresnix.co.in",
+        "name": "Hiresnix",
+        "description": "AI-powered EdTech & HR-Tech platform for students, institutions and companies",
+        "publisher": { "@id": "https://hiresnix.co.in/#organization" }
+      },
+      {
+        "@type": "SoftwareApplication",
+        "name": "Hiresnix Platform",
+        "applicationCategory": "EducationApplication",
+        "operatingSystem": "Web",
+        "url": "https://hiresnix.co.in",
+        "description": "AI-powered career platform offering mock interviews, resume builder, internships, and AI academy for students",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "INR"
+        },
+        "provider": { "@id": "https://hiresnix.co.in/#organization" }
+      }
+    ]
+  };
+
   const SERVICES = [
     { icon: '⚡', title: 'Custom Software Development', desc: 'End-to-end software built for your exact business needs — from architecture to deployment.' },
     { icon: '🌐', title: 'Web Development', desc: 'Fast, responsive, and scalable web applications using modern frameworks and best practices.' },
@@ -230,6 +283,11 @@ export function LandingPage() {
 
   return (
     <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif", background: '#060910', color: '#e8edf5', overflowX: 'hidden' }}>
+      {/* Structured Data for SEO */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=JetBrains+Mono:wght@400;500&display=swap');
         body { margin: 0; background-color: #060910; }

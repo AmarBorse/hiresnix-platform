@@ -1,0 +1,17 @@
+User-agent: *
+Allow: /
+Allow: /projects/
+Allow: /verify/
+Allow: /about-us
+Allow: /contact-us
+Allow: /internship-policy
+Allow: /privacy-policy
+Allow: /terms-and-conditions
+Disallow: /admin/
+Disallow: /institution/
+Disallow: /student/
+Disallow: /company/
+Disallow: /inst-student/
+Disallow: /api/
+
+Sitemap: https://hiresnix.co.in/sitemap.xml

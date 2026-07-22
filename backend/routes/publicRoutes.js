@@ -54,3 +54,72 @@ router.post('/extract-pdf', upload.single('pdf'), async (req, res) => {
     res.status(500).json({ success: false, message: 'PDF extraction failed' });
   }
 });
+
+// Dynamic sitemap with public portfolio pages
+router.get('/sitemap.xml', async (req, res) => {
+  try {
+    const { sequelize } = require('../config/db');
+    const { QueryTypes } = require('sequelize');
+
+    // Get all students with projects (public portfolios)
+    const students = await sequelize.query(`
+      SELECT DISTINCT u.name 
+      FROM users u 
+      INNER JOIN projects p ON p."userId" = u.id
+      WHERE u.role = 'student'
+    `, { type: QueryTypes.SELECT });
+
+    const baseUrl = 'https://hiresnix.co.in';
+    const today = new Date().toISOString().split('T')[0];
+
+    const staticPages = [
+      { url: '/', priority: '1.0', changefreq: 'weekly' },
+      { url: '/auth', priority: '0.8', changefreq: 'monthly' },
+      { url: '/about-us', priority: '0.7', changefreq: 'monthly' },
+      { url: '/contact-us', priority: '0.7', changefreq: 'monthly' },
+      { url: '/internship-policy', priority: '0.6', changefreq: 'monthly' },
+      { url: '/privacy-policy', priority: '0.5', changefreq: 'monthly' },
+      { url: '/terms-and-conditions', priority: '0.5', changefreq: 'monthly' },
+      { url: '/refund-policy', priority: '0.4', changefreq: 'monthly' },
+      { url: '/disclaimer', priority: '0.4', changefreq: 'monthly' },
+      { url: '/company-information', priority: '0.5', changefreq: 'monthly' },
+    ];
+
+    let xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+`;
+
+    // Static pages
+    staticPages.forEach(page => {
+      xml += `  <url>
+    <loc>${baseUrl}${page.url}</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>${page.changefreq}</changefreq>
+    <priority>${page.priority}</priority>
+  </url>\n`;
+    });
+
+    // Dynamic portfolio pages
+    students.forEach((s) => {
+      const slug = s.name.toLowerCase()
+        .replace(/\s+/g, '-')
+        .replace(/[^a-z0-9-]/g, '')
+        .replace(/-+$/g, '');
+      if (slug) {
+        xml += `  <url>
+    <loc>${baseUrl}/projects/${slug}</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>\n`;
+      }
+    });
+
+    xml += `</urlset>`;
+
+    res.setHeader('Content-Type', 'application/xml');
+    res.send(xml);
+  } catch (err) {
+    res.status(500).send('<?xml version="1.0"?><urlset></urlset>');
+  }
+});
