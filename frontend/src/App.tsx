@@ -44,6 +44,8 @@ const StudentMockDashboard= lazy(() => import('./pages/student/StudentMockDashbo
 const StudentResumeBuilder= lazy(() => import('./pages/student/StudentResumeBuilder').then(m => ({ default: m.StudentResumeBuilder })));
 const StudentProjects     = lazy(() => import('./pages/student/StudentProjects').then(m => ({ default: m.StudentProjects })));
 const ProjectPortfolio    = lazy(() => import('./pages/public/ProjectPortfolio').then(m => ({ default: m.ProjectPortfolio })));
+const BlogList            = lazy(() => import('./pages/blog/BlogList').then(m => ({ default: m.BlogList })));
+const BlogPost            = lazy(() => import('./pages/blog/BlogPost').then(m => ({ default: m.BlogPost })));
 
 // Academy
 
@@ -134,6 +136,8 @@ export default function App() {
           <Route path="/refund-policy"        element={<RefundPolicy />} />
           <Route path="/internship-policy"    element={<InternshipPolicy />} />
           <Route path="/projects/:username"   element={<Suspense fallback={<PageSpinner />}><ProjectPortfolio /></Suspense>} />
+          <Route path="/blog"                element={<Suspense fallback={<PageSpinner />}><BlogList /></Suspense>} />
+          <Route path="/blog/:slug"          element={<Suspense fallback={<PageSpinner />}><BlogPost /></Suspense>} />
           <Route path="/verification"         element={<VerificationPortal />} />
           <Route path="/verification/:type"   element={<VerificationPortal />} />
           <Route path="/verification/:type/:id" element={<VerificationPortal />} />

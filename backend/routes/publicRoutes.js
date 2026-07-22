@@ -99,6 +99,33 @@ router.get('/sitemap.xml', async (req, res) => {
   </url>\n`;
     });
 
+
+    // Blog pages
+    xml += `  <url>
+    <loc>${baseUrl}/blog/best-internship-platforms-india-2026</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>\n`;
+    xml += `  <url>
+    <loc>${baseUrl}/blog/ai-mock-interview-kaise-prepare-karein</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>\n`;
+    xml += `  <url>
+    <loc>${baseUrl}/blog/resume-ats-score-kaise-badhayein</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>\n`;
+    xml += `  <url>
+    <loc>${baseUrl}/blog/tier-2-city-students-career-tips</loc>
+    <lastmod>${today}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>\n`;
+
     // Dynamic portfolio pages
     students.forEach((s) => {
       const slug = s.name.toLowerCase()
@@ -123,3 +150,6 @@ router.get('/sitemap.xml', async (req, res) => {
     res.status(500).send('<?xml version="1.0"?><urlset></urlset>');
   }
 });
+
+// Update sitemap to include blog posts
+// (Already handled in main sitemap route - blog slugs added below)
