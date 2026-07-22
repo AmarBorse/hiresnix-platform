@@ -1,5 +1,5 @@
 // src/pages/public/ProjectPortfolio.tsx
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams } from 'react-router';
 
 const API = (import.meta as any).env?.VITE_API_URL || 'https://hirenix-backend.onrender.com/api';
@@ -29,7 +29,6 @@ export function ProjectPortfolio() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
-  const [contactOpen, setContactOpen] = useState(false);
 
   useEffect(() => {
     fetch(`${API}/projects/u/${username}`)
@@ -61,10 +60,8 @@ export function ProjectPortfolio() {
   const skills = student.skills ? (Array.isArray(student.skills) ? student.skills : student.skills.split(',')).map((s:string)=>s.trim()).filter(Boolean) : [];
   const firstName = user.name.split(' ')[0];
 
-  const S: React.CSSProperties = {fontFamily:'Inter,sans-serif'};
-
   return (
-    <div style={{...S,background:'#030508',minHeight:'100vh',color:'#fff',overflowX:'hidden'}}>
+    <div style={{background:'#030508',minHeight:'100vh',color:'#fff',fontFamily:'Inter,sans-serif',overflowX:'hidden'}}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
         *{box-sizing:border-box;margin:0;padding:0}
@@ -72,42 +69,12 @@ export function ProjectPortfolio() {
         @keyframes marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
         .pcard{transition:all 0.3s!important}
         .pcard:hover{transform:translateY(-4px)!important;border-color:rgba(99,102,241,0.5)!important;box-shadow:0 20px 40px rgba(0,0,0,0.5),0 0 30px rgba(99,102,241,0.1)!important}
-        .soc:hover{border-color:rgba(99,102,241,0.5)!important;color:#a5b4fc!important}
         .spill:hover{background:rgba(99,102,241,0.2)!important;color:#a5b4fc!important}
-        .copt:hover{border-color:rgba(99,102,241,0.4)!important;background:rgba(99,102,241,0.06)!important}
       `}</style>
 
       {/* Blobs */}
       <div style={{position:'fixed',top:-300,left:-200,width:700,height:700,borderRadius:'50%',background:'radial-gradient(circle,rgba(99,102,241,0.12) 0%,transparent 70%)',pointerEvents:'none',zIndex:0}} />
       <div style={{position:'fixed',bottom:-200,right:-100,width:500,height:500,borderRadius:'50%',background:'radial-gradient(circle,rgba(212,175,55,0.08) 0%,transparent 70%)',pointerEvents:'none',zIndex:0}} />
-
-      {/* Contact Modal */}
-      {contactOpen && (
-        <div onClick={()=>setContactOpen(false)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.8)',backdropFilter:'blur(8px)',zIndex:200,display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
-          <div onClick={e=>e.stopPropagation()} style={{background:'#0d1117',border:'1px solid rgba(255,255,255,0.1)',borderRadius:24,padding:32,maxWidth:420,width:'100%',position:'relative'}}>
-            <div style={{position:'absolute',top:0,left:0,right:0,height:1,background:'linear-gradient(90deg,transparent,rgba(99,102,241,0.8),rgba(212,175,55,0.6),transparent)'}} />
-            <button onClick={()=>setContactOpen(false)} style={{position:'absolute',top:16,right:16,width:32,height:32,borderRadius:8,background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.08)',color:'rgba(255,255,255,0.5)',cursor:'pointer',fontSize:16,display:'flex',alignItems:'center',justifyContent:'center'}}>✕</button>
-            <h3 style={{fontSize:20,fontWeight:800,marginBottom:6}}>Get in Touch</h3>
-            <p style={{fontSize:13,color:'rgba(255,255,255,0.4)',marginBottom:24}}>Pick a way to connect with {firstName}</p>
-            <a href={`mailto:${user.email}`} className="copt" style={{display:'flex',alignItems:'center',gap:14,padding:16,borderRadius:14,border:'1px solid rgba(255,255,255,0.07)',background:'rgba(255,255,255,0.02)',marginBottom:10,cursor:'pointer',textDecoration:'none',transition:'all 0.2s'}}>
-              <div style={{width:42,height:42,borderRadius:12,display:'flex',alignItems:'center',justifyContent:'center',fontSize:20,background:'rgba(99,102,241,0.15)',flexShrink:0}}>✉️</div>
-              <div><p style={{fontSize:14,fontWeight:700,color:'#fff',marginBottom:2}}>Email</p><span style={{fontSize:12,color:'rgba(255,255,255,0.4)'}}>{user.email}</span></div>
-            </a>
-            {student.phone && (
-              <a href={`https://wa.me/91${student.phone.replace(/\D/g,'')}`} target="_blank" rel="noopener noreferrer" className="copt" style={{display:'flex',alignItems:'center',gap:14,padding:16,borderRadius:14,border:'1px solid rgba(255,255,255,0.07)',background:'rgba(255,255,255,0.02)',marginBottom:10,cursor:'pointer',textDecoration:'none',transition:'all 0.2s'}}>
-                <div style={{width:42,height:42,borderRadius:12,display:'flex',alignItems:'center',justifyContent:'center',fontSize:20,background:'rgba(37,211,102,0.12)',flexShrink:0}}>📱</div>
-                <div><p style={{fontSize:14,fontWeight:700,color:'#fff',marginBottom:2}}>WhatsApp</p><span style={{fontSize:12,color:'rgba(255,255,255,0.4)'}}>Chat directly</span></div>
-              </a>
-            )}
-            {student.linkedinUrl && (
-              <a href={student.linkedinUrl} target="_blank" rel="noopener noreferrer" className="copt" style={{display:'flex',alignItems:'center',gap:14,padding:16,borderRadius:14,border:'1px solid rgba(255,255,255,0.07)',background:'rgba(255,255,255,0.02)',cursor:'pointer',textDecoration:'none',transition:'all 0.2s'}}>
-                <div style={{width:42,height:42,borderRadius:12,display:'flex',alignItems:'center',justifyContent:'center',fontSize:16,fontWeight:800,background:'rgba(10,102,194,0.15)',color:'#60a5fa',flexShrink:0}}>in</div>
-                <div><p style={{fontSize:14,fontWeight:700,color:'#fff',marginBottom:2}}>LinkedIn</p><span style={{fontSize:12,color:'rgba(255,255,255,0.4)'}}>View full profile</span></div>
-              </a>
-            )}
-          </div>
-        </div>
-      )}
 
       {/* Nav */}
       <nav style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'18px 40px',borderBottom:'1px solid rgba(255,255,255,0.05)',position:'sticky',top:0,background:'rgba(3,5,8,0.9)',backdropFilter:'blur(20px)',zIndex:100}}>
@@ -115,10 +82,7 @@ export function ProjectPortfolio() {
           <div style={{width:32,height:32,borderRadius:10,background:'linear-gradient(135deg,#6366f1,#d4af37)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:14,fontWeight:900,color:'#fff'}}>H</div>
           <span style={{fontSize:15,fontWeight:800,color:'#fff',letterSpacing:-0.5}}>Hiresnix</span>
         </a>
-        <div style={{display:'flex',gap:8}}>
-          <button onClick={()=>setContactOpen(true)} style={{fontSize:12,padding:'8px 18px',borderRadius:8,border:'1px solid rgba(212,175,55,0.5)',background:'rgba(212,175,55,0.08)',color:'#d4af37',cursor:'pointer',fontWeight:700}}>✦ Hire {firstName}</button>
-          <a href="/auth" style={{fontSize:12,padding:'8px 18px',borderRadius:8,border:'1px solid rgba(255,255,255,0.08)',background:'rgba(255,255,255,0.04)',color:'rgba(255,255,255,0.5)',textDecoration:'none',fontWeight:600}}>Create yours →</a>
-        </div>
+        <a href="/auth" style={{fontSize:12,padding:'8px 18px',borderRadius:8,border:'1px solid rgba(255,255,255,0.08)',background:'rgba(255,255,255,0.04)',color:'rgba(255,255,255,0.5)',textDecoration:'none',fontWeight:600}}>Create yours →</a>
       </nav>
 
       {/* Hero */}
@@ -133,17 +97,18 @@ export function ProjectPortfolio() {
         </div>
         {student.bio && <div style={{fontSize:15,color:'rgba(255,255,255,0.45)',lineHeight:1.7,maxWidth:520,margin:'0 auto 32px'}}>{student.bio}</div>}
         <div style={{display:'flex',gap:12,justifyContent:'center',flexWrap:'wrap',marginBottom:40}}>
-          <button onClick={()=>setContactOpen(true)} style={{padding:'14px 28px',borderRadius:12,background:'linear-gradient(135deg,#6366f1,#8b5cf6)',color:'#fff',fontSize:14,fontWeight:700,cursor:'pointer',border:'none',boxShadow:'0 4px 20px rgba(99,102,241,0.4)'}}>✉ Get in Touch</button>
-          <button onClick={()=>setContactOpen(true)} style={{padding:'14px 28px',borderRadius:12,background:'linear-gradient(135deg,#d4af37,#f5d680)',color:'#030508',fontSize:14,fontWeight:800,cursor:'pointer',border:'none',boxShadow:'0 4px 20px rgba(212,175,55,0.3)'}}>✦ Hire Me</button>
+          <a href={`mailto:${user.email}`} style={{padding:'14px 28px',borderRadius:12,background:'linear-gradient(135deg,#6366f1,#8b5cf6)',color:'#fff',fontSize:14,fontWeight:700,textDecoration:'none',boxShadow:'0 4px 20px rgba(99,102,241,0.4)'}}>✉ Get in Touch</a>
           {student.githubUrl && <a href={student.githubUrl} target="_blank" rel="noopener noreferrer" style={{padding:'14px 28px',borderRadius:12,background:'rgba(255,255,255,0.04)',color:'rgba(255,255,255,0.6)',fontSize:14,fontWeight:600,textDecoration:'none',border:'1px solid rgba(255,255,255,0.1)'}}>⌥ GitHub</a>}
         </div>
         <div style={{display:'flex',gap:32,justifyContent:'center'}}>
-          {[{num:projects.length,lbl:'Projects',gold:true},{num:liveProjects,lbl:'Live',neon:true},{num:'1+',lbl:'Years exp',white:true}].map(s=>(
-            <div key={s.lbl} style={{textAlign:'center'}}>
-              <div style={{fontSize:28,fontWeight:900,letterSpacing:-1,...(s.gold?{background:'linear-gradient(135deg,#d4af37,#f5d680)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}:s.neon?{color:'#22c55e',textShadow:'0 0 20px rgba(34,197,94,0.6)'}:{color:'#fff'})}}>{s.num}</div>
-              <div style={{fontSize:12,color:'rgba(255,255,255,0.3)',marginTop:2}}>{s.lbl}</div>
-            </div>
-          ))}
+          <div style={{textAlign:'center'}}>
+            <div style={{fontSize:28,fontWeight:900,letterSpacing:-1,background:'linear-gradient(135deg,#d4af37,#f5d680)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>{projects.length}</div>
+            <div style={{fontSize:12,color:'rgba(255,255,255,0.3)',marginTop:2}}>Projects</div>
+          </div>
+          <div style={{textAlign:'center'}}>
+            <div style={{fontSize:28,fontWeight:900,color:'#22c55e',textShadow:'0 0 20px rgba(34,197,94,0.6)'}}>{liveProjects}</div>
+            <div style={{fontSize:12,color:'rgba(255,255,255,0.3)',marginTop:2}}>Live</div>
+          </div>
         </div>
       </div>
 
@@ -184,10 +149,10 @@ export function ProjectPortfolio() {
                 <span style={{fontSize:10,padding:'4px 10px',borderRadius:20,fontWeight:700,background:'rgba(34,197,94,0.12)',color:'#4ade80',border:'1px solid rgba(34,197,94,0.25)'}}>● Open to work</span>
               </div>
               <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
-                {student.githubUrl && <a href={student.githubUrl} target="_blank" rel="noopener noreferrer" className="soc" style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:12,padding:'6px 12px',borderRadius:8,border:'1px solid rgba(255,255,255,0.08)',background:'rgba(255,255,255,0.04)',color:'rgba(255,255,255,0.6)',textDecoration:'none',fontWeight:600,transition:'all 0.2s'}}>⌥ GitHub</a>}
-                {student.linkedinUrl && <a href={student.linkedinUrl} target="_blank" rel="noopener noreferrer" className="soc" style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:12,padding:'6px 12px',borderRadius:8,border:'1px solid rgba(255,255,255,0.08)',background:'rgba(255,255,255,0.04)',color:'rgba(255,255,255,0.6)',textDecoration:'none',fontWeight:600,transition:'all 0.2s'}}>in LinkedIn</a>}
+                {student.githubUrl && <a href={student.githubUrl} target="_blank" rel="noopener noreferrer" style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:12,padding:'6px 12px',borderRadius:8,border:'1px solid rgba(255,255,255,0.08)',background:'rgba(255,255,255,0.04)',color:'rgba(255,255,255,0.6)',textDecoration:'none',fontWeight:600}}>⌥ GitHub</a>}
+                {student.linkedinUrl && <a href={student.linkedinUrl} target="_blank" rel="noopener noreferrer" style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:12,padding:'6px 12px',borderRadius:8,border:'1px solid rgba(255,255,255,0.08)',background:'rgba(255,255,255,0.04)',color:'rgba(255,255,255,0.6)',textDecoration:'none',fontWeight:600}}>in LinkedIn</a>}
                 {student.phone && <a href={`https://wa.me/91${student.phone.replace(/\D/g,'')}`} target="_blank" rel="noopener noreferrer" style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:12,padding:'6px 12px',borderRadius:8,border:'1px solid rgba(37,211,102,0.3)',background:'rgba(37,211,102,0.08)',color:'#25d366',textDecoration:'none',fontWeight:700}}>📱 WhatsApp</a>}
-                <button onClick={()=>setContactOpen(true)} style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:12,padding:'6px 12px',borderRadius:8,border:'1px solid rgba(212,175,55,0.4)',background:'linear-gradient(135deg,rgba(99,102,241,0.2),rgba(212,175,55,0.15))',color:'#d4af37',cursor:'pointer',fontWeight:700}}>✦ Hire Me</button>
+                <a href={`mailto:${user.email}`} style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:12,padding:'6px 12px',borderRadius:8,border:'1px solid rgba(99,102,241,0.4)',background:'rgba(99,102,241,0.1)',color:'#a5b4fc',textDecoration:'none',fontWeight:700}}>✉ Get in Touch</a>
               </div>
             </div>
           </div>
@@ -262,10 +227,7 @@ export function ProjectPortfolio() {
           <h3 style={{fontSize:20,fontWeight:800,letterSpacing:-0.5,marginBottom:4,background:'linear-gradient(135deg,#fff,#d4af37)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>Interested in hiring {firstName}?</h3>
           <p style={{fontSize:13,color:'rgba(255,255,255,0.4)'}}>Connect directly — let's build something great together</p>
         </div>
-        <div style={{display:'flex',gap:10,flexWrap:'wrap'}}>
-          <button onClick={()=>setContactOpen(true)} style={{padding:'12px 24px',borderRadius:12,background:'linear-gradient(135deg,#6366f1,#8b5cf6)',color:'#fff',fontSize:13,fontWeight:700,cursor:'pointer',border:'none',boxShadow:'0 4px 15px rgba(99,102,241,0.3)'}}>✉ Get in Touch</button>
-          <button onClick={()=>setContactOpen(true)} style={{padding:'12px 24px',borderRadius:12,background:'linear-gradient(135deg,#d4af37,#f5d680)',color:'#030508',fontSize:13,fontWeight:800,cursor:'pointer',border:'none',boxShadow:'0 4px 15px rgba(212,175,55,0.3)'}}>✦ Hire {firstName}</button>
-        </div>
+        <a href={`mailto:${user.email}`} style={{padding:'12px 24px',borderRadius:12,background:'linear-gradient(135deg,#6366f1,#8b5cf6)',color:'#fff',fontSize:13,fontWeight:700,textDecoration:'none',boxShadow:'0 4px 15px rgba(99,102,241,0.3)'}}>✉ Get in Touch</a>
       </div>
 
       {/* Footer */}
