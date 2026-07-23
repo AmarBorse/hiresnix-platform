@@ -5,7 +5,7 @@
 const asyncHandler = require('express-async-handler');
 const path = require('path');
 const axios = require('axios');
-const { Student, User, Job, Company, Application, Enrollment, Certificate } = require('../models');
+const { Student, User, Job, Company, Application, Enrollment, Certificate, MockInterview } = require('../models');
 const { Op } = require('sequelize');
 const { sequelize } = require('../config/db');
 const { normalizeDomain, isValidDomain } = require('../utils/domains');
@@ -215,6 +215,7 @@ const deleteStudent = asyncHandler(async (req, res) => {
       },
       transaction,
     });
+    await MockInterview.destroy({ where: { userId }, transaction });
     await student.destroy({ transaction });
     await User.destroy({ where: { id: userId, role: 'student' }, transaction });
   });
