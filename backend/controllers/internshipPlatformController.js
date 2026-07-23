@@ -156,6 +156,10 @@ const updateApplicationStatus = asyncHandler(async (req, res) => {
         email: application.email,
         startDate: application.offerJoiningDate || new Date(),
         status: 'Active',
+        source: application.source || 'hiresnix',
+        instStudentId: application.instStudentId || null,
+        institutionId: application.institutionId || null,
+        institutionName: application.institutionName || null,
       });
       await application.domain.increment('filledSeats');
     }

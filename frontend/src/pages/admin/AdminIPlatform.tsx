@@ -96,6 +96,7 @@ export function AdminIPlatform() {
   const [applicationTotal, setApplicationTotal] = useState(0);
   const [enrollments, setEnrollments] = useState<any[]>([]);
   const [selectedBatch, setSelectedBatch] = useState<string | null>(null);
+  const [selectedInstBatch, setSelectedInstBatch] = useState<string | null>(null);
   const [domains, setDomains] = useState<any[]>([]);
   const [resources, setResources] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -718,174 +719,263 @@ export function AdminIPlatform() {
 
       {/* ── INSTITUTION INTERNSHIP ──────────────────────────── */}
       {!loading && tab === 'institution' && (() => {
-        const q = appSearch.toLowerCase();
-        const instApps = applications.filter((app: any) => {
-          const isInst =
-            app.source === 'institution' ||
-            !!app.instStudentId ||
-            !!app.institutionName ||
-            !!app.careerId;
-          const matchSearch = !q ||
-            (app.studentName || '').toLowerCase().includes(q) ||
-            (app.email || '').toLowerCase().includes(q) ||
-            (app.phone || '').toLowerCase().includes(q) ||
-            (app.college || '').toLowerCase().includes(q) ||
-            (app.domain?.name || '').toLowerCase().includes(q) ||
-            (app.institutionName || '').toLowerCase().includes(q) ||
-            (app.careerId || '').toLowerCase().includes(q);
-          const matchStatus = appStatusFilter === 'All' || app.status === appStatusFilter;
-          return isInst && matchSearch && matchStatus;
+        // Filter only institution enrollments
+        const instEnrollments = enrollments.filter((e: any) =>
+          e.source === 'institution' || !!e.institutionName || !!e.instStudentId
+        );
+
+        // Group by institution name first, then by month batch
+        const instGroups: Record<string, Record<string, any[]>> = {};
+        instEnrollments.forEach((e: any) => {
+          const inst = e.institutionName || 'Unknown Institution';
+          const month = e.startDate
+            ? new Date(e.startDate).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })
+            : 'No Start Date';
+          if (!instGroups[inst]) instGroups[inst] = {};
+          if (!instGroups[inst][month]) instGroups[inst][month] = [];
+          instGroups[inst][month].push(e);
         });
 
-        const pending  = instApps.filter((a: any) => a.status === 'Pending');
-        const approved = instApps.filter((a: any) => a.status === 'Approved');
-        const rejected = instApps.filter((a: any) => a.status === 'Rejected');
-
-        const InstAppCard = ({ app }: any) => {
-          const accentColor = app.status === 'Approved' ? '#10b981' : app.status === 'Rejected' ? '#ef4444' : '#f59e0b';
-          const accentBorder = app.status === 'Approved' ? 'border-l-emerald-500' : app.status === 'Rejected' ? 'border-l-red-500' : 'border-l-amber-500';
-          return (
-            <div className={`rounded-xl border-l-4 ${accentBorder} p-4 hover:shadow-xl transition-all hover:-translate-y-0.5`}
-              style={{background:'linear-gradient(135deg,rgba(15,23,42,0.95) 0%,rgba(30,20,55,0.95) 100%)',border:'1px solid rgba(255,255,255,0.1)',backdropFilter:'blur(12px)'}}>
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0 text-white"
-                    style={{background:`linear-gradient(135deg,${accentColor}cc,${accentColor}88)`,border:`1.5px solid ${accentColor}66`}}>
-                    {app.studentName?.[0]?.toUpperCase()}
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className="font-bold text-white text-sm">{app.studentName}</p>
-                      <Badge status={app.status} />
-                    </div>
-                    <p className="text-xs mt-0.5" style={{color:'#475569'}}>{app.email} · {app.phone}</p>
-                    <p className="text-xs" style={{color:'#475569'}}>{app.college} · {app.year}</p>
-                    <p className="text-xs font-semibold mt-0.5" style={{color:'#60a5fa'}}>{app.domain?.name}</p>
-                    {app.institutionName && (
-                      <p className="text-[11px] mt-0.5 font-semibold" style={{color:'#f59e0b'}}>🏫 {app.institutionName}</p>
-                    )}
-                    {app.careerId && (
-                      <p className="text-[11px] mt-0.5 font-mono font-bold" style={{color:'#a78bfa'}}>🪪 Career ID: {app.careerId}</p>
-                    )}
-                    <p className="text-[11px] mt-0.5" style={{color:'#475569'}}>Applied: {new Date(app.createdAt).toLocaleDateString('en-IN')}</p>
-                  </div>
-                </div>
-                <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
-                  <div className="flex gap-1.5 flex-wrap justify-end">
-                    {app.status === 'Pending' && (
-                      <>
-                        <button
-                          onClick={() => handleAppAction(app.id, 'Approved')}
-                          disabled={actionId === `app-${app.id}`}
-                          className="flex items-center gap-1 text-xs font-bold bg-emerald-500 hover:bg-emerald-600 disabled:opacity-60 text-white px-2.5 py-1.5 rounded-lg transition">
-                          {actionId === `app-${app.id}` ? <Loader2 size={11} className="animate-spin" /> : <CheckCircle size={11} />}
-                          Approve
-                        </button>
-                        <button
-                          onClick={() => handleAppAction(app.id, 'Rejected')}
-                          disabled={actionId === `app-${app.id}`}
-                          className="flex items-center gap-1 text-xs font-bold bg-red-500 hover:bg-red-600 disabled:opacity-60 text-white px-2.5 py-1.5 rounded-lg transition">
-                          ✕ Reject
-                        </button>
-                      </>
-                    )}
-                    <button onClick={() => setOfferModal({
-                        applicationId: app.id,
-                        candidateName: app.studentName || '',
-                        role: `${app.domain?.name || 'Internship'} Intern`,
-                        companyName: 'Hiresnix',
-                        salary: app.offerSalary || app.salary || 'Unpaid Internship',
-                        offerLetterDate: app.offerLetterDate || todayInputValue(),
-                        joiningDate: app.offerJoiningDate || '',
-                        endDate: app.offerEndDate || '',
-                        datesLocked: Boolean(app.offerLetterDate || app.offerJoiningDate || app.offerEndDate),
-                      })} className="flex items-center gap-1 text-xs font-bold bg-blue-500 hover:bg-blue-600 text-white px-2.5 py-1.5 rounded-lg transition">
-                      <FileText size={11} /> Offer
-                    </button>
-                    <a href={`https://wa.me/?text=${encodeURIComponent(`Hi ${app.studentName},\n\nThank you for applying for the Hiresnix Internship Program. 🎉\n\nTo complete your Profile Verification, please share the following documents:\n\n📄 Updated Resume (PDF)\n💼 LinkedIn Profile URL\n💻 GitHub Profile URL (if available)\n✍️ A brief introduction about your skills, projects, and career interests\n\n📩 You can send the above documents to:\nWhatsApp: +91 9529120977\nEmail: hr@hiresnix.co.in`)}`}
-                      target="_blank" rel="noreferrer"
-                      className="flex items-center gap-1 text-xs font-bold bg-green-500 hover:bg-green-600 text-white px-2.5 py-1.5 rounded-lg transition">
-                      💬 WA
-                    </a>
-                  </div>
-                </div>
-              </div>
-              {app.whyJoin && (
-                <div className="mt-2.5">
-                  <button onClick={() => setExpandedId(expandedId === app.id ? null : app.id)}
-                    className="text-xs text-gray-600 hover:text-gray-400 flex items-center gap-1">
-                    {expandedId === app.id ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
-                    Why they want to join
-                  </button>
-                  {expandedId === app.id && (
-                    <p className="text-xs mt-1.5 rounded-lg p-3 italic" style={{background:'rgba(255,255,255,0.05)',color:'#94a3b8'}}>"{app.whyJoin}"</p>
-                  )}
-                </div>
-              )}
-            </div>
-          );
-        };
+        const instNames = Object.keys(instGroups).sort();
 
         return (
-          <div className="space-y-5">
-            {/* Search + Status filter */}
-            <div className="rounded-xl px-4 py-3 flex flex-wrap items-center gap-3" style={{background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.07)'}}>
-              <div className="flex-1 min-w-[180px] relative">
-                <input type="text" placeholder="Search by name, email, college, Career ID..."
-                  value={appSearch} onChange={e => setAppSearch(e.target.value)}
-                  className="w-full pl-8 pr-3 py-2 text-sm rounded-lg focus:outline-none dark-input" />
-                <span className="absolute left-2.5 top-2.5 text-gray-400 text-xs">🔍</span>
-              </div>
-              <div className="flex gap-1 flex-wrap">
-                {(['All', 'Pending', 'Approved', 'Rejected'] as const).map(s => (
-                  <button key={s} onClick={() => setAppStatusFilter(s as any)}
-                    className={`text-xs font-semibold px-2.5 py-1.5 rounded-lg transition ${
-                      appStatusFilter === s ? 'bg-violet-500 text-white' : 'bg-white/5 text-gray-500 hover:bg-white/10'
-                    }`}>
-                    {s === 'All' ? `All (${instApps.length})` : s === 'Pending' ? `Pending (${pending.length})` : s === 'Approved' ? `Approved (${approved.length})` : `Rejected (${rejected.length})`}
-                  </button>
-                ))}
-              </div>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-semibold text-gray-400">
+                {instEnrollments.length} institution students · {instNames.length} institution{instNames.length !== 1 ? 's' : ''}
+              </p>
+              <button onClick={() => {
+                const rows = instEnrollments.map((e: any) => ({
+                  Name: e.studentName || '',
+                  Email: e.email || '',
+                  Institution: e.institutionName || '',
+                  Domain: e.domain?.name || '',
+                  Progress: `${e.progress || 0}%`,
+                  Status: e.status || '',
+                  'Tasks Submitted': (e.taskLogs || []).length,
+                  'Start Date': e.startDate ? new Date(e.startDate).toLocaleDateString('en-IN') : '',
+                  'Completed On': e.completedAt ? new Date(e.completedAt).toLocaleDateString('en-IN') : '',
+                }));
+                downloadCSV(rows, 'Hiresnix_Institution_Students.csv');
+              }} className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg transition">
+                <Download size={13} /> Export CSV
+              </button>
             </div>
 
-            {instApps.length === 0 ? (
-              <div className="text-center py-16 text-gray-500">
+            {instEnrollments.length === 0 ? (
+              <div className="text-center py-16 text-gray-500" style={{background:'rgba(255,255,255,0.03)',borderRadius:'1rem',border:'1px solid rgba(255,255,255,0.07)'}}>
                 <div style={{fontSize:'3rem',marginBottom:'0.75rem'}}>🏫</div>
-                <p className="font-semibold text-gray-400">No institution students applied yet</p>
-                <p className="text-xs mt-1 text-gray-600">Students who apply with an institution name or Career ID will appear here</p>
+                <p className="font-semibold text-gray-400">No institution students enrolled yet</p>
+                <p className="text-xs mt-1 text-gray-600">Students approved via Institution Internship tab will appear here</p>
+              </div>
+            ) : selectedInstBatch === null ? (
+              /* ── Institution Cards ── */
+              <div className="space-y-6">
+                {instNames.map(instName => {
+                  const instData = instGroups[instName];
+                  const allStudents = Object.values(instData).flat();
+                  const totalActive = allStudents.filter((e: any) => e.status === 'Active').length;
+                  const totalCompleted = allStudents.filter((e: any) => e.status === 'Completed').length;
+                  const monthKeys = Object.keys(instData).sort();
+                  return (
+                    <div key={instName}>
+                      {/* Institution Header */}
+                      <div className="flex items-center gap-3 mb-3 px-1">
+                        <span style={{fontSize:'1.2rem'}}>🏫</span>
+                        <h3 className="font-bold text-white text-sm">{instName}</h3>
+                        <span className="text-xs text-gray-500">·</span>
+                        <span className="text-xs text-gray-400">{allStudents.length} students · {totalActive} active · {totalCompleted} completed</span>
+                      </div>
+                      {/* Batch Cards for this institution */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {monthKeys.map(month => {
+                          const bStudents = instData[month];
+                          const active = bStudents.filter((e: any) => e.status === 'Active').length;
+                          const completed = bStudents.filter((e: any) => e.status === 'Completed').length;
+                          const firstDate = bStudents[0]?.startDate;
+                          const batchKey = `${instName}||${month}`;
+                          return (
+                            <div key={batchKey}
+                              className="rounded-xl p-5 border cursor-pointer hover:shadow-md transition-all hover:-translate-y-0.5"
+                              style={{background:'linear-gradient(135deg,rgba(15,23,42,0.95) 0%,rgba(20,30,55,0.95) 100%)',border:'1px solid rgba(255,255,255,0.1)'}}
+                              onClick={() => setSelectedInstBatch(batchKey)}>
+                              <div className="flex items-start justify-between mb-3">
+                                <div>
+                                  <h3 className="font-bold text-white">{month} Batch</h3>
+                                  {firstDate && (
+                                    <p className="text-xs mt-0.5" style={{color:'#475569'}}>
+                                      From {new Date(firstDate).toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' })}
+                                    </p>
+                                  )}
+                                </div>
+                                <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-green-100 text-green-700">Active</span>
+                              </div>
+                              <div className="flex items-center gap-2 text-3xl font-bold text-violet-400 mb-2">
+                                <Users size={22} className="text-violet-400" />
+                                {bStudents.length}
+                                <span className="text-sm font-normal text-gray-400">students</span>
+                              </div>
+                              <div className="flex gap-3 text-xs mb-4">
+                                <span className="text-green-400 font-semibold">{active} active</span>
+                                {completed > 0 && <span className="text-purple-400 font-semibold">{completed} completed</span>}
+                              </div>
+                              <div className="pt-3 border-t flex items-center justify-center gap-1.5 text-xs text-violet-400 font-medium" style={{borderColor:'rgba(255,255,255,0.05)'}}>
+                                <ChevronDown size={14} /> View Students
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             ) : (
-              <div className="space-y-5">
-                {pending.length > 0 && (
-                  <div>
-                    <h3 className="text-xs font-bold text-amber-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-                      <span className="w-2 h-2 bg-amber-400 rounded-full animate-pulse inline-block" />
-                      Pending Review ({pending.length})
-                    </h3>
-                    <div className="grid md:grid-cols-2 gap-3">
-                      {pending.map((app: any) => <InstAppCard key={app.id} app={app} />)}
+              /* ── Batch Detail View ── */
+              (() => {
+                const [bInstName, bMonth] = selectedInstBatch.split('||');
+                const bStudents = (instGroups[bInstName]?.[bMonth]) || [];
+                const activeStudents = bStudents.filter((e: any) => e.status === 'Active');
+                return (
+                  <div className="rounded-xl border overflow-hidden" style={{background:'rgba(15,23,42,0.95)',border:'1px solid rgba(255,255,255,0.1)'}}>
+                    <div className="flex items-center gap-3 px-5 py-3.5 border-b" style={{borderColor:'rgba(255,255,255,0.07)',background:'rgba(255,255,255,0.03)'}}>
+                      <button onClick={() => setSelectedInstBatch(null)}
+                        className="p-1.5 rounded-lg hover:bg-white/10 text-gray-400 transition">
+                        <ChevronUp size={16} />
+                      </button>
+                      <div className="flex-1">
+                        <p className="font-bold text-white">{bMonth} Batch</p>
+                        <p className="text-xs" style={{color:'#f59e0b'}}>🏫 {bInstName}</p>
+                        <p className="text-xs text-gray-400">{bStudents.length} students · {activeStudents.length} active</p>
+                      </div>
+                      {activeStudents.length > 0 && (
+                        <button onClick={async () => {
+                          if (!window.confirm(`Mark all ${activeStudents.length} active students as Complete and issue certificates?`)) return;
+                          let success = 0, failed = 0;
+                          for (const e of activeStudents) {
+                            try {
+                              await adminApi.markEnrollmentComplete(e.id, { adminRemark: 'Batch completed', lorPerformance: 'Good', lorHighlights: 'Completed internship program' });
+                              success++;
+                            } catch { failed++; }
+                          }
+                          alert(`✅ ${success} certificates issued${failed > 0 ? `, ❌ ${failed} failed` : ''}!`);
+                          load();
+                        }}
+                        className="flex items-center gap-1.5 text-xs font-bold bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition">
+                          <Award size={13} /> Mark All Complete 🎓
+                        </button>
+                      )}
+                      <button onClick={() => {
+                        const rows = bStudents.map((e: any) => ({
+                          Name: e.studentName || '',
+                          Email: e.email || '',
+                          Institution: e.institutionName || '',
+                          Domain: e.domain?.name || '',
+                          Progress: `${e.progress || 0}%`,
+                          Status: e.status || '',
+                          'Tasks Submitted': (e.taskLogs || []).length,
+                          'Start Date': e.startDate ? new Date(e.startDate).toLocaleDateString('en-IN') : '',
+                          'Completed On': e.completedAt ? new Date(e.completedAt).toLocaleDateString('en-IN') : '',
+                        }));
+                        downloadCSV(rows, `Inst_Batch_${bInstName.replace(/\s+/g,'_')}_${bMonth.replace(/\s+/g,'_')}.csv`);
+                      }}
+                      className="flex items-center gap-1 text-xs text-emerald-600 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg transition">
+                        <Download size={12} /> Export CSV
+                      </button>
+                    </div>
+                    <div className="divide-y" style={{borderColor:'rgba(255,255,255,0.05)'}}>
+                      {bStudents.map((e: any) => (
+                        <div key={e.id} className="px-5 py-4">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-full flex items-center justify-center text-violet-300 font-bold text-sm flex-shrink-0"
+                                style={{background:'rgba(139,92,246,0.2)',border:'1.5px solid rgba(139,92,246,0.4)'}}>
+                                {e.studentName?.[0]?.toUpperCase()}
+                              </div>
+                              <div>
+                                <div className="flex items-center gap-2 mb-0.5">
+                                  <p className="font-semibold text-white">{e.studentName}</p>
+                                  <Badge status={e.status} />
+                                </div>
+                                <p className="text-xs" style={{color:'#475569'}}>{e.email}</p>
+                                <p className="text-sm font-medium text-blue-400">{e.domain?.name}</p>
+                                <div className="flex items-center gap-3 mt-1.5">
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-28 rounded-full h-2" style={{background:'rgba(255,255,255,0.1)'}}>
+                                      <div className="bg-emerald-500 h-2 rounded-full" style={{ width: `${e.progress}%` }} />
+                                    </div>
+                                    <span className="text-xs font-bold text-emerald-400">{e.progress}%</span>
+                                  </div>
+                                  <span className="text-xs text-gray-500">{(e.taskLogs || []).length} tasks</span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex flex-col items-end gap-2">
+                              <p className="text-xs text-gray-500">
+                                Started {e.startDate ? new Date(e.startDate).toLocaleDateString() : '—'}
+                              </p>
+                              {e.status === 'Active' && (
+                                <button
+                                  onClick={() => setCompleteModal({ id: e.id, name: e.studentName, adminRemark: '', lorPerformance: 'Excellent', lorHighlights: '' })}
+                                  className="flex items-center gap-1 text-xs font-bold bg-purple-500 hover:bg-purple-600 text-white px-3 py-1.5 rounded-lg transition">
+                                  <Award size={11} /> Mark Complete
+                                </button>
+                              )}
+                              {e.status === 'Completed' && (
+                                <span className="text-xs text-purple-400 font-semibold flex items-center gap-1">
+                                  <CheckCircle size={12} /> Cert issued
+                                </span>
+                              )}
+                              {(e.taskLogs || []).length > 0 && (
+                                <button onClick={() => {
+                                  const logs = (e.taskLogs || []).map((log: any, idx: number) => ({
+                                    'Sr No': idx + 1,
+                                    'Student Name': e.studentName || '',
+                                    'Institution': e.institutionName || '',
+                                    'Domain': e.domain?.name || '',
+                                    'Task Title': log.title || '',
+                                    'Description': log.description || '',
+                                    'URL / Link': log.url || '',
+                                    'Week': log.week || '',
+                                    'Submitted On': log.submittedAt ? new Date(log.submittedAt).toLocaleDateString('en-IN') : '',
+                                  }));
+                                  downloadCSV(logs, `DailyLog_${(e.studentName || 'Student').replace(/\s+/g,'_')}.csv`);
+                                }} className="flex items-center gap-1 text-xs font-bold bg-orange-500 hover:bg-orange-600 text-white px-3 py-1.5 rounded-lg transition">
+                                  <Download size={11} /> Daily Log
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                          {(e.taskLogs || []).length > 0 && (
+                            <div className="mt-3">
+                              <button onClick={() => setExpandedId(expandedId === e.id ? null : e.id)}
+                                className="text-xs text-gray-600 hover:text-gray-400 flex items-center gap-1">
+                                {expandedId === e.id ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
+                                View submitted tasks ({(e.taskLogs || []).length})
+                              </button>
+                              {expandedId === e.id && (
+                                <div className="mt-2 space-y-1.5 max-h-40 overflow-y-auto">
+                                  {[...(e.taskLogs || [])].reverse().map((log: any) => (
+                                    <div key={log.id} className="flex items-start gap-2 p-2 rounded-lg" style={{background:'rgba(255,255,255,0.05)'}}>
+                                      <CheckCircle size={12} className="text-emerald-500 mt-0.5 flex-shrink-0" />
+                                      <div>
+                                        <p className="text-xs font-semibold text-white">{log.title}</p>
+                                        <p className="text-xs" style={{color:'#475569'}}>{log.description}</p>
+                                        {log.url && <a href={log.url} target="_blank" rel="noreferrer" className="text-xs text-blue-400 hover:underline">{log.url}</a>}
+                                        <p className="text-[10px] text-gray-500 mt-0.5">Week {log.week} · {new Date(log.submittedAt).toLocaleDateString()}</p>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      ))}
                     </div>
                   </div>
-                )}
-                {approved.length > 0 && (
-                  <div>
-                    <h3 className="text-xs font-bold text-emerald-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-                      <CheckCircle size={12} /> Approved ({approved.length})
-                    </h3>
-                    <div className="grid md:grid-cols-2 gap-3">
-                      {approved.map((app: any) => <InstAppCard key={app.id} app={app} />)}
-                    </div>
-                  </div>
-                )}
-                {rejected.length > 0 && (
-                  <div>
-                    <h3 className="text-xs font-bold text-red-400 uppercase tracking-wider mb-3">✕ Rejected ({rejected.length})</h3>
-                    <div className="grid md:grid-cols-2 gap-3">
-                      {rejected.map((app: any) => <InstAppCard key={app.id} app={app} />)}
-                    </div>
-                  </div>
-                )}
-              </div>
+                );
+              })()
             )}
           </div>
         );
