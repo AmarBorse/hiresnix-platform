@@ -935,7 +935,7 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
   const stipendValue = String(stipend || salary || '').trim();
   const stipendText = stipendValue && !/^unpaid/i.test(stipendValue)
     ? `Rs. ${stipendValue.replace(/[RS]/g, '').trim()} per month, payable on or before the 5th day of each month`
-    : 'Unpaid (Learning & Project-Based Internship)';
+    : 'Unpaid';
 
   if (application) {
     const offerUpdate = {};
