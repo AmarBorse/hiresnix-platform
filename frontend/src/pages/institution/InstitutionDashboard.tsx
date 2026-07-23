@@ -35,7 +35,7 @@ function GlassStatCard({ label, value, icon: Icon, accent, to, delay = 0 }: any)
 function InternshipProgressSection() {
   const [enrollments, setEnrollments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
+  const [selectedBatch, setSelectedBatch] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
   useEffect(() => {
@@ -45,15 +45,20 @@ function InternshipProgressSection() {
       .finally(() => setLoading(false));
   }, []);
 
-  const filtered = enrollments.filter((e: any) =>
-    !search ||
-    (e.studentName || '').toLowerCase().includes(search.toLowerCase()) ||
-    (e.domainName || '').toLowerCase().includes(search.toLowerCase()) ||
-    (e.email || '').toLowerCase().includes(search.toLowerCase())
-  );
-
-  const active    = enrollments.filter((e: any) => e.status === 'Active').length;
-  const completed = enrollments.filter((e: any) => e.status === 'Completed').length;
+  // Group by month-year of startDate
+  const groups: Record<string, any[]> = {};
+  enrollments.forEach((e: any) => {
+    const key = e.startDate
+      ? new Date(e.startDate).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })
+      : 'No Start Date';
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(e);
+  });
+  const sortedKeys = Object.keys(groups).sort((a, b) => {
+    if (a === 'No Start Date') return 1;
+    if (b === 'No Start Date') return -1;
+    return new Date(groups[a][0].startDate) > new Date(groups[b][0].startDate) ? 1 : -1;
+  });
 
   if (loading) return (
     <div className="flex justify-center py-8">
@@ -62,51 +67,82 @@ function InternshipProgressSection() {
   );
 
   if (enrollments.length === 0) return (
-    <div className="rounded-2xl p-6 text-center" style={{background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.07)'}}>
+    <div className="rounded-xl p-6 text-center" style={{background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.06)'}}>
       <div style={{fontSize:'2rem',marginBottom:'0.5rem'}}>🎓</div>
       <p className="text-sm font-semibold" style={{color:'#475569'}}>No students enrolled in Hiresnix Internship yet</p>
       <p className="text-xs mt-1" style={{color:'#334155'}}>Students who apply with your institution name will appear here</p>
     </div>
   );
 
+  // ── Batch Cards View ──
+  if (selectedBatch === null) return (
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+      {sortedKeys.map(month => {
+        const bStudents = groups[month];
+        const active    = bStudents.filter((e: any) => e.status === 'Active').length;
+        const completed = bStudents.filter((e: any) => e.status === 'Completed').length;
+        const firstDate = bStudents[0]?.startDate;
+        return (
+          <div key={month} onClick={() => setSelectedBatch(month)}
+            className="rounded-xl p-4 cursor-pointer transition hover:shadow-lg hover:-translate-y-0.5"
+            style={{background:'linear-gradient(135deg,rgba(139,92,246,0.08),rgba(15,23,42,0.95))',border:'1px solid rgba(139,92,246,0.2)'}}>
+            <div className="flex items-start justify-between mb-3">
+              <div>
+                <h3 className="font-bold text-white text-sm">{month} Batch</h3>
+                {firstDate && (
+                  <p className="text-xs mt-0.5" style={{color:'#475569'}}>
+                    From {new Date(firstDate).toLocaleDateString('en-IN', {day:'numeric',month:'short',year:'numeric'})}
+                  </p>
+                )}
+              </div>
+              <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-green-100 text-green-700">Active</span>
+            </div>
+            <div className="flex items-center gap-2 text-2xl font-bold mb-2" style={{color:C.accent}}>
+              <Users size={20} style={{color:C.accent}} />
+              {bStudents.length}
+              <span className="text-sm font-normal" style={{color:'#64748b'}}>students</span>
+            </div>
+            <div className="flex gap-3 text-xs mb-3">
+              <span className="text-green-400 font-semibold">{active} active</span>
+              {completed > 0 && <span className="text-purple-400 font-semibold">{completed} completed</span>}
+            </div>
+            <div className="pt-2 flex items-center justify-center gap-1 text-xs font-medium" style={{borderTop:'1px solid rgba(255,255,255,0.06)',color:C.accent}}>
+              <ChevronDown size={13} /> View Students
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+
+  // ── Batch Detail View ──
+  const bStudents = groups[selectedBatch] || [];
   return (
-    <div className="space-y-4">
-      {/* Stats row */}
-      <div className="flex items-center gap-4 flex-wrap">
-        <div className="flex items-center gap-2 text-sm">
-          <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse inline-block" />
-          <span className="text-white font-bold">{active}</span>
-          <span style={{color:'#64748b'}}>active</span>
-        </div>
-        <div className="flex items-center gap-2 text-sm">
-          <CheckCircle size={13} style={{color:'#34d399'}} />
-          <span className="text-white font-bold">{completed}</span>
-          <span style={{color:'#64748b'}}>completed</span>
-        </div>
-        <div className="flex-1 min-w-[180px]">
-          <input
-            type="text"
-            placeholder="Search student or domain..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="w-full px-3 py-1.5 rounded-lg text-xs focus:outline-none"
-            style={{background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.1)',color:'#e2e8f0'}}
-          />
+    <div className="rounded-xl overflow-hidden" style={{background:'rgba(15,23,42,0.95)',border:'1px solid rgba(255,255,255,0.1)'}}>
+      {/* Header */}
+      <div className="flex items-center gap-3 px-4 py-3" style={{borderBottom:'1px solid rgba(255,255,255,0.07)',background:'rgba(255,255,255,0.03)'}}>
+        <button onClick={() => { setSelectedBatch(null); setExpandedId(null); }}
+          className="p-1.5 rounded-lg hover:bg-white/10 text-gray-400 transition">
+          <ChevronUp size={16} />
+        </button>
+        <div className="flex-1">
+          <p className="font-bold text-white text-sm">{selectedBatch} Batch</p>
+          <p className="text-xs" style={{color:'#64748b'}}>{bStudents.length} students · {bStudents.filter((e:any)=>e.status==='Active').length} active</p>
         </div>
       </div>
 
-      {/* Student Cards */}
-      <div className="space-y-2">
-        {filtered.map((e: any) => {
+      {/* Students */}
+      <div className="divide-y" style={{borderColor:'rgba(255,255,255,0.05)'}}>
+        {bStudents.map((e: any) => {
           const taskLogs = Array.isArray(e.taskLogs) ? e.taskLogs : [];
-          const lastActive = e.lastActive ? new Date(e.lastActive).toLocaleDateString('en-IN', {day:'numeric',month:'short',year:'numeric'}) : '—';
+          const lastActive = e.lastActive
+            ? new Date(e.lastActive).toLocaleDateString('en-IN', {day:'numeric',month:'short',year:'numeric'})
+            : '—';
           const isExpanded = expandedId === e.id;
 
           return (
-            <div key={e.id} className="rounded-xl overflow-hidden"
-              style={{background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.07)'}}>
-              {/* Main row */}
-              <div className="flex items-center gap-3 p-3 cursor-pointer hover:bg-white/5 transition"
+            <div key={e.id}>
+              <div className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-white/5 transition"
                 onClick={() => setExpandedId(isExpanded ? null : e.id)}>
                 {/* Avatar */}
                 <div className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm text-white flex-shrink-0"
@@ -118,52 +154,50 @@ function InternshipProgressSection() {
                   <div className="flex items-center gap-2 flex-wrap">
                     <p className="text-sm font-semibold text-white">{e.studentName}</p>
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                      e.status === 'Completed'
-                        ? 'bg-green-500/20 text-green-400'
-                        : 'bg-blue-500/20 text-blue-400'
+                      e.status === 'Completed' ? 'bg-green-500/20 text-green-400' : 'bg-blue-500/20 text-blue-400'
                     }`}>{e.status}</span>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap mt-0.5">
                     <p className="text-xs" style={{color:'#60a5fa'}}>{e.domainName}</p>
                     {e.careerId && <span className="text-[10px] font-mono font-bold" style={{color:C.accent}}>{e.careerId}</span>}
                     {e.department && <span className="text-[10px]" style={{color:'#475569'}}>{e.department}</span>}
                   </div>
-                </div>
-                {/* Progress */}
-                <div className="flex-shrink-0 text-right">
-                  <p className="text-sm font-bold" style={{color: C.accent}}>{e.progress ?? 0}%</p>
-                  <div className="w-20 rounded-full h-1.5 mt-1" style={{background:'rgba(255,255,255,0.1)'}}>
-                    <div className="h-1.5 rounded-full" style={{width:`${e.progress ?? 0}%`,background:C.accent}} />
+                  {/* Progress bar */}
+                  <div className="flex items-center gap-2 mt-1.5">
+                    <div className="w-24 rounded-full h-1.5" style={{background:'rgba(255,255,255,0.1)'}}>
+                      <div className="h-1.5 rounded-full transition-all" style={{width:`${e.progress??0}%`,background:C.accent}} />
+                    </div>
+                    <span className="text-xs font-bold" style={{color:C.accent}}>{e.progress??0}%</span>
                   </div>
                 </div>
-                {/* Tasks + Last active */}
-                <div className="flex-shrink-0 text-right hidden sm:block">
-                  <p className="text-xs font-bold text-white">{e.taskCount ?? 0} tasks</p>
-                  <p className="text-[10px]" style={{color:'#475569'}}>Last: {lastActive}</p>
+                {/* Right side */}
+                <div className="flex-shrink-0 text-right">
+                  <p className="text-xs font-bold text-white">{taskLogs.length} tasks</p>
+                  <p className="text-[10px] mt-0.5" style={{color:'#475569'}}>Last: {lastActive}</p>
                 </div>
-                {isExpanded ? <ChevronUp size={14} className="text-gray-500 flex-shrink-0" /> : <ChevronDown size={14} className="text-gray-500 flex-shrink-0" />}
+                {isExpanded ? <ChevronUp size={13} className="text-gray-500 flex-shrink-0" /> : <ChevronDown size={13} className="text-gray-500 flex-shrink-0" />}
               </div>
 
-              {/* Expanded — task logs */}
+              {/* Expanded task logs */}
               {isExpanded && (
                 <div className="px-4 pb-3" style={{borderTop:'1px solid rgba(255,255,255,0.05)'}}>
                   <div className="flex gap-4 text-xs mt-2 mb-3 flex-wrap">
                     <span style={{color:'#475569'}}>📧 {e.email}</span>
                     {e.startDate && <span style={{color:'#475569'}}>Started: {new Date(e.startDate).toLocaleDateString('en-IN')}</span>}
                     {e.completedAt && <span style={{color:'#34d399'}}>✅ Completed: {new Date(e.completedAt).toLocaleDateString('en-IN')}</span>}
-                    <span style={{color:'#475569'}} className="sm:hidden">Last Active: {lastActive}</span>
                   </div>
                   {taskLogs.length === 0 ? (
                     <p className="text-xs" style={{color:'#334155'}}>No tasks submitted yet</p>
                   ) : (
-                    <div className="space-y-1.5 max-h-48 overflow-y-auto">
-                      <p className="text-xs font-semibold mb-2" style={{color:'#64748b'}}>Recent Task Logs ({taskLogs.length})</p>
+                    <div className="space-y-1.5 max-h-52 overflow-y-auto">
+                      <p className="text-xs font-semibold mb-2" style={{color:'#64748b'}}>Task Logs ({taskLogs.length})</p>
                       {[...taskLogs].reverse().map((log: any, idx: number) => (
                         <div key={idx} className="flex items-start gap-2 p-2 rounded-lg" style={{background:'rgba(255,255,255,0.04)'}}>
                           <CheckCircle size={11} className="mt-0.5 flex-shrink-0" style={{color:'#34d399'}} />
-                          <div className="min-w-0">
-                            <p className="text-xs font-semibold text-white truncate">{log.title}</p>
-                            {log.description && <p className="text-[10px] truncate" style={{color:'#475569'}}>{log.description}</p>}
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-semibold text-white">{log.title}</p>
+                            {log.description && <p className="text-[10px]" style={{color:'#475569'}}>{String(log.description||'').split('\n').join(' ').trim()}</p>}
+                            {log.url && <a href={log.url} target="_blank" rel="noreferrer" className="text-[10px] text-blue-400 hover:underline truncate block">{log.url}</a>}
                             <p className="text-[10px] mt-0.5" style={{color:'#334155'}}>
                               Week {log.week} · {log.submittedAt ? new Date(log.submittedAt).toLocaleDateString('en-IN') : ''}
                             </p>
