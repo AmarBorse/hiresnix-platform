@@ -30,30 +30,56 @@ function downloadCSV(data: any[], filename: string) {
   toast.success(`Downloaded ${filename}`);
 }
 
-// ── Excel (.xlsx) Download helper ────────────────────────────────
+// ── Excel (.xlsx) Download helper (SheetJS) ──────────────────────
 function downloadExcel(data: any[], filename: string) {
   if (!data.length) { toast.error('No data to export'); return; }
-  const keys = Object.keys(data[0]);
+  import('xlsx').then(XLSX => {
+    const keys = Object.keys(data[0]);
 
-  // Build worksheet as tab-separated with BOM for Excel to detect encoding
-  const tsv = [
-    keys.join('\t'),
-    ...data.map(row =>
-      keys.map(k => {
-        const val = row[k] ?? '';
-        const str = typeof val === 'object' ? JSON.stringify(val) : String(val);
-        return str.replace(/\t/g, ' ').replace(/\n/g, ' ');
-      }).join('\t')
-    ),
-  ].join('\n');
+    // Build rows: header + data
+    const wsData = [
+      keys, // header row
+      ...data.map(row =>
+        keys.map(k => {
+          const val = row[k] ?? '';
+          return typeof val === 'object' ? JSON.stringify(val) : String(val);
+        })
+      ),
+    ];
 
-  const bom = '\uFEFF';
-  const blob = new Blob([bom + tsv], { type: 'application/vnd.ms-excel;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = filename; a.click();
-  URL.revokeObjectURL(url);
-  toast.success(`Downloaded ${filename}`);
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+    // Column widths — auto-fit based on max content length
+    const colWidths = keys.map((key, ci) => {
+      const maxLen = Math.max(
+        key.length,
+        ...data.map(row => String(row[key] ?? '').length)
+      );
+      return { wch: Math.min(Math.max(maxLen, 10), 60) };
+    });
+    ws['!cols'] = colWidths;
+
+    // Freeze top row
+    ws['!freeze'] = { xSplit: 0, ySplit: 1 };
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Data');
+    XLSX.writeFile(wb, filename.replace(/\.csv$/, '') + '.xlsx');
+    toast.success(`Downloaded ${filename.replace(/\.csv$/, '')}.xlsx`);
+  }).catch(() => {
+    // Fallback to CSV if xlsx not available
+    const keys = Object.keys(data[0]);
+    const csv = [keys.join(','), ...data.map(row => keys.map(k => {
+      const val = row[k] ?? '';
+      const str = typeof val === 'object' ? JSON.stringify(val) : String(val);
+      return `"${str.replace(/"/g, '""')}"`;
+    }).join(','))].join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename; a.click();
+    URL.revokeObjectURL(url);
+  });
 }
 
 function todayInputValue() {
@@ -614,7 +640,7 @@ export function AdminIPlatform() {
                         'Completed On': e.completedAt ? new Date(e.completedAt).toLocaleDateString('en-IN') : '',
                         'Admin Remark': e.adminRemark || '',
                       }));
-                      downloadCSV(rows, `Hiresnix_Batch_${selectedBatch.replace(/\s+/g, '_')}.csv`);
+                      downloadExcel(rows, `Hiresnix_Batch_${selectedBatch.replace(/\s+/g, '_')}.csv`);
                     }}
                     className="flex items-center gap-1 text-xs text-emerald-600 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg transition">
                     <Download size={12} /> Export CSV
@@ -639,7 +665,7 @@ export function AdminIPlatform() {
                         });
                       });
                       if (allLogs.length === 0) { alert('No task logs found for this batch'); return; }
-                      downloadCSV(allLogs, `AllDailyLogs_${selectedBatch.replace(/\s+/g, '_')}.csv`);
+                      downloadExcel(allLogs, `AllDailyLogs_${selectedBatch.replace(/\s+/g, '_')}.csv`);
                     }}
                     className="flex items-center gap-1 text-xs font-bold text-orange-600 bg-orange-50 hover:bg-orange-100 px-3 py-1.5 rounded-lg transition">
                     <Download size={12} /> All Daily Logs
@@ -701,7 +727,7 @@ export function AdminIPlatform() {
                                   'Status': log.status || 'Submitted',
                                   'Submitted On': log.submittedAt ? new Date(log.submittedAt).toLocaleDateString('en-IN') : '',
                                 }));
-                                downloadCSV(logs, `DailyLog_${(e.studentName || 'Student').replace(/\s+/g, '_')}.csv`);
+                                downloadExcel(logs, `DailyLog_${(e.studentName || 'Student').replace(/\s+/g, '_')}.csv`);
                               }}
                               className="flex items-center gap-1 text-xs font-bold bg-orange-500 hover:bg-orange-600 text-white px-3 py-1.5 rounded-lg transition">
                               <Download size={11} /> Daily Log
@@ -781,7 +807,7 @@ export function AdminIPlatform() {
                   'Start Date': e.startDate ? new Date(e.startDate).toLocaleDateString('en-IN') : '',
                   'Completed On': e.completedAt ? new Date(e.completedAt).toLocaleDateString('en-IN') : '',
                 }));
-                downloadCSV(rows, 'Hiresnix_Institution_Students.csv');
+                downloadExcel(rows, 'Hiresnix_Institution_Students.csv');
               }} className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg transition">
                 <Download size={13} /> Export CSV
               </button>
@@ -902,7 +928,7 @@ export function AdminIPlatform() {
                           'Start Date': e.startDate ? new Date(e.startDate).toLocaleDateString('en-IN') : '',
                           'Completed On': e.completedAt ? new Date(e.completedAt).toLocaleDateString('en-IN') : '',
                         }));
-                        downloadCSV(rows, `Inst_Batch_${bInstName.replace(/\s+/g,'_')}_${bMonth.replace(/\s+/g,'_')}.csv`);
+                        downloadExcel(rows, `Inst_Batch_${bInstName.replace(/\s+/g,'_')}_${bMonth.replace(/\s+/g,'_')}.csv`);
                       }}
                       className="flex items-center gap-1 text-xs text-emerald-600 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg transition">
                         <Download size={12} /> Export CSV
@@ -927,7 +953,7 @@ export function AdminIPlatform() {
                             });
                           });
                           if (allLogs.length === 0) { alert('No task logs found for this batch'); return; }
-                          downloadCSV(allLogs, `AllDailyLogs_${bInstName.replace(/\s+/g,'_')}_${bMonth.replace(/\s+/g,'_')}.csv`);
+                          downloadExcel(allLogs, `AllDailyLogs_${bInstName.replace(/\s+/g,'_')}_${bMonth.replace(/\s+/g,'_')}.csv`);
                         }}
                         className="flex items-center gap-1 text-xs font-bold text-orange-600 bg-orange-50 hover:bg-orange-100 px-3 py-1.5 rounded-lg transition">
                         <Download size={12} /> All Daily Logs
@@ -989,7 +1015,7 @@ export function AdminIPlatform() {
                                     'Week': log.week || '',
                                     'Submitted On': log.submittedAt ? new Date(log.submittedAt).toLocaleDateString('en-IN') : '',
                                   }));
-                                  downloadCSV(logs, `DailyLog_${(e.studentName || 'Student').replace(/\s+/g,'_')}.csv`);
+                                  downloadExcel(logs, `DailyLog_${(e.studentName || 'Student').replace(/\s+/g,'_')}.csv`);
                                 }} className="flex items-center gap-1 text-xs font-bold bg-orange-500 hover:bg-orange-600 text-white px-3 py-1.5 rounded-lg transition">
                                   <Download size={11} /> Daily Log
                                 </button>
