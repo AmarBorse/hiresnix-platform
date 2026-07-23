@@ -2,7 +2,7 @@
 // DEADLINE OR DEAD — All India Public Challenge by Hiresnix
 import { useState, useEffect, useRef, useCallback } from "react";
 
-const API = import.meta.env.VITE_API_URL || 'https://hirenix-backend.onrender.com/api';
+const API = (import.meta as any).env?.VITE_API_URL || 'https://hirenix-backend.onrender.com/api';
 
 const SKILLS = [
   "React.js","Python","Machine Learning","Node.js","DSA",
@@ -80,6 +80,282 @@ function createSoundEngine() {
   };
 }
 const sound = createSoundEngine();
+// ── Background Music Engine ───────────────────────────────────────
+function createMusicEngine() {
+  let ctx: AudioContext | null = null;
+  let masterGain: GainNode | null = null;
+  let playing = false;
+  let nodes: AudioNode[] = [];
+
+  const getCtx = () => {
+    if (!ctx) {
+      ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      masterGain = ctx.createGain();
+      masterGain.gain.setValueAtTime(0.18, ctx.currentTime);
+      masterGain.connect(ctx.destination);
+    }
+    return ctx;
+  };
+
+  function playDrumLoop() {
+    const c = getCtx();
+    const mg = masterGain!;
+    const BPM = 140;
+    const beat = 60 / BPM;
+
+    function kick(time: number) {
+      const o = c.createOscillator();
+      const g = c.createGain();
+      o.connect(g); g.connect(mg);
+      o.frequency.setValueAtTime(150, time);
+      o.frequency.exponentialRampToValueAtTime(40, time + 0.12);
+      g.gain.setValueAtTime(1.2, time);
+      g.gain.exponentialRampToValueAtTime(0.001, time + 0.25);
+      o.start(time); o.stop(time + 0.25);
+    }
+
+    function snare(time: number) {
+      const buf = c.createBuffer(1, c.sampleRate * 0.15, c.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / data.length);
+      const src = c.createBufferSource();
+      src.buffer = buf;
+      const g = c.createGain();
+      const f = c.createBiquadFilter();
+      f.type = 'bandpass'; f.frequency.value = 2000;
+      src.connect(f); f.connect(g); g.connect(mg);
+      g.gain.setValueAtTime(0.5, time);
+      g.gain.exponentialRampToValueAtTime(0.001, time + 0.12);
+      src.start(time); src.stop(time + 0.15);
+    }
+
+    function hihat(time: number, vol = 0.18) {
+      const buf = c.createBuffer(1, c.sampleRate * 0.04, c.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+      const src = c.createBufferSource();
+      src.buffer = buf;
+      const f = c.createBiquadFilter();
+      f.type = 'highpass'; f.frequency.value = 8000;
+      const g = c.createGain();
+      src.connect(f); f.connect(g); g.connect(mg);
+      g.gain.setValueAtTime(vol, time);
+      g.gain.exponentialRampToValueAtTime(0.001, time + 0.04);
+      src.start(time); src.stop(time + 0.05);
+    }
+
+    // Schedule 4 bars ahead
+    const now = c.currentTime;
+    for (let bar = 0; bar < 4; bar++) {
+      const base = now + bar * beat * 4;
+      // Kick: beats 1, 3
+      kick(base); kick(base + beat * 2);
+      kick(base + beat * 2.5);
+      // Snare: beats 2, 4
+      snare(base + beat); snare(base + beat * 3);
+      // Hi-hats: every 8th note
+      for (let i = 0; i < 8; i++) hihat(base + i * beat * 0.5, i % 2 === 0 ? 0.2 : 0.1);
+    }
+  }
+
+  function playBassLine() {
+    const c = getCtx();
+    const mg = masterGain!;
+    const BPM = 140;
+    const beat = 60 / BPM;
+    // Dark bass riff in minor
+    const notes = [55, 55, 58, 55, 52, 55, 50, 52]; // A1 minor feel
+    const now = c.currentTime;
+
+    notes.forEach((freq, i) => {
+      const o = c.createOscillator();
+      const g = c.createGain();
+      const f = c.createBiquadFilter();
+      f.type = 'lowpass'; f.frequency.value = 200;
+      o.type = 'sawtooth';
+      o.connect(f); f.connect(g); g.connect(mg);
+      const t = now + i * beat * 0.5;
+      o.frequency.setValueAtTime(freq, t);
+      g.gain.setValueAtTime(0.5, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + beat * 0.45);
+      o.start(t); o.stop(t + beat * 0.5);
+    });
+  }
+
+  function playMelody() {
+    const c = getCtx();
+    const mg = masterGain!;
+    const BPM = 140;
+    const beat = 60 / BPM;
+    // Ominous minor melody
+    const pattern = [220, 0, 220, 196, 0, 174.6, 0, 165];
+    const now = c.currentTime + 0.1;
+
+    pattern.forEach((freq, i) => {
+      if (freq === 0) return;
+      const o = c.createOscillator();
+      const g = c.createGain();
+      o.type = 'square';
+      o.connect(g); g.connect(mg);
+      const t = now + i * beat * 0.5;
+      o.frequency.setValueAtTime(freq, t);
+      g.gain.setValueAtTime(0.08, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + beat * 0.4);
+      o.start(t); o.stop(t + beat * 0.5);
+    });
+  }
+
+  function loop() {
+    if (!playing) return;
+    playDrumLoop();
+    playBassLine();
+    playMelody();
+    const BPM = 140;
+    const beat = 60 / BPM;
+    setTimeout(loop, beat * 4 * 1000);
+  }
+
+  return {
+    start() {
+      if (playing) return;
+      playing = true;
+      try { getCtx(); loop(); } catch {}
+    },
+    stop() {
+      playing = false;
+      try { masterGain?.gain.setValueAtTime(0, ctx!.currentTime); } catch {}
+    },
+    toggle() {
+      if (playing) this.stop(); else this.start();
+      return !playing;
+    },
+    isPlaying: () => playing,
+  };
+}
+const music = createMusicEngine();
+
+
+
+
+// ── Task Descriptions ─────────────────────────────────────────────
+const TASK_DESCRIPTIONS: Record<string, Record<string, string>> = {
+  "React.js": {
+    "Build a working todo app with hooks": "React hooks (useState, useEffect) are the foundation of modern React. Every recruiter tests this. A todo app proves you can manage state, handle events, and render lists — core skills for 90% of frontend jobs.",
+    "Create a custom useDebounce hook": "Custom hooks separate logic from UI. useDebounce is asked in almost every React interview. It shows you understand closures, useEffect cleanup, and performance optimization.",
+    "Deploy a React app to Vercel": "Code that isn't deployed doesn't exist. Vercel deployment proves you can ship. Interviewers want to see live URLs, not localhost screenshots.",
+    "Implement lazy loading on 3 routes": "Performance is a senior skill. Lazy loading reduces bundle size. React.lazy() and Suspense are standard interview topics for mid-level React roles.",
+    "Build a real-time search filter": "Search filtering combines useState, useEffect, debouncing, and array methods. It's one of the most common coding challenges given in React interviews.",
+  },
+  "Python": {
+    "Write a web scraper for 1 site": "Web scraping with BeautifulSoup/Selenium is a ₹15-40k/month freelance skill. It tests your understanding of HTML structure, HTTP requests, and data extraction.",
+    "Solve 3 LeetCode easy problems": "LeetCode is how companies filter candidates. Easy problems test arrays, strings, and basic logic — skills every Python developer must have. 3 problems = proof of consistency.",
+    "Build a CLI tool that does something useful": "CLI tools show you can solve real problems. argparse, file I/O, and sys.argv mastery separates Python beginners from developers.",
+    "Automate a boring task on your PC": "Automation is Python's superpower. File renaming, PDF processing, email sending — showing you've automated something real proves practical Python skills.",
+    "Create a REST API with Flask": "Flask APIs are the backbone of data science projects. Frontend-backend integration, JSON responses, and route handling are must-know for any Python developer.",
+  },
+  "Machine Learning": {
+    "Train a model on Titanic dataset": "Titanic is the 'Hello World' of ML. It covers data cleaning, feature engineering, model training, and evaluation — the complete ML pipeline in one dataset.",
+    "Explain overfitting with example": "Overfitting is the most common ML interview question. If you can't explain it clearly with an example, you'll fail technical rounds at every ML company.",
+    "Build an image classifier": "CNNs and image classification are in 60% of ML job descriptions. Even a basic MNIST classifier proves you understand neural networks and model evaluation.",
+    "Implement linear regression from scratch": "Building algorithms from scratch (not sklearn) proves deep understanding. Interviewers test this to separate people who use ML from those who understand it.",
+    "Create a recommendation system": "Collaborative filtering and content-based recommendations power Netflix, Swiggy, and Amazon. This project alone can get you an interview at any product company.",
+  },
+  "Node.js": {
+    "Build an Express REST API with 3 routes": "Express is the most used Node.js framework. REST APIs with GET/POST/DELETE routes are the foundation of every Node.js backend role.",
+    "Connect to MongoDB or Supabase": "Database integration separates frontend developers from backend developers. CRUD operations with a real database is the minimum for any backend position.",
+    "Implement JWT auth from scratch": "Authentication is in every web app. JWT implementation from scratch proves you understand tokens, middleware, and security — not just copy-pasting tutorials.",
+    "Create a WebSocket chat server": "Real-time features (chat, notifications, live updates) use WebSockets. This skill is rare among juniors and immediately impresses interviewers.",
+    "Deploy backend to Render": "An API that only runs locally is useless. Deployment, environment variables, and production configuration are skills that distinguish developers who can ship.",
+  },
+  "DSA": {
+    "Solve 2 medium array problems on LeetCode": "Array problems appear in 70% of technical interviews. Two-pointer, sliding window, and prefix sum patterns are tested at every company from startups to FAANG.",
+    "Implement a binary search tree": "Trees are tested in every serious technical interview. BST implementation from scratch demonstrates recursion mastery and pointer manipulation.",
+    "Code BFS + DFS with explanation": "Graph traversal algorithms are asked in system design and coding rounds. BFS/DFS solve problems from social networks to route finding.",
+    "Solve a dynamic programming problem": "DP is the hardest topic in interviews. Solving even one DP problem proves you can break complex problems into subproblems — a rare skill that commands higher salaries.",
+    "Reverse a linked list 3 different ways": "Linked list reversal is asked in literally every company. Knowing 3 approaches (iterative, recursive, stack) shows depth of understanding.",
+  },
+  "SQL": {
+    "Write 5 JOIN queries on real data": "JOINs are tested in every data role interview. INNER, LEFT, RIGHT, FULL OUTER — understanding when to use each is the difference between a job offer and rejection.",
+    "Create indexes and explain why they help": "Indexing is a senior SQL skill. Explaining B-tree indexes and query optimization shows you think about performance, not just correctness.",
+    "Write a stored procedure": "Stored procedures appear in enterprise SQL interviews. They demonstrate understanding of database logic, parameterization, and reusable code.",
+    "Design a 5-table schema for an app": "Schema design is asked in every backend interview. Normalization, foreign keys, and relationships show you think about data architecture.",
+    "Optimize a slow query and document changes": "Query optimization is a ₹5-10 LPA skill. EXPLAIN ANALYZE, index usage, and reducing N+1 queries are what senior developers do daily.",
+  },
+  "Docker": {
+    "Containerize any app you built": "Docker is required in 80% of backend job descriptions. Containerizing your own project proves you understand Dockerfiles, layers, and build optimization.",
+    "Write a docker-compose with 2 services": "Docker Compose is how teams run multi-service applications locally. Connecting a web app to a database with compose is a day-1 DevOps skill.",
+    "Push image to Docker Hub": "Publishing Docker images is how teams share and deploy applications. Docker Hub experience proves you understand the container registry workflow.",
+    "Explain volumes vs bind mounts": "Data persistence in Docker confuses most beginners. Understanding volumes vs bind mounts shows you've actually run production-like containers.",
+    "Deploy a container to cloud": "Running containers locally is practice. Deploying to cloud (Railway, Fly.io, GCP) is the real skill that gets you hired.",
+  },
+  "Flutter": {
+    "Build a login screen UI": "UI implementation is 50% of Flutter development. A login screen tests Widgets, TextFields, Form validation, and state management — core Flutter skills.",
+    "Consume a REST API in Flutter": "Almost every app fetches data from an API. http package, async/await, and JSON parsing are must-know for any Flutter developer.",
+    "Add state management with Provider": "State management is where Flutter gets complex. Provider is the most common pattern — understanding it separates Flutter beginners from developers.",
+    "Publish app to TestFlight": "Shipping to TestFlight proves you can navigate Apple's developer ecosystem, code signing, and app distribution — rare skills among Flutter beginners.",
+    "Build a multi-screen app with navigation": "Navigator 2.0 and GoRouter are tested in Flutter interviews. Multi-screen navigation with data passing is a fundamental mobile development skill.",
+  },
+  "Cybersecurity": {
+    "Complete 1 TryHackMe room": "TryHackMe is where cybersecurity skills are built and verified. One completed room proves active learning over passive watching of YouTube tutorials.",
+    "Set up a basic firewall rule": "Firewall configuration is foundational security knowledge. iptables or Windows Firewall rules show you understand network traffic control.",
+    "Demonstrate SQL injection with example": "SQL injection is the #1 web vulnerability. Being able to demonstrate it (ethically) proves you understand attacker mindset — essential for security roles.",
+    "Scan your own network ethically": "Nmap scanning is the first skill in every penetration testing course. Ethical network scanning shows you've taken hands-on steps in cybersecurity.",
+    "Learn and explain OWASP Top 3": "OWASP Top 10 is the Bible of web security. Every security interview asks about it. Knowing the top 3 with explanations is the minimum for any security role.",
+  },
+  "Data Science": {
+    "Clean a messy dataset and document steps": "Data cleaning takes 80% of a data scientist's time. Pandas proficiency, handling nulls, and documenting decisions are what companies actually pay for.",
+    "Create 5 meaningful visualizations": "Data storytelling through charts separates analysts from data scientists. Matplotlib/Seaborn visualizations that reveal insights are interview gold.",
+    "Write a full EDA notebook": "Exploratory Data Analysis is the first step in every data project. A complete EDA notebook shows structured thinking and analytical process.",
+    "Build a prediction model": "End-to-end ML pipelines (cleaning → features → model → evaluation) are what data science roles require. A working prediction model proves you can deliver results.",
+    "Present findings in a 1-page report": "Communication is 50% of data science. Converting analysis into a clear one-page report shows business thinking — what actually gets you promoted.",
+  },
+  "Java": {
+    "Build a CRUD app with Spring Boot": "Spring Boot is in 70% of Java job descriptions. CRUD operations with REST controllers, services, and repositories is the minimum for any Java backend role.",
+    "Implement OOP with 4 principles": "Encapsulation, Inheritance, Polymorphism, Abstraction — Java OOP principles are asked in every interview. Implementing all 4 proves conceptual depth.",
+    "Write 10 unit tests with JUnit": "Test-driven development is expected in enterprise Java roles. JUnit tests show you write production-quality code, not just code that 'works on my machine'.",
+    "Explain multithreading with code": "Java multithreading (synchronized, volatile, ExecutorService) separates junior developers from senior ones. Companies pay 2x for developers who understand concurrency.",
+    "Connect to a real database": "JPA/Hibernate with a real database is the backbone of Java enterprise applications. This skill appears in 90% of Java developer job descriptions.",
+  },
+  "DevOps": {
+    "Set up a CI/CD pipeline": "CI/CD is the most in-demand DevOps skill. Automated testing and deployment pipelines save companies thousands of hours — that's why they pay DevOps engineers well.",
+    "Write a GitHub Actions workflow": "GitHub Actions is used by 40+ million developers. Writing a workflow that tests, builds, and deploys on push is a must-have skill for modern software teams.",
+    "Monitor an app with logs": "Observability is how you find problems before users do. Structured logging, log aggregation, and alerting are skills that make you a senior DevOps engineer.",
+    "Automate deployment with a script": "Bash or Python deployment scripts eliminate human error in production releases. Automation mindset is the core of DevOps philosophy.",
+    "Set up uptime alerts": "Knowing when your service is down before users do is critical. Setting up uptime monitoring shows you think about reliability and SLAs.",
+  },
+  "Figma/UI Design": {
+    "Design a mobile app with 5 screens": "End-to-end mobile design (onboarding → home → detail → profile → settings) shows design systems thinking, not just single screen skills.",
+    "Create a design system with components": "Design systems are how companies maintain consistency at scale. Component libraries, typography scales, and color systems are what product companies actually need.",
+    "Prototype a user flow": "Interactive prototypes communicate design intent better than static screens. Figma prototyping shows you think in terms of user journeys.",
+    "Get feedback from 3 real people": "Design without user feedback is guessing. Getting and incorporating real feedback proves you understand the iterative design process.",
+    "Redesign an app you hate using": "Identifying UX problems and solving them is the core of product design. A redesign case study is the strongest portfolio piece for any UI/UX role.",
+  },
+  "Cloud (AWS)": {
+    "Deploy an EC2 instance": "EC2 is the foundation of AWS. Setting up, SSH-ing into, and running a server on EC2 is the first AWS skill every cloud engineer must have.",
+    "Set up S3 bucket with proper permissions": "S3 misconfiguration caused major data breaches. Setting up proper IAM policies and bucket permissions shows security-first cloud thinking.",
+    "Create a Lambda function": "Serverless is the future of cloud. Lambda functions for event-driven tasks are in 60% of modern AWS architectures.",
+    "Configure RDS database": "RDS managed databases (PostgreSQL/MySQL) are used by thousands of production applications. Configuration, security groups, and connection management are essential AWS skills.",
+    "Set up CloudWatch alerts": "Monitoring and alerting are what separate hobbyists from professional cloud engineers. CloudWatch metrics and alarms prove operational thinking.",
+  },
+  "Blockchain": {
+    "Explain consensus mechanisms": "Proof of Work vs Proof of Stake is the first question in every blockchain interview. Understanding consensus is fundamental to understanding why blockchain works.",
+    "Write a basic smart contract": "Solidity smart contracts are the building blocks of Web3. Even a basic token contract proves you've gone beyond reading about blockchain.",
+    "Deploy to testnet": "Deploying to Goerli or Sepolia testnet is the bridge between learning and doing. It proves you understand gas, wallets, and the Ethereum development workflow.",
+    "Interact with MetaMask programmatically": "Web3.js/ethers.js with MetaMask is how dApps connect to blockchains. This skill is required for every frontend Web3 developer role.",
+    "Build a simple dApp frontend": "End-to-end dApp development (smart contract + frontend) is what Web3 companies hire for. Most blockchain developers only know the backend — this makes you rare.",
+  },
+};
+
+function TaskDescription({ skill, task }: { skill: string; task: string }) {
+  const desc = TASK_DESCRIPTIONS[skill]?.[task];
+  if (!desc) return null;
+  return (
+    <div style={{ background:"#0a0a0a",borderLeft:"3px solid #ff6b00",padding:"0.7rem 0.9rem",marginBottom:"1rem",fontSize:"0.75rem",color:"#666",lineHeight:1.6 }}>
+      <span style={{color:"#ff6b00",fontWeight:700,fontSize:"0.65rem",letterSpacing:"0.1em",display:"block",marginBottom:"0.3rem"}}>WHY THIS MATTERS</span>
+      {desc}
+    </div>
+  );
+}
 
 export default function DeadlineOrDead() {
   const [screen, setScreen] = useState("intro");
@@ -126,6 +402,7 @@ export default function DeadlineOrDead() {
   const [quizPassCount, setQuizPassCount] = useState(0);
   const [screenshotCount, setScreenshotCount] = useState(0);
 
+  const [musicOn, setMusicOn] = useState(false);
   const prevSurvival = useRef(72);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -395,6 +672,11 @@ End with one sharp line starting with "FIX IT:"` }],
     setAiLoading(false);
   }
 
+  function toggleMusic() {
+    if (musicOn) { music.stop(); setMusicOn(false); }
+    else { music.start(); setMusicOn(true); }
+  }
+
   function shareWhatsApp() { window.open(`https://wa.me/?text=${encodeURIComponent(`💀 DEADLINE OR DEAD\nSkill: ${selectedSkill} | Survival: ${survival.toFixed(1)}% | Streak: ${streak} days 🔥\nQuiz passes: ${quizPassCount} | Rewards: ${earnedRewards.length}\n"${SURVIVAL_QUOTES[quoteIndex]}"\nhiresnix.co.in/deadline`)}`, "_blank"); }
   function shareTwitter() { window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(`💀 Day ${47-days} surviving the job market!\n${selectedSkill} | ${survival.toFixed(1)}% survival | ${streak} day streak 🔥\nAI-verified tasks: ${quizPassCount}\n#DeadlineOrDead #Hiresnix\nhiresnix.co.in/deadline`)}`, "_blank"); }
   function shareLinkedIn() { window.open(`https://www.linkedin.com/feed/?shareActive=true&text=${encodeURIComponent(`💀 Day ${47-days} of surviving the job market on DeadlineOrDead by Hiresnix.\nLearning ${selectedSkill} | Survival: ${survival.toFixed(1)}% | Streak: ${streak} days | ${quizPassCount} AI-verified tasks\n#${(selectedSkill||"").replace(/[^a-zA-Z]/g,"")} #OpenToWork\nhiresnix.co.in/deadline`)}`, "_blank"); }
@@ -439,7 +721,13 @@ End with one sharp line starting with "FIX IT:"` }],
       {screen === "intro" && (
         <div style={{ maxWidth:"480px",margin:"0 auto",padding:"clamp(1.5rem,5vw,3rem) 1rem" }}>
           <div style={{ textAlign:"center",marginBottom:"2.5rem" }}>
-            <div style={{ fontSize:"0.65rem",letterSpacing:"0.3em",color:"#ff2d2d",fontWeight:700,marginBottom:"0.8rem" }}>💀 HIRESNIX PRESENTS</div>
+            <div style={{ display:"flex",alignItems:"center",justifyContent:"center",gap:"1rem",marginBottom:"0.8rem" }}>
+              <div style={{ fontSize:"0.65rem",letterSpacing:"0.3em",color:"#ff2d2d",fontWeight:700 }}>💀 HIRESNIX PRESENTS</div>
+              <button onClick={toggleMusic} title={musicOn?"Stop Music":"Play Music"}
+                style={{ background:"transparent",border:`1px solid ${musicOn?"#ff2d2d":"#333"}`,color:musicOn?"#ff2d2d":"#555",padding:"0.2rem 0.6rem",fontSize:"0.65rem",cursor:"pointer",letterSpacing:"0.1em",fontWeight:700 }}>
+                {musicOn ? "🔊 MUSIC ON" : "🔇 MUSIC OFF"}
+              </button>
+            </div>
             <h1 style={{ fontSize:"clamp(1.8rem,8vw,3.2rem)",fontWeight:900,letterSpacing:"-0.02em",lineHeight:1.1,animation:titleGlitch?"flicker 0.1s ease":"none",color:titleGlitch?"#ff2d2d":"#e8e8e8",margin:0 }}>{displayTitle}</h1>
             <div style={{ fontSize:"0.72rem",color:"#555",marginTop:"0.8rem",letterSpacing:"0.1em" }}>47 DAYS TO PLACEMENT SEASON</div>
             <div style={{ display:"inline-block",background:"#0f0f0f",border:"1px solid #1a1a1a",padding:"0.3rem 0.8rem",marginTop:"0.5rem",fontSize:"0.7rem" }}>
@@ -505,7 +793,12 @@ End with one sharp line starting with "FIX IT:"` }],
           {/* Header */}
           <div style={{ display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"1rem" }}>
             <div>
-              <div style={{ fontSize:"0.6rem",letterSpacing:"0.25em",color:"#ff2d2d",fontWeight:700 }}>💀 DEADLINE OR DEAD</div>
+              <div style={{ display:"flex",alignItems:"center",gap:"0.5rem" }}>
+                <div style={{ fontSize:"0.6rem",letterSpacing:"0.25em",color:"#ff2d2d",fontWeight:700 }}>💀 DEADLINE OR DEAD</div>
+                <button onClick={toggleMusic} style={{ background:"transparent",border:"none",color:musicOn?"#ff2d2d":"#333",fontSize:"0.7rem",cursor:"pointer",padding:0 }}>
+                  {musicOn ? "🔊" : "🔇"}
+                </button>
+              </div>
               <div style={{ fontSize:"1.1rem",fontWeight:900 }}>{selectedSkill}</div>
               <div style={{ fontSize:"0.7rem",color:"#555" }}>{userName && `${userName} · `}Day {47 - days} of 47</div>
             </div>
@@ -546,7 +839,8 @@ End with one sharp line starting with "FIX IT:"` }],
               {showWarning && <div style={{ background:"#1a0000",border:"1px solid #ff2d2d",padding:"0.6rem",marginBottom:"0.8rem",fontSize:"0.75rem",color:"#ff6b00",fontWeight:700 }}>⚠ NEW DAY. NEW TASK. CLOCK IS TICKING.</div>}
               <div style={s.card()}>
                 <span style={s.label()}>TODAY'S TASK — DAY {47-days}</span>
-                <div style={{ fontSize:"0.95rem",fontWeight:700,lineHeight:1.5,marginBottom:"1rem" }}>{task}</div>
+                <div style={{ fontSize:"0.95rem",fontWeight:700,lineHeight:1.5,marginBottom:"0.6rem" }}>{task}</div>
+                <TaskDescription skill={selectedSkill!} task={task} />
 
                 {submitStage === "idle" && !taskVerified && (
                   <button onClick={() => setSubmitStage("screenshot")} style={s.btn()}>
@@ -642,7 +936,7 @@ End with one sharp line starting with "FIX IT:"` }],
                   <div key={i} style={{ display:"flex",alignItems:"center",gap:"0.8rem",padding:"0.7rem",marginBottom:"0.3rem",background: p.name===userName?"#1a1000":"#0f0f0f",border:`1px solid ${p.name===userName?"#ff6b00":"#1a1a1a"}` }}>
                     <div style={{ fontSize:"0.8rem",fontWeight:800,color:i===0?"#ffd700":i===1?"#c0c0c0":i===2?"#cd7f32":"#555",width:"1.5rem",flexShrink:0 }}>#{i+1}</div>
                     <div style={{ flex:1,minWidth:0 }}>
-                      <div style={{ fontSize:"0.82rem",fontWeight:700,color: p.name===userName?"#ff6b00":"#e8e8e8",truncate:true }}>{p.name} {p.name===userName?"(YOU)":""}</div>
+                      <div style={{ fontSize:"0.82rem",fontWeight:700,color: p.name===userName?"#ff6b00":"#e8e8e8",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{p.name} {p.name===userName?"(YOU)":""}</div>
                       <div style={{ fontSize:"0.68rem",color:"#444" }}>{p.college} · {p.skill}</div>
                     </div>
                     <div style={{ textAlign:"right",flexShrink:0 }}>
