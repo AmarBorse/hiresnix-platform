@@ -9,6 +9,7 @@ import {
   GraduationCap, Globe, FileText, Video, Link2, RefreshCw
 } from 'lucide-react';
 import client from '../../api/client';
+import * as XLSX from 'xlsx';
 
 // ── CSV Download helper ───────────────────────────────────────────
 function downloadCSV(data: any[], filename: string) {
@@ -33,53 +34,35 @@ function downloadCSV(data: any[], filename: string) {
 // ── Excel (.xlsx) Download helper (SheetJS) ──────────────────────
 function downloadExcel(data: any[], filename: string) {
   if (!data.length) { toast.error('No data to export'); return; }
-  import('xlsx').then(XLSX => {
-    const keys = Object.keys(data[0]);
+  const keys = Object.keys(data[0]);
 
-    // Build rows: header + data
-    const wsData = [
-      keys, // header row
-      ...data.map(row =>
-        keys.map(k => {
-          const val = row[k] ?? '';
-          return typeof val === 'object' ? JSON.stringify(val) : String(val);
-        })
-      ),
-    ];
+  const wsData = [
+    keys,
+    ...data.map(row =>
+      keys.map(k => {
+        const val = row[k] ?? '';
+        return typeof val === 'object' ? JSON.stringify(val) : String(val);
+      })
+    ),
+  ];
 
-    const ws = XLSX.utils.aoa_to_sheet(wsData);
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
 
-    // Column widths — auto-fit based on max content length
-    const colWidths = keys.map((key, ci) => {
-      const maxLen = Math.max(
-        key.length,
-        ...data.map(row => String(row[key] ?? '').length)
-      );
-      return { wch: Math.min(Math.max(maxLen, 10), 60) };
-    });
-    ws['!cols'] = colWidths;
-
-    // Freeze top row
-    ws['!freeze'] = { xSplit: 0, ySplit: 1 };
-
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Data');
-    XLSX.writeFile(wb, filename.replace(/\.csv$/, '') + '.xlsx');
-    toast.success(`Downloaded ${filename.replace(/\.csv$/, '')}.xlsx`);
-  }).catch(() => {
-    // Fallback to CSV if xlsx not available
-    const keys = Object.keys(data[0]);
-    const csv = [keys.join(','), ...data.map(row => keys.map(k => {
-      const val = row[k] ?? '';
-      const str = typeof val === 'object' ? JSON.stringify(val) : String(val);
-      return `"${str.replace(/"/g, '""')}"`;
-    }).join(','))].join('\n');
-    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = filename; a.click();
-    URL.revokeObjectURL(url);
+  const colWidths = keys.map((key) => {
+    const maxLen = Math.max(
+      key.length,
+      ...data.map(row => String(row[key] ?? '').length)
+    );
+    return { wch: Math.min(Math.max(maxLen, 10), 60) };
   });
+  ws['!cols'] = colWidths;
+  ws['!freeze'] = { xSplit: 0, ySplit: 1 };
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Data');
+  const xlsxFilename = filename.replace(/\.csv$/, '') + '.xlsx';
+  XLSX.writeFile(wb, xlsxFilename);
+  toast.success(`Downloaded ${xlsxFilename}`);
 }
 
 function todayInputValue() {
@@ -386,6 +369,7 @@ export function AdminIPlatform() {
                       role: `${app.domain?.name || 'Internship'} Intern`,
                       companyName: 'Hiresnix',
                       salary: app.offerSalary || app.salary || 'Unpaid Internship',
+                      mode: app.offerMode || 'Remote',
                       offerLetterDate: app.offerLetterDate || todayInputValue(),
                       joiningDate: app.offerJoiningDate || '',
                       endDate: app.offerEndDate || '',
@@ -1293,6 +1277,15 @@ export function AdminIPlatform() {
                 <label className="block text-xs font-semibold mb-1" style={{color:"#64748b"}}>Role / Domain</label>
                 <input required className="w-full rounded-xl px-3 py-2 text-sm focus:outline-none dark-input"
                   value={offerModal.role} onChange={e => setOfferModal({ ...offerModal, role: e.target.value })} />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold mb-1" style={{color:"#64748b"}}>Mode of Internship</label>
+                <select disabled={offerModal.datesLocked} className="w-full rounded-xl px-3 py-2 text-sm focus:outline-none dark-input disabled:opacity-50"
+                  value={offerModal.mode || 'Remote'} onChange={e => setOfferModal({ ...offerModal, mode: e.target.value })}>
+                  <option value="Remote">Remote</option>
+                  <option value="Hybrid">Hybrid</option>
+                  <option value="On-Site">On-Site</option>
+                </select>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>

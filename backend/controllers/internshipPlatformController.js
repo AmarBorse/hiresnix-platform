@@ -877,7 +877,8 @@ const downloadLOR = asyncHandler(async (req, res) => {
 
 
 const generateOfferLetter = asyncHandler(async (req, res) => {
-  const { applicationId, candidateName, role, duration, joiningDate, endDate, offerLetterDate, salary, stipend } = req.body;
+  const { applicationId, candidateName, role, duration, joiningDate, endDate, offerLetterDate, salary, stipend, mode } = req.body;
+  const internshipMode = mode || 'Remote';
   const safeCandidateName = String(candidateName || 'Candidate').trim() || 'Candidate';
   const fileCandidateName = safeCandidateName.replace(/[^a-z0-9_-]+/gi, '-').replace(/^-+|-+$/g, '') || 'candidate';
 
@@ -934,17 +935,17 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
   const stipendValue = String(stipend || salary || '').trim();
   const stipendText = stipendValue && !/^unpaid/i.test(stipendValue)
     ? `Rs. ${stipendValue.replace(/[RS]/g, '').trim()} per month, payable on or before the 5th day of each month`
-    : 'Unpaid';
+    : 'Unpaid (Learning & Project-Based Internship)';
 
-  if (application && (!application.offerLetterDate || !application.offerJoiningDate || !application.offerLetterId || !application.offerEndDate)) {
-    const offerUpdate = {
-      offerLetterDate: application.offerLetterDate || stableOfferDate,
-      offerJoiningDate: application.offerJoiningDate || stableJoiningDate,
-      offerLetterId: application.offerLetterId || stableOfferId,
-      offerEndDate: application.offerEndDate || toIsoDateOnly(endDateObj),
-      offerSalary: stipendText,
-    };
-    await application.update(offerUpdate);
+  if (application) {
+    const offerUpdate = {};
+    if (!application.offerLetterDate) offerUpdate.offerLetterDate = stableOfferDate;
+    if (!application.offerJoiningDate) offerUpdate.offerJoiningDate = stableJoiningDate;
+    if (!application.offerLetterId) offerUpdate.offerLetterId = stableOfferId;
+    if (!application.offerEndDate) offerUpdate.offerEndDate = toIsoDateOnly(endDateObj);
+    if (!application.offerSalary) offerUpdate.offerSalary = stipendText;
+    if (!application.offerMode) offerUpdate.offerMode = internshipMode;
+    if (Object.keys(offerUpdate).length > 0) await application.update(offerUpdate);
   }
 
   const doc = new PDFDocument({ size: 'A4', margin: 0 });
@@ -1065,7 +1066,7 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
     ['Start Date', joinDateStr],
     ['End Date', endDateStr],
     ['Duration', internshipDuration],
-    ['Mode of Internship', 'Remote'],
+    ['Mode of Internship', internshipMode],
     ['Working Hours', 'Flexible (Maximum 20 Hours per Week)'],
     ['Reporting Manager', 'Assigned Mentor / Project Lead'],
     ['Compensation', stipendText],
@@ -1223,7 +1224,7 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
     .text(`Start Date: ${joinDateStr}`, 60, doc.y)
     .text(`End Date: ${endDateStr || 'To be confirmed'}`, 60, doc.y)
     .text(`Internship Duration: ${internshipDuration}`, 60, doc.y)
-    .text('Internship Mode: Remote', 60, doc.y);
+    .text(`Internship Mode: ${internshipMode}`, 60, doc.y);
 
   doc.moveDown(0.4);
   doc.text(
