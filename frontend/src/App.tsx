@@ -43,6 +43,7 @@ const StudentMockInterview= lazy(() => import('./pages/student/StudentMockInterv
 const StudentMockDashboard= lazy(() => import('./pages/student/StudentMockDashboard').then(m => ({ default: m.StudentMockDashboard })));
 const StudentResumeBuilder= lazy(() => import('./pages/student/StudentResumeBuilder').then(m => ({ default: m.StudentResumeBuilder })));
 const StudentProjects     = lazy(() => import('./pages/student/StudentProjects').then(m => ({ default: m.StudentProjects })));
+const StudentRoadmap      = lazy(() => import('./pages/student/StudentRoadmap').then(m => ({ default: m.StudentRoadmap })));
 const ProjectPortfolio    = lazy(() => import('./pages/public/ProjectPortfolio').then(m => ({ default: m.ProjectPortfolio })));
 const BlogList            = lazy(() => import('./pages/blog/BlogList').then(m => ({ default: m.BlogList })));
 const BlogPost            = lazy(() => import('./pages/blog/BlogPost').then(m => ({ default: m.BlogPost })));
@@ -175,6 +176,7 @@ export default function App() {
             <Route path="mock-interview" element={<StudentMockInterview />} />
             <Route path="resume-builder" element={<StudentResumeBuilder />} />
             <Route path="projects" element={<StudentProjects />} />
+            <Route path="roadmap" element={<StudentRoadmap />} />
             <Route path="mock-dashboard" element={<StudentMockDashboard />} />
             <Route path="certificates"   element={<StudentCertificates />} />
             <Route path="profile"        element={<StudentProfile />} />
