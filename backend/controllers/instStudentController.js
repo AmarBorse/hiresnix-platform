@@ -446,7 +446,7 @@ const getAllAcademyProgress = asyncHandler(async (req, res) => {
     FROM institution_students ist
     LEFT JOIN inst_academy_progress ap ON ap.student_id = ist.id
     LEFT JOIN institutions inst ON inst.id = ist."institutionId"
-    ${isAdmin ? '' : 'WHERE ist."institutionId" = :institutionId'}
+    ${institutionId ? 'WHERE ist."institutionId" = :institutionId' : ''}
     GROUP BY ist.id, ist."careerId", ist.name, ist.email, ist.department, inst."institutionName"
     ORDER BY inst."institutionName", ist.name
   `, {
