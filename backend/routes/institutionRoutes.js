@@ -84,8 +84,11 @@ r.get('/academy/progress', ...withAuth, getAllAcademyProgress);
 r.get('/internship-progress', ...withAuth, asyncHandler(async (req, res) => {
   const { sequelize } = require('../config/db');
 
+  const inst = await Institution.findByPk(req.institutionId, { attributes: ['institutionName'] });
+  const instName = inst?.institutionName || '';
+
   const rows = await sequelize.query(`
-    SELECT
+    SELECT DISTINCT ON (e.id)
       e.id,
       e."studentName",
       e.email,
@@ -95,8 +98,8 @@ r.get('/internship-progress', ...withAuth, asyncHandler(async (req, res) => {
       e."completedAt",
       e."taskLogs",
       e."instStudentId",
-      ist."careerId",
-      ist.department,
+      COALESCE(ist."careerId", '') as "careerId",
+      COALESCE(ist.department, '') as department,
       d.name as "domainName",
       jsonb_array_length(COALESCE(e."taskLogs", '[]'::jsonb)) as "taskCount",
       (
@@ -105,13 +108,15 @@ r.get('/internship-progress', ...withAuth, asyncHandler(async (req, res) => {
         ORDER BY (tl->>'submittedAt') DESC
         LIMIT 1
       ) as "lastActive"
-    FROM institution_students ist
-    INNER JOIN ip_enrollments e ON e."instStudentId" = ist.id
+    FROM ip_enrollments e
+    LEFT JOIN institution_students ist ON ist.id = e."instStudentId" AND ist."institutionId" = :institutionId
     LEFT JOIN ip_domains d ON d.id = e."domainId"
-    WHERE ist."institutionId" = :institutionId
-    ORDER BY e."createdAt" DESC
+    WHERE
+      e."instStudentId" IN (SELECT id FROM institution_students WHERE "institutionId" = :institutionId)
+      OR e."institutionName" = :instName
+    ORDER BY e.id, e."createdAt" DESC
   `, {
-    replacements: { institutionId: req.institutionId },
+    replacements: { institutionId: req.institutionId, instName },
     type: sequelize.QueryTypes.SELECT,
   });
 
