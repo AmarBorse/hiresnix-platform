@@ -80,4 +80,42 @@ r.get('/student-credentials', ...withAuth, asyncHandler(async (req, res) => {
 const { getAllAcademyProgress } = require('../controllers/instStudentController');
 r.get('/academy/progress', ...withAuth, getAllAcademyProgress);
 
+// Internship progress for institution's own registered students only
+r.get('/internship-progress', ...withAuth, asyncHandler(async (req, res) => {
+  const { sequelize } = require('../config/db');
+
+  const rows = await sequelize.query(`
+    SELECT
+      e.id,
+      e."studentName",
+      e.email,
+      e.progress,
+      e.status,
+      e."startDate",
+      e."completedAt",
+      e."taskLogs",
+      e."instStudentId",
+      ist."careerId",
+      ist.department,
+      d.name as "domainName",
+      jsonb_array_length(COALESCE(e."taskLogs", '[]'::jsonb)) as "taskCount",
+      (
+        SELECT (tl->>'submittedAt')
+        FROM jsonb_array_elements(COALESCE(e."taskLogs", '[]'::jsonb)) tl
+        ORDER BY (tl->>'submittedAt') DESC
+        LIMIT 1
+      ) as "lastActive"
+    FROM institution_students ist
+    INNER JOIN ip_enrollments e ON e."instStudentId" = ist.id
+    LEFT JOIN ip_domains d ON d.id = e."domainId"
+    WHERE ist."institutionId" = :institutionId
+    ORDER BY e."createdAt" DESC
+  `, {
+    replacements: { institutionId: req.institutionId },
+    type: sequelize.QueryTypes.SELECT,
+  });
+
+  res.json({ success: true, data: rows || [] });
+}));
+
 module.exports = r;
