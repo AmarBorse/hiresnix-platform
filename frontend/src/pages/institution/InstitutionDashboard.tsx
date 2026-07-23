@@ -6,8 +6,22 @@ import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { AcademyAdminView } from './AcademyAdminView';
 import { PORTAL_COLORS } from '../../components/layout/PortalTheme';
+import * as XLSX from 'xlsx';
 
 const C = PORTAL_COLORS.institution;
+
+function downloadExcel(data: any[], filename: string) {
+  if (!data.length) { toast.error('No data to export'); return; }
+  const keys = Object.keys(data[0]);
+  const wsData = [keys, ...data.map(row => keys.map(k => String(row[k] ?? '')))];
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+  ws['!cols'] = keys.map(k => ({ wch: Math.min(Math.max(k.length, 10), 60) }));
+  ws['!freeze'] = { xSplit: 0, ySplit: 1 };
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Data');
+  XLSX.writeFile(wb, filename + '.xlsx');
+  toast.success('Downloaded ' + filename + '.xlsx');
+}
 
 interface DashStats {
   totalStudents: number; totalBatches: number; totalCourses: number; totalCertificates: number;
@@ -129,6 +143,28 @@ function InternshipProgressSection() {
           <p className="font-bold text-white text-sm">{selectedBatch} Batch</p>
           <p className="text-xs" style={{color:'#64748b'}}>{bStudents.length} students · {bStudents.filter((e:any)=>e.status==='Active').length} active</p>
         </div>
+        <button onClick={() => {
+          const allLogs: any[] = [];
+          bStudents.forEach((e: any) => {
+            (Array.isArray(e.taskLogs) ? e.taskLogs : []).forEach((log: any) => {
+              allLogs.push({
+                'Student Name': e.studentName || '',
+                'Career ID': e.careerId || '',
+                'Domain': e.domainName || '',
+                'Task Title': log.title || '',
+                'Description': String(log.description || '').split('\n').join(' ').trim(),
+                'URL': log.url || '',
+                'Week': log.week || '',
+                'Submitted On': log.submittedAt ? new Date(log.submittedAt).toLocaleDateString('en-IN') : '',
+              });
+            });
+          });
+          if (!allLogs.length) { toast.error('No task logs found'); return; }
+          downloadExcel(allLogs, `AllDailyLogs_${selectedBatch.replace(/\s+/g,'_')}`);
+        }} className="flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-lg transition flex-shrink-0"
+          style={{background:'rgba(249,115,22,0.15)',color:'#fb923c',border:'1px solid rgba(249,115,22,0.3)'}}>
+          <Download size={12} /> All Logs
+        </button>
       </div>
 
       {/* Students */}
@@ -175,6 +211,25 @@ function InternshipProgressSection() {
                   <p className="text-xs font-bold text-white">{taskLogs.length} tasks</p>
                   <p className="text-[10px] mt-0.5" style={{color:'#475569'}}>Last: {lastActive}</p>
                 </div>
+                {taskLogs.length > 0 && (
+                  <button onClick={ev => {
+                    ev.stopPropagation();
+                    const logs = taskLogs.map((log: any) => ({
+                      'Student Name': e.studentName || '',
+                      'Career ID': e.careerId || '',
+                      'Domain': e.domainName || '',
+                      'Task Title': log.title || '',
+                      'Description': String(log.description || '').split('\n').join(' ').trim(),
+                      'URL': log.url || '',
+                      'Week': log.week || '',
+                      'Submitted On': log.submittedAt ? new Date(log.submittedAt).toLocaleDateString('en-IN') : '',
+                    }));
+                    downloadExcel(logs, `DailyLog_${(e.studentName||'Student').replace(/\s+/g,'_')}`);
+                  }} className="flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-lg flex-shrink-0 transition"
+                    style={{background:'rgba(249,115,22,0.15)',color:'#fb923c',border:'1px solid rgba(249,115,22,0.3)'}}>
+                    <Download size={10} /> Log
+                  </button>
+                )}
                 {isExpanded ? <ChevronUp size={13} className="text-gray-500 flex-shrink-0" /> : <ChevronDown size={13} className="text-gray-500 flex-shrink-0" />}
               </div>
 
