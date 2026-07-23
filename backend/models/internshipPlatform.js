@@ -1,7 +1,5 @@
 /**
  * models/internshipPlatform.js
- * New models for the internship platform
- * Add require('./models/internshipPlatform') in models/index.js
  */
 
 const { DataTypes } = require('sequelize');
@@ -40,6 +38,12 @@ const InternshipApplication = sequelize.define('InternshipApplication', {
   offerLetterDate: { type: DataTypes.DATEONLY },
   offerJoiningDate: { type: DataTypes.DATEONLY },
   offerEndDate: { type: DataTypes.DATEONLY },
+  // Institution student fields
+  source:          { type: DataTypes.STRING(20), defaultValue: 'hiresnix' }, // 'hiresnix' | 'institution'
+  instStudentId:   { type: DataTypes.BIGINT, allowNull: true },
+  institutionId:   { type: DataTypes.BIGINT, allowNull: true },
+  institutionName: { type: DataTypes.STRING(200), allowNull: true },
+  careerId:        { type: DataTypes.STRING(50), allowNull: true }, // e.g. HX-ABC-2026-0001
 }, { tableName: 'ip_applications', timestamps: true });
 
 // ── INTERNSHIP ENROLLMENT (after approval) ─────────────────────────
@@ -60,15 +64,12 @@ const InternshipEnrollment = sequelize.define('InternshipEnrollment', {
   startDate:       { type: DataTypes.DATEONLY },
   completedAt:     { type: DataTypes.DATE },
   adminRemark:     { type: DataTypes.TEXT },
-  // LOR details filled by admin
   lorPerformance:  { type: DataTypes.STRING(20), defaultValue: 'Good' },
   lorHighlights:   { type: DataTypes.TEXT },
-  // Institution student fields
   source:          { type: DataTypes.STRING(20), defaultValue: 'hiresnix' },
   instStudentId:   { type: DataTypes.BIGINT, allowNull: true },
   institutionId:   { type: DataTypes.BIGINT, allowNull: true },
   institutionName: { type: DataTypes.STRING(200), allowNull: true },
-  // LOR verification ID
   lor_id:          { type: DataTypes.STRING(50), allowNull: true, unique: true },
 }, { tableName: 'ip_enrollments', timestamps: true });
 

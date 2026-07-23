@@ -87,7 +87,7 @@ function Badge({ status }: { status: string }) {
 }
 
 // ── TABS ──────────────────────────────────────────────────────────
-type Tab = 'applications' | 'students' | 'domains' | 'resources';
+type Tab = 'applications' | 'institution' | 'students' | 'domains' | 'resources';
 
 export function AdminIPlatform() {
   const [tab, setTab] = useState<Tab>('applications');
@@ -231,6 +231,7 @@ export function AdminIPlatform() {
 
   const tabs = [
     { id: 'applications' as Tab, label: '📋 Applications', count: stats.pendingApplications },
+    { id: 'institution'  as Tab, label: '🏫 Institution Internship', count: null },
     { id: 'students'     as Tab, label: '🎓 Students',     count: stats.activeEnrollments },
     { id: 'domains'      as Tab, label: '🗂 Domains',      count: null },
     { id: 'resources'    as Tab, label: '📚 Resources',    count: null },
@@ -709,6 +710,181 @@ export function AdminIPlatform() {
                     </div>
                   ))}
                 </div>
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
+      {/* ── INSTITUTION INTERNSHIP ──────────────────────────── */}
+      {!loading && tab === 'institution' && (() => {
+        const q = appSearch.toLowerCase();
+        const instApps = applications.filter((app: any) => {
+          const isInst =
+            app.source === 'institution' ||
+            !!app.instStudentId ||
+            !!app.institutionName ||
+            !!app.careerId;
+          const matchSearch = !q ||
+            (app.studentName || '').toLowerCase().includes(q) ||
+            (app.email || '').toLowerCase().includes(q) ||
+            (app.phone || '').toLowerCase().includes(q) ||
+            (app.college || '').toLowerCase().includes(q) ||
+            (app.domain?.name || '').toLowerCase().includes(q) ||
+            (app.institutionName || '').toLowerCase().includes(q) ||
+            (app.careerId || '').toLowerCase().includes(q);
+          const matchStatus = appStatusFilter === 'All' || app.status === appStatusFilter;
+          return isInst && matchSearch && matchStatus;
+        });
+
+        const pending  = instApps.filter((a: any) => a.status === 'Pending');
+        const approved = instApps.filter((a: any) => a.status === 'Approved');
+        const rejected = instApps.filter((a: any) => a.status === 'Rejected');
+
+        const InstAppCard = ({ app }: any) => {
+          const accentColor = app.status === 'Approved' ? '#10b981' : app.status === 'Rejected' ? '#ef4444' : '#f59e0b';
+          const accentBorder = app.status === 'Approved' ? 'border-l-emerald-500' : app.status === 'Rejected' ? 'border-l-red-500' : 'border-l-amber-500';
+          return (
+            <div className={`rounded-xl border-l-4 ${accentBorder} p-4 hover:shadow-xl transition-all hover:-translate-y-0.5`}
+              style={{background:'linear-gradient(135deg,rgba(15,23,42,0.95) 0%,rgba(30,20,55,0.95) 100%)',border:'1px solid rgba(255,255,255,0.1)',backdropFilter:'blur(12px)'}}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0 text-white"
+                    style={{background:`linear-gradient(135deg,${accentColor}cc,${accentColor}88)`,border:`1.5px solid ${accentColor}66`}}>
+                    {app.studentName?.[0]?.toUpperCase()}
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="font-bold text-white text-sm">{app.studentName}</p>
+                      <Badge status={app.status} />
+                    </div>
+                    <p className="text-xs mt-0.5" style={{color:'#475569'}}>{app.email} · {app.phone}</p>
+                    <p className="text-xs" style={{color:'#475569'}}>{app.college} · {app.year}</p>
+                    <p className="text-xs font-semibold mt-0.5" style={{color:'#60a5fa'}}>{app.domain?.name}</p>
+                    {app.institutionName && (
+                      <p className="text-[11px] mt-0.5 font-semibold" style={{color:'#f59e0b'}}>🏫 {app.institutionName}</p>
+                    )}
+                    {app.careerId && (
+                      <p className="text-[11px] mt-0.5 font-mono font-bold" style={{color:'#a78bfa'}}>🪪 Career ID: {app.careerId}</p>
+                    )}
+                    <p className="text-[11px] mt-0.5" style={{color:'#475569'}}>Applied: {new Date(app.createdAt).toLocaleDateString('en-IN')}</p>
+                  </div>
+                </div>
+                <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
+                  <div className="flex gap-1.5 flex-wrap justify-end">
+                    {app.status === 'Pending' && (
+                      <>
+                        <button
+                          onClick={() => handleAppAction(app.id, 'Approved')}
+                          disabled={actionId === `app-${app.id}`}
+                          className="flex items-center gap-1 text-xs font-bold bg-emerald-500 hover:bg-emerald-600 disabled:opacity-60 text-white px-2.5 py-1.5 rounded-lg transition">
+                          {actionId === `app-${app.id}` ? <Loader2 size={11} className="animate-spin" /> : <CheckCircle size={11} />}
+                          Approve
+                        </button>
+                        <button
+                          onClick={() => handleAppAction(app.id, 'Rejected')}
+                          disabled={actionId === `app-${app.id}`}
+                          className="flex items-center gap-1 text-xs font-bold bg-red-500 hover:bg-red-600 disabled:opacity-60 text-white px-2.5 py-1.5 rounded-lg transition">
+                          ✕ Reject
+                        </button>
+                      </>
+                    )}
+                    <button onClick={() => setOfferModal({
+                        applicationId: app.id,
+                        candidateName: app.studentName || '',
+                        role: `${app.domain?.name || 'Internship'} Intern`,
+                        companyName: 'Hiresnix',
+                        salary: app.offerSalary || app.salary || 'Unpaid Internship',
+                        offerLetterDate: app.offerLetterDate || todayInputValue(),
+                        joiningDate: app.offerJoiningDate || '',
+                        endDate: app.offerEndDate || '',
+                        datesLocked: Boolean(app.offerLetterDate || app.offerJoiningDate || app.offerEndDate),
+                      })} className="flex items-center gap-1 text-xs font-bold bg-blue-500 hover:bg-blue-600 text-white px-2.5 py-1.5 rounded-lg transition">
+                      <FileText size={11} /> Offer
+                    </button>
+                    <a href={`https://wa.me/?text=${encodeURIComponent(`Hi ${app.studentName},\n\nThank you for applying for the Hiresnix Internship Program. 🎉\n\nTo complete your Profile Verification, please share the following documents:\n\n📄 Updated Resume (PDF)\n💼 LinkedIn Profile URL\n💻 GitHub Profile URL (if available)\n✍️ A brief introduction about your skills, projects, and career interests\n\n📩 You can send the above documents to:\nWhatsApp: +91 9529120977\nEmail: hr@hiresnix.co.in`)}`}
+                      target="_blank" rel="noreferrer"
+                      className="flex items-center gap-1 text-xs font-bold bg-green-500 hover:bg-green-600 text-white px-2.5 py-1.5 rounded-lg transition">
+                      💬 WA
+                    </a>
+                  </div>
+                </div>
+              </div>
+              {app.whyJoin && (
+                <div className="mt-2.5">
+                  <button onClick={() => setExpandedId(expandedId === app.id ? null : app.id)}
+                    className="text-xs text-gray-600 hover:text-gray-400 flex items-center gap-1">
+                    {expandedId === app.id ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
+                    Why they want to join
+                  </button>
+                  {expandedId === app.id && (
+                    <p className="text-xs mt-1.5 rounded-lg p-3 italic" style={{background:'rgba(255,255,255,0.05)',color:'#94a3b8'}}>"{app.whyJoin}"</p>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        };
+
+        return (
+          <div className="space-y-5">
+            {/* Search + Status filter */}
+            <div className="rounded-xl px-4 py-3 flex flex-wrap items-center gap-3" style={{background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.07)'}}>
+              <div className="flex-1 min-w-[180px] relative">
+                <input type="text" placeholder="Search by name, email, college, Career ID..."
+                  value={appSearch} onChange={e => setAppSearch(e.target.value)}
+                  className="w-full pl-8 pr-3 py-2 text-sm rounded-lg focus:outline-none dark-input" />
+                <span className="absolute left-2.5 top-2.5 text-gray-400 text-xs">🔍</span>
+              </div>
+              <div className="flex gap-1 flex-wrap">
+                {(['All', 'Pending', 'Approved', 'Rejected'] as const).map(s => (
+                  <button key={s} onClick={() => setAppStatusFilter(s as any)}
+                    className={`text-xs font-semibold px-2.5 py-1.5 rounded-lg transition ${
+                      appStatusFilter === s ? 'bg-violet-500 text-white' : 'bg-white/5 text-gray-500 hover:bg-white/10'
+                    }`}>
+                    {s === 'All' ? `All (${instApps.length})` : s === 'Pending' ? `Pending (${pending.length})` : s === 'Approved' ? `Approved (${approved.length})` : `Rejected (${rejected.length})`}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {instApps.length === 0 ? (
+              <div className="text-center py-16 text-gray-500">
+                <div style={{fontSize:'3rem',marginBottom:'0.75rem'}}>🏫</div>
+                <p className="font-semibold text-gray-400">No institution students applied yet</p>
+                <p className="text-xs mt-1 text-gray-600">Students who apply with an institution name or Career ID will appear here</p>
+              </div>
+            ) : (
+              <div className="space-y-5">
+                {pending.length > 0 && (
+                  <div>
+                    <h3 className="text-xs font-bold text-amber-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                      <span className="w-2 h-2 bg-amber-400 rounded-full animate-pulse inline-block" />
+                      Pending Review ({pending.length})
+                    </h3>
+                    <div className="grid md:grid-cols-2 gap-3">
+                      {pending.map((app: any) => <InstAppCard key={app.id} app={app} />)}
+                    </div>
+                  </div>
+                )}
+                {approved.length > 0 && (
+                  <div>
+                    <h3 className="text-xs font-bold text-emerald-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                      <CheckCircle size={12} /> Approved ({approved.length})
+                    </h3>
+                    <div className="grid md:grid-cols-2 gap-3">
+                      {approved.map((app: any) => <InstAppCard key={app.id} app={app} />)}
+                    </div>
+                  </div>
+                )}
+                {rejected.length > 0 && (
+                  <div>
+                    <h3 className="text-xs font-bold text-red-400 uppercase tracking-wider mb-3">✕ Rejected ({rejected.length})</h3>
+                    <div className="grid md:grid-cols-2 gap-3">
+                      {rejected.map((app: any) => <InstAppCard key={app.id} app={app} />)}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

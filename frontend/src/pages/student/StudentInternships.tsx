@@ -1,19 +1,9 @@
 // src/pages/student/StudentInternships.tsx
 import React, { useState, useEffect } from 'react';
-import { internshipsApi } from '../../api/internships';
-import { useFetch } from '../../hooks/useFetch';
-import { PageLoader, ErrorState, EmptyState } from '../../components/common/LoadingState';
-import { Internship } from '../../types';
 import { toast } from 'sonner';
-import { Clock, Users, Zap, ChevronRight, Search, Loader2, GraduationCap, CheckCircle, BookOpen, Download } from 'lucide-react';
+import { Clock, Users, ChevronRight, Loader2, GraduationCap, CheckCircle, BookOpen, Download } from 'lucide-react';
 import client from '../../api/client';
 import { instInternshipClient } from '../../api/instStudent';
-
-const DIFF_COLORS: Record<string, string> = {
-  Beginner:     'bg-green-100 text-green-700',
-  Intermediate: 'bg-yellow-100 text-yellow-700',
-  Advanced:     'bg-red-100 text-red-700',
-};
 
 // ── DOMAIN APPLICATION PANEL (Hiresnix internship platform) ───────
 function IPlatformPanel() {
@@ -477,156 +467,13 @@ function IPlatformPanel() {
 
 // ── MAIN COMPONENT ────────────────────────────────────────────────
 export function StudentInternships() {
-  const [activeTab, setActiveTab] = useState<'hiresnix' | 'programs'>('hiresnix');
-  const [search, setSearch] = useState('');
-  const [domain, setDomain] = useState('');
-  const [enrolling, setEnrolling] = useState<number | null>(null);
-  const [expandedId, setExpandedId] = useState<number | null>(null);
-  const [taskForm, setTaskForm] = useState({ title: '', description: '', githubUrl: '', taskId: '' });
-  const [submitting, setSubmitting] = useState(false);
-
-  const { data: result, loading, error, refetch } = useFetch(
-    () => internshipsApi.getInternships({ search: search || undefined, domain: domain || undefined }),
-    [search, domain]
-  );
-  const internships: Internship[] = (result as any)?.data || [];
-
-  const handleEnroll = async (id: number) => {
-    setEnrolling(id);
-    try {
-      await internshipsApi.enroll(id);
-      toast.success('Enrolled successfully!');
-      refetch();
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Failed to enroll');
-    } finally { setEnrolling(null); }
-  };
-
-  const handleSubmitTask = async (enrollmentId: number) => {
-    if (!taskForm.title) { toast.error('Task title is required'); return; }
-    setSubmitting(true);
-    try {
-      await internshipsApi.submitTaskLog(enrollmentId, taskForm);
-      toast.success('Task submitted!');
-      setTaskForm({ title: '', description: '', githubUrl: '', taskId: '' });
-      setExpandedId(null);
-      refetch();
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Failed to submit');
-    } finally { setSubmitting(false); }
-  };
-
   return (
     <div className="space-y-5 max-w-5xl mx-auto">
       <div>
         <h1 className="text-2xl font-black text-gray-900">Internships</h1>
         <p className="text-sm text-gray-500 mt-1">Gain real-world experience with structured internship programs</p>
       </div>
-
-      {/* Tab switcher */}
-      <div className="flex gap-2 border-b border-gray-200">
-        <button onClick={() => setActiveTab('hiresnix')}
-          className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-all flex items-center gap-1.5 ${activeTab === 'hiresnix' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
-          🎓 Hiresnix Programs
-        </button>
-        <button onClick={() => setActiveTab('programs')}
-          className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-all flex items-center gap-1.5 ${activeTab === 'programs' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
-          📋 Admin Programs
-        </button>
-      </div>
-
-      {/* ── Hiresnix Internship Platform ── */}
-      {activeTab === 'hiresnix' && <IPlatformPanel />}
-
-      {/* ── Admin Internship Programs ── */}
-      {activeTab === 'programs' && (
-        <>
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="relative flex-1">
-              <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input type="text" placeholder="Search internships..."
-                value={search} onChange={e => setSearch(e.target.value)}
-                className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-blue-500 bg-white" />
-            </div>
-            <input type="text" placeholder="Filter by domain..."
-              value={domain} onChange={e => setDomain(e.target.value)}
-              className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-blue-500 bg-white sm:w-48" />
-          </div>
-
-          {loading ? <PageLoader /> : error ? <ErrorState message={error} onRetry={refetch} /> :
-            internships.length === 0 ? <EmptyState title="No internships available" description="Check back soon for new opportunities" /> : (
-              <div className="grid md:grid-cols-2 gap-4">
-                {internships.map(internship => {
-                  const enrolled = internship.enrollment;
-                  const isExpanded = expandedId === internship.id;
-                  return (
-                    <div key={internship.id} className="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md transition">
-                      <div className="flex items-start justify-between mb-3">
-                        <div>
-                          <h3 className="font-bold text-gray-900">{internship.title}</h3>
-                          <p className="text-sm text-blue-600 font-medium">{internship.domain}</p>
-                        </div>
-                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${DIFF_COLORS[internship.difficulty]}`}>{internship.difficulty}</span>
-                      </div>
-                      <p className="text-xs text-gray-600 mb-3 line-clamp-2">{internship.description}</p>
-                      <div className="flex items-center gap-4 text-xs text-gray-500 mb-3">
-                        <span className="flex items-center gap-1"><Clock size={11} /> {internship.duration}</span>
-                        <span className="flex items-center gap-1"><Users size={11} /> {internship.enrollmentCount} enrolled</span>
-                        <span className="flex items-center gap-1"><Zap size={11} /> {internship.tasks?.length || 0} tasks</span>
-                      </div>
-                      <div className="flex flex-wrap gap-1 mb-4">
-                        {internship.technologies?.slice(0, 4).map(t => (
-                          <span key={t} className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{t}</span>
-                        ))}
-                      </div>
-                      {enrolled ? (
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-semibold text-gray-500">Progress</span>
-                            <span className="text-xs font-black text-blue-600">{enrolled.progress}%</span>
-                          </div>
-                          <div className="w-full bg-gray-100 rounded-full h-2">
-                            <div className="bg-blue-500 h-2 rounded-full transition-all" style={{ width: `${enrolled.progress}%` }} />
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${enrolled.status === 'Completed' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>{enrolled.status}</span>
-                            {enrolled.status !== 'Completed' && (
-                              <button onClick={() => setExpandedId(isExpanded ? null : internship.id)} className="text-xs text-blue-500 hover:text-blue-700 flex items-center gap-0.5">
-                                Submit Task <ChevronRight size={11} />
-                              </button>
-                            )}
-                          </div>
-                          {isExpanded && (
-                            <div className="pt-3 border-t border-gray-100 space-y-2">
-                              <input type="text" placeholder="Task title *" value={taskForm.title}
-                                onChange={e => setTaskForm(p => ({ ...p, title: e.target.value }))}
-                                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" />
-                              <textarea rows={2} placeholder="What did you build/learn?" value={taskForm.description}
-                                onChange={e => setTaskForm(p => ({ ...p, description: e.target.value }))}
-                                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 resize-none" />
-                              <input type="url" placeholder="GitHub URL (optional)" value={taskForm.githubUrl}
-                                onChange={e => setTaskForm(p => ({ ...p, githubUrl: e.target.value }))}
-                                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" />
-                              <button onClick={() => handleSubmitTask(enrolled.id)} disabled={submitting}
-                                className="w-full flex items-center justify-center gap-1.5 bg-blue-500 hover:bg-blue-600 disabled:opacity-60 text-white text-xs font-bold py-2 rounded-lg transition">
-                                {submitting && <Loader2 size={11} className="animate-spin" />} Submit Task Log
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <button onClick={() => handleEnroll(internship.id)} disabled={enrolling === internship.id}
-                          className="w-full flex items-center justify-center gap-1.5 bg-[#1A1C1E] hover:bg-black disabled:opacity-60 text-white text-xs font-bold py-2.5 rounded-lg transition">
-                          {enrolling === internship.id && <Loader2 size={11} className="animate-spin" />} Enroll Now
-                        </button>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-        </>
-      )}
+      <IPlatformPanel />
     </div>
   );
 }
