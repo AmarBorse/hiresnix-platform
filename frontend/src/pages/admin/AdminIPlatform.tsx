@@ -619,6 +619,31 @@ export function AdminIPlatform() {
                     className="flex items-center gap-1 text-xs text-emerald-600 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg transition">
                     <Download size={12} /> Export CSV
                   </button>
+                  <button onClick={() => {
+                      const batchStudents = groups[selectedBatch] || [];
+                      const allLogs: any[] = [];
+                      batchStudents.forEach((e: any) => {
+                        (e.taskLogs || []).forEach((log: any, idx: number) => {
+                          allLogs.push({
+                            'Sr No': allLogs.length + 1,
+                            'Student Name': e.studentName || '',
+                            'Email': e.email || '',
+                            'Domain': e.domain?.name || '',
+                            'Task Title': log.title || '',
+                            'Description': log.description || '',
+                            'URL / Link': log.url || '',
+                            'Week': log.week || '',
+                            'Status': log.status || 'Submitted',
+                            'Submitted On': log.submittedAt ? new Date(log.submittedAt).toLocaleDateString('en-IN') : '',
+                          });
+                        });
+                      });
+                      if (allLogs.length === 0) { alert('No task logs found for this batch'); return; }
+                      downloadCSV(allLogs, `AllDailyLogs_${selectedBatch.replace(/\s+/g, '_')}.csv`);
+                    }}
+                    className="flex items-center gap-1 text-xs font-bold text-orange-600 bg-orange-50 hover:bg-orange-100 px-3 py-1.5 rounded-lg transition">
+                    <Download size={12} /> All Daily Logs
+                  </button>
                 </div>
                 <div className="divide-y divide-gray-50">
                   {(groups[selectedBatch] || []).map((e: any) => (
@@ -881,6 +906,31 @@ export function AdminIPlatform() {
                       }}
                       className="flex items-center gap-1 text-xs text-emerald-600 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg transition">
                         <Download size={12} /> Export CSV
+                      </button>
+                      <button onClick={() => {
+                          const allLogs: any[] = [];
+                          bStudents.forEach((e: any) => {
+                            (e.taskLogs || []).forEach((log: any) => {
+                              allLogs.push({
+                                'Sr No': allLogs.length + 1,
+                                'Student Name': e.studentName || '',
+                                'Email': e.email || '',
+                                'Institution': e.institutionName || '',
+                                'Domain': e.domain?.name || '',
+                                'Task Title': log.title || '',
+                                'Description': log.description || '',
+                                'URL / Link': log.url || '',
+                                'Week': log.week || '',
+                                'Status': log.status || 'Submitted',
+                                'Submitted On': log.submittedAt ? new Date(log.submittedAt).toLocaleDateString('en-IN') : '',
+                              });
+                            });
+                          });
+                          if (allLogs.length === 0) { alert('No task logs found for this batch'); return; }
+                          downloadCSV(allLogs, `AllDailyLogs_${bInstName.replace(/\s+/g,'_')}_${bMonth.replace(/\s+/g,'_')}.csv`);
+                        }}
+                        className="flex items-center gap-1 text-xs font-bold text-orange-600 bg-orange-50 hover:bg-orange-100 px-3 py-1.5 rounded-lg transition">
+                        <Download size={12} /> All Daily Logs
                       </button>
                     </div>
                     <div className="divide-y" style={{borderColor:'rgba(255,255,255,0.05)'}}>
