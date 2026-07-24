@@ -127,7 +127,14 @@ export function LandingPage() {
 
   useEffect(() => {
     const observer = new IntersectionObserver(
-      entries => entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('lp-visible'); } }),
+      entries => entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.classList.add('lp-visible');
+        } else {
+          // Remove class so animation re-triggers on scroll back up
+          e.target.classList.remove('lp-visible');
+        }
+      }),
       { threshold: 0.08 }
     );
     document.querySelectorAll('.lp-reveal, .lp-slide-left, .lp-slide-right, .lp-scale-in, .lp-flip, .lp-glow-in').forEach(el => observer.observe(el));
@@ -294,38 +301,36 @@ export function LandingPage() {
         .lp-readonly, .lp-readonly * { -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
         .lp-readonly input, .lp-readonly textarea, .lp-readonly select { -webkit-user-select:auto; user-select:auto; }
         /* ── Scroll Reveal ── */
-        .lp-reveal { opacity: 0; transform: translateY(40px); transition: opacity 0.7s cubic-bezier(.16,1,.3,1), transform 0.7s cubic-bezier(.16,1,.3,1); }
-        .lp-reveal.lp-visible { opacity: 1; transform: translateY(0); }
-        .lp-d1 { transition-delay: 0.08s; } .lp-d2 { transition-delay: 0.18s; }
-        .lp-d3 { transition-delay: 0.28s; } .lp-d4 { transition-delay: 0.38s; }
 
-        /* ── Slide from left ── */
-        .lp-slide-left { opacity: 0; transform: translateX(-60px); transition: opacity 0.75s cubic-bezier(.16,1,.3,1), transform 0.75s cubic-bezier(.16,1,.3,1); }
-        .lp-slide-left.lp-visible { opacity: 1; transform: translateX(0); }
 
-        /* ── Slide from right ── */
-        .lp-slide-right { opacity: 0; transform: translateX(60px); transition: opacity 0.75s cubic-bezier(.16,1,.3,1), transform 0.75s cubic-bezier(.16,1,.3,1); }
-        .lp-slide-right.lp-visible { opacity: 1; transform: translateX(0); }
+        /* ── Dramatic entrance animations ── */
+        @keyframes swoopUp { 0% { opacity:0; transform: translateY(80px) scale(0.9); } 100% { opacity:1; transform: translateY(0) scale(1); } }
+        @keyframes swoopLeft { 0% { opacity:0; transform: translateX(-100px) rotate(-3deg); } 100% { opacity:1; transform: translateX(0) rotate(0); } }
+        @keyframes swoopRight { 0% { opacity:0; transform: translateX(100px) rotate(3deg); } 100% { opacity:1; transform: translateX(0) rotate(0); } }
+        @keyframes zoomIn { 0% { opacity:0; transform: scale(0.7); } 100% { opacity:1; transform: scale(1); } }
+        @keyframes flipIn { 0% { opacity:0; transform: perspective(800px) rotateX(30deg) translateY(40px); } 100% { opacity:1; transform: perspective(800px) rotateX(0) translateY(0); } }
+        @keyframes glowReveal { 0% { opacity:0; transform: translateY(30px); filter: blur(8px); } 100% { opacity:1; transform: translateY(0); filter: blur(0); } }
 
-        /* ── Scale in ── */
-        .lp-scale-in { opacity: 0; transform: scale(0.88); transition: opacity 0.7s cubic-bezier(.16,1,.3,1), transform 0.7s cubic-bezier(.16,1,.3,1); }
-        .lp-scale-in.lp-visible { opacity: 1; transform: scale(1); }
+        .lp-reveal { opacity:0; transform:translateY(80px) scale(0.95); transition: opacity 0.7s cubic-bezier(.16,1,.3,1), transform 0.7s cubic-bezier(.16,1,.3,1); }
+        .lp-reveal.lp-visible { opacity:1; transform:translateY(0) scale(1); }
 
-        /* ── Flip up ── */
-        .lp-flip { opacity: 0; transform: perspective(600px) rotateX(18deg) translateY(30px); transition: opacity 0.75s cubic-bezier(.16,1,.3,1), transform 0.75s cubic-bezier(.16,1,.3,1); }
-        .lp-flip.lp-visible { opacity: 1; transform: perspective(600px) rotateX(0deg) translateY(0); }
+        .lp-slide-left { opacity:0; transform:translateX(-100px) rotate(-2deg); transition: opacity 0.75s cubic-bezier(.16,1,.3,1), transform 0.75s cubic-bezier(.16,1,.3,1); }
+        .lp-slide-left.lp-visible { opacity:1; transform:translateX(0) rotate(0); }
 
-        /* ── Glow pulse on visible ── */
-        .lp-glow-in { opacity: 0; transition: opacity 0.8s ease, box-shadow 0.8s ease; }
-        .lp-glow-in.lp-visible { opacity: 1; }
+        .lp-slide-right { opacity:0; transform:translateX(100px) rotate(2deg); transition: opacity 0.75s cubic-bezier(.16,1,.3,1), transform 0.75s cubic-bezier(.16,1,.3,1); }
+        .lp-slide-right.lp-visible { opacity:1; transform:translateX(0) rotate(0); }
 
-        /* ── Stagger children ── */
-        .lp-stagger > *:nth-child(1) { transition-delay: 0.05s; }
-        .lp-stagger > *:nth-child(2) { transition-delay: 0.15s; }
-        .lp-stagger > *:nth-child(3) { transition-delay: 0.25s; }
-        .lp-stagger > *:nth-child(4) { transition-delay: 0.35s; }
-        .lp-stagger > *:nth-child(5) { transition-delay: 0.45s; }
-        .lp-stagger > *:nth-child(6) { transition-delay: 0.55s; }
+        .lp-scale-in { opacity:0; transform:scale(0.75); transition: opacity 0.7s cubic-bezier(.16,1,.3,1), transform 0.7s cubic-bezier(.16,1,.3,1); }
+        .lp-scale-in.lp-visible { opacity:1; transform:scale(1); }
+
+        .lp-flip { opacity:0; transform:perspective(800px) rotateX(25deg) translateY(50px); transition: opacity 0.75s cubic-bezier(.16,1,.3,1), transform 0.75s cubic-bezier(.16,1,.3,1); }
+        .lp-flip.lp-visible { opacity:1; transform:perspective(800px) rotateX(0) translateY(0); }
+
+        .lp-glow-in { opacity:0; transform:translateY(30px); filter:blur(6px); transition: opacity 0.8s ease, transform 0.8s ease, filter 0.8s ease; }
+        .lp-glow-in.lp-visible { opacity:1; transform:translateY(0); filter:blur(0); }
+
+        .lp-d1 { transition-delay:0.05s; } .lp-d2 { transition-delay:0.15s; }
+        .lp-d3 { transition-delay:0.25s; } .lp-d4 { transition-delay:0.35s; }
 
         /* ── Floating animation ── */
         @keyframes float { 0%,100% { transform: translateY(0px); } 50% { transform: translateY(-10px); } }
