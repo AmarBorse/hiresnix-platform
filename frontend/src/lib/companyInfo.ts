@@ -3,8 +3,8 @@ export const COMPANY = {
   legalName: 'SR PATIL INFRASTRUCTURE PRIVATE LIMITED',
   cin: 'U42909MH2024PTC429260',
   registeredOffice: [
-    'S. No.171, Plot No.52A',
-    'Bansilal Nagar',
+    '9V3M+JP3  ',
+    'Ambika Nagar',
     'Shirpur',
     'Dhule',
     'Maharashtra - 425405',
@@ -31,7 +31,7 @@ export const organizationSchema = {
   identifier: COMPANY.cin,
   address: {
     '@type': 'PostalAddress',
-    streetAddress: 'S. No.171, Plot No.52A, Bansilal Nagar',
+    streetAddress: '9V3M+JP3, Ambika Nagar',
     addressLocality: 'Shirpur',
     addressRegion: 'Maharashtra',
     postalCode: '425405',
