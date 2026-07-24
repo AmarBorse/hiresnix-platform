@@ -318,6 +318,7 @@ export function LandingPage() {
         .lp-navbar { position:fixed;top:0;left:0;right:0;z-index:1000;display:flex;align-items:center;justify-content:space-between;padding:0 5%;height:68px;background:rgba(6,9,16,0.85);backdrop-filter:blur(24px);border-bottom:1px solid rgba(255,255,255,0.06);transition:all 0.3s; }
         .lp-nav-link { color:#8892a4;text-decoration:none;font-size:0.875rem;font-weight:500;transition:color 0.2s;letter-spacing:0.01em; }
         .lp-nav-link:hover { color:#e8edf5; }
+        @keyframes clientScroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
         .lp-section-label { font-family:'JetBrains Mono',monospace;font-size:0.7rem;color:#3b82f6;letter-spacing:0.18em;text-transform:uppercase;margin-bottom:0.7rem; }
         .lp-section-title { font-family:'Sora',sans-serif;font-size:clamp(1.8rem,3.5vw,2.9rem);font-weight:800;letter-spacing:-0.025em;line-height:1.12;margin-bottom:1rem; }
         .lp-tech-pill { background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:100px;padding:0.5rem 1.1rem;font-size:0.82rem;color:#8892a4;font-family:'JetBrains Mono',monospace;transition:all 0.25s;cursor:default; }
@@ -682,21 +683,36 @@ export function LandingPage() {
             </div>
           </div>
 
-          {/* Other client tiles */}
-          <div className="lp-reveal lp-d3" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '1rem', maxWidth: 820, margin: '1.5rem auto 0' }}>
-            {[
-              { icon: '🔒', label: 'Digital Marketing Agency', tag: 'NDA Protected' },
-              { icon: '🔒', label: 'E-commerce Platform', tag: 'NDA Protected' },
-              { icon: '🔒', label: 'HR Tech Startup', tag: 'NDA Protected' },
-              { icon: '⏳', label: 'Mobile App Company', tag: 'Coming Soon' },
-              { icon: '⏳', label: 'EdTech Platform', tag: 'Coming Soon' },
-            ].map(({ icon, label, tag }) => (
-              <div key={label} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 14, padding: '1.1rem', textAlign: 'center' }}>
-                <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>{icon}</div>
-                <div style={{ fontSize: '0.78rem', fontWeight: 600, color: '#4a5568', marginBottom: '0.3rem' }}>{label}</div>
-                <span style={{ fontSize: '0.6rem', padding: '2px 8px', borderRadius: 6, background: tag === 'NDA Protected' ? 'rgba(99,102,241,0.08)' : 'rgba(245,158,11,0.08)', color: tag === 'NDA Protected' ? '#818cf8' : '#f59e0b', border: tag === 'NDA Protected' ? '1px solid rgba(99,102,241,0.15)' : '1px solid rgba(245,158,11,0.15)', fontWeight: 700 }}>{tag}</span>
-              </div>
-            ))}
+          {/* Auto-scrolling client strip */}
+          <div style={{ position: 'relative', marginTop: '2.5rem', overflow: 'hidden' }}>
+            {/* Fade edges */}
+            <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 80, background: 'linear-gradient(to right, #060b18, transparent)', zIndex: 2, pointerEvents: 'none' }} />
+            <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 80, background: 'linear-gradient(to left, #060b18, transparent)', zIndex: 2, pointerEvents: 'none' }} />
+            <div style={{ display: 'flex', gap: '1.25rem', animation: 'clientScroll 28s linear infinite', width: 'max-content' }}>
+              {[
+                { icon: 'F', bg: 'linear-gradient(135deg,#6366f1,#4f46e5)', label: 'Focktix Limited', tag: '✓ Client', color: '#818cf8' },
+                { icon: '🔒', bg: 'rgba(255,255,255,0.04)', label: 'Digital Marketing Agency', tag: 'NDA Protected', color: '#475569' },
+                { icon: '🔒', bg: 'rgba(255,255,255,0.04)', label: 'E-commerce Platform', tag: 'NDA Protected', color: '#475569' },
+                { icon: '🔒', bg: 'rgba(255,255,255,0.04)', label: 'HR Tech Startup', tag: 'NDA Protected', color: '#475569' },
+                { icon: '⏳', bg: 'rgba(255,255,255,0.04)', label: 'Mobile App Company', tag: 'Coming Soon', color: '#475569' },
+                { icon: '⏳', bg: 'rgba(255,255,255,0.04)', label: 'EdTech Platform', tag: 'Coming Soon', color: '#475569' },
+                // Duplicate for seamless loop
+                { icon: 'F', bg: 'linear-gradient(135deg,#6366f1,#4f46e5)', label: 'Focktix Limited', tag: '✓ Client', color: '#818cf8' },
+                { icon: '🔒', bg: 'rgba(255,255,255,0.04)', label: 'Digital Marketing Agency', tag: 'NDA Protected', color: '#475569' },
+                { icon: '🔒', bg: 'rgba(255,255,255,0.04)', label: 'E-commerce Platform', tag: 'NDA Protected', color: '#475569' },
+                { icon: '🔒', bg: 'rgba(255,255,255,0.04)', label: 'HR Tech Startup', tag: 'NDA Protected', color: '#475569' },
+                { icon: '⏳', bg: 'rgba(255,255,255,0.04)', label: 'Mobile App Company', tag: 'Coming Soon', color: '#475569' },
+                { icon: '⏳', bg: 'rgba(255,255,255,0.04)', label: 'EdTech Platform', tag: 'Coming Soon', color: '#475569' },
+              ].map((c, i) => (
+                <div key={i} style={{ flexShrink: 0, background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 16, padding: '1rem 1.5rem', display: 'flex', alignItems: 'center', gap: '0.9rem', minWidth: 220 }}>
+                  <div style={{ width: 42, height: 42, borderRadius: 12, background: c.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: c.icon === 'F' ? '1.1rem' : '1.2rem', fontWeight: 900, color: '#fff', flexShrink: 0 }}>{c.icon}</div>
+                  <div>
+                    <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#cbd5e1', marginBottom: '0.2rem' }}>{c.label}</div>
+                    <span style={{ fontSize: '0.62rem', padding: '2px 8px', borderRadius: 6, background: c.icon === 'F' ? 'rgba(99,102,241,0.12)' : c.icon === '🔒' ? 'rgba(99,102,241,0.06)' : 'rgba(245,158,11,0.08)', color: c.icon === 'F' ? '#818cf8' : c.icon === '🔒' ? '#475569' : '#f59e0b', border: c.icon === 'F' ? '1px solid rgba(99,102,241,0.2)' : c.icon === '🔒' ? '1px solid rgba(99,102,241,0.1)' : '1px solid rgba(245,158,11,0.15)', fontWeight: 700 }}>{c.tag}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
