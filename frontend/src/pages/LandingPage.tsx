@@ -617,6 +617,76 @@ export function LandingPage() {
         </div>
       </section>
 
+      {/* ── TRUSTED BY ── */}
+      <section style={{ padding: '5rem 5%', background: '#060b18', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+        <div style={{ maxWidth: 1140, margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+            <div className="lp-section-label lp-reveal">Trusted By</div>
+            <h2 className="lp-section-title lp-reveal lp-d1" style={{ fontSize: 'clamp(1.6rem,4vw,2.4rem)' }}>Companies That Trust<br />Hiresnix Tech</h2>
+            <p className="lp-reveal lp-d2" style={{ color: '#6b7a99', maxWidth: 480, margin: '0 auto' }}>We've delivered real technology solutions for growing businesses across India.</p>
+          </div>
+
+          {/* Focktix Case Study Card */}
+          <div className="lp-reveal lp-d2" style={{ maxWidth: 820, margin: '0 auto' }}>
+            <div style={{ background: 'linear-gradient(135deg,#0f172a 0%,#0d1929 60%,#0f0d2a 100%)', border: '1px solid rgba(99,102,241,0.25)', borderRadius: 24, padding: 'clamp(1.5rem,4vw,2.5rem)', position: 'relative', overflow: 'hidden', boxShadow: '0 30px 80px rgba(0,0,0,0.5)' }}>
+              {/* Glow */}
+              <div style={{ position: 'absolute', top: -80, right: -80, width: 280, height: 280, background: 'radial-gradient(circle,rgba(99,102,241,0.1),transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }} />
+
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                  {/* Focktix logo placeholder */}
+                  <div style={{ width: 52, height: 52, borderRadius: 14, background: 'linear-gradient(135deg,#6366f1,#4f46e5)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem', fontWeight: 900, color: '#fff', flexShrink: 0, boxShadow: '0 0 20px rgba(99,102,241,0.4)' }}>F</div>
+                  <div>
+                    <div style={{ fontWeight: 800, fontSize: '1.1rem', color: '#e2e8f0' }}>Focktix Limited</div>
+                    <div style={{ fontSize: '0.72rem', color: '#6366f1', fontWeight: 600 }}>Digital Marketing Agency · Maharashtra, India</div>
+                  </div>
+                </div>
+                <span style={{ fontSize: '0.65rem', padding: '4px 12px', borderRadius: 8, background: 'rgba(16,185,129,0.12)', color: '#34d399', border: '1px solid rgba(16,185,129,0.2)', fontWeight: 700, whiteSpace: 'nowrap', alignSelf: 'center' }}>✓ Delivered</span>
+              </div>
+
+              {/* What we built */}
+              <div style={{ marginBottom: '1.5rem' }}>
+                <div style={{ fontSize: '0.65rem', letterSpacing: '0.2em', color: '#4a5568', fontWeight: 700, marginBottom: '0.6rem', textTransform: 'uppercase' }}>What We Built</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', gap: '0.75rem' }}>
+                  {[
+                    { icon: '⚙️', title: 'Custom CRM System', desc: 'Client & lead management platform tailored for their agency workflow' },
+                    { icon: '📊', title: 'Campaign Dashboard', desc: 'Real-time analytics dashboard for tracking ad performance across platforms' },
+                    { icon: '🤖', title: 'AI Lead Scoring', desc: 'Automated lead qualification using ML to prioritize high-value clients' },
+                  ].map(({ icon, title, desc }) => (
+                    <div key={title} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 14, padding: '1rem' }}>
+                      <div style={{ fontSize: '1.2rem', marginBottom: '0.4rem' }}>{icon}</div>
+                      <div style={{ fontWeight: 700, fontSize: '0.82rem', color: '#e2e8f0', marginBottom: '0.25rem' }}>{title}</div>
+                      <div style={{ fontSize: '0.72rem', color: '#4a5568', lineHeight: 1.5 }}>{desc}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Tech stack */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
+                <span style={{ fontSize: '0.65rem', color: '#4a5568', fontWeight: 700, letterSpacing: '0.1em' }}>TECH STACK:</span>
+                {['React.js', 'Node.js', 'PostgreSQL', 'Groq AI', 'REST API', 'Vercel'].map(t => (
+                  <span key={t} style={{ fontSize: '0.65rem', padding: '3px 10px', borderRadius: 6, background: 'rgba(99,102,241,0.08)', color: '#818cf8', border: '1px solid rgba(99,102,241,0.15)', fontFamily: "'JetBrains Mono',monospace" }}>{t}</span>
+                ))}
+              </div>
+
+              {/* Results */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '0.75rem', paddingTop: '1.25rem', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                {[['3x', '#6366f1', 'Lead conversion improvement'], ['60%', '#34d399', 'Reduction in manual work'], ['99.9%', '#f59e0b', 'System uptime']].map(([val, color, label]) => (
+                  <div key={label} style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: 'clamp(1.4rem,3vw,2rem)', fontWeight: 900, color }}>{val}</div>
+                    <div style={{ fontSize: '0.68rem', color: '#4a5568', lineHeight: 1.4, marginTop: 2 }}>{label}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* More clients coming */}
+          <p className="lp-reveal lp-d3" style={{ textAlign: 'center', marginTop: '2rem', fontSize: '0.75rem', color: '#2a3347' }}>+ More client case studies coming soon</p>
+        </div>
+      </section>
+
       {/* ── CONTACT / CTA ── */}
       <section id="contact" style={{ padding: '8rem 5%', background: '#060910' }}>
         <div style={{ maxWidth: 1140, margin: '0 auto' }}>
