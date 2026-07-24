@@ -127,10 +127,10 @@ export function LandingPage() {
 
   useEffect(() => {
     const observer = new IntersectionObserver(
-      entries => entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('lp-visible'); }),
+      entries => entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('lp-visible'); } }),
       { threshold: 0.08 }
     );
-    document.querySelectorAll('.lp-reveal').forEach(el => observer.observe(el));
+    document.querySelectorAll('.lp-reveal, .lp-slide-left, .lp-slide-right, .lp-scale-in, .lp-flip, .lp-glow-in').forEach(el => observer.observe(el));
     return () => observer.disconnect();
   }, []);
 
@@ -293,10 +293,80 @@ export function LandingPage() {
         body { margin: 0; background-color: #060910; }
         .lp-readonly, .lp-readonly * { -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
         .lp-readonly input, .lp-readonly textarea, .lp-readonly select { -webkit-user-select:auto; user-select:auto; }
-        .lp-reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.65s cubic-bezier(.16,1,.3,1), transform 0.65s cubic-bezier(.16,1,.3,1); }
+        /* ── Scroll Reveal ── */
+        .lp-reveal { opacity: 0; transform: translateY(40px); transition: opacity 0.7s cubic-bezier(.16,1,.3,1), transform 0.7s cubic-bezier(.16,1,.3,1); }
         .lp-reveal.lp-visible { opacity: 1; transform: translateY(0); }
-        .lp-d1 { transition-delay: 0.08s; } .lp-d2 { transition-delay: 0.16s; }
-        .lp-d3 { transition-delay: 0.24s; } .lp-d4 { transition-delay: 0.32s; }
+        .lp-d1 { transition-delay: 0.08s; } .lp-d2 { transition-delay: 0.18s; }
+        .lp-d3 { transition-delay: 0.28s; } .lp-d4 { transition-delay: 0.38s; }
+
+        /* ── Slide from left ── */
+        .lp-slide-left { opacity: 0; transform: translateX(-60px); transition: opacity 0.75s cubic-bezier(.16,1,.3,1), transform 0.75s cubic-bezier(.16,1,.3,1); }
+        .lp-slide-left.lp-visible { opacity: 1; transform: translateX(0); }
+
+        /* ── Slide from right ── */
+        .lp-slide-right { opacity: 0; transform: translateX(60px); transition: opacity 0.75s cubic-bezier(.16,1,.3,1), transform 0.75s cubic-bezier(.16,1,.3,1); }
+        .lp-slide-right.lp-visible { opacity: 1; transform: translateX(0); }
+
+        /* ── Scale in ── */
+        .lp-scale-in { opacity: 0; transform: scale(0.88); transition: opacity 0.7s cubic-bezier(.16,1,.3,1), transform 0.7s cubic-bezier(.16,1,.3,1); }
+        .lp-scale-in.lp-visible { opacity: 1; transform: scale(1); }
+
+        /* ── Flip up ── */
+        .lp-flip { opacity: 0; transform: perspective(600px) rotateX(18deg) translateY(30px); transition: opacity 0.75s cubic-bezier(.16,1,.3,1), transform 0.75s cubic-bezier(.16,1,.3,1); }
+        .lp-flip.lp-visible { opacity: 1; transform: perspective(600px) rotateX(0deg) translateY(0); }
+
+        /* ── Glow pulse on visible ── */
+        .lp-glow-in { opacity: 0; transition: opacity 0.8s ease, box-shadow 0.8s ease; }
+        .lp-glow-in.lp-visible { opacity: 1; }
+
+        /* ── Stagger children ── */
+        .lp-stagger > *:nth-child(1) { transition-delay: 0.05s; }
+        .lp-stagger > *:nth-child(2) { transition-delay: 0.15s; }
+        .lp-stagger > *:nth-child(3) { transition-delay: 0.25s; }
+        .lp-stagger > *:nth-child(4) { transition-delay: 0.35s; }
+        .lp-stagger > *:nth-child(5) { transition-delay: 0.45s; }
+        .lp-stagger > *:nth-child(6) { transition-delay: 0.55s; }
+
+        /* ── Floating animation ── */
+        @keyframes float { 0%,100% { transform: translateY(0px); } 50% { transform: translateY(-10px); } }
+        @keyframes floatSlow { 0%,100% { transform: translateY(0px) rotate(0deg); } 50% { transform: translateY(-15px) rotate(3deg); } }
+        @keyframes shimmer { 0% { background-position: -200% center; } 100% { background-position: 200% center; } }
+        @keyframes borderGlow { 0%,100% { border-color: rgba(59,130,246,0.2); box-shadow: 0 0 20px rgba(59,130,246,0.05); } 50% { border-color: rgba(59,130,246,0.5); box-shadow: 0 0 40px rgba(59,130,246,0.15); } }
+        @keyframes gradientShift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        @keyframes scanline { 0% { transform: translateY(-100%); } 100% { transform: translateY(100vh); } }
+
+        .lp-float { animation: float 4s ease-in-out infinite; }
+        .lp-float-slow { animation: floatSlow 6s ease-in-out infinite; }
+        .lp-border-glow { animation: borderGlow 3s ease-in-out infinite; }
+
+        /* ── Hero title shimmer ── */
+        .lp-hero-shimmer {
+          background: linear-gradient(90deg, #e2e8f0 0%, #ffffff 40%, #93c5fd 60%, #e2e8f0 100%);
+          background-size: 200% auto;
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+          animation: shimmer 4s linear infinite;
+        }
+
+        /* ── Section title gradient animate ── */
+        .lp-section-title {
+          font-family: 'Sora', system-ui, sans-serif;
+          font-size: clamp(1.9rem, 4.5vw, 3rem);
+          font-weight: 800;
+          color: #e2e8f0;
+          line-height: 1.15;
+          margin: 0 0 1rem;
+        }
+
+        /* ── Card hover lift ── */
+        .lp-service-card, .lp-why-card, .lp-product-card {
+          transition: transform 0.3s cubic-bezier(.16,1,.3,1), box-shadow 0.3s ease, border-color 0.3s ease !important;
+        }
+        .lp-service-card:hover, .lp-why-card:hover {
+          transform: translateY(-6px) !important;
+          box-shadow: 0 20px 60px rgba(0,0,0,0.4) !important;
+        }
         .lp-font-d { font-family: 'Sora', system-ui, sans-serif; }
         .lp-font-m { font-family: 'JetBrains Mono', monospace; }
         .lp-btn-glow { display:inline-flex;align-items:center;gap:8px;background:#3b82f6;color:#fff;padding:0.85rem 1.75rem;border-radius:12px;font-weight:700;font-size:0.95rem;text-decoration:none;border:none;cursor:pointer;transition:all 0.3s;box-shadow:0 0 30px rgba(59,130,246,0.3); }
@@ -441,7 +511,7 @@ export function LandingPage() {
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(300px,1fr))', gap: '1.25rem' }}>
             {SERVICES.map((s, i) => (
-              <div key={s.title} className={`lp-service-card lp-reveal lp-d${Math.min((i % 4) + 1, 4)}`}>
+              <div key={s.title} className={`lp-service-card lp-flip lp-d${Math.min((i % 4) + 1, 4)}`}>
                 <div style={{ width: 46, height: 46, borderRadius: 14, background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.3rem', marginBottom: '1.1rem', position: 'relative', zIndex: 1 }}>{s.icon}</div>
                 <h3 className="lp-font-d" style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '0.5rem', position: 'relative', zIndex: 1 }}>{s.title}</h3>
                 <p style={{ color: '#6b7a99', fontSize: '0.83rem', lineHeight: 1.65, position: 'relative', zIndex: 1 }}>{s.desc}</p>
@@ -461,7 +531,7 @@ export function LandingPage() {
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: '1.1rem' }}>
             {WHY_US.map((w, i) => (
-              <div key={w.title} className={`lp-why-card lp-reveal lp-d${Math.min((i % 3) + 1, 4)}`}>
+              <div key={w.title} className={`lp-why-card lp-scale-in lp-d${Math.min((i % 3) + 1, 4)}`}>
                 <div style={{ fontSize: '1.75rem', marginBottom: '0.85rem' }}>{w.icon}</div>
                 <h3 className="lp-font-d" style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: '0.4rem' }}>{w.title}</h3>
                 <p style={{ color: '#6b7a99', fontSize: '0.82rem', lineHeight: 1.6 }}>{w.desc}</p>
@@ -481,7 +551,7 @@ export function LandingPage() {
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,minmax(0,420px))', gap: '1.5rem', justifyContent: 'center' }}>
             {PRODUCTS.map((p, i) => (
-              <div key={p.title} className={`lp-product-card lp-reveal lp-d${Math.min(i + 1, 4)}`} style={{ background: p.gradient, border: `1px solid ${p.border}` }}>
+              <div key={p.title} className={`lp-product-card lp-slide-right lp-d${Math.min(i + 1, 4)}`} style={{ background: p.gradient, border: `1px solid ${p.border}` }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
                   <div style={{ fontSize: '2rem' }}>{p.icon}</div>
                   <span className="lp-font-m" style={{ fontSize: '0.65rem', padding: '4px 10px', borderRadius: 8, background: 'rgba(255,255,255,0.07)', color: p.accent, border: `1px solid ${p.border}` }}>{p.tag}</span>
@@ -559,7 +629,7 @@ export function LandingPage() {
       <section style={{ padding: '7rem 5%', background: '#0a0f1e' }}>
         <div style={{ maxWidth: 1140, margin: '0 auto' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '5rem', alignItems: 'center' }} className="lp-grid-1">
-            <div>
+            <div className="lp-slide-left">
               <div className="lp-section-label lp-reveal">Client Trust</div>
               <h2 className="lp-section-title lp-reveal lp-d1">Why Clients<br />Choose Us</h2>
               <p className="lp-reveal lp-d2" style={{ color: '#6b7a99', fontSize: '1rem', marginBottom: '2rem' }}>We're not just a vendor — we're a technology partner invested in your success.</p>
@@ -628,7 +698,7 @@ export function LandingPage() {
           </div>
 
           {/* Focktix Case Study Card */}
-          <div className="lp-reveal lp-d2" style={{ maxWidth: 820, margin: '0 auto' }}>
+          <div className="lp-scale-in lp-d2" style={{ maxWidth: 820, margin: '0 auto' }}>
             <div style={{ background: 'linear-gradient(135deg,#0f172a 0%,#0d1929 60%,#0f0d2a 100%)', border: '1px solid rgba(99,102,241,0.25)', borderRadius: 24, padding: 'clamp(1.5rem,4vw,2.5rem)', position: 'relative', overflow: 'hidden', boxShadow: '0 30px 80px rgba(0,0,0,0.5)' }}>
               {/* Glow */}
               <div style={{ position: 'absolute', top: -80, right: -80, width: 280, height: 280, background: 'radial-gradient(circle,rgba(99,102,241,0.1),transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }} />
