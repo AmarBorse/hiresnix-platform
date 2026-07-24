@@ -2,7 +2,7 @@
 // DEADLINE OR DEAD — All India Public Challenge by Hiresnix
 import { useState, useEffect, useRef, useCallback } from "react";
 
-const API = (import.meta as any).env?.VITE_API_URL || 'https://hirenix-backend.onrender.com/api';
+const API = 'https://hirenix-backend.onrender.com/api';
 
 const SKILLS = [
   "React.js","Python","Machine Learning","Node.js","DSA",
