@@ -357,6 +357,124 @@ function TaskDescription({ skill, task }: { skill: string; task: string }) {
   );
 }
 
+
+// ── Briefing Steps Data ───────────────────────────────────────────
+const BRIEFING_STEPS = [
+  {
+    id: "00",
+    color: "#ff0000",
+    title: "CLASSIFIED BRIEFING",
+    sub: "MISSION: SURVIVE THE JOB MARKET",
+    lines: ["You are 47 days away from placement season.", "3,200 companies. 84,000 students. Most will fail.", "This is not a game. This is your career."],
+    warning: "The next 47 days will determine the next 4 years.",
+    cta: "I UNDERSTAND THE STAKES →",
+  },
+  {
+    id: "01",
+    color: "#ff4400",
+    title: "YOUR DAILY MISSION",
+    sub: "ONE TASK. 24 HOURS. NO MERCY.",
+    lines: ["Every day you receive 1 brutal task.", "You must complete it.", "Screenshot your proof. Upload it here."],
+    warning: "No submission = Survival drops. Miss 3 days = ELIMINATED.",
+    cta: "UNDERSTOOD →",
+  },
+  {
+    id: "02",
+    color: "#ff6600",
+    title: "AI VERIFICATION",
+    sub: "THE AI WILL QUESTION YOUR WORK",
+    lines: ["After you upload proof,", "an AI interrogates you with 3 questions.", "Score below 67% = Task FAILED."],
+    warning: "The AI has no sympathy. It detects copy-paste.",
+    cta: "BRING IT ON →",
+  },
+  {
+    id: "03",
+    color: "#ff2d2d",
+    title: "SURVIVAL METER",
+    sub: "IT IS ALWAYS DROPPING.",
+    lines: ["Your survival % decays every few seconds.", "The only way to restore it:", "Complete verified tasks. Every quiz pass = +6% survival."],
+    warning: "Below 30% survival = CRITICAL ALERT. Below 12% = DEAD.",
+    cta: "I WILL KEEP IT UP →",
+  },
+  {
+    id: "04",
+    color: "#cc0000",
+    title: "THE LEADERBOARD",
+    sub: "ALL INDIA. REAL STUDENTS. NO MERCY.",
+    lines: ["Your streak is tracked globally.", "MIT Pune vs VIT vs COEP vs NIT.", "The top survivors get noticed by companies."],
+    warning: "Your batchmates are already on this list.",
+    cta: "I WILL OUTRANK THEM →",
+  },
+  {
+    id: "05",
+    color: "#ff2d2d",
+    title: "ONE FINAL WARNING",
+    sub: "READ THIS CAREFULLY.",
+    lines: ["10,000+ students are competing right now.", "AI is replacing junior roles every week.", "The window to make yourself irreplaceable is closing. Fast."],
+    warning: "START TODAY OR GET LEFT BEHIND FOREVER.",
+    cta: "☠ BEGIN MY SURVIVAL →",
+  },
+];
+
+function BriefingScreen({ briefingStep, setBriefingStep, setShowBriefing }: {
+  briefingStep: number;
+  setBriefingStep: React.Dispatch<React.SetStateAction<number>>;
+  setShowBriefing: React.Dispatch<React.SetStateAction<boolean>>;
+}) {
+  const step = BRIEFING_STEPS[briefingStep];
+  const isLast = briefingStep === BRIEFING_STEPS.length - 1;
+
+  return (
+    <div style={{ position:"fixed",inset:0,zIndex:500,background:"#000",display:"flex",flexDirection:"column" as const,overflow:"hidden" }}>
+      <div style={{ position:"absolute",inset:0,background:"repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(255,0,0,0.015) 2px,rgba(255,0,0,0.015) 4px)",pointerEvents:"none" as const,zIndex:1 }} />
+      <div style={{ position:"absolute",top:0,left:0,width:60,height:60,borderTop:"3px solid "+step.color,borderLeft:"3px solid "+step.color,zIndex:2 }} />
+      <div style={{ position:"absolute",top:0,right:0,width:60,height:60,borderTop:"3px solid "+step.color,borderRight:"3px solid "+step.color,zIndex:2 }} />
+      <div style={{ position:"absolute",bottom:0,left:0,width:60,height:60,borderBottom:"3px solid "+step.color,borderLeft:"3px solid "+step.color,zIndex:2 }} />
+      <div style={{ position:"absolute",bottom:0,right:0,width:60,height:60,borderBottom:"3px solid "+step.color,borderRight:"3px solid "+step.color,zIndex:2 }} />
+
+      <div style={{ position:"absolute",top:20,left:"50%",transform:"translateX(-50%)",display:"flex",gap:6,zIndex:3 }}>
+        {BRIEFING_STEPS.map((_,i) => (
+          <div key={i} style={{ width:i===briefingStep?24:6,height:6,borderRadius:3,background:i<=briefingStep?step.color:"#1a1a1a",transition:"all 0.3s" }} />
+        ))}
+      </div>
+
+      <div style={{ flex:1,display:"flex",flexDirection:"column" as const,alignItems:"center",justifyContent:"center",padding:"4rem 2rem 2rem",position:"relative",zIndex:2,textAlign:"center" as const }}>
+        <div style={{ fontSize:"0.6rem",letterSpacing:"0.4em",color:step.color,fontWeight:900,marginBottom:"1.5rem",fontFamily:"monospace" }}>
+          MISSION BRIEFING // STEP {step.id} OF 05
+        </div>
+
+        <h1 style={{ fontSize:"clamp(2rem,10vw,4.5rem)",fontWeight:900,letterSpacing:"-0.02em",color:"#fff",margin:0,lineHeight:1,textShadow:"0 0 40px "+step.color+"44" }}>
+          {step.title}
+        </h1>
+        <div style={{ fontSize:"clamp(0.65rem,2.5vw,0.85rem)",letterSpacing:"0.25em",color:step.color,fontWeight:700,marginTop:"0.6rem",marginBottom:"2.5rem" }}>
+          {step.sub}
+        </div>
+
+        <div style={{ maxWidth:480,marginBottom:"2rem" }}>
+          {step.lines.map((line, i) => (
+            <div key={i} style={{ fontSize:"clamp(0.9rem,3vw,1.1rem)",lineHeight:1.9,color:"#888" }}>{line}</div>
+          ))}
+        </div>
+
+        <div style={{ maxWidth:440,border:"1px solid "+step.color+"44",background:step.color+"0a",padding:"0.8rem 1.2rem",marginBottom:"3rem",fontSize:"clamp(0.72rem,2.5vw,0.82rem)",color:step.color,fontWeight:700,letterSpacing:"0.05em" }}>
+          {"⚠ " + step.warning}
+        </div>
+
+        <button
+          onClick={() => { if (isLast) setShowBriefing(false); else setBriefingStep(s => s+1); }}
+          style={{ background:step.color,border:"none",color:"#000",padding:"1rem 2.5rem",fontSize:"clamp(0.75rem,2.5vw,0.9rem)",fontWeight:900,letterSpacing:"0.2em",cursor:"pointer",textTransform:"uppercase" as const,boxShadow:"0 0 30px "+step.color+"66",minWidth:260 }}>
+          {step.cta}
+        </button>
+
+        <button onClick={() => setShowBriefing(false)}
+          style={{ marginTop:"1.2rem",background:"transparent",border:"none",color:"#222",fontSize:"0.68rem",cursor:"pointer",letterSpacing:"0.15em",textTransform:"uppercase" as const }}>
+          skip briefing (not recommended)
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function DeadlineOrDead() {
   const [screen, setScreen] = useState("intro");
   const [selectedSkill, setSelectedSkill] = useState<string|null>(null);
@@ -403,6 +521,8 @@ export default function DeadlineOrDead() {
   const [screenshotCount, setScreenshotCount] = useState(0);
 
   const [musicOn, setMusicOn] = useState(false);
+  const [showBriefing, setShowBriefing] = useState(false);
+  const [briefingStep, setBriefingStep] = useState(0);
   const prevSurvival = useRef(72);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -758,6 +878,12 @@ End with one sharp line starting with "FIX IT:"` }],
 
           {nameSet && (
             <>
+              {/* MISSION BRIEFING BUTTON */}
+              <button onClick={() => { setShowBriefing(true); setBriefingStep(0); }}
+                style={{ width:"100%",background:"transparent",border:"1px solid #ff2d2d",color:"#ff2d2d",padding:"0.6rem",fontSize:"0.72rem",fontWeight:800,letterSpacing:"0.2em",cursor:"pointer",marginBottom:"0.8rem",textTransform:"uppercase" as const }}>
+                ☠ READ YOUR MISSION BRIEFING FIRST
+              </button>
+
               {/* History */}
               {history.length > 0 && (
                 <div style={{ marginBottom:"1rem" }}>
@@ -1063,7 +1189,10 @@ End with one sharp line starting with "FIX IT:"` }],
         </div>
       )}
 
-      <style>{`
+      {/* ── CINEMATIC MISSION BRIEFING ──────────────────────── */}
+      {showBriefing && <BriefingScreen briefingStep={briefingStep} setBriefingStep={setBriefingStep} setShowBriefing={setShowBriefing} />}
+
+            <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
         * { box-sizing:border-box; } body { margin:0; }
         @keyframes flicker { 0%,100%{opacity:0.7} 50%{opacity:0.2} }
