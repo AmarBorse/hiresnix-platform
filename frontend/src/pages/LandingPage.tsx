@@ -682,8 +682,22 @@ export function LandingPage() {
             </div>
           </div>
 
-          {/* More clients coming */}
-          <p className="lp-reveal lp-d3" style={{ textAlign: 'center', marginTop: '2rem', fontSize: '0.75rem', color: '#2a3347' }}>+ More client case studies coming soon</p>
+          {/* Other client tiles */}
+          <div className="lp-reveal lp-d3" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))', gap: '1rem', maxWidth: 820, margin: '1.5rem auto 0' }}>
+            {[
+              { icon: '🔒', label: 'Digital Marketing Agency', tag: 'NDA Protected' },
+              { icon: '🔒', label: 'E-commerce Platform', tag: 'NDA Protected' },
+              { icon: '🔒', label: 'HR Tech Startup', tag: 'NDA Protected' },
+              { icon: '⏳', label: 'Mobile App Company', tag: 'Coming Soon' },
+              { icon: '⏳', label: 'EdTech Platform', tag: 'Coming Soon' },
+            ].map(({ icon, label, tag }) => (
+              <div key={label} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 14, padding: '1.1rem', textAlign: 'center' }}>
+                <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>{icon}</div>
+                <div style={{ fontSize: '0.78rem', fontWeight: 600, color: '#4a5568', marginBottom: '0.3rem' }}>{label}</div>
+                <span style={{ fontSize: '0.6rem', padding: '2px 8px', borderRadius: 6, background: tag === 'NDA Protected' ? 'rgba(99,102,241,0.08)' : 'rgba(245,158,11,0.08)', color: tag === 'NDA Protected' ? '#818cf8' : '#f59e0b', border: tag === 'NDA Protected' ? '1px solid rgba(99,102,241,0.15)' : '1px solid rgba(245,158,11,0.15)', fontWeight: 700 }}>{tag}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
