@@ -683,7 +683,7 @@ export function LandingPage() {
           </div>
 
           {/* Other client tiles */}
-          <div className="lp-reveal lp-d3" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))', gap: '1rem', maxWidth: 820, margin: '1.5rem auto 0' }}>
+          <div className="lp-reveal lp-d3" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '1rem', maxWidth: 820, margin: '1.5rem auto 0' }}>
             {[
               { icon: '🔒', label: 'Digital Marketing Agency', tag: 'NDA Protected' },
               { icon: '🔒', label: 'E-commerce Platform', tag: 'NDA Protected' },
