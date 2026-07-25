@@ -383,9 +383,9 @@ export function LandingPage() {
         }
         .lp-font-d { font-family: 'Sora', system-ui, sans-serif; }
         .lp-font-m { font-family: 'JetBrains Mono', monospace; }
-        .lp-btn-glow { display:inline-flex;align-items:center;gap:8px;background:#3b82f6;color:#fff;padding:0.85rem 1.75rem;border-radius:12px;font-weight:700;font-size:0.95rem;text-decoration:none;border:none;cursor:pointer;transition:all 0.3s;box-shadow:0 0 30px rgba(59,130,246,0.3); }
-        .lp-btn-glow:hover { background:#2563eb;transform:translateY(-2px);box-shadow:0 0 50px rgba(59,130,246,0.5); }
-        .lp-btn-outline { display:inline-flex;align-items:center;gap:8px;border:1px solid rgba(255,255,255,0.15);color:#e8edf5;padding:0.85rem 1.75rem;border-radius:12px;font-weight:600;font-size:0.95rem;text-decoration:none;background:transparent;cursor:pointer;transition:all 0.3s; }
+        .lp-btn-glow { display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#2563eb,#3b82f6);color:#ffffff;padding:1rem 2rem;border-radius:14px;font-weight:800;font-size:1rem;text-decoration:none;border:2px solid rgba(255,255,255,0.2);cursor:pointer;transition:all 0.3s;box-shadow:0 0 40px rgba(59,130,246,0.5),0 4px 20px rgba(0,0,0,0.3);letter-spacing:0.01em; }
+        .lp-btn-glow:hover { background:linear-gradient(135deg,#1d4ed8,#2563eb);transform:translateY(-3px);box-shadow:0 0 60px rgba(59,130,246,0.7),0 8px 30px rgba(0,0,0,0.4); }
+        .lp-btn-outline { display:inline-flex;align-items:center;gap:8px;border:1.5px solid rgba(255,255,255,0.3);color:#f1f5f9;padding:1rem 2rem;border-radius:14px;font-weight:700;font-size:1rem;text-decoration:none;background:rgba(255,255,255,0.05);cursor:pointer;transition:all 0.3s;backdrop-filter:blur(4px); }
         .lp-btn-outline:hover { background:rgba(255,255,255,0.06);border-color:#3b82f6;color:#60a5fa; }
         .lp-glass-card { background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:20px;backdrop-filter:blur(12px);transition:all 0.4s; }
         .lp-glass-card:hover { border-color:rgba(59,130,246,0.35);transform:translateY(-6px);box-shadow:0 24px 60px rgba(0,0,0,0.4),0 0 0 1px rgba(59,130,246,0.1); }
@@ -400,7 +400,7 @@ export function LandingPage() {
         .lp-marquee-track:hover { animation-play-state:paused; }
         @keyframes lpMarquee { from{transform:translateX(0);}to{transform:translateX(-50%);} }
         .lp-navbar { position:fixed;top:0;left:0;right:0;z-index:1000;display:flex;align-items:center;justify-content:space-between;padding:0 5%;height:68px;background:rgba(6,9,16,0.85);backdrop-filter:blur(24px);border-bottom:1px solid rgba(255,255,255,0.06);transition:all 0.3s; }
-        .lp-nav-link { color:#8892a4;text-decoration:none;font-size:0.875rem;font-weight:500;transition:color 0.2s;letter-spacing:0.01em; }
+        .lp-nav-link { color:#a8b4c4;text-decoration:none;font-size:0.875rem;font-weight:600;transition:color 0.2s;letter-spacing:0.01em; }
         .lp-nav-link:hover { color:#e8edf5; }
         @keyframes clientScroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
         .lp-section-label { font-family:'JetBrains Mono',monospace;font-size:0.7rem;color:#3b82f6;letter-spacing:0.18em;text-transform:uppercase;margin-bottom:0.7rem; }
@@ -425,6 +425,9 @@ export function LandingPage() {
           .lp-grid-1{grid-template-columns:1fr!important;}
           .lp-grid-2{grid-template-columns:1fr!important;}
           .lp-workflow-step::after{display:none;}
+          .lp-btn-glow,.lp-btn-outline{width:100%;justify-content:center;font-size:0.95rem!important;}
+          p{font-size:0.95rem;line-height:1.7;}
+          h1,h2{letter-spacing:-0.02em;}
         }
         @media(max-width:480px){
           .lp-grid-3{grid-template-columns:1fr 1fr!important;}
@@ -482,13 +485,13 @@ export function LandingPage() {
             Building Intelligent Software. Developing Future Talent.
           </p>
 
-          <p style={{ fontSize: 'clamp(0.95rem,2vw,1.1rem)', color: '#6b7a99', lineHeight: 1.75, maxWidth: 620, margin: '0 auto 2.75rem', fontWeight: 300 }}>
+          <p style={{ fontSize: 'clamp(0.95rem,2vw,1.1rem)', color: '#94a3b8', lineHeight: 1.75, maxWidth: 620, margin: '0 auto 2.75rem', fontWeight: 400 }}>
             We build scalable software, AI solutions and digital products for startups, businesses and educational institutions — while empowering future professionals through our technology ecosystem.
           </p>
 
           <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-            <button className="lp-btn-glow" style={{ fontSize: '1rem', padding: '0.9rem 2rem' }} onClick={() => { document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' }); }}>Get Free Consultation</button>
-            <button className="lp-btn-outline" style={{ fontSize: '1rem', padding: '0.9rem 2rem' }} onClick={() => { document.getElementById('products')?.scrollIntoView({ behavior: 'smooth' }); }}>Explore Products →</button>
+            <button className="lp-btn-glow" style={{ fontSize: '1.05rem', padding: '1rem 2.2rem' }} onClick={() => { document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' }); }}>🚀 Get Free Consultation</button>
+            <button className="lp-btn-outline" style={{ fontSize: '1.05rem', padding: '1rem 2.2rem' }} onClick={() => { document.getElementById('products')?.scrollIntoView({ behavior: 'smooth' }); }}>Explore Products →</button>
           </div>
 
           {/* Stats */}
