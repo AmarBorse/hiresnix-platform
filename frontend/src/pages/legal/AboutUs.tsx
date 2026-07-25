@@ -124,6 +124,69 @@ export function AboutUs() {
             </div>
           </div>
 
+          {/* ── SOFTWARE SERVICES ── */}
+          <div>
+            <h2 className="text-2xl font-black text-white mb-2">Software Development Services</h2>
+            <p className="text-slate-400 text-sm mb-8">Hiresnix is a <span className="text-white font-semibold">service-based technology company</span> — we build custom software products for startups, businesses, and educational institutions across India.</p>
+
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {[
+                {
+                  icon: '💻', title: 'Custom Software Development',
+                  desc: 'End-to-end scalable software solutions tailored to your business needs — from architecture to deployment. We build robust, maintainable codebases that grow with your product.',
+                  tags: ['React', 'Node.js', 'PostgreSQL', 'REST API'],
+                },
+                {
+                  icon: '📱', title: 'Web & Mobile App Development',
+                  desc: 'Modern, responsive web applications and cross-platform mobile apps. Performance-first approach using latest frameworks and best practices.',
+                  tags: ['React', 'Flutter', 'TypeScript', 'PWA'],
+                },
+                {
+                  icon: '🤖', title: 'AI & Machine Learning Integration',
+                  desc: 'Integrate intelligent AI features into your product — NLP, predictive models, recommendation systems, AI chatbots, and automation workflows using Groq, OpenAI, and custom models.',
+                  tags: ['Groq AI', 'LLM', 'NLP', 'ML Models'],
+                },
+                {
+                  icon: '☁️', title: 'SaaS Product Development',
+                  desc: 'We design and build multi-tenant SaaS platforms from scratch — authentication, subscriptions, analytics, and cloud-native architecture on AWS/Vercel/Render.',
+                  tags: ['SaaS', 'AWS', 'Supabase', 'Stripe'],
+                },
+                {
+                  icon: '🎨', title: 'UI/UX Design & Frontend',
+                  desc: 'Pixel-perfect, conversion-focused web interfaces. From wireframes to production — we create user experiences that visitors trust and products that convert.',
+                  tags: ['Figma', 'Tailwind CSS', 'Design Systems'],
+                },
+                {
+                  icon: '🏫', title: 'EdTech & HR-Tech Solutions',
+                  desc: 'Our flagship domain — we build complete EdTech platforms, LMS systems, internship management tools, and HR-Tech products. Hiresnix itself is proof of our capability.',
+                  tags: ['EdTech', 'HR-Tech', 'LMS', 'Career Platforms'],
+                },
+              ].map(({ icon, title, desc, tags }) => (
+                <div key={title} className="rounded-xl border border-white/10 bg-white/[0.02] p-5 hover:border-blue-400/30 transition-colors">
+                  <div className="text-2xl mb-3">{icon}</div>
+                  <h3 className="font-bold text-white text-sm mb-2">{title}</h3>
+                  <p className="text-xs text-slate-400 leading-5 mb-3">{desc}</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {tags.map(t => (
+                      <span key={t} className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-400/20 font-mono">{t}</span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* CTA */}
+            <div className="mt-6 rounded-xl border border-blue-400/20 bg-blue-500/5 p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <h3 className="font-bold text-white">Need a software solution for your business?</h3>
+                <p className="text-sm text-slate-400 mt-1">We work with startups, enterprises, and educational institutions. Let's discuss your project.</p>
+              </div>
+              <a href="/contact-us" className="shrink-0 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-5 py-2.5 rounded-xl transition-colors">
+                Get Free Consultation →
+              </a>
+            </div>
+          </div>
+
           {/* ── KEY FEATURES ── */}
           <div>
             <h2 className="text-2xl font-black text-white mb-2">Key Features & Capabilities</h2>
@@ -208,7 +271,7 @@ export function AboutUs() {
                   ['Brand Name', 'Hiresnix'],
                   ['Legal Company Name', COMPANY.legalName],
                   ['CIN', COMPANY.cin],
-                  ['Registered Office','9V3M+JP3 , Ambika Nagar, Shirpur, Dhule, Maharashtra - 425405'],
+                  ['Registered Office', registeredOfficeText],
                   ['Website', 'hiresnix.co.in'],
                   ['Official Email', COMPANY.email],
                   ['Phone', '+91 9529120977'],
