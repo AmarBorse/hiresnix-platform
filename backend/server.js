@@ -77,6 +77,7 @@ app.use('/api/admin',         require('./routes/adminRoutes'));
 app.use('/api/analytics',     require('./routes/analyticsRoutes'));
 app.use('/api/iplatform',     require('./routes/internshipPlatformRoutes'));
 app.use('/api/deadline',      require('./routes/deadlineRoutes'));
+app.use('/api/clients',       require('./routes/clientRoutes'));
 app.use('/api/internships',   require('./routes/internshipRoutes'));
 app.use('/api/resources',     require('./routes/resourceRoutes'));
 app.use('/api/certificates',  require('./routes/certificateRoutes'));

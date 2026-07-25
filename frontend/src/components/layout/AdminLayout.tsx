@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router';
 import {
-  LayoutDashboard, Briefcase, FileText, GraduationCap, Building2,
+  LayoutDashboard, Briefcase, FileText, GraduationCap, Building2, Star,
   BookOpen, Award, BarChart3, Settings, Users, Menu, X, LogOut,
   ShieldCheck, MessageSquare, ChevronRight, FilePen
 } from 'lucide-react';
@@ -25,6 +25,7 @@ const NAV = [
   { to: '/admin/documents',    icon: FilePen,         label: 'Documents',  badge: 'NEW' },
   { to: '/admin/enquiries',    icon: MessageSquare,   label: 'Enquiries'        },
   { to: '/admin/analytics',    icon: BarChart3,       label: 'Analytics'        },
+  { to: '/admin/clients',      icon: Star,            label: 'Clients'          },
   { to: '/admin/settings',     icon: Settings,        label: 'Settings'         },
 ];
 

@@ -102,6 +102,8 @@ export function LandingPage() {
   const countersRef = useRef<HTMLDivElement>(null);
   const countersAnimated = useRef(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showEnquiry, setShowEnquiry] = useState(false);
+  const [landingClients, setLandingClients] = useState<any[]>([]);
 
   useEffect(() => {
     const preventDefault = (event: Event) => event.preventDefault();
@@ -123,6 +125,13 @@ export function LandingPage() {
       document.removeEventListener('dragstart', preventDefault);
       document.removeEventListener('keydown', preventCopyShortcuts);
     };
+  }, []);
+
+  useEffect(() => {
+    fetch('https://hirenix-backend.onrender.com/api/clients')
+      .then(r => r.json())
+      .then(d => setLandingClients(d.data || []))
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -694,6 +703,7 @@ export function LandingPage() {
       </section>
 
       {/* ── TRUSTED BY ── */}
+      {landingClients.length > 0 && (
       <section style={{ padding: '5rem 5%', background: '#060b18', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
         <div style={{ maxWidth: 1140, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
@@ -702,97 +712,91 @@ export function LandingPage() {
             <p className="lp-reveal lp-d2" style={{ color: '#6b7a99', maxWidth: 480, margin: '0 auto' }}>We've delivered real technology solutions for growing businesses across India.</p>
           </div>
 
-          {/* Focktix Case Study Card */}
-          <div className="lp-scale-in lp-d2" style={{ maxWidth: 820, margin: '0 auto' }}>
-            <div style={{ background: 'linear-gradient(135deg,#0f172a 0%,#0d1929 60%,#0f0d2a 100%)', border: '1px solid rgba(99,102,241,0.25)', borderRadius: 24, padding: 'clamp(1.5rem,4vw,2.5rem)', position: 'relative', overflow: 'hidden', boxShadow: '0 30px 80px rgba(0,0,0,0.5)' }}>
-              {/* Glow */}
-              <div style={{ position: 'absolute', top: -80, right: -80, width: 280, height: 280, background: 'radial-gradient(circle,rgba(99,102,241,0.1),transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }} />
-
-              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                  {/* Focktix logo placeholder */}
-                  <div style={{ width: 52, height: 52, borderRadius: 14, background: 'linear-gradient(135deg,#6366f1,#4f46e5)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem', fontWeight: 900, color: '#fff', flexShrink: 0, boxShadow: '0 0 20px rgba(99,102,241,0.4)' }}>F</div>
-                  <div>
-                    <div style={{ fontWeight: 800, fontSize: '1.1rem', color: '#e2e8f0' }}>Focktix Limited</div>
-                    <div style={{ fontSize: '0.72rem', color: '#6366f1', fontWeight: 600 }}>Digital Marketing Agency · Maharashtra, India</div>
-                  </div>
-                </div>
-                <span style={{ fontSize: '0.65rem', padding: '4px 12px', borderRadius: 8, background: 'rgba(16,185,129,0.12)', color: '#34d399', border: '1px solid rgba(16,185,129,0.2)', fontWeight: 700, whiteSpace: 'nowrap', alignSelf: 'center' }}>✓ Delivered</span>
-              </div>
-
-              {/* What we built */}
-              <div style={{ marginBottom: '1.5rem' }}>
-                <div style={{ fontSize: '0.65rem', letterSpacing: '0.2em', color: '#4a5568', fontWeight: 700, marginBottom: '0.6rem', textTransform: 'uppercase' }}>What We Built</div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', gap: '0.75rem' }}>
-                  {[
-                    { icon: '⚙️', title: 'Custom CRM System', desc: 'Client & lead management platform tailored for their agency workflow' },
-                    { icon: '📊', title: 'Campaign Dashboard', desc: 'Real-time analytics dashboard for tracking ad performance across platforms' },
-                    { icon: '🤖', title: 'AI Lead Scoring', desc: 'Automated lead qualification using ML to prioritize high-value clients' },
-                  ].map(({ icon, title, desc }) => (
-                    <div key={title} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 14, padding: '1rem' }}>
-                      <div style={{ fontSize: '1.2rem', marginBottom: '0.4rem' }}>{icon}</div>
-                      <div style={{ fontWeight: 700, fontSize: '0.82rem', color: '#e2e8f0', marginBottom: '0.25rem' }}>{title}</div>
-                      <div style={{ fontSize: '0.72rem', color: '#4a5568', lineHeight: 1.5 }}>{desc}</div>
+          {/* Client case study cards */}
+          <div className="space-y-6">
+            {landingClients.filter((c:any) => !c.nda_protected).map((c: any) => {
+              const wwb = typeof c.what_we_built === 'string' ? JSON.parse(c.what_we_built||'[]') : (c.what_we_built||[]);
+              const stack = typeof c.tech_stack === 'string' ? JSON.parse(c.tech_stack||'[]') : (c.tech_stack||[]);
+              const results = typeof c.results === 'string' ? JSON.parse(c.results||'[]') : (c.results||[]);
+              return (
+                <div key={c.id} className="lp-scale-in" style={{ maxWidth: 820, margin: '0 auto' }}>
+                  <div style={{ background: 'linear-gradient(135deg,#0f172a 0%,#0d1929 60%,#0f0d2a 100%)', border: '1px solid rgba(99,102,241,0.25)', borderRadius: 24, padding: 'clamp(1.5rem,4vw,2.5rem)', position: 'relative', overflow: 'hidden', boxShadow: '0 30px 80px rgba(0,0,0,0.5)' }}>
+                    <div style={{ position: 'absolute', top: -80, right: -80, width: 280, height: 280, background: 'radial-gradient(circle,rgba(99,102,241,0.1),transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }} />
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        <div style={{ width: 52, height: 52, borderRadius: 14, background: 'linear-gradient(135deg,#6366f1,#4f46e5)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem', fontWeight: 900, color: '#fff', flexShrink: 0, boxShadow: '0 0 20px rgba(99,102,241,0.4)' }}>{c.name?.[0]?.toUpperCase()}</div>
+                        <div>
+                          <div style={{ fontWeight: 800, fontSize: '1.1rem', color: '#e2e8f0' }}>{c.name}</div>
+                          <div style={{ fontSize: '0.72rem', color: '#6366f1', fontWeight: 600 }}>{c.industry}{c.location ? ` · ${c.location}` : ''}</div>
+                        </div>
+                      </div>
+                      <span style={{ fontSize: '0.65rem', padding: '4px 12px', borderRadius: 8, background: 'rgba(16,185,129,0.12)', color: '#34d399', border: '1px solid rgba(16,185,129,0.2)', fontWeight: 700, whiteSpace: 'nowrap', alignSelf: 'center' }}>✓ Delivered</span>
                     </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Tech stack */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
-                <span style={{ fontSize: '0.65rem', color: '#4a5568', fontWeight: 700, letterSpacing: '0.1em' }}>TECH STACK:</span>
-                {['React.js', 'Node.js', 'PostgreSQL', 'Groq AI', 'REST API', 'Vercel'].map(t => (
-                  <span key={t} style={{ fontSize: '0.65rem', padding: '3px 10px', borderRadius: 6, background: 'rgba(99,102,241,0.08)', color: '#818cf8', border: '1px solid rgba(99,102,241,0.15)', fontFamily: "'JetBrains Mono',monospace" }}>{t}</span>
-                ))}
-              </div>
-
-              {/* Results */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '0.75rem', paddingTop: '1.25rem', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-                {[['3x', '#6366f1', 'Lead conversion improvement'], ['60%', '#34d399', 'Reduction in manual work'], ['99.9%', '#f59e0b', 'System uptime']].map(([val, color, label]) => (
-                  <div key={label} style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: 'clamp(1.4rem,3vw,2rem)', fontWeight: 900, color }}>{val}</div>
-                    <div style={{ fontSize: '0.68rem', color: '#4a5568', lineHeight: 1.4, marginTop: 2 }}>{label}</div>
+                    {wwb.length > 0 && (
+                      <div style={{ marginBottom: '1.5rem' }}>
+                        <div style={{ fontSize: '0.65rem', letterSpacing: '0.2em', color: '#4a5568', fontWeight: 700, marginBottom: '0.6rem', textTransform: 'uppercase' }}>What We Built</div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', gap: '0.75rem' }}>
+                          {wwb.map((w: any, i: number) => (
+                            <div key={i} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 14, padding: '1rem' }}>
+                              <div style={{ fontSize: '1.2rem', marginBottom: '0.4rem' }}>{w.icon}</div>
+                              <div style={{ fontWeight: 700, fontSize: '0.82rem', color: '#e2e8f0', marginBottom: '0.25rem' }}>{w.title}</div>
+                              <div style={{ fontSize: '0.72rem', color: '#4a5568', lineHeight: 1.5 }}>{w.desc}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {stack.length > 0 && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
+                        <span style={{ fontSize: '0.65rem', color: '#4a5568', fontWeight: 700, letterSpacing: '0.1em' }}>TECH STACK:</span>
+                        {stack.filter(Boolean).map((t: string, i: number) => (
+                          <span key={i} style={{ fontSize: '0.65rem', padding: '3px 10px', borderRadius: 6, background: 'rgba(99,102,241,0.08)', color: '#818cf8', border: '1px solid rgba(99,102,241,0.15)', fontFamily: "'JetBrains Mono',monospace" }}>{t}</span>
+                        ))}
+                      </div>
+                    )}
+                    {results.length > 0 && (
+                      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(results.length, 3)},1fr)`, gap: '0.75rem', paddingTop: '1.25rem', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                        {results.map((res: any, i: number) => (
+                          <div key={i} style={{ textAlign: 'center' }}>
+                            <div style={{ fontSize: 'clamp(1.4rem,3vw,2rem)', fontWeight: 900, color: res.color }}>{res.value}</div>
+                            <div style={{ fontSize: '0.68rem', color: '#4a5568', lineHeight: 1.4, marginTop: 2 }}>{res.label}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                ))}
-              </div>
-            </div>
+                </div>
+              );
+            })}
           </div>
 
-          {/* Auto-scrolling client strip */}
+          {/* Auto-scrolling strip — NDA + all clients */}
+          {landingClients.length > 0 && (
           <div style={{ position: 'relative', marginTop: '2.5rem', overflow: 'hidden' }}>
-            {/* Fade edges */}
             <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 80, background: 'linear-gradient(to right, #060b18, transparent)', zIndex: 2, pointerEvents: 'none' }} />
             <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 80, background: 'linear-gradient(to left, #060b18, transparent)', zIndex: 2, pointerEvents: 'none' }} />
             <div style={{ display: 'flex', gap: '1.25rem', animation: 'clientScroll 28s linear infinite', width: 'max-content' }}>
-              {[
-                { icon: 'F', bg: 'linear-gradient(135deg,#6366f1,#4f46e5)', label: 'Focktix Limited', tag: '✓ Client', color: '#818cf8' },
-                { icon: '🔒', bg: 'rgba(255,255,255,0.04)', label: 'Digital Marketing Agency', tag: 'NDA Protected', color: '#475569' },
-                { icon: '🔒', bg: 'rgba(255,255,255,0.04)', label: 'E-commerce Platform', tag: 'NDA Protected', color: '#475569' },
-                { icon: '🔒', bg: 'rgba(255,255,255,0.04)', label: 'HR Tech Startup', tag: 'NDA Protected', color: '#475569' },
-                { icon: '⏳', bg: 'rgba(255,255,255,0.04)', label: 'Mobile App Company', tag: 'Coming Soon', color: '#475569' },
-                { icon: '⏳', bg: 'rgba(255,255,255,0.04)', label: 'EdTech Platform', tag: 'Coming Soon', color: '#475569' },
-                // Duplicate for seamless loop
-                { icon: 'F', bg: 'linear-gradient(135deg,#6366f1,#4f46e5)', label: 'Focktix Limited', tag: '✓ Client', color: '#818cf8' },
-                { icon: '🔒', bg: 'rgba(255,255,255,0.04)', label: 'Digital Marketing Agency', tag: 'NDA Protected', color: '#475569' },
-                { icon: '🔒', bg: 'rgba(255,255,255,0.04)', label: 'E-commerce Platform', tag: 'NDA Protected', color: '#475569' },
-                { icon: '🔒', bg: 'rgba(255,255,255,0.04)', label: 'HR Tech Startup', tag: 'NDA Protected', color: '#475569' },
-                { icon: '⏳', bg: 'rgba(255,255,255,0.04)', label: 'Mobile App Company', tag: 'Coming Soon', color: '#475569' },
-                { icon: '⏳', bg: 'rgba(255,255,255,0.04)', label: 'EdTech Platform', tag: 'Coming Soon', color: '#475569' },
-              ].map((c, i) => (
+              {[...landingClients, ...landingClients].map((c: any, i: number) => (
                 <div key={i} style={{ flexShrink: 0, background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 16, padding: '1rem 1.5rem', display: 'flex', alignItems: 'center', gap: '0.9rem', minWidth: 220 }}>
-                  <div style={{ width: 42, height: 42, borderRadius: 12, background: c.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: c.icon === 'F' ? '1.1rem' : '1.2rem', fontWeight: 900, color: '#fff', flexShrink: 0 }}>{c.icon}</div>
+                  <div style={{ width: 42, height: 42, borderRadius: 12, background: c.nda_protected ? 'rgba(255,255,255,0.06)' : 'linear-gradient(135deg,#6366f1,#4f46e5)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: c.nda_protected ? '1.2rem' : '1.1rem', fontWeight: 900, color: '#fff', flexShrink: 0 }}>
+                    {c.nda_protected ? '🔒' : c.name?.[0]?.toUpperCase()}
+                  </div>
                   <div>
-                    <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#cbd5e1', marginBottom: '0.2rem' }}>{c.label}</div>
-                    <span style={{ fontSize: '0.62rem', padding: '2px 8px', borderRadius: 6, background: c.icon === 'F' ? 'rgba(99,102,241,0.12)' : c.icon === '🔒' ? 'rgba(99,102,241,0.06)' : 'rgba(245,158,11,0.08)', color: c.icon === 'F' ? '#818cf8' : c.icon === '🔒' ? '#475569' : '#f59e0b', border: c.icon === 'F' ? '1px solid rgba(99,102,241,0.2)' : c.icon === '🔒' ? '1px solid rgba(99,102,241,0.1)' : '1px solid rgba(245,158,11,0.15)', fontWeight: 700 }}>{c.tag}</span>
+                    <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#cbd5e1', marginBottom: '0.2rem' }}>{c.nda_protected ? (c.industry || 'NDA Client') : c.name}</div>
+                    <span style={{ fontSize: '0.62rem', padding: '2px 8px', borderRadius: 6, background: c.nda_protected ? 'rgba(99,102,241,0.06)' : 'rgba(16,185,129,0.1)', color: c.nda_protected ? '#475569' : '#34d399', border: c.nda_protected ? '1px solid rgba(99,102,241,0.1)' : '1px solid rgba(16,185,129,0.2)', fontWeight: 700 }}>
+                      {c.nda_protected ? 'NDA Protected' : '✓ Client'}
+                    </span>
                   </div>
                 </div>
               ))}
             </div>
           </div>
+          )}
         </div>
       </section>
+      )}
 
-      {/* ── CONTACT / CTA ── */}
+            {/* ── CONTACT / CTA ── */}
       <section id="contact" style={{ padding: '8rem 5%', background: '#060910' }}>
         <div style={{ maxWidth: 1140, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: '3.5rem' }}>
