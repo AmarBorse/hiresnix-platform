@@ -656,5 +656,225 @@ Internet ne geography ko irrelevant kar diya hai. Aaj ek student Shirpur se bait
 
 [hiresnix.co.in pe Free Register Karein](https://hiresnix.co.in)
     `
-  }
+  },
+  {
+    slug: 'hiresnix-kya-hai-complete-guide',
+    title: 'Hiresnix Kya Hai? — Complete Guide in Hindi (2026)',
+    description: 'Hiresnix kya hai, kaise kaam karta hai, aur students ke liye kya features hain — poori jaankari Hindi mein. AI Mock Interview, Academy, Internship, Certificates sab ek jagah.',
+    category: 'Platform Guide',
+    readTime: '10 min',
+    publishedAt: '2026-07-25',
+    author: 'Hiresnix Team',
+    tags: ['hiresnix', 'platform', 'students', 'hindi', 'career', 'internship'],
+    content: `## Hiresnix Kya Hai? Poori Jaankari — 2026
+
+Agar aap ek engineering, BCA, ya MCA student hain aur apna career seriously build karna chahte hain, toh aapne sahi jagah click kiya hai.
+
+**Hiresnix** ek AI-powered B2B2C EdTech aur HR-Tech platform hai jo specifically India ke Tier-2 aur Tier-3 cities ke students ke liye banaya gaya hai. Yeh platform SR Patil Infrastructure Private Limited ke under operate karta hai aur available hai: **hiresnix.co.in**
+
+---
+
+## Hiresnix Do Cheezein Karta Hai
+
+### 1. Technology & Software Services (Businesses Ke Liye)
+
+Companies aur startups ke liye Hiresnix yeh services provide karta hai:
+
+- **Custom Software Development** — Business ki requirements ke hisab se scalable software
+- **Web & Mobile App Development** — Modern frameworks par web aur mobile apps
+- **AI & Machine Learning Integration** — NLP, predictive models, intelligent systems
+- **SaaS Products & Cloud Solutions** — Multi-tenant platforms, AWS/Cloud architecture
+- **UI/UX Design** — Conversion-focused, pixel-perfect interfaces
+
+### 2. Career & Internship Programs (Students Ke Liye)
+
+- **Structured Internships** — Technology aur business domains mein practical programs
+- **Professional Documents** — Offer Letter, Completion Letter, LOR
+- **Certificate Verification** — QR code se verify hone wale secure credentials
+- **Recruitment Workflows** — Companies se direct job connections
+
+---
+
+## Hiresnix Ke 5 Portals
+
+### Student Portal
+Main hub — AI Mock Interview, Resume AI, Internships, Portfolio, Certificates, Career Roadmaps.
+
+### Institution Portal
+Colleges ke liye — students manage karo, batches create karo, AI Academy progress track karo.
+
+### AI Academy
+Institution students ke liye — Career ID se login, 16 AI-powered courses, live code runner.
+
+### Company Portal
+Companies ke liye — jobs post karo, applicants review karo, trained students hire karo.
+
+### Admin Platform
+Hiresnix team ke liye — internship management, document generation, analytics dashboard.
+
+---
+
+## Hiresnix Ke Main Features
+
+### AI Mock Interview
+- Voice ya text mein answers de sakte hain
+- Har answer pe 0-100 score milta hai
+- Weak topics identify hote hain
+- PDF report download kar sakte hain
+
+### AI Resume Builder + ATS Scanner
+- Apna resume upload karo
+- ATS Score 0-100 milega
+- Missing keywords bataye jayenge
+- AI improvements suggest karega
+- Professional PDF download karo
+
+### Internship Platform
+- 12+ domains — Web Dev, AI/ML, Data Science, Android, UI/UX, Cybersecurity
+- 8-12 week programs
+- Weekly tasks with mentorship
+- Admin-approved progress tracking
+
+### Verified Documents System
+- Offer Letter — HSN-OL format, QR verified
+- Appointment Letter — Official joining confirmation
+- Joining Letter — Program start document
+- Completion Certificate — HRX format, QR verified
+- LOR — CEO ya Director ki signature ke saath
+
+Sabse khaas baat: Har document mein unique ID hota hai jo hiresnix.co.in/verify pe check ho sakta hai. Fake nahi ho sakta.
+
+### Public Portfolio Page
+Aapka apna public URL: hiresnix.co.in/projects/aapka-naam
+
+Isme aap apne projects add kar sakte hain, GitHub links share kar sakte hain, LinkedIn mein add kar sakte hain.
+
+### AI Academy — 16 Free Courses
+Python, JavaScript, Java, C++, React, Node.js, DSA, SQL, Docker, ML, Data Science, Flutter, Git, Cybersecurity aur aur bhi.
+
+Features: AI Teacher, Live Code Runner, 24/7 doubt solving, QR verified certificate on completion.
+
+### Career Roadmaps — 29 Domains
+Frontend, Backend, DevOps, Python, ML, Cybersecurity, Android, Flutter aur aur bhi. Har topic ko Done / Learning / Skip mark karo.
+
+### Career ID System
+Institution students ko unique Career ID milti hai: HX-CODE-YEAR-SEQ format.
+
+### Deadline or Dead — All India Challenge
+Gamified skill challenge — daily task, screenshot proof, AI quiz verification, streak tracking, all India leaderboard.
+
+URL: hiresnix.co.in/deadline
+
+---
+
+## Hiresnix Kyun Join Karein?
+
+- 24/7 AI Teacher aur Voice Mentor — real-time doubt solving
+- In-Browser Coding Workspace — koi software download nahi
+- Industry Validated Documents — QR verified, resume strong banate hain
+- Secure Verification Portal — recruiter instantly verify kar sakta hai
+- Public Portfolio — proof of work jo recruiters ko impress kare
+- 500+ students already platform use kar rahe hain
+
+---
+
+## Kaise Start Karein?
+
+1. hiresnix.co.in pe jao
+2. Register karo (bilkul free)
+3. Profile complete karo
+4. AI Mock Interview shuru karo ya Internship ke liye apply karo
+5. AI Academy mein koi bhi course start karo
+
+Hiresnix — Elevating Talent. Empowering Futures.
+
+Koi sawaal? hr@hiresnix.co.in pe contact karo ya +91 9529120977 pe WhatsApp karo.
+    `
+  },
+  {
+    slug: 'hiresnix-ai-academy-complete-guide',
+    title: 'Hiresnix AI Academy — 16 Free Courses, AI Teacher, Live Code Runner (2026)',
+    description: 'Hiresnix AI Academy kya hai? 16 free courses, AI-powered teacher, live code runner, aur verified certificates — sab kuch ek jagah. Complete guide Hindi mein.',
+    category: 'AI Academy',
+    readTime: '8 min',
+    publishedAt: '2026-07-25',
+    author: 'Hiresnix Team',
+    tags: ['ai-academy', 'free-courses', 'hiresnix', 'coding', 'certificate', 'hindi'],
+    content: `## Hiresnix AI Academy — Free Mein Coding Seekho, AI Se Seekho
+
+Aapne shayad bahut saari coding academies dekhi hongi — Udemy, Coding Ninjas, NPTEL. Lekin Hiresnix AI Academy inka kuch alag hi hai.
+
+Yeh koi normal video lecture wali academy nahi hai. AI technology ka use karke padhai ko asan, interactive aur practical banaya gaya hai.
+
+---
+
+## AI Academy Mein Kya Hai?
+
+### 16 Courses — Zero Cost
+
+Python, JavaScript, Java, C++, C, React, Node.js, DSA, SQL, Full Stack Web Dev, Docker, Machine Learning, Data Science, Flutter, Git aur GitHub, Cybersecurity.
+
+---
+
+## AI Academy Ke Main Features
+
+### Personalized AI Teacher
+Har ek course ke liye aapko ek alag AI teacher milta hai jo Groq AI technology par chalta hai. Aapke doubts real-time mein clear karta hai. Normal courses mein recorded video hoti hai — yahan AI teacher se direct baat kar sakte ho.
+
+### Live Code Runner (In-Browser)
+Coding courses mein sabse badi problem hoti hai setup — Python install karo, Java JDK download karo, Node.js setup karo. Hiresnix AI Academy mein yeh jhanjhat nahi. Browser kholo, code directly likhо aur run karo. Koi software download nahi.
+
+### AI Mentor Chat & Quizzes
+- 24/7 Chat Support — kisi bhi topic pe kabhi bhi doubt clear karo
+- Automatic Quizzes — har topic ke baad understanding check karega
+- Instant Feedback — wrong answer pe explanation milega
+
+### Certificate on Completion
+Course complete karne ke baad QR Code Verified Certificate milega. Certificate No. format: HXAC-XXXXXX. hiresnix.co.in/verify pe check ho sakta hai. Resume mein add karo, LinkedIn pe share karo.
+
+---
+
+## Kaise Alag Hai Doosri Academies Se?
+
+Hiresnix AI Academy bilkul free hai — koi hidden charges nahi. AI Teacher real-time mein kaam karta hai. Live Code Runner seedhe browser mein. QR Verified Certificate milta hai. 24/7 doubt solving available hai. Institution integration bhi hai.
+
+Normal online courses mein ye sab features Rs. 500 se Rs. 50,000 tak ke courses mein bhi nahi milte.
+
+---
+
+## Certificate System — Fake Nahi Ho Sakta
+
+Hiresnix AI Academy certificates mein unique Certificate Number hota hai (HXAC-XXXXXX format), QR Code hota hai jo scan karke verify ho sakta hai, student ka naam aur course name hota hai, aur verification URL bhi hota hai.
+
+Recruiter ke liye: Certificate ID daalo, instantly verify ho jayega.
+
+---
+
+## Kaise Start Karein?
+
+### Student Portal Se:
+1. hiresnix.co.in pe register karo
+2. Student Portal mein jao
+3. Koi bhi course choose karo
+4. AI Teacher se seedha baat karo aur seekho
+
+### Institution Student Ho Toh:
+1. Institution se Career ID lo
+2. hiresnix.co.in/inst-login pe jao
+3. Career ID aur password se login karo
+4. AI Academy mein apna course start karo
+
+---
+
+## Summary
+
+Agar aap coding seekhna chahte ho without spending money, AI se interact karke practical knowledge chahiye, verified certificate chahiye jo resume mein value add kare, aur browser mein hi code run karna chahte ho — toh Hiresnix AI Academy aapke liye best option hai.
+
+Register karo: hiresnix.co.in
+
+Hiresnix — Elevating Talent. Empowering Futures.
+
+Koi sawaal? hr@hiresnix.co.in pe email karo ya +91 9529120977 pe WhatsApp karo.
+    `
+  },
 ];
