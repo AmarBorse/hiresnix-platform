@@ -40,13 +40,16 @@ export function InstitutionStudents() {
       try {
         const wb = XLSX.read(ev.target?.result, { type: 'binary' });
         const ws = wb.Sheets[wb.SheetNames[0]];
-        const rows: any[] = XLSX.utils.sheet_to_json(ws);
+        // Support files with title rows (start from row 3 if first cell looks like a title)
+        const firstCell = ws['A1']?.v || '';
+        const hasTitle = typeof firstCell === 'string' && firstCell.includes('Student List');
+        const rows: any[] = XLSX.utils.sheet_to_json(ws, hasTitle ? { range: 2 } : {});
         const students = rows.map(r => ({
-          name:       r['Name']       || r['name']       || '',
+          name:       r['Full Name']  || r['Name']       || r['name']       || '',
           email:      r['Email']      || r['email']      || '',
-          mobile:     r['Mobile']     || r['mobile']     || '',
+          mobile:     String(r['Mobile'] || r['mobile'] || ''),
           department: r['Department'] || r['department'] || r['Branch'] || '',
-          rollNumber: r['Roll No']    || r['rollNumber'] || r['Roll Number'] || '',
+          rollNumber: String(r['Roll No'] || r['rollNumber'] || r['Roll Number'] || r['Roll no'] || ''),
           year:       r['Year']       || r['year']       || '',
         })).filter(s => s.name && s.email);
         if (students.length === 0) { toast.error('No valid rows found in file'); return; }
