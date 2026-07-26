@@ -70,7 +70,7 @@ r.get('/student-credentials', ...withAuth, asyncHandler(async (req, res) => {
     'Mobile':           s.mobile || '',
     'Department':       s.department || '',
     'Roll Number':      s.rollNumber || '',
-    'Default Password': `HX@${s.careerId ? s.careerId.split('-')[2] : '000000'}`,
+    'Default Password': `HX@${s.careerId ? s.careerId.split('-').pop() : '0001'}`,
     'Login URL':        `${process.env.CLIENT_URL || 'https://hiresnix.co.in'}/inst-login`,
   }));
   res.json({ success: true, data });
