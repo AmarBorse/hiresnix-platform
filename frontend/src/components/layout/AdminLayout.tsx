@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router';
 import {
-  LayoutDashboard, Briefcase, FileText, GraduationCap, Building2, Star,
+  LayoutDashboard, Briefcase, FileText, GraduationCap, Building2, Star, FileSpreadsheet,
   BookOpen, Award, BarChart3, Settings, Users, Menu, X, LogOut,
   ShieldCheck, MessageSquare, ChevronRight, FilePen
 } from 'lucide-react';
@@ -26,6 +26,7 @@ const NAV = [
   { to: '/admin/enquiries',    icon: MessageSquare,   label: 'Enquiries'        },
   { to: '/admin/analytics',    icon: BarChart3,       label: 'Analytics'        },
   { to: '/admin/clients',      icon: Star,            label: 'Clients'          },
+  { to: '/admin/import-tool',  icon: FileSpreadsheet, label: 'Import Tool'      },
   { to: '/admin/settings',     icon: Settings,        label: 'Settings'         },
 ];
 

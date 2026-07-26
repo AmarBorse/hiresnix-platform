@@ -67,6 +67,7 @@ const AdminResources    = lazy(() => import('./pages/admin/AdminResources').then
 const AdminCertificates = lazy(() => import('./pages/admin/AdminCertificates').then(m => ({ default: m.AdminCertificates })));
 const AdminAnalytics    = lazy(() => import('./pages/admin/AdminAnalytics').then(m => ({ default: m.AdminAnalytics })));
 const AdminClients      = lazy(() => import('./pages/admin/AdminClients').then(m => ({ default: m.AdminClients })));
+const AdminImportTool   = lazy(() => import('./pages/admin/AdminImportTool').then(m => ({ default: m.AdminImportTool })));
 const AdminSettings     = lazy(() => import('./pages/admin/AdminSettings').then(m => ({ default: m.AdminSettings })));
 const AdminIPlatform    = lazy(() => import('./pages/admin/AdminIPlatform').then(m => ({ default: m.AdminIPlatform })));
 const AdminEnquiries    = lazy(() => import('./pages/admin/AdminEnquiries').then(m => ({ default: m.AdminEnquiries })));
@@ -212,6 +213,7 @@ export default function App() {
             <Route path="enquiries"    element={<AdminEnquiries />} />
             <Route path="analytics"    element={<AdminAnalytics />} />
             <Route path="clients"      element={<AdminClients />} />
+            <Route path="import-tool"  element={<AdminImportTool />} />
             <Route path="settings"     element={<AdminSettings />} />
           </Route>
 
