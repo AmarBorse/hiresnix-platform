@@ -404,14 +404,17 @@ export function InstitutionBatches() {
       try {
         const wb = XLSX.read(ev.target?.result, { type: 'binary' });
         const ws = wb.Sheets[wb.SheetNames[0]];
-        const rows: any[] = XLSX.utils.sheet_to_json(ws);
+        // Smart import — handle files with title rows
+        const firstCell = ws['A1']?.v || '';
+        const hasTitle = typeof firstCell === 'string' && (firstCell.includes('Student') || firstCell.includes('List') || firstCell.includes('Hiresnix'));
+        const rows: any[] = XLSX.utils.sheet_to_json(ws, hasTitle ? { range: 2 } : {});
         const students = rows.map(r => ({
-          name:       (r['Name']       || r['name']       || '').toString().trim(),
-          email:      (r['Email']      || r['email']      || '').toString().trim(),
-          mobile:     (r['Mobile']     || r['mobile']     || '').toString().trim(),
-          department: (r['Department'] || r['department'] || r['Branch'] || '').toString().trim(),
-          rollNumber: (r['Roll No']    || r['rollNumber'] || r['Roll Number'] || '').toString().trim(),
-          year:       (r['Year']       || r['year']       || '').toString().trim(),
+          name:       (r['Full Name'] || r['Name'] || r['name'] || '').toString().trim(),
+          email:      (r['Email']     || r['email'] || '').toString().trim(),
+          mobile:     (r['Mobile']    || r['mobile'] || '').toString().trim(),
+          department: (r['Department']|| r['department'] || r['Branch'] || '').toString().trim(),
+          rollNumber: (r['Roll No']   || r['rollNumber'] || r['Roll Number'] || r['Roll no'] || '').toString().trim(),
+          year:       (r['Year']      || r['year'] || '').toString().trim(),
         })).filter((s: any) => s.name && s.email);
         if (students.length === 0) { toast.error('No valid rows found (Name & Email required)'); return; }
         const result = await institutionApi.bulkImportToBatch(currentBatch.id, students);
