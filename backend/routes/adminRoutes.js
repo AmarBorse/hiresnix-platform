@@ -47,4 +47,33 @@ r.delete('/enquiries/:id',       ...admin, deleteEnquiry);
 // AI Academy Progress
 r.get('/academy-progress',       ...admin, getAllAcademyProgress);
 
+// ── Reset institution student passwords ──────────────────────────
+const bcrypt = require('bcryptjs');
+const { sequelize } = require('../config/db');
+const asyncHandler = require('express-async-handler');
+
+r.post('/reset-inst-passwords', ...admin, asyncHandler(async (req, res) => {
+  // Get all institution students
+  const students = await sequelize.query(
+    `SELECT id, "careerId" FROM institution_students ORDER BY id ASC`,
+    { type: sequelize.QueryTypes.SELECT }
+  );
+
+  let updated = 0;
+  for (const s of students) {
+    // Generate password from careerId last segment e.g. HX-HIR-2026-0001 → HX@0001
+    const parts = (s.careerId || '').split('-');
+    const seq = parts[parts.length - 1] || '0001';
+    const plain = `HX@${seq}`;
+    const hashed = await bcrypt.hash(plain, 10);
+    await sequelize.query(
+      `UPDATE institution_students SET password = :pwd WHERE id = :id`,
+      { replacements: { pwd: hashed, id: s.id }, type: sequelize.QueryTypes.UPDATE }
+    );
+    updated++;
+  }
+
+  res.json({ success: true, message: `Reset ${updated} students passwords`, updated });
+}));
+
 module.exports = r;

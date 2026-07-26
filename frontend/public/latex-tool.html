@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Report to LaTeX Converter</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Inter', system-ui, sans-serif; background: #0a0f1e; color: #e2e8f0; min-height: 100vh; }
+.wrap { max-width: 860px; margin: 0 auto; padding: 2rem 1rem 4rem; }
+h1 { font-size: 1.8rem; font-weight: 800; color: #fff; text-align: center; }
+.sub { color: #64748b; text-align: center; font-size: 0.875rem; margin: 0.4rem 0 2rem; }
+.card { background: #0d1629; border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 1.5rem; margin-bottom: 1rem; }
+.drop { border: 2px dashed rgba(99,102,241,0.4); border-radius: 12px; padding: 3rem 2rem; text-align: center; cursor: pointer; transition: all 0.2s; }
+.drop:hover, .drop.over { border-color: #6366f1; background: rgba(99,102,241,0.05); }
+.drop-icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
+.drop-title { font-size: 1rem; font-weight: 700; color: #e2e8f0; }
+.drop-sub { font-size: 0.8rem; color: #475569; margin-top: 0.4rem; }
+.file-badge { display: inline-block; margin-top: 0.75rem; font-size: 0.75rem; padding: 4px 12px; background: rgba(99,102,241,0.15); color: #818cf8; border-radius: 6px; font-weight: 600; }
+.prefs { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem; margin-top: 1rem; }
+.field label { font-size: 0.72rem; color: #94a3b8; font-weight: 500; display: block; margin-bottom: 4px; }
+.field select, .field input { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #e2e8f0; border-radius: 8px; padding: 0.5rem 0.75rem; font-size: 0.82rem; font-family: inherit; outline: none; }
+.field select:focus, .field input:focus { border-color: #6366f1; }
+.btn { border: none; border-radius: 10px; padding: 0.7rem 1.6rem; font-size: 0.9rem; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+.btn-primary { background: linear-gradient(135deg,#6366f1,#4f46e5); color: #fff; width: 100%; margin-top: 1rem; font-size: 1rem; padding: 0.85rem; }
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(99,102,241,0.4); }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+.btn-sm { padding: 0.35rem 0.9rem; font-size: 0.78rem; font-weight: 600; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.06); color: #94a3b8; cursor: pointer; }
+.btn-green { background: linear-gradient(135deg,#10b981,#059669); color: #fff; border: none; }
+.loading { text-align: center; padding: 4rem 2rem; }
+.spinner { width: 44px; height: 44px; border: 3px solid rgba(99,102,241,0.2); border-top-color: #6366f1; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 1.2rem; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-msg { font-size: 1rem; font-weight: 600; color: #e2e8f0; }
+.loading-sub { font-size: 0.82rem; color: #64748b; margin-top: 0.4rem; }
+.editor-wrap { position: relative; }
+.editor { width: 100%; height: 580px; background: #060d1f; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 1rem; font-family: 'JetBrains Mono','Courier New',monospace; font-size: 12.5px; line-height: 1.7; color: #e2e8f0; resize: vertical; outline: none; }
+.toolbar { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; flex-wrap: wrap; }
+.toolbar-label { font-size: 0.72rem; color: #475569; font-weight: 600; }
+.hidden { display: none; }
+.error-box { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); border-radius: 10px; padding: 0.8rem 1rem; color: #f87171; font-size: 0.85rem; margin-top: 0.75rem; }
+.toast { position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%); background: #0d1629; border: 1px solid #10b981; color: #34d399; padding: 0.6rem 1.4rem; border-radius: 8px; font-size: 0.82rem; font-weight: 600; z-index: 999; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+.toast.show { opacity: 1; }
+.steps { display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-bottom: 2rem; }
+.step { display: flex; align-items: center; gap: 0.35rem; font-size: 0.72rem; font-weight: 600; color: #334155; }
+.step.active { color: #6366f1; }
+.step.done { color: #10b981; }
+.step-dot { width: 22px; height: 22px; border-radius: 50%; border: 2px solid currentColor; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; flex-shrink: 0; }
+.step-line { width: 36px; height: 1px; background: #1e293b; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Report → LaTeX Converter</h1>
+  <p class="sub">Upload your PDF or Word report → AI converts it to proper LaTeX format</p>
+
+  <div class="steps">
+    <div class="step active" id="st1"><div class="step-dot">1</div> Upload</div>
+    <div class="step-line"></div>
+    <div class="step" id="st2"><div class="step-dot">2</div> Converting</div>
+    <div class="step-line"></div>
+    <div class="step" id="st3"><div class="step-dot">3</div> LaTeX Output</div>
+  </div>
+
+  <!-- Step 1: Upload -->
+  <div id="s1">
+    <div class="card">
+      <div id="drop" class="drop"
+        onclick="document.getElementById('file-inp').click()"
+        ondragover="event.preventDefault();this.classList.add('over')"
+        ondragleave="this.classList.remove('over')"
+        ondrop="handleDrop(event)">
+        <input type="file" id="file-inp" accept=".pdf,.doc,.docx,.txt" style="display:none" onchange="handleFile(this.files[0])">
+        <div class="drop-icon">📄</div>
+        <div class="drop-title">Drop your report here</div>
+        <div class="drop-sub">PDF, Word (.docx), or TXT file</div>
+        <div id="fname" class="file-badge hidden"></div>
+      </div>
+      <div id="err" class="error-box hidden"></div>
+    </div>
+
+    <div class="card">
+      <div style="font-size:0.72rem;color:#6366f1;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;margin-bottom:0.75rem;">LaTeX Formatting Preferences</div>
+      <div class="prefs">
+        <div class="field">
+          <label>Document Class</label>
+          <select id="p-class">
+            <option value="report">Report (with chapters)</option>
+            <option value="article">Article (sections only)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Font</label>
+          <select id="p-font">
+            <option value="times">Times New Roman</option>
+            <option value="calibri">Calibri / Sans-serif</option>
+            <option value="default">Computer Modern (default)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Font Size</label>
+          <select id="p-size">
+            <option value="11">11pt</option>
+            <option value="12" selected>12pt</option>
+            <option value="14">14pt</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Line Spacing</label>
+          <select id="p-space">
+            <option value="single">Single</option>
+            <option value="onehalf" selected>1.5 spacing</option>
+            <option value="double">Double</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Margins</label>
+          <select id="p-margin">
+            <option value="1in" selected>1 inch</option>
+            <option value="1.25in">1.25 inch</option>
+            <option value="0.75in">0.75 inch</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Alignment</label>
+          <select id="p-align">
+            <option value="justify" selected>Justified</option>
+            <option value="left">Left aligned</option>
+          </select>
+        </div>
+      </div>
+      <div class="field" style="margin-top:0.75rem;">
+        <label>Extra instructions (optional)</label>
+        <input id="p-extra" placeholder="e.g. right-aligned chapter headings, add table of contents, RCPIT college format...">
+      </div>
+    </div>
+
+    <button class="btn btn-primary" id="convert-btn" onclick="startConvert()" disabled>
+      Convert to LaTeX →
+    </button>
+  </div>
+
+  <!-- Step 2: Loading -->
+  <div id="s2" class="hidden loading">
+    <div class="spinner"></div>
+    <div class="loading-msg" id="l-msg">Reading your document...</div>
+    <div class="loading-sub" id="l-sub">This may take 20-30 seconds</div>
+  </div>
+
+  <!-- Step 3: Output -->
+  <div id="s3" class="hidden">
+    <div class="toolbar">
+      <span class="toolbar-label">LaTeX Output — edit if needed, then compile in Overleaf</span>
+      <div style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap;">
+        <button class="btn-sm" onclick="startOver()">← Start Over</button>
+        <button class="btn-sm" onclick="copyLatex()">📋 Copy</button>
+        <button class="btn-sm" onclick="downloadTex()">⬇ Download .tex</button>
+        <button class="btn-sm btn-green" onclick="openOverleaf()">Open in Overleaf ↗</button>
+        <button class="btn-sm" id="pdf-btn" onclick="generatePDF()" style="background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;border:none;">⬇ Download PDF</button>
+      </div>
+    </div>
+    <div class="editor-wrap">
+      <textarea class="editor" id="latex-out" spellcheck="false"></textarea>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<script>
+let fileText = '';
+let fileName = '';
+
+function setStep(n) {
+  ['s1','s2','s3'].forEach((id,i) => document.getElementById(id).classList.toggle('hidden', i+1 !== n));
+  ['st1','st2','st3'].forEach((id,i) => {
+    const el = document.getElementById(id);
+    el.className = 'step' + (i+1 === n ? ' active' : i+1 < n ? ' done' : '');
+  });
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('drop').classList.remove('over');
+  handleFile(e.dataTransfer.files[0]);
+}
+
+async function handleFile(file) {
+  if (!file) return;
+  fileName = file.name;
+  showErr('');
+
+  try {
+    if (file.name.endsWith('.docx') || file.name.endsWith('.doc')) {
+      const arr = await file.arrayBuffer();
+      const res = await mammoth.extractRawText({ arrayBuffer: arr });
+      fileText = res.value;
+    } else if (file.name.endsWith('.txt')) {
+      fileText = await file.text();
+    } else if (file.name.endsWith('.pdf')) {
+      // PDF: try text extraction
+      fileText = await extractPdfText(file);
+      if (fileText.trim().length < 50) {
+        showErr('Could not extract text from PDF. Please convert to Word (.docx) or TXT first for best results.');
+        return;
+      }
+    } else {
+      showErr('Unsupported file type. Please use PDF, .docx, or .txt');
+      return;
+    }
+
+    if (fileText.trim().length < 20) {
+      showErr('File appears to be empty or could not be read.');
+      return;
+    }
+
+    document.getElementById('fname').textContent = '✓ ' + file.name + '  (' + (file.size/1024).toFixed(0) + ' KB · ' + fileText.split(/\s+/).length + ' words)';
+    document.getElementById('fname').classList.remove('hidden');
+    document.getElementById('convert-btn').disabled = false;
+  } catch(e) {
+    showErr('Error reading file: ' + e.message);
+  }
+}
+
+async function extractPdfText(file) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const bytes = new Uint8Array(e.target.result);
+        const str = new TextDecoder('latin1').decode(bytes);
+        let text = '';
+        // Extract text from PDF BT/ET blocks
+        const blocks = str.match(/BT[\s\S]*?ET/g) || [];
+        blocks.forEach(b => {
+          const parts = b.match(/\(([^)]+)\)\s*Tj/g) || [];
+          parts.forEach(p => {
+            const m = p.match(/\(([^)]+)\)/);
+            if (m) text += m[1] + ' ';
+          });
+          text += '\n';
+        });
+        // Fallback: readable ASCII
+        if (text.trim().length < 100) {
+          text = str.replace(/[^\x20-\x7E\n\t]/g,' ').replace(/\s{4,}/g,'\n').substring(0, 40000);
+        }
+        resolve(text.trim());
+      } catch { resolve(''); }
+    };
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+function showErr(msg) {
+  const el = document.getElementById('err');
+  el.textContent = msg;
+  el.classList.toggle('hidden', !msg);
+}
+
+function gp(id) { return document.getElementById(id).value; }
+
+const LOADING_MSGS = [
+  ['Reading your document...', 'Parsing structure and content'],
+  ['Detecting headings & sections...', 'Finding chapters, titles, bullet points'],
+  ['Converting to LaTeX...', 'Building proper document structure'],
+  ['Applying formatting...', 'Font, spacing, margins, alignment'],
+  ['Finalizing output...', 'Almost done!'],
+];
+
+async function startConvert() {
+  if (!fileText) return;
+  setStep(2);
+
+  const docClass = gp('p-class');
+  const font = gp('p-font');
+  const size = gp('p-size');
+  const space = gp('p-space');
+  const margin = gp('p-margin');
+  const align = gp('p-align');
+  const extra = gp('p-extra');
+
+  const fontPkg = font === 'times' ? '\\usepackage{times}' :
+    font === 'calibri' ? '\\usepackage{helvet}\n\\renewcommand{\\familydefault}{\\sfdefault}' : '';
+  const spaceCmd = space === 'single' ? '\\singlespacing' :
+    space === 'double' ? '\\doublespacing' : '\\onehalfspacing';
+
+  // Split into chunks of ~8000 chars
+  const CHUNK = 8000;
+  const words = fileText.split('\n');
+  const chunks = [];
+  let cur = '';
+  for (const line of words) {
+    if ((cur + line).length > CHUNK && cur.length > 0) {
+      chunks.push(cur.trim());
+      cur = line + '\n';
+    } else {
+      cur += line + '\n';
+    }
+  }
+  if (cur.trim()) chunks.push(cur.trim());
+
+  const lmsg = document.getElementById('l-msg');
+  const lsub = document.getElementById('l-sub');
+
+  const preamble = `\\documentclass[${size}pt,a4paper]{${docClass}}
+\\usepackage[margin=${margin}]{geometry}
+${fontPkg}
+\\usepackage{setspace}
+\\usepackage{array}
+\\usepackage{longtable}
+\\usepackage{booktabs}
+\\usepackage{fancyhdr}
+\\usepackage{titlesec}
+\\usepackage{hyperref}
+\\usepackage{ragged2e}
+\\usepackage{graphicx}
+\\usepackage{parskip}
+${docClass === 'report' ? `\\titleformat{\\chapter}[display]{\\normalfont\\huge\\bfseries\\raggedleft}{\\chaptertitlename\\ \\thechapter}{20pt}{\\Huge}
+\\titlespacing*{\\chapter}{0pt}{50pt}{40pt}` : ''}
+\\pagestyle{fancy}
+\\fancyhf{}
+\\rfoot{\\thepage}
+\\renewcommand{\\headrulewidth}{0.4pt}
+${spaceCmd}
+${align === 'justify' ? '\\justifying' : '\\raggedright'}`;
+
+  try {
+    let allBodies = [];
+
+    for (let i = 0; i < chunks.length; i++) {
+      lmsg.textContent = `Processing chunk ${i+1} of ${chunks.length}...`;
+      lsub.textContent = `Converting pages ${Math.round(i/chunks.length*50)+1}–${Math.round((i+1)/chunks.length*50)}`;
+
+      const isFirst = i === 0;
+      const isLast = i === chunks.length - 1;
+
+      const prompt = isFirst
+        ? `You are an expert LaTeX typesetter. Convert this document content to LaTeX body content.
+
+RULES:
+- Convert chapter headings to \\chapter{}
+- Convert section headings to \\section{} and \\subsection{}  
+- Convert bullet points (•, -, *) to \\begin{itemize}\\item...\\end{itemize}
+- Convert numbered lists to \\begin{enumerate}
+- Convert bold text to \\textbf{}
+- Convert tables to \\begin{tabular}
+- Escape special chars: & → \\& , % → \\% , $ → \\$ , # → \\# , _ → \\_
+- Add \\newpage before each chapter
+- Output ONLY the LaTeX body content (no preamble, no \\begin{document})
+- Keep ALL content, do not skip anything
+Extra: ${extra || 'none'}
+
+CONTENT:
+${chunks[i]}
+
+Output only LaTeX body content.`
+        : `Continue converting this document content to LaTeX body. Same rules apply.
+Output ONLY LaTeX body content (no preamble).
+
+CONTENT:
+${chunks[i]}
+
+Output only LaTeX body content.`;
+
+      const res = await fetch('https://hirenix-backend.onrender.com/api/groq/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'llama-3.3-70b-versatile',
+          messages: [{ role: 'user', content: prompt }]
+        })
+      });
+
+      const data = await res.json();
+      let body = data.content || data.message || '';
+      // Clean code fences
+      body = body.replace(/^```latex\n?/,'').replace(/^```\n?/,'').replace(/\n?```$/,'').trim();
+      // Remove any accidental preamble
+      if (body.includes('\\begin{document}')) {
+        body = body.split('\\begin{document}')[1].replace('\\end{document}','').trim();
+      }
+      allBodies.push(body);
+    }
+
+    lmsg.textContent = 'Assembling final LaTeX...';
+    lsub.textContent = 'Merging all chunks';
+
+    // Assemble final LaTeX
+    const finalLatex = preamble + `
+
+\\begin{document}
+
+\\tableofcontents
+\\newpage
+
+` + allBodies.join('\n\n') + `
+
+\\end{document}`;
+
+    document.getElementById('latex-out').value = finalLatex;
+    setStep(3);
+
+  } catch(e) {
+    setStep(1);
+    showErr('Conversion failed: ' + e.message);
+  }
+}
+
+
+function startOver() {
+  fileText = ''; fileName = '';
+  document.getElementById('fname').classList.add('hidden');
+  document.getElementById('convert-btn').disabled = true;
+  document.getElementById('file-inp').value = '';
+  showErr('');
+  setStep(1);
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function copyLatex() {
+  navigator.clipboard.writeText(document.getElementById('latex-out').value)
+    .then(() => showToast('Copied to clipboard!'));
+}
+
+function downloadTex() {
+  const a = document.createElement('a');
+  const base = fileName.replace(/\.[^.]+$/, '') || 'report';
+  a.href = URL.createObjectURL(new Blob([document.getElementById('latex-out').value], {type:'text/plain'}));
+  a.download = base + '.tex';
+  a.click(); showToast('Downloaded!');
+}
+
+function openOverleaf() {
+  const form = document.createElement('form');
+  form.method = 'POST'; form.action = 'https://www.overleaf.com/docs'; form.target = '_blank';
+  const inp = document.createElement('input');
+  inp.type = 'hidden'; inp.name = 'snip';
+  inp.value = document.getElementById('latex-out').value;
+  form.appendChild(inp); document.body.appendChild(form);
+  form.submit(); document.body.removeChild(form);
+  showToast('Opening Overleaf...');
+}
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<div id="pdf-preview" style="display:none;position:fixed;inset:0;z-index:9999;background:#1a1a2e;overflow-y:auto;padding:2rem;">
+  <div style="display:flex;justify-content:center;gap:1rem;margin-bottom:1.5rem;">
+    <button onclick="closePDFPreview()" style="background:#334155;color:#e2e8f0;border:none;border-radius:8px;padding:0.5rem 1.2rem;cursor:pointer;font-weight:700;">✕ Close</button>
+    <button onclick="downloadRenderedPDF()" style="background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;border:none;border-radius:8px;padding:0.5rem 1.4rem;cursor:pointer;font-weight:700;">⬇ Download PDF</button>
+  </div>
+  <div id="pdf-content" style="background:#fff;color:#000;max-width:210mm;margin:0 auto;padding:25mm 20mm;font-family:Times New Roman,serif;font-size:12pt;line-height:1.5;box-shadow:0 0 40px rgba(0,0,0,0.5);"></div>
+</div>
+
+<script>
+function generatePDF() {
+  const latex = document.getElementById('latex-out').value;
+  if (!latex) return;
+
+  // Convert LaTeX to readable HTML
+  let html = latex;
+
+  // Remove preamble
+  html = html.replace(/[\s\S]*?\\begin\{document\}/, '');
+  html = html.replace(/\\end\{document\}[\s\S]*/, '');
+
+  // Title page
+  html = html.replace(/\\begin\{titlepage\}([\s\S]*?)\\end\{titlepage\}/g, (_, c) => {
+    return '<div style="text-align:center;page-break-after:always;">' + c + '</div>';
+  });
+
+  // TOC placeholder
+  html = html.replace(/\\tableofcontents/g, '<div style="text-align:center;font-size:16pt;font-weight:bold;margin:2em 0;">Table of Contents</div>');
+
+  // Chapters
+  html = html.replace(/\\chapter\*?\{([^}]+)\}/g, (_, t) =>
+    '<div style="page-break-before:always;"><h1 style="font-size:18pt;font-weight:bold;text-align:right;border-bottom:2px solid #000;padding-bottom:8px;margin-bottom:20px;">' + t + '</h1></div>');
+
+  // Sections
+  html = html.replace(/\\section\*?\{([^}]+)\}/g, (_, t) =>
+    '<h2 style="font-size:14pt;font-weight:bold;margin-top:16px;margin-bottom:8px;">' + t + '</h2>');
+  html = html.replace(/\\subsection\*?\{([^}]+)\}/g, (_, t) =>
+    '<h3 style="font-size:12pt;font-weight:bold;margin-top:12px;margin-bottom:6px;">' + t + '</h3>');
+
+  // Text formatting
+  html = html.replace(/\\textbf\{([^}]+)\}/g, '<strong>$1</strong>');
+  html = html.replace(/\\textit\{([^}]+)\}/g, '<em>$1</em>');
+  html = html.replace(/\\underline\{([^}]+)\}/g, '<u>$1</u>');
+  html = html.replace(/\\texttt\{([^}]+)\}/g, '<code>$1</code>');
+  html = html.replace(/\\Large\{?([^}\n]+)\}?/g, '<span style="font-size:14pt;">$1</span>');
+  html = html.replace(/\\large\{?([^}\n]+)\}?/g, '<span style="font-size:13pt;">$1</span>');
+  html = html.replace(/\\Huge\{?([^}\n]+)\}?/g, '<span style="font-size:20pt;font-weight:bold;">$1</span>');
+  html = html.replace(/\\LARGE\{?([^}\n]+)\}?/g, '<span style="font-size:16pt;font-weight:bold;">$1</span>');
+
+  // Itemize
+  html = html.replace(/\\begin\{itemize\}([\s\S]*?)\\end\{itemize\}/g, (_, c) => {
+    const items = c.split(/\\item/).slice(1).map(i => '<li style="margin:4px 0;">' + i.trim() + '</li>').join('');
+    return '<ul style="margin:8px 0 8px 24px;">' + items + '</ul>';
+  });
+
+  // Enumerate
+  html = html.replace(/\\begin\{enumerate\}([\s\S]*?)\\end\{enumerate\}/g, (_, c) => {
+    const items = c.split(/\\item/).slice(1).map(i => '<li style="margin:4px 0;">' + i.trim() + '</li>').join('');
+    return '<ol style="margin:8px 0 8px 24px;">' + items + '</ol>';
+  });
+
+  // Tables
+  html = html.replace(/\\begin\{tabular\}\{[^}]+\}([\s\S]*?)\\end\{tabular\}/g, (_, c) => {
+    c = c.replace(/\\hline/g, '');
+    const rows = c.trim().split(/\\\\/);
+    const trs = rows.map(r => {
+      if (!r.trim()) return '';
+      const cells = r.split('&').map(cell =>
+        '<td style="border:1px solid #000;padding:6px 10px;">' + cell.trim() + '</td>'
+      ).join('');
+      return '<tr>' + cells + '</tr>';
+    }).join('');
+    return '<table style="border-collapse:collapse;margin:12px 0;width:100%;">' + trs + '</table>';
+  });
+
+  // longtable same as tabular
+  html = html.replace(/\\begin\{longtable\}\{[^}]+\}([\s\S]*?)\\end\{longtable\}/g, (_, c) => {
+    c = c.replace(/\\hline/g,'').replace(/\\endhead/g,'').replace(/\\endfoot/g,'');
+    const rows = c.trim().split(/\\\\/);
+    const trs = rows.map(r => {
+      if (!r.trim()) return '';
+      const cells = r.split('&').map(cell =>
+        '<td style="border:1px solid #000;padding:5px 8px;">' + cell.trim() + '</td>'
+      ).join('');
+      return '<tr>' + cells + '</tr>';
+    }).join('');
+    return '<table style="border-collapse:collapse;margin:12px 0;width:100%;">' + trs + '</table>';
+  });
+
+  // Alignment
+  html = html.replace(/\\centering/g, '<div style="text-align:center;">');
+  html = html.replace(/\\raggedright/g, '');
+  html = html.replace(/\\justifying/g, '');
+
+  // Newpage
+  html = html.replace(/\\newpage/g, '<div style="page-break-after:always;"></div>');
+  html = html.replace(/\\clearpage/g, '<div style="page-break-after:always;"></div>');
+
+  // Special chars
+  html = html.replace(/\\&/g, '&').replace(/\\%/g, '%').replace(/\\\$/g, '$')
+    .replace(/\\#/g, '#').replace(/\\_/g, '_').replace(/\\{/g, '{').replace(/\\}/g, '}')
+    .replace(/\\textasciitilde\{\}/g, '~').replace(/\\textasciicircum\{\}/g, '^')
+    .replace(/\\textbackslash\{\}/g, '\\');
+
+  // Math inline
+  html = html.replace(/\$([^$]+)\$/g, '<i>$1</i>');
+
+  // Remove remaining LaTeX commands
+  html = html.replace(/\\[a-zA-Z]+\*?\{[^}]*\}/g, '');
+  html = html.replace(/\\[a-zA-Z]+\*?/g, '');
+  html = html.replace(/\{|\}/g, '');
+
+  // Paragraphs
+  html = html.replace(/\n\n+/g, '</p><p style="text-align:justify;margin:8px 0;">');
+
+  document.getElementById('pdf-content').innerHTML = '<p style="text-align:justify;margin:8px 0;">' + html + '</p>';
+  document.getElementById('pdf-preview').style.display = 'block';
+}
+
+function closePDFPreview() {
+  document.getElementById('pdf-preview').style.display = 'none';
+}
+
+function downloadRenderedPDF() {
+  const el = document.getElementById('pdf-content');
+  const name = (document.getElementById('fname').textContent.replace('✓ ','').split(' ')[0] || 'report').replace(/\.[^.]+$/,'');
+  html2pdf().set({
+    margin: [15, 15, 15, 15],
+    filename: name + '.pdf',
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  }).from(el).save();
+  showToast('Downloading PDF...');
+}
+</script>
+</body>
+</html>
