@@ -798,7 +798,9 @@ const bulkImportStudents = asyncHandler(async (req, res) => {
       const pwd = defaultPassword(careerId);
       await InstitutionStudent.create({
         institutionId, careerId, password: pwd,
-        name, email, mobile, department: dept, rollNumber: roll, year, skills: [],
+        name, email, mobile, department: dept, rollNumber: roll,
+        year: year ? parseInt(year) || null : null,
+        skills: [],
       });
       results.created.push({ name, email, careerId, defaultPassword: pwd });
     } catch(err) {
