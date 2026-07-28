@@ -33,6 +33,7 @@ const InstStudentInternship   = lazy(() => import('./pages/instStudent/InstStude
 const AcademyPage = lazy(() => import('./pages/instStudent/AcademyPage').then(m => ({ default: m.AcademyPage })));
 
 const StudentDashboard    = lazy(() => import('./pages/student/StudentDashboard').then(m => ({ default: m.StudentDashboard })));
+const StudentAttendance   = lazy(() => import('./pages/student/StudentAttendance'));  // NEW
 const StudentJobs         = lazy(() => import('./pages/student/StudentJobs').then(m => ({ default: m.StudentJobs })));
 const StudentApplications = lazy(() => import('./pages/student/StudentApplications').then(m => ({ default: m.StudentApplications })));
 const StudentInternships  = lazy(() => import('./pages/student/StudentInternships').then(m => ({ default: m.StudentInternships })));
@@ -48,8 +49,6 @@ const LatexReportPublic   = lazy(() => import('./pages/public/LatexReportPublic'
 const ProjectPortfolio    = lazy(() => import('./pages/public/ProjectPortfolio').then(m => ({ default: m.ProjectPortfolio })));
 const BlogList            = lazy(() => import('./pages/blog/BlogList').then(m => ({ default: m.BlogList })));
 const BlogPost            = lazy(() => import('./pages/blog/BlogPost').then(m => ({ default: m.BlogPost })));
-
-// Academy
 
 const CompanyDashboard  = lazy(() => import('./pages/company/CompanyDashboard').then(m => ({ default: m.CompanyDashboard })));
 const CompanyJobs       = lazy(() => import('./pages/company/CompanyJobs').then(m => ({ default: m.CompanyJobs })));
@@ -172,14 +171,15 @@ export default function App() {
           <Route path="/student" element={<ProtectedRoute allowedRoles={['student']}><StudentLayout /></ProtectedRoute>}>
             <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard"      element={<StudentDashboard />} />
+            <Route path="attendance"     element={<StudentAttendance />} />  {/* NEW */}
             <Route path="internships"    element={<StudentInternships />} />
             <Route path="jobs"           element={<StudentJobs />} />
             <Route path="applications"   element={<StudentApplications />} />
             <Route path="resources"      element={<StudentResources />} />
             <Route path="mock-interview" element={<StudentMockInterview />} />
             <Route path="resume-builder" element={<StudentResumeBuilder />} />
-            <Route path="projects" element={<StudentProjects />} />
-            <Route path="roadmap" element={<StudentRoadmap />} />
+            <Route path="projects"       element={<StudentProjects />} />
+            <Route path="roadmap"        element={<StudentRoadmap />} />
             <Route path="mock-dashboard" element={<StudentMockDashboard />} />
             <Route path="certificates"   element={<StudentCertificates />} />
             <Route path="profile"        element={<StudentProfile />} />
