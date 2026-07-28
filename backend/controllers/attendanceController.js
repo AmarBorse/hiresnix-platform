@@ -435,10 +435,11 @@ exports.toggleSelfAdd = async (req, res) => {
   try {
     const { enrollmentId } = req.params;
     const { can_self_add } = req.body;
+    const value = can_self_add ? 'true' : 'false';
 
     await sequelize.query(
-      `UPDATE ip_enrollments SET "can_self_add" = :can_self_add WHERE id = :enrollmentId`,
-      { replacements: { can_self_add, enrollmentId }, type: QueryTypes.UPDATE }
+      `UPDATE ip_enrollments SET can_self_add = ${value} WHERE id = :enrollmentId`,
+      { replacements: { enrollmentId }, type: QueryTypes.UPDATE }
     );
 
     res.json({ message: `Self-add ${can_self_add ? 'enabled' : 'disabled'} successfully` });
@@ -519,10 +520,11 @@ exports.studentSelfAdd = async (req, res) => {
 exports.toggleSelfAddAll = async (req, res) => {
   try {
     const { can_self_add } = req.body;
+    const value = can_self_add ? 'true' : 'false';
 
     await sequelize.query(
-      `UPDATE ip_enrollments SET can_self_add = :can_self_add WHERE status = 'Active'`,
-      { replacements: { can_self_add }, type: QueryTypes.UPDATE }
+      `UPDATE ip_enrollments SET can_self_add = ${value} WHERE status = 'Active'`,
+      { type: QueryTypes.UPDATE }
     );
 
     res.json({ message: `Self-add ${can_self_add ? 'enabled' : 'disabled'} for all active students` });
