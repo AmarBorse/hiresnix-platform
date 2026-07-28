@@ -519,15 +519,15 @@ exports.studentSelfAdd = async (req, res) => {
 // Admin: Toggle can_self_add for ALL active enrollments
 exports.toggleSelfAddAll = async (req, res) => {
   try {
-    const { can_self_add } = req.body;
-    const value = can_self_add ? 'true' : 'false';
+    const can_self_add = req.body.can_self_add;
+    const value = can_self_add === true || can_self_add === 'true' ? 'true' : 'false';
 
     await sequelize.query(
       `UPDATE ip_enrollments SET can_self_add = ${value} WHERE status = 'Active'`,
       { type: QueryTypes.UPDATE }
     );
 
-    res.json({ message: `Self-add ${can_self_add ? 'enabled' : 'disabled'} for all active students` });
+    res.json({ message: `Self-add ${value === 'true' ? 'enabled' : 'disabled'} for all active students` });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Server error', error: err.message });

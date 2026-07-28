@@ -12,16 +12,16 @@ router.post('/leave',             protect, authorize('student'), attendanceContr
 router.post('/self-add',          protect, authorize('student'), attendanceController.studentSelfAdd);
 router.put('/today-edit',         protect, authorize('student'), attendanceController.studentEditToday);
 
-// Admin routes
+// Admin routes — specific routes BEFORE dynamic /:id routes
 router.get('/all',                           protect, authorize('admin'), attendanceController.getAllAttendance);
 router.get('/student/:studentId',            protect, authorize('admin'), attendanceController.getStudentAttendance);
 router.post('/admin-add',                    protect, authorize('admin'), attendanceController.adminAddAttendance);
-router.put('/:id',                           protect, authorize('admin'), attendanceController.updateAttendance);
-router.delete('/:id',                        protect, authorize('admin'), attendanceController.deleteAttendance);
-router.put('/leave/:id/approve',             protect, authorize('admin'), attendanceController.approveLeave);
-router.put('/leave/:id/reject',              protect, authorize('admin'), attendanceController.rejectLeave);
 router.put('/mark-absent',                   protect, authorize('admin'), attendanceController.markAbsent);
 router.put('/toggle-self-add-all',           protect, authorize('admin'), attendanceController.toggleSelfAddAll);
 router.put('/toggle-self-add/:enrollmentId', protect, authorize('admin'), attendanceController.toggleSelfAdd);
+router.put('/leave/:id/approve',             protect, authorize('admin'), attendanceController.approveLeave);
+router.put('/leave/:id/reject',              protect, authorize('admin'), attendanceController.rejectLeave);
+router.put('/:id',                           protect, authorize('admin'), attendanceController.updateAttendance);
+router.delete('/:id',                        protect, authorize('admin'), attendanceController.deleteAttendance);
 
 module.exports = router;
