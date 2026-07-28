@@ -11,9 +11,12 @@ router.get('/today',     protect, authorize('student'), attendanceController.get
 router.post('/leave',    protect, authorize('student'), attendanceController.applyLeave);
 
 // Admin routes
-router.get('/all',              protect, authorize('admin'), attendanceController.getAllAttendance);
-router.put('/leave/:id/approve', protect, authorize('admin'), attendanceController.approveLeave);
-router.put('/leave/:id/reject',  protect, authorize('admin'), attendanceController.rejectLeave);
-router.put('/mark-absent',       protect, authorize('admin'), attendanceController.markAbsent);
+router.get('/all',                protect, authorize('admin'), attendanceController.getAllAttendance);
+router.get('/student/:studentId', protect, authorize('admin'), attendanceController.getStudentAttendance);
+router.post('/admin-add',         protect, authorize('admin'), attendanceController.adminAddAttendance);
+router.delete('/:id',             protect, authorize('admin'), attendanceController.deleteAttendance);
+router.put('/leave/:id/approve',  protect, authorize('admin'), attendanceController.approveLeave);
+router.put('/leave/:id/reject',   protect, authorize('admin'), attendanceController.rejectLeave);
+router.put('/mark-absent',        protect, authorize('admin'), attendanceController.markAbsent);
 
 module.exports = router;

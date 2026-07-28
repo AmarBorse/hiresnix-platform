@@ -1357,38 +1357,95 @@ function formatTime12(time: string) {
 
 // ── Attendance Tab Component ──────────────────────────────────────
 function AttendanceTab() {
+  const [view, setView] = useState<'date' | 'student'>('date');
   const [attendanceData, setAttendanceData] = useState<any[]>([]);
   const [attendanceDate, setAttendanceDate] = useState(new Date().toISOString().slice(0, 10));
   const [attendanceLoading, setAttendanceLoading] = useState(false);
   const [leavePending, setLeavePending] = useState<any[]>([]);
 
-  const fetchAttendance = async (date: string) => {
+  // Student-wise view
+  const [enrolledStudents, setEnrolledStudents] = useState<any[]>([]);
+  const [selectedStudent, setSelectedStudent] = useState<any>(null);
+  const [studentHistory, setStudentHistory] = useState<any[]>([]);
+  const [studentStats, setStudentStats] = useState<any>(null);
+  const [studentLoading, setStudentLoading] = useState(false);
+
+  // Add modal
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [addForm, setAddForm] = useState({
+    date: '', status: 'present',
+    check_in_time: '10:00', check_out_time: '17:00',
+    leave_reason: '', remarks: ''
+  });
+  const [addLoading, setAddLoading] = useState(false);
+
+  // Load enrolled students list
+  useEffect(() => {
+    client.get('/attendance/all').then(res => {
+      const all = res.data.data || [];
+      setAttendanceData(all);
+      setLeavePending(all.filter((r: any) => r.status === 'leave' && !r.leave_approved));
+      // Unique students
+      const map = new Map();
+      all.forEach((r: any) => {
+        if (!map.has(r.student_id)) map.set(r.student_id, { id: r.student_id, name: r.student_name, email: r.student_email, domain: r.domain_name });
+      });
+      setEnrolledStudents(Array.from(map.values()));
+    }).catch(() => {});
+  }, []);
+
+  const fetchByDate = async (date: string) => {
     setAttendanceLoading(true);
     try {
       const res = await client.get(`/attendance/all?date=${date}`);
       const all = res.data.data || [];
       setAttendanceData(all);
       setLeavePending(all.filter((r: any) => r.status === 'leave' && !r.leave_approved));
-    } catch { toast.error('Failed to load attendance'); }
+    } catch { toast.error('Failed to load'); }
     finally { setAttendanceLoading(false); }
   };
 
-  useEffect(() => { fetchAttendance(attendanceDate); }, []);
+  const fetchStudentHistory = async (studentId: string) => {
+    setStudentLoading(true);
+    try {
+      const res = await client.get(`/attendance/student/${studentId}`);
+      setStudentHistory(res.data.data || []);
+      setStudentStats(res.data.stats);
+      // Update enrolled students if empty
+      if (enrolledStudents.length === 0) {
+        const d = res.data.data[0];
+        if (d) setEnrolledStudents([{ id: d.student_id, name: d.student_name, email: d.student_email, domain: d.domain_name }]);
+      }
+    } catch { toast.error('Failed to load student history'); }
+    finally { setStudentLoading(false); }
+  };
 
   const handleApproveLeave = async (id: string) => {
     try {
       await client.put(`/attendance/leave/${id}/approve`);
       toast.success('Leave approved');
-      fetchAttendance(attendanceDate);
-    } catch { toast.error('Failed to approve leave'); }
+      if (view === 'date') fetchByDate(attendanceDate);
+      else if (selectedStudent) fetchStudentHistory(selectedStudent.id);
+    } catch { toast.error('Failed'); }
   };
 
   const handleRejectLeave = async (id: string) => {
     try {
       await client.put(`/attendance/leave/${id}/reject`);
       toast.success('Leave rejected');
-      fetchAttendance(attendanceDate);
-    } catch { toast.error('Failed to reject leave'); }
+      if (view === 'date') fetchByDate(attendanceDate);
+      else if (selectedStudent) fetchStudentHistory(selectedStudent.id);
+    } catch { toast.error('Failed'); }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Delete this attendance record?')) return;
+    try {
+      await client.delete(`/attendance/${id}`);
+      toast.success('Deleted');
+      if (view === 'date') fetchByDate(attendanceDate);
+      else if (selectedStudent) fetchStudentHistory(selectedStudent.id);
+    } catch { toast.error('Failed to delete'); }
   };
 
   const handleMarkAbsent = async () => {
@@ -1396,16 +1453,36 @@ function AttendanceTab() {
     try {
       const res = await client.put('/attendance/mark-absent');
       toast.success(res.data.message);
-      fetchAttendance(attendanceDate);
-    } catch { toast.error('Failed to mark absent'); }
+      fetchByDate(attendanceDate);
+    } catch { toast.error('Failed'); }
   };
 
-  const handleDownloadExcel = () => {
-    if (!attendanceData.length) { toast.error('No data to export'); return; }
-    const exportData = attendanceData.map((r: any) => ({
-      'Student Name': r.student_name || '-',
-      'Email': r.student_email || '-',
-      'Domain': r.domain_name || '-',
+  const handleAddAttendance = async () => {
+    if (!addForm.date || !addForm.status) { toast.error('Date and status required'); return; }
+    if (!selectedStudent) { toast.error('Select a student first'); return; }
+    setAddLoading(true);
+    try {
+      await client.post('/attendance/admin-add', {
+        student_id: selectedStudent.id,
+        date: addForm.date,
+        status: addForm.status,
+        check_in_time: addForm.status === 'present' ? addForm.check_in_time : null,
+        check_out_time: addForm.status === 'present' ? addForm.check_out_time : null,
+        leave_reason: addForm.status === 'leave' ? addForm.leave_reason : null,
+        remarks: addForm.remarks || null,
+      });
+      toast.success('Attendance added!');
+      setShowAddModal(false);
+      setAddForm({ date: '', status: 'present', check_in_time: '10:00', check_out_time: '17:00', leave_reason: '', remarks: '' });
+      fetchStudentHistory(selectedStudent.id);
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Failed to add');
+    } finally { setAddLoading(false); }
+  };
+
+  const downloadStudentExcel = () => {
+    if (!studentHistory.length) { toast.error('No data'); return; }
+    const data = studentHistory.map((r: any) => ({
       'Date': r.date,
       'Status': r.status,
       'Check In': r.check_in_time ? formatTime12(r.check_in_time) : '10:00 AM',
@@ -1414,46 +1491,55 @@ function AttendanceTab() {
       'Leave Reason': r.leave_reason || '-',
       'Leave Approved': r.leave_approved ? 'Yes' : 'No',
     }));
-    downloadExcel(exportData, `attendance_${attendanceDate}`);
+    downloadExcel(data, `${selectedStudent?.name}_attendance`);
   };
 
-  const handleDownloadPDF = async () => {
-    if (!attendanceData.length) { toast.error('No data to export'); return; }
+  const downloadStudentPDF = async () => {
+    if (!studentHistory.length) { toast.error('No data'); return; }
     const { default: jsPDF } = await import('jspdf');
-    const doc = new jsPDF({ orientation: 'landscape' });
-    const pageW = 297;
+    const doc = new jsPDF({ orientation: 'portrait' });
+    const pageW = 210;
 
-    // ── Header ──
+    // Header
     doc.setFillColor(15, 23, 42);
-    doc.rect(0, 0, pageW, 36, 'F');
+    doc.rect(0, 0, pageW, 40, 'F');
     doc.setTextColor(255, 255, 255);
-    doc.setFontSize(18); doc.setFont('helvetica', 'bold');
+    doc.setFontSize(16); doc.setFont('helvetica', 'bold');
     doc.text('HIRESNIX', 14, 13);
-    doc.setFontSize(9); doc.setFont('helvetica', 'normal');
-    doc.text('SR Patil Infrastructure Private Limited', 14, 20);
-    doc.text('hiresnix.co.in  |  hr@hiresnix.co.in  |  +91 9529120977', 14, 26);
-    doc.setFontSize(13); doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8); doc.setFont('helvetica', 'normal');
+    doc.text('SR Patil Infrastructure Private Limited', 14, 19);
+    doc.text('hiresnix.co.in  |  hr@hiresnix.co.in  |  +91 9529120977', 14, 24);
+    doc.setFontSize(11); doc.setFont('helvetica', 'bold');
     doc.setTextColor(52, 211, 153);
-    doc.text('INTERNSHIP ATTENDANCE REPORT', 165, 13);
-    doc.setFontSize(9); doc.setFont('helvetica', 'normal');
-    doc.setTextColor(200, 200, 200);
-    doc.text(`Date: ${new Date(attendanceDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}`, 165, 20);
-    doc.text('Timings: 10:00 AM – 5:00 PM', 165, 26);
+    doc.text('ATTENDANCE REPORT', 14, 32);
 
-    // ── Table ──
+    // Student info box
+    doc.setFillColor(241, 245, 249);
+    doc.rect(10, 44, pageW - 20, 28, 'F');
+    doc.setTextColor(15, 23, 42);
+    doc.setFontSize(11); doc.setFont('helvetica', 'bold');
+    doc.text(selectedStudent?.name || '-', 14, 52);
+    doc.setFontSize(9); doc.setFont('helvetica', 'normal');
+    doc.setTextColor(71, 85, 105);
+    doc.text(`Email: ${selectedStudent?.email || '-'}`, 14, 58);
+    doc.text(`Domain: ${selectedStudent?.domain || '-'}`, 14, 64);
+    doc.text(`Timings: 10:00 AM – 5:00 PM`, 120, 58);
+    if (studentStats) {
+      doc.text(`Present: ${studentStats.present}  |  Absent: ${studentStats.absent}  |  Leave: ${studentStats.leave}  |  %: ${studentStats.percentage}%`, 120, 64);
+    }
+
+    // Table
     const cols = [
-      { header: '#',            w: 10,  x: 10  },
-      { header: 'Student Name', w: 55,  x: 20  },
-      { header: 'Domain',       w: 45,  x: 75  },
-      { header: 'Status',       w: 22,  x: 120 },
-      { header: 'Check In',     w: 25,  x: 142 },
-      { header: 'Check Out',    w: 25,  x: 167 },
-      { header: 'Leave Reason', w: 80,  x: 192 },
+      { header: '#',        w: 10, x: 10  },
+      { header: 'Date',     w: 32, x: 20  },
+      { header: 'Status',   w: 25, x: 52  },
+      { header: 'Check In', w: 30, x: 77  },
+      { header: 'Check Out',w: 30, x: 107 },
+      { header: 'Reason',   w: 58, x: 137 },
     ];
     const rowH = 8;
-    let y = 44;
+    let y = 78;
 
-    // Header row
     doc.setFillColor(15, 23, 42);
     doc.rect(10, y, pageW - 20, rowH, 'F');
     doc.setTextColor(52, 211, 153);
@@ -1461,175 +1547,383 @@ function AttendanceTab() {
     cols.forEach(c => doc.text(c.header, c.x + 1, y + 5.5));
     y += rowH;
 
-    // Data rows
+    doc.setFont('helvetica', 'normal');
+    studentHistory.forEach((r: any, i: number) => {
+      if (y > 275) { doc.addPage(); y = 15; }
+      const alt = i % 2 === 0;
+      doc.setFillColor(alt ? 248 : 255, alt ? 250 : 255, alt ? 252 : 255);
+      doc.rect(10, y, pageW - 20, rowH, 'F');
+      const sc: [number,number,number] = r.status === 'present' ? [22,163,74] : r.status === 'absent' ? [220,38,38] : [217,119,6];
+      doc.setTextColor(60, 60, 60); doc.setFontSize(8);
+      doc.text(String(i + 1), cols[0].x + 1, y + 5.5);
+      doc.text(r.date, cols[1].x + 1, y + 5.5);
+      doc.setTextColor(...sc);
+      doc.text(r.status.toUpperCase(), cols[2].x + 1, y + 5.5);
+      doc.setTextColor(60, 60, 60);
+      doc.text(r.check_in_time ? formatTime12(r.check_in_time) : '10:00 AM', cols[3].x + 1, y + 5.5);
+      doc.text(r.check_out_time ? formatTime12(r.check_out_time) : '5:00 PM', cols[4].x + 1, y + 5.5);
+      doc.text((r.leave_reason || '-').substring(0, 30), cols[5].x + 1, y + 5.5);
+      y += rowH;
+    });
+
+    doc.setFontSize(7); doc.setFont('helvetica', 'italic'); doc.setTextColor(150, 150, 150);
+    doc.text('This is a computer-generated document.  |  Hiresnix — hiresnix.co.in', 14, 288);
+    doc.save(`hiresnix_${selectedStudent?.name}_attendance.pdf`);
+    toast.success('PDF downloaded!');
+  };
+
+  const downloadDateExcel = () => {
+    if (!attendanceData.length) { toast.error('No data'); return; }
+    downloadExcel(attendanceData.map((r: any) => ({
+      'Student Name': r.student_name || '-',
+      'Email': r.student_email || '-',
+      'Domain': r.domain_name || '-',
+      'Date': r.date,
+      'Status': r.status,
+      'Check In': r.check_in_time ? formatTime12(r.check_in_time) : '10:00 AM',
+      'Check Out': r.check_out_time ? formatTime12(r.check_out_time) : '5:00 PM',
+      'Leave Reason': r.leave_reason || '-',
+    })), `attendance_${attendanceDate}`);
+  };
+
+  const downloadDatePDF = async () => {
+    if (!attendanceData.length) { toast.error('No data'); return; }
+    const { default: jsPDF } = await import('jspdf');
+    const doc = new jsPDF({ orientation: 'landscape' });
+    const pageW = 297;
+    doc.setFillColor(15, 23, 42); doc.rect(0, 0, pageW, 36, 'F');
+    doc.setTextColor(255, 255, 255); doc.setFontSize(18); doc.setFont('helvetica', 'bold');
+    doc.text('HIRESNIX', 14, 13);
+    doc.setFontSize(9); doc.setFont('helvetica', 'normal');
+    doc.text('SR Patil Infrastructure Private Limited', 14, 20);
+    doc.text('hiresnix.co.in  |  hr@hiresnix.co.in  |  +91 9529120977', 14, 26);
+    doc.setFontSize(13); doc.setFont('helvetica', 'bold'); doc.setTextColor(52, 211, 153);
+    doc.text('INTERNSHIP ATTENDANCE REPORT', 165, 13);
+    doc.setFontSize(9); doc.setFont('helvetica', 'normal'); doc.setTextColor(200, 200, 200);
+    doc.text(`Date: ${new Date(attendanceDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}`, 165, 20);
+    doc.text('Timings: 10:00 AM – 5:00 PM', 165, 26);
+    const cols = [
+      { header: '#', w: 10, x: 10 }, { header: 'Student Name', w: 55, x: 20 },
+      { header: 'Domain', w: 45, x: 75 }, { header: 'Status', w: 22, x: 120 },
+      { header: 'Check In', w: 25, x: 142 }, { header: 'Check Out', w: 25, x: 167 },
+      { header: 'Leave Reason', w: 80, x: 192 },
+    ];
+    const rowH = 8; let y = 44;
+    doc.setFillColor(15, 23, 42); doc.rect(10, y, pageW - 20, rowH, 'F');
+    doc.setTextColor(52, 211, 153); doc.setFontSize(8); doc.setFont('helvetica', 'bold');
+    cols.forEach(c => doc.text(c.header, c.x + 1, y + 5.5)); y += rowH;
     doc.setFont('helvetica', 'normal');
     attendanceData.forEach((r: any, i: number) => {
       if (y > 190) { doc.addPage(); y = 15; }
       const alt = i % 2 === 0;
       doc.setFillColor(alt ? 245 : 255, alt ? 247 : 255, alt ? 250 : 255);
       doc.rect(10, y, pageW - 20, rowH, 'F');
-
-      // Status color
-      const statusColor: [number,number,number] =
-        r.status === 'present' ? [22, 163, 74] :
-        r.status === 'absent'  ? [220, 38, 38] : [217, 119, 6];
-
+      const sc: [number,number,number] = r.status === 'present' ? [22,163,74] : r.status === 'absent' ? [220,38,38] : [217,119,6];
       doc.setTextColor(60, 60, 60); doc.setFontSize(8);
-      doc.text(String(i + 1),                                     cols[0].x + 1, y + 5.5);
-      doc.text((r.student_name || '-').substring(0, 28),          cols[1].x + 1, y + 5.5);
-      doc.text((r.domain_name || '-').substring(0, 22),           cols[2].x + 1, y + 5.5);
-      doc.setTextColor(...statusColor);
-      doc.text(r.status.toUpperCase(),                            cols[3].x + 1, y + 5.5);
+      doc.text(String(i + 1), cols[0].x + 1, y + 5.5);
+      doc.text((r.student_name || '-').substring(0, 28), cols[1].x + 1, y + 5.5);
+      doc.text((r.domain_name || '-').substring(0, 22), cols[2].x + 1, y + 5.5);
+      doc.setTextColor(...sc); doc.text(r.status.toUpperCase(), cols[3].x + 1, y + 5.5);
       doc.setTextColor(60, 60, 60);
-      doc.text(r.check_in_time  ? formatTime12(r.check_in_time)  : '10:00 AM', cols[4].x + 1, y + 5.5);
-      doc.text(r.check_out_time ? formatTime12(r.check_out_time) : '5:00 PM',  cols[5].x + 1, y + 5.5);
-      doc.text((r.leave_reason || '-').substring(0, 38),          cols[6].x + 1, y + 5.5);
+      doc.text(r.check_in_time ? formatTime12(r.check_in_time) : '10:00 AM', cols[4].x + 1, y + 5.5);
+      doc.text(r.check_out_time ? formatTime12(r.check_out_time) : '5:00 PM', cols[5].x + 1, y + 5.5);
+      doc.text((r.leave_reason || '-').substring(0, 38), cols[6].x + 1, y + 5.5);
       y += rowH;
     });
-
-    // ── Summary ──
+    const p = attendanceData.filter((r: any) => r.status === 'present').length;
+    const a = attendanceData.filter((r: any) => r.status === 'absent').length;
+    const l = attendanceData.filter((r: any) => r.status === 'leave').length;
     y += 6;
-    const present = attendanceData.filter((r: any) => r.status === 'present').length;
-    const absent  = attendanceData.filter((r: any) => r.status === 'absent').length;
-    const leave   = attendanceData.filter((r: any) => r.status === 'leave').length;
     doc.setFontSize(10); doc.setFont('helvetica', 'bold'); doc.setTextColor(15, 23, 42);
-    doc.text(`Summary — Present: ${present}  |  Absent: ${absent}  |  Leave: ${leave}  |  Total: ${attendanceData.length}`, 14, y);
-
-    // ── Footer ──
+    doc.text(`Summary — Present: ${p}  |  Absent: ${a}  |  Leave: ${l}  |  Total: ${attendanceData.length}`, 14, y);
     doc.setFontSize(7); doc.setFont('helvetica', 'italic'); doc.setTextColor(150, 150, 150);
     doc.text('This is a computer-generated document.  |  Hiresnix — hiresnix.co.in', 14, 205);
-
     doc.save(`hiresnix_attendance_${attendanceDate}.pdf`);
     toast.success('PDF downloaded!');
   };
 
-  const present = attendanceData.filter((r: any) => r.status === 'present').length;
-  const absent = attendanceData.filter((r: any) => r.status === 'absent').length;
-  const leave = attendanceData.filter((r: any) => r.status === 'leave').length;
+  const currentData = view === 'date' ? attendanceData : studentHistory;
+  const isLoading = view === 'date' ? attendanceLoading : studentLoading;
 
   return (
-    <div className="bg-white rounded-b-xl p-5 space-y-5">
-      {/* Controls */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3 flex-wrap">
-          <input type="date" value={attendanceDate}
-            onChange={e => { setAttendanceDate(e.target.value); setAttendanceData([]); }}
-            className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-400" />
-          <button onClick={() => fetchAttendance(attendanceDate)}
-            className="px-4 py-2 bg-emerald-500 text-white rounded-lg text-sm font-semibold hover:bg-emerald-600 transition">
-            Load
-          </button>
-          <button onClick={handleMarkAbsent}
-            className="px-4 py-2 bg-red-500 text-white rounded-lg text-sm font-semibold hover:bg-red-600 transition">
-            Mark Absent (Bulk)
-          </button>
-        </div>
-        <div className="flex gap-2">
-          <button onClick={handleDownloadExcel}
-            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-semibold hover:bg-green-700 transition">
-            <Download size={14} /> Excel
-          </button>
-          <button onClick={handleDownloadPDF}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition">
-            <FileText size={14} /> PDF
-          </button>
-        </div>
+    <div className="bg-white rounded-b-xl p-5 space-y-4">
+
+      {/* View Toggle */}
+      <div className="flex gap-2">
+        <button onClick={() => setView('date')}
+          className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${view === 'date' ? 'bg-emerald-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+          📅 Date-wise
+        </button>
+        <button onClick={() => setView('student')}
+          className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${view === 'student' ? 'bg-emerald-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+          👤 Student-wise
+        </button>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-4 gap-3">
-        {[
-          { label: 'Present', value: present, color: 'bg-green-50 text-green-700' },
-          { label: 'Absent',  value: absent,  color: 'bg-red-50 text-red-700' },
-          { label: 'Leave',   value: leave,   color: 'bg-amber-50 text-amber-700' },
-          { label: 'Total',   value: attendanceData.length, color: 'bg-blue-50 text-blue-700' },
-        ].map(s => (
-          <div key={s.label} className={`rounded-xl p-4 text-center ${s.color}`}>
-            <p className="text-2xl font-black">{s.value}</p>
-            <p className="text-xs font-semibold mt-1">{s.label}</p>
+      {/* DATE VIEW */}
+      {view === 'date' && (
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
+              <input type="date" value={attendanceDate}
+                onChange={e => { setAttendanceDate(e.target.value); setAttendanceData([]); }}
+                className="border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+              <button onClick={() => fetchByDate(attendanceDate)}
+                className="px-4 py-2 bg-emerald-500 text-white rounded-lg text-sm font-semibold hover:bg-emerald-600 transition">Load</button>
+              <button onClick={handleMarkAbsent}
+                className="px-4 py-2 bg-red-500 text-white rounded-lg text-sm font-semibold hover:bg-red-600 transition">Mark Absent (Bulk)</button>
+            </div>
+            <div className="flex gap-2">
+              <button onClick={downloadDateExcel} className="flex items-center gap-1 px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-semibold hover:bg-green-700 transition">
+                <Download size={14} /> Excel
+              </button>
+              <button onClick={downloadDatePDF} className="flex items-center gap-1 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition">
+                <FileText size={14} /> PDF
+              </button>
+            </div>
           </div>
-        ))}
-      </div>
 
-      {/* Pending Leave Requests */}
-      {leavePending.length > 0 && (
-        <div className="border border-amber-200 rounded-xl p-4 bg-amber-50">
-          <h3 className="text-sm font-bold text-amber-800 mb-3">⏳ Pending Leave Requests ({leavePending.length})</h3>
-          <div className="space-y-2">
-            {leavePending.map((r: any) => (
-              <div key={r.id} className="flex items-center justify-between bg-white rounded-lg p-3 border border-amber-100">
-                <div>
-                  <p className="text-sm font-semibold text-gray-800">{r.student_name}</p>
-                  <p className="text-xs text-gray-500">{r.date} • {r.leave_reason}</p>
-                </div>
-                <div className="flex gap-2">
-                  <button onClick={() => handleApproveLeave(r.id)}
-                    className="px-3 py-1 bg-green-500 text-white text-xs font-bold rounded-lg hover:bg-green-600 transition">
-                    Approve
-                  </button>
-                  <button onClick={() => handleRejectLeave(r.id)}
-                    className="px-3 py-1 bg-red-500 text-white text-xs font-bold rounded-lg hover:bg-red-600 transition">
-                    Reject
-                  </button>
-                </div>
+          {/* Stats */}
+          <div className="grid grid-cols-4 gap-3">
+            {[
+              { label: 'Present', value: attendanceData.filter(r => r.status === 'present').length, color: 'bg-green-50 text-green-700' },
+              { label: 'Absent',  value: attendanceData.filter(r => r.status === 'absent').length,  color: 'bg-red-50 text-red-700' },
+              { label: 'Leave',   value: attendanceData.filter(r => r.status === 'leave').length,   color: 'bg-amber-50 text-amber-700' },
+              { label: 'Total',   value: attendanceData.length, color: 'bg-blue-50 text-blue-700' },
+            ].map(s => (
+              <div key={s.label} className={`rounded-xl p-4 text-center ${s.color}`}>
+                <p className="text-2xl font-black">{s.value}</p>
+                <p className="text-xs font-semibold mt-1">{s.label}</p>
               </div>
             ))}
           </div>
+
+          {/* Pending leaves */}
+          {leavePending.length > 0 && (
+            <div className="border border-amber-200 rounded-xl p-4 bg-amber-50">
+              <h3 className="text-sm font-bold text-amber-800 mb-3">⏳ Pending Leave Requests ({leavePending.length})</h3>
+              <div className="space-y-2">
+                {leavePending.map((r: any) => (
+                  <div key={r.id} className="flex items-center justify-between bg-white rounded-lg p-3 border border-amber-100">
+                    <div>
+                      <p className="text-sm font-semibold text-gray-800">{r.student_name}</p>
+                      <p className="text-xs text-gray-500">{r.date} • {r.leave_reason}</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button onClick={() => handleApproveLeave(r.id)} className="px-3 py-1 bg-green-500 text-white text-xs font-bold rounded-lg">Approve</button>
+                      <button onClick={() => handleRejectLeave(r.id)}  className="px-3 py-1 bg-red-500 text-white text-xs font-bold rounded-lg">Reject</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {attendanceLoading ? (
+            <div className="flex justify-center py-10"><Loader2 className="animate-spin text-emerald-500" size={28} /></div>
+          ) : attendanceData.length === 0 ? (
+            <div className="text-center py-12 text-gray-400">No records for this date</div>
+          ) : (
+            <AttendanceTable data={attendanceData} onDelete={handleDelete} onApprove={handleApproveLeave} onReject={handleRejectLeave} />
+          )}
         </div>
       )}
 
-      {/* Table */}
-      {attendanceLoading ? (
-        <div className="flex justify-center py-10"><Loader2 className="animate-spin text-emerald-500" size={28} /></div>
-      ) : attendanceData.length === 0 ? (
-        <div className="text-center py-12 text-gray-400">No attendance records for this date</div>
-      ) : (
-        <div className="overflow-x-auto rounded-xl border border-gray-100">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-gray-50 border-b border-gray-100">
-                {['#', 'Student', 'Domain', 'Status', 'Check In', 'Check Out', 'Leave Reason', 'Actions'].map(h => (
-                  <th key={h} className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {attendanceData.map((r: any, i: number) => (
-                <tr key={r.id} className="hover:bg-gray-50 transition">
-                  <td className="px-4 py-3 text-gray-400 text-xs">{i + 1}</td>
-                  <td className="px-4 py-3">
-                    <p className="font-semibold text-gray-800">{r.student_name || '-'}</p>
-                    <p className="text-xs text-gray-400">{r.student_email || '-'}</p>
-                  </td>
-                  <td className="px-4 py-3 text-gray-600 text-xs">{r.domain_name || '-'}</td>
-                  <td className="px-4 py-3">
-                    <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
-                      r.status === 'present' ? 'bg-green-100 text-green-700' :
-                      r.status === 'absent'  ? 'bg-red-100 text-red-700' :
-                      r.leave_approved ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'
-                    }`}>
-                      {r.status === 'leave' ? (r.leave_approved ? '✓ Leave' : '⏳ Leave') : r.status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-gray-600 text-xs">{r.check_in_time ? formatTime12(r.check_in_time) : '—'}</td>
-                  <td className="px-4 py-3 text-gray-600 text-xs">{r.check_out_time ? formatTime12(r.check_out_time) : '—'}</td>
-                  <td className="px-4 py-3 text-gray-500 text-xs max-w-[150px] truncate">{r.leave_reason || '—'}</td>
-                  <td className="px-4 py-3">
-                    {r.status === 'leave' && !r.leave_approved && (
-                      <div className="flex gap-1">
-                        <button onClick={() => handleApproveLeave(r.id)}
-                          className="px-2 py-1 bg-green-500 text-white text-xs font-bold rounded hover:bg-green-600 transition">✓</button>
-                        <button onClick={() => handleRejectLeave(r.id)}
-                          className="px-2 py-1 bg-red-500 text-white text-xs font-bold rounded hover:bg-red-600 transition">✗</button>
-                      </div>
-                    )}
-                  </td>
-                </tr>
+      {/* STUDENT VIEW */}
+      {view === 'student' && (
+        <div className="space-y-4">
+          {/* Student selector */}
+          <div className="flex flex-wrap items-center gap-3">
+            <select
+              value={selectedStudent?.id || ''}
+              onChange={e => {
+                const s = enrolledStudents.find(s => String(s.id) === e.target.value);
+                setSelectedStudent(s || null);
+                setStudentHistory([]);
+                setStudentStats(null);
+                if (s) fetchStudentHistory(s.id);
+              }}
+              className="border border-gray-200 rounded-lg px-3 py-2 text-sm min-w-[240px]"
+            >
+              <option value="">-- Select Student --</option>
+              {enrolledStudents.map(s => (
+                <option key={s.id} value={s.id}>{s.name} ({s.domain || 'Unknown domain'})</option>
               ))}
-            </tbody>
-          </table>
+            </select>
+
+            {selectedStudent && (
+              <>
+                <button onClick={() => setShowAddModal(true)}
+                  className="flex items-center gap-1 px-4 py-2 bg-emerald-500 text-white rounded-lg text-sm font-semibold hover:bg-emerald-600 transition">
+                  <Plus size={14} /> Add Attendance
+                </button>
+                <button onClick={downloadStudentExcel}
+                  className="flex items-center gap-1 px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-semibold hover:bg-green-700 transition">
+                  <Download size={14} /> Excel
+                </button>
+                <button onClick={downloadStudentPDF}
+                  className="flex items-center gap-1 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition">
+                  <FileText size={14} /> PDF
+                </button>
+              </>
+            )}
+          </div>
+
+          {/* Student stats */}
+          {studentStats && (
+            <div className="grid grid-cols-5 gap-3">
+              {[
+                { label: 'Present',    value: studentStats.present,    color: 'bg-green-50 text-green-700' },
+                { label: 'Absent',     value: studentStats.absent,     color: 'bg-red-50 text-red-700' },
+                { label: 'Leave',      value: studentStats.leave,      color: 'bg-amber-50 text-amber-700' },
+                { label: 'Total',      value: studentStats.total,      color: 'bg-blue-50 text-blue-700' },
+                { label: 'Percentage', value: `${studentStats.percentage}%`, color: 'bg-purple-50 text-purple-700' },
+              ].map(s => (
+                <div key={s.label} className={`rounded-xl p-4 text-center ${s.color}`}>
+                  <p className="text-2xl font-black">{s.value}</p>
+                  <p className="text-xs font-semibold mt-1">{s.label}</p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {studentLoading ? (
+            <div className="flex justify-center py-10"><Loader2 className="animate-spin text-emerald-500" size={28} /></div>
+          ) : !selectedStudent ? (
+            <div className="text-center py-12 text-gray-400">Select a student to view attendance history</div>
+          ) : studentHistory.length === 0 ? (
+            <div className="text-center py-12 text-gray-400">No attendance records found</div>
+          ) : (
+            <AttendanceTable data={studentHistory} onDelete={handleDelete} onApprove={handleApproveLeave} onReject={handleRejectLeave} showDate />
+          )}
         </div>
       )}
+
+      {/* Add Attendance Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl">
+            <h3 className="text-lg font-bold text-gray-800 mb-4">➕ Add Attendance — {selectedStudent?.name}</h3>
+
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs font-semibold text-gray-500 block mb-1">Date</label>
+                <input type="date" value={addForm.date} onChange={e => setAddForm(f => ({ ...f, date: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-gray-500 block mb-1">Status</label>
+                <select value={addForm.status} onChange={e => setAddForm(f => ({ ...f, status: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
+                  <option value="present">Present</option>
+                  <option value="absent">Absent</option>
+                  <option value="leave">Leave</option>
+                </select>
+              </div>
+              {addForm.status === 'present' && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-semibold text-gray-500 block mb-1">Check In</label>
+                    <input type="time" value={addForm.check_in_time} onChange={e => setAddForm(f => ({ ...f, check_in_time: e.target.value }))}
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-gray-500 block mb-1">Check Out</label>
+                    <input type="time" value={addForm.check_out_time} onChange={e => setAddForm(f => ({ ...f, check_out_time: e.target.value }))}
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+                  </div>
+                </div>
+              )}
+              {addForm.status === 'leave' && (
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 block mb-1">Leave Reason</label>
+                  <input type="text" value={addForm.leave_reason} onChange={e => setAddForm(f => ({ ...f, leave_reason: e.target.value }))}
+                    placeholder="Enter reason..." className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+                </div>
+              )}
+              <div>
+                <label className="text-xs font-semibold text-gray-500 block mb-1">Remarks (optional)</label>
+                <input type="text" value={addForm.remarks} onChange={e => setAddForm(f => ({ ...f, remarks: e.target.value }))}
+                  placeholder="Any remarks..." className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-5">
+              <button onClick={() => setShowAddModal(false)}
+                className="flex-1 py-2.5 rounded-xl text-sm font-semibold border border-gray-200 text-gray-500 hover:bg-gray-50 transition">Cancel</button>
+              <button onClick={handleAddAttendance} disabled={addLoading}
+                className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-emerald-500 text-white hover:bg-emerald-600 disabled:opacity-60 transition">
+                {addLoading ? 'Adding...' : 'Add Attendance'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Reusable attendance table ─────────────────────────────────────
+function AttendanceTable({ data, onDelete, onApprove, onReject, showDate }: {
+  data: any[]; onDelete: (id: string) => void;
+  onApprove: (id: string) => void; onReject: (id: string) => void;
+  showDate?: boolean;
+}) {
+  return (
+    <div className="overflow-x-auto rounded-xl border border-gray-100">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="bg-gray-50 border-b border-gray-100">
+            <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase">#</th>
+            {!showDate && <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase">Student</th>}
+            {showDate  && <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase">Date</th>}
+            <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase">Domain</th>
+            <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase">Status</th>
+            <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase">Check In</th>
+            <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase">Check Out</th>
+            <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase">Leave Reason</th>
+            <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase">Actions</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-50">
+          {data.map((r: any, i: number) => (
+            <tr key={r.id} className="hover:bg-gray-50 transition">
+              <td className="px-4 py-3 text-gray-400 text-xs">{i + 1}</td>
+              {!showDate && (
+                <td className="px-4 py-3">
+                  <p className="font-semibold text-gray-800">{r.student_name || '-'}</p>
+                  <p className="text-xs text-gray-400">{r.student_email || '-'}</p>
+                </td>
+              )}
+              {showDate && <td className="px-4 py-3 text-gray-700 font-medium text-sm">{r.date}</td>}
+              <td className="px-4 py-3 text-gray-600 text-xs">{r.domain_name || '-'}</td>
+              <td className="px-4 py-3">
+                <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+                  r.status === 'present' ? 'bg-green-100 text-green-700' :
+                  r.status === 'absent'  ? 'bg-red-100 text-red-700' :
+                  r.leave_approved ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'
+                }`}>
+                  {r.status === 'leave' ? (r.leave_approved ? '✓ Leave' : '⏳ Leave') : r.status}
+                </span>
+              </td>
+              <td className="px-4 py-3 text-gray-600 text-xs">{r.check_in_time ? formatTime12(r.check_in_time) : '—'}</td>
+              <td className="px-4 py-3 text-gray-600 text-xs">{r.check_out_time ? formatTime12(r.check_out_time) : '—'}</td>
+              <td className="px-4 py-3 text-gray-500 text-xs max-w-[140px] truncate">{r.leave_reason || '—'}</td>
+              <td className="px-4 py-3">
+                <div className="flex gap-1">
+                  {r.status === 'leave' && !r.leave_approved && (
+                    <>
+                      <button onClick={() => onApprove(r.id)} className="px-2 py-1 bg-green-500 text-white text-xs font-bold rounded hover:bg-green-600 transition">✓</button>
+                      <button onClick={() => onReject(r.id)}  className="px-2 py-1 bg-amber-500 text-white text-xs font-bold rounded hover:bg-amber-600 transition">✗</button>
+                    </>
+                  )}
+                  <button onClick={() => onDelete(r.id)} className="px-2 py-1 bg-red-100 text-red-600 text-xs font-bold rounded hover:bg-red-200 transition">🗑</button>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }

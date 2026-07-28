@@ -303,3 +303,111 @@ exports.markAbsent = async (req, res) => {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
+
+// Admin: Get single student full attendance history
+exports.getStudentAttendance = async (req, res) => {
+  try {
+    const { studentId } = req.params;
+
+    const data = await sequelize.query(
+      `SELECT 
+        a.*,
+        u.name as student_name,
+        u.email as student_email,
+        d.name as domain_name,
+        e."startDate" as start_date
+       FROM ip_attendance a
+       LEFT JOIN users u ON u.id = a.student_id
+       LEFT JOIN ip_enrollments e ON e.id = a.enrollment_id
+       LEFT JOIN ip_domains d ON d.id = e."domainId"
+       WHERE a.student_id = :studentId
+       ORDER BY a.date DESC`,
+      { replacements: { studentId }, type: QueryTypes.SELECT }
+    );
+
+    const total = data.length;
+    const present = data.filter(d => d.status === 'present').length;
+    const absent = data.filter(d => d.status === 'absent').length;
+    const leave = data.filter(d => d.status === 'leave').length;
+    const percentage = total > 0 ? Math.round((present / total) * 100) : 0;
+
+    res.json({ data, stats: { total, present, absent, leave, percentage } });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+// Admin: Add attendance for any date (past or future)
+exports.adminAddAttendance = async (req, res) => {
+  try {
+    const { student_id, date, status, check_in_time, check_out_time, remarks, leave_reason } = req.body;
+
+    if (!student_id || !date || !status) {
+      return res.status(400).json({ message: 'student_id, date and status are required' });
+    }
+
+    // Check if already exists
+    const existing = await sequelize.query(
+      `SELECT id FROM ip_attendance WHERE student_id = :student_id AND date = :date LIMIT 1`,
+      { replacements: { student_id, date }, type: QueryTypes.SELECT }
+    );
+
+    if (existing.length > 0) {
+      return res.status(400).json({ message: 'Attendance already exists for this date. Delete it first.' });
+    }
+
+    // Get enrollment
+    const enrollment = await sequelize.query(
+      `SELECT id FROM ip_enrollments WHERE "userId" = :student_id AND status = 'Active' LIMIT 1`,
+      { replacements: { student_id }, type: QueryTypes.SELECT }
+    );
+
+    if (!enrollment.length) {
+      return res.status(404).json({ message: 'No active internship enrollment found for this student' });
+    }
+
+    await sequelize.query(
+      `INSERT INTO ip_attendance 
+        (enrollment_id, student_id, date, status, marked_by, check_in_time, check_out_time, remarks, leave_reason, leave_approved)
+       VALUES 
+        (:enrollmentId, :student_id, :date, :status, 'admin', :check_in_time, :check_out_time, :remarks, :leave_reason, :leave_approved)`,
+      {
+        replacements: {
+          enrollmentId: enrollment[0].id,
+          student_id,
+          date,
+          status,
+          check_in_time: check_in_time || null,
+          check_out_time: check_out_time || null,
+          remarks: remarks || null,
+          leave_reason: leave_reason || null,
+          leave_approved: status === 'leave' ? true : false,
+        },
+        type: QueryTypes.INSERT
+      }
+    );
+
+    res.json({ message: 'Attendance added successfully' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+// Admin: Delete attendance record
+exports.deleteAttendance = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    await sequelize.query(
+      `DELETE FROM ip_attendance WHERE id = :id`,
+      { replacements: { id }, type: QueryTypes.DELETE }
+    );
+
+    res.json({ message: 'Attendance deleted successfully' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
