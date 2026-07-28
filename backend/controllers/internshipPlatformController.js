@@ -975,7 +975,7 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
     doc.rect(26, 26, doc.page.width - 52, doc.page.height - 52).lineWidth(0.35).stroke('#cbd5e1');
     doc.rect(20, pageBottom, doc.page.width - 40, 18).fill('#0f172a');
     doc.fillColor('#94a3b8').fontSize(7).font('Helvetica-Bold')
-      .text('Hiresnix Internship Program', 0, pageBottom + 3, { width: doc.page.width, align: 'center' });
+      .text('Hiresnix', 0, pageBottom + 3, { width: doc.page.width, align: 'center' });
     doc.fillColor('#94a3b8').fontSize(6.5).font('Helvetica')
       .text(`Operated by ${legalEntity}`, 0, pageBottom + 11, { width: doc.page.width, align: 'center' });
   };
