@@ -18,7 +18,10 @@ exports.checkIn = async (req, res) => {
     }
 
     const enrollment = await sequelize.query(
-      `SELECT id, domain FROM ip_enrollments WHERE student_id = :studentId AND status = 'active' LIMIT 1`,
+      `SELECT e.id, d.name as domain_name, e."startDate"
+       FROM ip_enrollments e
+       LEFT JOIN ip_domains d ON d.id = e."domainId"
+       WHERE e."userId" = :studentId AND e.status = 'Active' LIMIT 1`,
       { replacements: { studentId }, type: QueryTypes.SELECT }
     );
 
@@ -120,14 +123,22 @@ exports.getTodayStatus = async (req, res) => {
     );
 
     const enrollment = await sequelize.query(
-      `SELECT id, status, domain, start_date, end_date FROM ip_enrollments WHERE student_id = :studentId AND status = 'active' LIMIT 1`,
+      `SELECT e.id, e.status, e."startDate", d.name as domain_name
+       FROM ip_enrollments e
+       LEFT JOIN ip_domains d ON d.id = e."domainId"
+       WHERE e."userId" = :studentId AND e.status = 'Active' LIMIT 1`,
       { replacements: { studentId }, type: QueryTypes.SELECT }
     );
 
     res.json({
       today: todayRecord[0] || null,
       hasActiveInternship: enrollment.length > 0,
-      enrollment: enrollment[0] || null
+      enrollment: enrollment[0] ? {
+        id: enrollment[0].id,
+        status: enrollment[0].status,
+        domain: enrollment[0].domain_name,
+        start_date: enrollment[0].startDate,
+      } : null
     });
   } catch (err) {
     console.error(err);
@@ -155,7 +166,7 @@ exports.applyLeave = async (req, res) => {
     }
 
     const enrollment = await sequelize.query(
-      `SELECT id FROM ip_enrollments WHERE student_id = :studentId AND status = 'active' LIMIT 1`,
+      `SELECT id FROM ip_enrollments WHERE "userId" = :studentId AND status = 'Active' LIMIT 1`,
       { replacements: { studentId }, type: QueryTypes.SELECT }
     );
 
@@ -196,17 +207,14 @@ exports.getAllAttendance = async (req, res) => {
     const data = await sequelize.query(
       `SELECT 
         a.*,
-        s.name as student_name,
-        s.email as student_email,
-        s.college,
-        s.branch,
-        s.year,
-        e.domain,
-        e.start_date,
-        e.end_date
+        u.name as student_name,
+        u.email as student_email,
+        d.name as domain_name,
+        e."startDate" as start_date
        FROM ip_attendance a
-       LEFT JOIN students s ON s.id = a.student_id
+       LEFT JOIN users u ON u.id = a.student_id
        LEFT JOIN ip_enrollments e ON e.id = a.enrollment_id
+       LEFT JOIN ip_domains d ON d.id = e."domainId"
        WHERE ${whereClause}
        ORDER BY a.date DESC`,
       { replacements, type: QueryTypes.SELECT }
@@ -260,7 +268,7 @@ exports.markAbsent = async (req, res) => {
     const today = new Date().toISOString().split('T')[0];
 
     const enrollments = await sequelize.query(
-      `SELECT id, student_id FROM ip_enrollments WHERE status = 'active'`,
+      `SELECT id, "userId" as student_id FROM ip_enrollments WHERE status = 'Active'`,
       { type: QueryTypes.SELECT }
     );
 
