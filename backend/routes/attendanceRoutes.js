@@ -1,19 +1,19 @@
 const express = require('express');
 const router = express.Router();
-const { verifyToken, checkRole } = require('../middleware/auth');
+const { protect, authorize } = require('../middleware/auth');
 const attendanceController = require('../controllers/attendanceController');
 
 // Student routes
-router.post('/checkin', verifyToken, checkRole('student'), attendanceController.checkIn);
-router.post('/checkout', verifyToken, checkRole('student'), attendanceController.checkOut);
-router.get('/my', verifyToken, checkRole('student'), attendanceController.getMyAttendance);
-router.get('/today', verifyToken, checkRole('student'), attendanceController.getTodayStatus);
-router.post('/leave', verifyToken, checkRole('student'), attendanceController.applyLeave);
+router.post('/checkin',  protect, authorize('student'), attendanceController.checkIn);
+router.post('/checkout', protect, authorize('student'), attendanceController.checkOut);
+router.get('/my',        protect, authorize('student'), attendanceController.getMyAttendance);
+router.get('/today',     protect, authorize('student'), attendanceController.getTodayStatus);
+router.post('/leave',    protect, authorize('student'), attendanceController.applyLeave);
 
 // Admin routes
-router.get('/all', verifyToken, checkRole('admin'), attendanceController.getAllAttendance);
-router.put('/leave/:id/approve', verifyToken, checkRole('admin'), attendanceController.approveLeave);
-router.put('/leave/:id/reject', verifyToken, checkRole('admin'), attendanceController.rejectLeave);
-router.put('/mark-absent', verifyToken, checkRole('admin'), attendanceController.markAbsent);
+router.get('/all',              protect, authorize('admin'), attendanceController.getAllAttendance);
+router.put('/leave/:id/approve', protect, authorize('admin'), attendanceController.approveLeave);
+router.put('/leave/:id/reject',  protect, authorize('admin'), attendanceController.rejectLeave);
+router.put('/mark-absent',       protect, authorize('admin'), attendanceController.markAbsent);
 
 module.exports = router;
