@@ -315,7 +315,8 @@ exports.getStudentAttendance = async (req, res) => {
         u.name as student_name,
         u.email as student_email,
         d.name as domain_name,
-        e."startDate" as start_date
+        e."startDate" as start_date,
+        e.id as enrollment_id
        FROM ip_attendance a
        LEFT JOIN users u ON u.id = a.student_id
        LEFT JOIN ip_enrollments e ON e.id = a.enrollment_id
@@ -331,7 +332,18 @@ exports.getStudentAttendance = async (req, res) => {
     const leave = data.filter(d => d.status === 'leave').length;
     const percentage = total > 0 ? Math.round((present / total) * 100) : 0;
 
-    res.json({ data, stats: { total, present, absent, leave, percentage } });
+    // Get enrollment info
+    const enrollment = await sequelize.query(
+      `SELECT id, "can_self_add" FROM ip_enrollments WHERE "userId" = :studentId AND status = 'Active' LIMIT 1`,
+      { replacements: { studentId }, type: QueryTypes.SELECT }
+    );
+
+    res.json({
+      data,
+      stats: { total, present, absent, leave, percentage },
+      can_self_add: enrollment[0]?.can_self_add || false,
+      enrollment_id: enrollment[0]?.id || null
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Server error', error: err.message });
@@ -406,6 +418,91 @@ exports.deleteAttendance = async (req, res) => {
     );
 
     res.json({ message: 'Attendance deleted successfully' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+// Admin: Toggle can_self_add for a student enrollment
+exports.toggleSelfAdd = async (req, res) => {
+  try {
+    const { enrollmentId } = req.params;
+    const { can_self_add } = req.body;
+
+    await sequelize.query(
+      `UPDATE ip_enrollments SET "can_self_add" = :can_self_add WHERE id = :enrollmentId`,
+      { replacements: { can_self_add, enrollmentId }, type: QueryTypes.UPDATE }
+    );
+
+    res.json({ message: `Self-add ${can_self_add ? 'enabled' : 'disabled'} successfully` });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+// Student: Add past attendance (only if can_self_add = true)
+exports.studentSelfAdd = async (req, res) => {
+  try {
+    const studentId = req.user.id;
+    const { date, status, check_in_time, check_out_time, leave_reason } = req.body;
+
+    if (!date || !status) {
+      return res.status(400).json({ message: 'Date and status required' });
+    }
+
+    // Check future date not allowed
+    const today = new Date().toISOString().split('T')[0];
+    if (date >= today) {
+      return res.status(400).json({ message: 'Can only add past attendance' });
+    }
+
+    // Get enrollment and check can_self_add
+    const enrollment = await sequelize.query(
+      `SELECT id, "can_self_add" FROM ip_enrollments WHERE "userId" = :studentId AND status = 'Active' LIMIT 1`,
+      { replacements: { studentId }, type: QueryTypes.SELECT }
+    );
+
+    if (!enrollment.length) {
+      return res.status(404).json({ message: 'No active internship found' });
+    }
+
+    if (!enrollment[0].can_self_add) {
+      return res.status(403).json({ message: 'Self-add not enabled. Contact admin.' });
+    }
+
+    // Check already exists
+    const existing = await sequelize.query(
+      `SELECT id FROM ip_attendance WHERE student_id = :studentId AND date = :date LIMIT 1`,
+      { replacements: { studentId, date }, type: QueryTypes.SELECT }
+    );
+
+    if (existing.length > 0) {
+      return res.status(400).json({ message: 'Attendance already exists for this date' });
+    }
+
+    await sequelize.query(
+      `INSERT INTO ip_attendance 
+        (enrollment_id, student_id, date, status, marked_by, check_in_time, check_out_time, leave_reason, leave_approved)
+       VALUES 
+        (:enrollmentId, :studentId, :date, :status, 'student', :check_in_time, :check_out_time, :leave_reason, :leave_approved)`,
+      {
+        replacements: {
+          enrollmentId: enrollment[0].id,
+          studentId,
+          date,
+          status,
+          check_in_time: status === 'present' ? (check_in_time || '10:00:00') : null,
+          check_out_time: status === 'present' ? (check_out_time || '17:00:00') : null,
+          leave_reason: status === 'leave' ? (leave_reason || null) : null,
+          leave_approved: status === 'leave' ? false : false,
+        },
+        type: QueryTypes.INSERT
+      }
+    );
+
+    res.json({ message: 'Past attendance added successfully' });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Server error', error: err.message });
