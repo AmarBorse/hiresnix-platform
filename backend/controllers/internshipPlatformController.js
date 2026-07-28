@@ -1151,11 +1151,11 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
   const pageW = doc.page.width;
 
   // ── LEFT: Signature + Contact info ───────────────────────────
-  try { doc.image(getSignaturePath('ceo.png'), left, sigY, { fit: [120, 48] }); } catch (err) {}
+  try { doc.image(getSignaturePath('Director.png'), left, sigY, { fit: [120, 48] }); } catch (err) {}
   doc.fillColor('#1e293b').fontSize(11).font('Helvetica-Bold')
-    .text('A S Borse', left, founderTextY, { width: 220, lineGap: 0 });
+    .text('Jayesh Badgujar', left, founderTextY, { width: 220, lineGap: 0 });
   doc.fillColor('#334155').fontSize(8.8).font('Helvetica')
-    .text('Founder & CEO \u2013 Hiresnix', left, founderTextY + 12, { width: 220, lineGap: 0 })
+    .text('Program Director \u2013 Hiresnix', left, founderTextY + 12, { width: 220, lineGap: 0 })
     .text('For', left, founderTextY + 26, { width: 220, lineGap: 0 })
     .text(legalEntity, left, founderTextY + 36, { width: 220, lineGap: 0 })
     .text('CIN:', left, founderTextY + 49, { width: 220, lineGap: 0 })
