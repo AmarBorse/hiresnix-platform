@@ -1359,6 +1359,7 @@ function formatTime12(time: string) {
 function AttendanceTab() {
   const [view, setView] = useState<'date' | 'student'>('date');
   const [attendanceData, setAttendanceData] = useState<any[]>([]);
+  const [filteredData, setFilteredData] = useState<any[]>([]);
   const [attendanceDate, setAttendanceDate] = useState(new Date().toISOString().slice(0, 10));
   const [attendanceLoading, setAttendanceLoading] = useState(false);
   const [leavePending, setLeavePending] = useState<any[]>([]);
@@ -1405,6 +1406,7 @@ function AttendanceTab() {
       const res = await client.get(`/attendance/all?date=${date}`);
       const all = res.data.data || [];
       setAttendanceData(all);
+      setFilteredData(all);
       setLeavePending(all.filter((r: any) => r.status === 'leave' && !r.leave_approved));
     } catch { toast.error('Failed to load'); }
     finally { setAttendanceLoading(false); }
@@ -1767,7 +1769,68 @@ function AttendanceTab() {
           ) : attendanceData.length === 0 ? (
             <div className="text-center py-12 text-gray-400">No records for this date</div>
           ) : (
-            <AttendanceTable data={attendanceData} onDelete={handleDelete} onApprove={handleApproveLeave} onReject={handleRejectLeave} />
+            <>
+              {/* Search */}
+              <input
+                type="text"
+                placeholder="🔍 Search by student name..."
+                onChange={e => {
+                  const q = e.target.value.toLowerCase();
+                  const filtered = attendanceData.filter((r: any) =>
+                    (r.student_name || '').toLowerCase().includes(q) ||
+                    (r.student_email || '').toLowerCase().includes(q)
+                  );
+                  setFilteredData(filtered);
+                }}
+                className="w-full border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
+              />
+              <div className="overflow-x-auto rounded-xl border border-gray-100 max-h-[500px] overflow-y-auto">
+                <table className="w-full text-sm">
+                  <thead className="sticky top-0 bg-gray-50 z-10">
+                    <tr className="border-b border-gray-100">
+                      {['#', 'Student', 'Domain', 'Status', 'Check In', 'Check Out', 'Leave Reason', 'Actions'].map(h => (
+                        <th key={h} className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase">{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {filteredData.map((r: any, i: number) => (
+                      <tr key={r.id} className="hover:bg-gray-50 transition">
+                        <td className="px-4 py-3 text-gray-400 text-xs">{i + 1}</td>
+                        <td className="px-4 py-3">
+                          <p className="font-semibold text-gray-800">{r.student_name || '-'}</p>
+                          <p className="text-xs text-gray-400">{r.student_email || '-'}</p>
+                        </td>
+                        <td className="px-4 py-3 text-gray-600 text-xs">{r.domain_name || '-'}</td>
+                        <td className="px-4 py-3">
+                          <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+                            r.status === 'present' ? 'bg-green-100 text-green-700' :
+                            r.status === 'absent'  ? 'bg-red-100 text-red-700' :
+                            r.leave_approved ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'
+                          }`}>
+                            {r.status === 'leave' ? (r.leave_approved ? '✓ Leave' : '⏳ Leave') : r.status}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-gray-600 text-xs">{r.check_in_time ? formatTime12(r.check_in_time) : '—'}</td>
+                        <td className="px-4 py-3 text-gray-600 text-xs">{r.check_out_time ? formatTime12(r.check_out_time) : '—'}</td>
+                        <td className="px-4 py-3 text-gray-500 text-xs max-w-[140px] truncate">{r.leave_reason || '—'}</td>
+                        <td className="px-4 py-3">
+                          <div className="flex gap-1">
+                            {r.status === 'leave' && !r.leave_approved && (
+                              <>
+                                <button onClick={() => handleApproveLeave(r.id)} className="px-2 py-1 bg-green-500 text-white text-xs font-bold rounded hover:bg-green-600 transition">✓</button>
+                                <button onClick={() => handleRejectLeave(r.id)} className="px-2 py-1 bg-amber-500 text-white text-xs font-bold rounded hover:bg-amber-600 transition">✗</button>
+                              </>
+                            )}
+                            <button onClick={() => handleDelete(r.id)} className="px-2 py-1 bg-red-100 text-red-600 text-xs font-bold rounded hover:bg-red-200 transition">🗑</button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </div>
       )}
