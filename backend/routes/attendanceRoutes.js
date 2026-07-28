@@ -10,6 +10,7 @@ router.get('/my',                 protect, authorize('student'), attendanceContr
 router.get('/today',              protect, authorize('student'), attendanceController.getTodayStatus);
 router.post('/leave',             protect, authorize('student'), attendanceController.applyLeave);
 router.post('/self-add',          protect, authorize('student'), attendanceController.studentSelfAdd);
+router.put('/today-edit',         protect, authorize('student'), attendanceController.studentEditToday);
 
 // Admin routes
 router.get('/all',                           protect, authorize('admin'), attendanceController.getAllAttendance);

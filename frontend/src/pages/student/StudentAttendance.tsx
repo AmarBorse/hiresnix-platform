@@ -69,10 +69,29 @@ export default function StudentAttendance() {
   const [selfAddLoading, setSelfAddLoading] = useState(false);
 
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
-
   const showToast = (msg: string, type: 'success' | 'error') => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 3000);
+  };
+
+  // Edit today's attendance
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editForm, setEditForm] = useState({ check_in_time: '10:00', check_out_time: '17:00' });
+  const [editLoading, setEditLoading] = useState(false);
+
+  const handleEditToday = async () => {
+    setEditLoading(true);
+    try {
+      await axios.put(`${API}/attendance/today-edit`, {
+        check_in_time: editForm.check_in_time + ':00',
+        check_out_time: editForm.check_out_time + ':00',
+      }, authHeaders());
+      showToast('Attendance updated!', 'success');
+      setShowEditModal(false);
+      fetchData();
+    } catch (err: any) {
+      showToast(err.response?.data?.message || 'Failed to update', 'error');
+    } finally { setEditLoading(false); }
   };
 
   const fetchData = async () => {
@@ -273,6 +292,19 @@ export default function StudentAttendance() {
               {actionLoading ? 'Marking...' : '🚪 Check Out'}
             </button>
           )}
+          {checkedIn && !onLeave && (
+            <button onClick={() => {
+              setEditForm({
+                check_in_time: today_record?.check_in_time?.substring(0, 5) || '10:00',
+                check_out_time: today_record?.check_out_time?.substring(0, 5) || '17:00',
+              });
+              setShowEditModal(true);
+            }} style={{
+              background: 'transparent', color: '#38bdf8',
+              border: '1px solid #38bdf8', borderRadius: 10,
+              padding: '12px 24px', fontSize: 14, fontWeight: 600, cursor: 'pointer'
+            }}>✏️ Edit Time</button>
+          )}
           {!onLeave && !checkedIn && (
             <button onClick={() => setShowLeaveModal(true)} style={{
               background: 'transparent', color: '#f59e0b', border: '1px solid #f59e0b',
@@ -455,6 +487,38 @@ export default function StudentAttendance() {
               <button onClick={() => setShowSelfAddModal(false)} style={cancelBtnStyle}>Cancel</button>
               <button onClick={handleSelfAdd} disabled={selfAddLoading} style={btnStyle('#7c3aed', selfAddLoading)}>
                 {selfAddLoading ? 'Adding...' : 'Add Attendance'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Today Modal */}
+      {showEditModal && (
+        <div style={modalOverlay}>
+          <div style={modalBox}>
+            <h3 style={{ color: '#f1f5f9', fontSize: 18, fontWeight: 700, marginBottom: 4 }}>✏️ Edit Today's Attendance</h3>
+            <p style={{ color: '#64748b', fontSize: 13, marginBottom: 20 }}>Update your check-in / check-out time</p>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 24 }}>
+              <div>
+                <label style={labelStyle}>Check In</label>
+                <input type="time" value={editForm.check_in_time}
+                  onChange={e => setEditForm(f => ({ ...f, check_in_time: e.target.value }))}
+                  style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}>Check Out</label>
+                <input type="time" value={editForm.check_out_time}
+                  onChange={e => setEditForm(f => ({ ...f, check_out_time: e.target.value }))}
+                  style={inputStyle} />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: 12 }}>
+              <button onClick={() => setShowEditModal(false)} style={cancelBtnStyle}>Cancel</button>
+              <button onClick={handleEditToday} disabled={editLoading} style={btnStyle('#38bdf8', editLoading)}>
+                {editLoading ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
           </div>

@@ -565,3 +565,45 @@ exports.updateAttendance = async (req, res) => {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
+
+// Student: Edit today's check-in/check-out time
+exports.studentEditToday = async (req, res) => {
+  try {
+    const studentId = req.user.id;
+    const today = new Date().toISOString().split('T')[0];
+    const { check_in_time, check_out_time } = req.body;
+
+    const existing = await sequelize.query(
+      `SELECT * FROM ip_attendance WHERE student_id = :studentId AND date = :today LIMIT 1`,
+      { replacements: { studentId, today }, type: QueryTypes.SELECT }
+    );
+
+    if (!existing.length) {
+      return res.status(404).json({ message: 'No attendance record found for today' });
+    }
+
+    if (existing[0].status !== 'present') {
+      return res.status(400).json({ message: 'Can only edit present attendance' });
+    }
+
+    await sequelize.query(
+      `UPDATE ip_attendance SET 
+        check_in_time = :check_in_time,
+        check_out_time = :check_out_time
+       WHERE id = :id`,
+      {
+        replacements: {
+          check_in_time: check_in_time || existing[0].check_in_time,
+          check_out_time: check_out_time || existing[0].check_out_time,
+          id: existing[0].id
+        },
+        type: QueryTypes.UPDATE
+      }
+    );
+
+    res.json({ message: 'Attendance updated successfully' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
