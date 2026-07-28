@@ -1142,7 +1142,7 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
   doc.moveDown(0.2);
   doc.fillColor('#334155').fontSize(10).font('Helvetica-Bold').text(verificationEmail, left);
 
-  const signBlockY = 595;
+  const signBlockY = 625;
   doc.moveTo(left, signBlockY).lineTo(left + bodyWidth, signBlockY).lineWidth(0.8).stroke('#cbd5e1');
   doc.fillColor('#1e293b').fontSize(10).font('Helvetica-Bold').text('Regards,', left, signBlockY + 14);
 
