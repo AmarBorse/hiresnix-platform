@@ -1382,6 +1382,8 @@ function AttendanceTab() {
   const [selfAddEnabled, setSelfAddEnabled] = useState<boolean>(false);
   const [selfAddLoading, setSelfAddLoading] = useState(false);
   const [currentEnrollmentId, setCurrentEnrollmentId] = useState<string | null>(null);
+  const [globalSelfAdd, setGlobalSelfAdd] = useState<boolean>(false);
+  const [globalSelfAddLoading, setGlobalSelfAddLoading] = useState(false);
 
   // Load enrolled students list
   useEffect(() => {
@@ -1432,6 +1434,16 @@ function AttendanceTab() {
       toast.success(value ? 'Self-add enabled for student' : 'Self-add disabled');
     } catch { toast.error('Failed to update'); }
     finally { setSelfAddLoading(false); }
+  };
+
+  const handleGlobalSelfAdd = async (value: boolean) => {
+    setGlobalSelfAddLoading(true);
+    try {
+      await client.put('/attendance/toggle-self-add-all', { can_self_add: value });
+      setGlobalSelfAdd(value);
+      toast.success(value ? '✅ All students can now add past attendance' : '🔒 Past attendance self-add disabled for all');
+    } catch { toast.error('Failed to update global setting'); }
+    finally { setGlobalSelfAddLoading(false); }
   };
 
   const handleApproveLeave = async (id: string) => {
@@ -1661,6 +1673,23 @@ function AttendanceTab() {
 
   return (
     <div className="bg-white rounded-b-xl p-5 space-y-4">
+
+      {/* Global Self-Add Toggle */}
+      <div className={`flex items-center justify-between p-4 rounded-xl border-2 ${globalSelfAdd ? 'border-purple-300 bg-purple-50' : 'border-gray-200 bg-gray-50'}`}>
+        <div>
+          <p className="text-sm font-bold text-gray-800">🌐 Global Past Attendance — All Students</p>
+          <p className="text-xs text-gray-500 mt-0.5">Allow all active interns to add their own past attendance records</p>
+        </div>
+        <button
+          disabled={globalSelfAddLoading}
+          onClick={() => handleGlobalSelfAdd(!globalSelfAdd)}
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition ${
+            globalSelfAdd ? 'bg-purple-500 text-white hover:bg-purple-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+          } ${globalSelfAddLoading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+        >
+          {globalSelfAddLoading ? 'Updating...' : globalSelfAdd ? '✓ All Enabled' : 'Enable All'}
+        </button>
+      </div>
 
       {/* View Toggle */}
       <div className="flex gap-2">

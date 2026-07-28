@@ -514,3 +514,20 @@ exports.studentSelfAdd = async (req, res) => {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
+
+// Admin: Toggle can_self_add for ALL active enrollments
+exports.toggleSelfAddAll = async (req, res) => {
+  try {
+    const { can_self_add } = req.body;
+
+    await sequelize.query(
+      `UPDATE ip_enrollments SET can_self_add = :can_self_add WHERE status = 'Active'`,
+      { replacements: { can_self_add }, type: QueryTypes.UPDATE }
+    );
+
+    res.json({ message: `Self-add ${can_self_add ? 'enabled' : 'disabled'} for all active students` });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
