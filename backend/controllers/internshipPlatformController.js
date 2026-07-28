@@ -265,7 +265,7 @@ const markComplete = asyncHandler(async (req, res) => {
     completedAt: new Date(),
     adminRemark: adminRemark || 'The intern successfully completed the assigned internship program at Hiresnix. Throughout the duration, they demonstrated consistent effort, timely submission of tasks, and a willingness to learn. Their overall conduct was professional and in line with company expectations.',
     lorPerformance: lorPerformance || 'Excellent',
-    lorHighlights: lorHighlights || 'Demonstrated a strong foundation in their domain, actively participated in assigned projects, and showed commendable dedication throughout the internship. Their ability to adapt, learn quickly, and deliver results made them a valuable contributor to the team.',
+    lorHighlights: lorHighlights || 'demonstrated a strong foundation in their domain, actively participated in assigned projects, and showed commendable dedication throughout the internship. Their ability to adapt, learn quickly, and deliver results made them a valuable contributor to the team',
   });
 
   // Auto-generate certificate
@@ -813,7 +813,7 @@ const downloadLOR = asyncHandler(async (req, res) => {
 
   const date = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
   const performance = enrollment.lorPerformance || 'Excellent';
-  const highlights = enrollment.lorHighlights || 'demonstrated strong problem-solving skills and a commitment to excellence';
+  const highlights = enrollment.lorHighlights || 'demonstrated a strong foundation in their domain, actively participated in assigned projects, and showed commendable dedication throughout the internship. Their ability to adapt, learn quickly, and deliver results made them a valuable contributor to the team';
 
   doc.moveDown(1);
   doc.fillColor('#475569').fontSize(10).font('Helvetica').text(`Date: ${date}`, 40);
