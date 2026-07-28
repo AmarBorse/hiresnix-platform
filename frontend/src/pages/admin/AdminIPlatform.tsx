@@ -96,11 +96,15 @@ function Badge({ status }: { status: string }) {
 }
 
 // ── TABS ──────────────────────────────────────────────────────────
-type Tab = 'applications' | 'institution' | 'students' | 'domains' | 'resources';
+type Tab = 'applications' | 'institution' | 'students' | 'domains' | 'resources' | 'attendance';
 
 export function AdminIPlatform() {
   const [tab, setTab] = useState<Tab>('applications');
   const [stats, setStats] = useState<any>({});
+  const [attendanceData, setAttendanceData] = useState<any[]>([]);
+  const [attendanceDate, setAttendanceDate] = useState(new Date().toISOString().slice(0, 10));
+  const [attendanceLoading, setAttendanceLoading] = useState(false);
+  const [leavePending, setLeavePending] = useState<any[]>([]);
   const [applications, setApplications] = useState<any[]>([]);
   const [applicationTotal, setApplicationTotal] = useState(0);
   const [enrollments, setEnrollments] = useState<any[]>([]);
@@ -245,6 +249,7 @@ export function AdminIPlatform() {
     { id: 'students'     as Tab, label: '🎓 Students',     count: stats.activeEnrollments },
     { id: 'domains'      as Tab, label: '🗂 Domains',      count: null },
     { id: 'resources'    as Tab, label: '📚 Resources',    count: null },
+    { id: 'attendance'   as Tab, label: '📅 Attendance',   count: null },
   ];
 
   return (
@@ -1329,6 +1334,300 @@ export function AdminIPlatform() {
               </div>
             </form>
           </div>
+        </div>
+      )}
+
+      {/* ── ATTENDANCE TAB ──────────────────────────────────── */}
+      {!loading && tab === 'attendance' && (
+        <AttendanceTab />
+      )}
+    </div>
+  );
+}
+
+// ── Helper: format time 12hr ──────────────────────────────────────
+function formatTime12(time: string) {
+  if (!time) return '--';
+  const [h, m] = time.split(':');
+  const hour = parseInt(h);
+  const ampm = hour >= 12 ? 'PM' : 'AM';
+  const hour12 = hour % 12 || 12;
+  return `${hour12}:${m} ${ampm}`;
+}
+
+// ── Attendance Tab Component ──────────────────────────────────────
+function AttendanceTab() {
+  const [attendanceData, setAttendanceData] = useState<any[]>([]);
+  const [attendanceDate, setAttendanceDate] = useState(new Date().toISOString().slice(0, 10));
+  const [attendanceLoading, setAttendanceLoading] = useState(false);
+  const [leavePending, setLeavePending] = useState<any[]>([]);
+
+  const fetchAttendance = async (date: string) => {
+    setAttendanceLoading(true);
+    try {
+      const res = await client.get(`/attendance/all?date=${date}`);
+      const all = res.data.data || [];
+      setAttendanceData(all);
+      setLeavePending(all.filter((r: any) => r.status === 'leave' && !r.leave_approved));
+    } catch { toast.error('Failed to load attendance'); }
+    finally { setAttendanceLoading(false); }
+  };
+
+  useEffect(() => { fetchAttendance(attendanceDate); }, []);
+
+  const handleApproveLeave = async (id: string) => {
+    try {
+      await client.put(`/attendance/leave/${id}/approve`);
+      toast.success('Leave approved');
+      fetchAttendance(attendanceDate);
+    } catch { toast.error('Failed to approve leave'); }
+  };
+
+  const handleRejectLeave = async (id: string) => {
+    try {
+      await client.put(`/attendance/leave/${id}/reject`);
+      toast.success('Leave rejected');
+      fetchAttendance(attendanceDate);
+    } catch { toast.error('Failed to reject leave'); }
+  };
+
+  const handleMarkAbsent = async () => {
+    if (!confirm('Mark all unmarked students as absent for today?')) return;
+    try {
+      const res = await client.put('/attendance/mark-absent');
+      toast.success(res.data.message);
+      fetchAttendance(attendanceDate);
+    } catch { toast.error('Failed to mark absent'); }
+  };
+
+  const handleDownloadExcel = () => {
+    if (!attendanceData.length) { toast.error('No data to export'); return; }
+    const exportData = attendanceData.map((r: any) => ({
+      'Student Name': r.student_name || '-',
+      'Email': r.student_email || '-',
+      'Domain': r.domain_name || '-',
+      'Date': r.date,
+      'Status': r.status,
+      'Check In': r.check_in_time ? formatTime12(r.check_in_time) : '10:00 AM',
+      'Check Out': r.check_out_time ? formatTime12(r.check_out_time) : '5:00 PM',
+      'Marked By': r.marked_by,
+      'Leave Reason': r.leave_reason || '-',
+      'Leave Approved': r.leave_approved ? 'Yes' : 'No',
+    }));
+    downloadExcel(exportData, `attendance_${attendanceDate}`);
+  };
+
+  const handleDownloadPDF = async () => {
+    if (!attendanceData.length) { toast.error('No data to export'); return; }
+    const { default: jsPDF } = await import('jspdf');
+    const doc = new jsPDF({ orientation: 'landscape' });
+    const pageW = 297;
+
+    // ── Header ──
+    doc.setFillColor(15, 23, 42);
+    doc.rect(0, 0, pageW, 36, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(18); doc.setFont('helvetica', 'bold');
+    doc.text('HIRESNIX', 14, 13);
+    doc.setFontSize(9); doc.setFont('helvetica', 'normal');
+    doc.text('SR Patil Infrastructure Private Limited', 14, 20);
+    doc.text('hiresnix.co.in  |  hr@hiresnix.co.in  |  +91 9529120977', 14, 26);
+    doc.setFontSize(13); doc.setFont('helvetica', 'bold');
+    doc.setTextColor(52, 211, 153);
+    doc.text('INTERNSHIP ATTENDANCE REPORT', 165, 13);
+    doc.setFontSize(9); doc.setFont('helvetica', 'normal');
+    doc.setTextColor(200, 200, 200);
+    doc.text(`Date: ${new Date(attendanceDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}`, 165, 20);
+    doc.text('Timings: 10:00 AM – 5:00 PM', 165, 26);
+
+    // ── Table ──
+    const cols = [
+      { header: '#',            w: 10,  x: 10  },
+      { header: 'Student Name', w: 55,  x: 20  },
+      { header: 'Domain',       w: 45,  x: 75  },
+      { header: 'Status',       w: 22,  x: 120 },
+      { header: 'Check In',     w: 25,  x: 142 },
+      { header: 'Check Out',    w: 25,  x: 167 },
+      { header: 'Leave Reason', w: 80,  x: 192 },
+    ];
+    const rowH = 8;
+    let y = 44;
+
+    // Header row
+    doc.setFillColor(15, 23, 42);
+    doc.rect(10, y, pageW - 20, rowH, 'F');
+    doc.setTextColor(52, 211, 153);
+    doc.setFontSize(8); doc.setFont('helvetica', 'bold');
+    cols.forEach(c => doc.text(c.header, c.x + 1, y + 5.5));
+    y += rowH;
+
+    // Data rows
+    doc.setFont('helvetica', 'normal');
+    attendanceData.forEach((r: any, i: number) => {
+      if (y > 190) { doc.addPage(); y = 15; }
+      const alt = i % 2 === 0;
+      doc.setFillColor(alt ? 245 : 255, alt ? 247 : 255, alt ? 250 : 255);
+      doc.rect(10, y, pageW - 20, rowH, 'F');
+
+      // Status color
+      const statusColor: [number,number,number] =
+        r.status === 'present' ? [22, 163, 74] :
+        r.status === 'absent'  ? [220, 38, 38] : [217, 119, 6];
+
+      doc.setTextColor(60, 60, 60); doc.setFontSize(8);
+      doc.text(String(i + 1),                                     cols[0].x + 1, y + 5.5);
+      doc.text((r.student_name || '-').substring(0, 28),          cols[1].x + 1, y + 5.5);
+      doc.text((r.domain_name || '-').substring(0, 22),           cols[2].x + 1, y + 5.5);
+      doc.setTextColor(...statusColor);
+      doc.text(r.status.toUpperCase(),                            cols[3].x + 1, y + 5.5);
+      doc.setTextColor(60, 60, 60);
+      doc.text(r.check_in_time  ? formatTime12(r.check_in_time)  : '10:00 AM', cols[4].x + 1, y + 5.5);
+      doc.text(r.check_out_time ? formatTime12(r.check_out_time) : '5:00 PM',  cols[5].x + 1, y + 5.5);
+      doc.text((r.leave_reason || '-').substring(0, 38),          cols[6].x + 1, y + 5.5);
+      y += rowH;
+    });
+
+    // ── Summary ──
+    y += 6;
+    const present = attendanceData.filter((r: any) => r.status === 'present').length;
+    const absent  = attendanceData.filter((r: any) => r.status === 'absent').length;
+    const leave   = attendanceData.filter((r: any) => r.status === 'leave').length;
+    doc.setFontSize(10); doc.setFont('helvetica', 'bold'); doc.setTextColor(15, 23, 42);
+    doc.text(`Summary — Present: ${present}  |  Absent: ${absent}  |  Leave: ${leave}  |  Total: ${attendanceData.length}`, 14, y);
+
+    // ── Footer ──
+    doc.setFontSize(7); doc.setFont('helvetica', 'italic'); doc.setTextColor(150, 150, 150);
+    doc.text('This is a computer-generated document.  |  Hiresnix — hiresnix.co.in', 14, 205);
+
+    doc.save(`hiresnix_attendance_${attendanceDate}.pdf`);
+    toast.success('PDF downloaded!');
+  };
+
+  const present = attendanceData.filter((r: any) => r.status === 'present').length;
+  const absent = attendanceData.filter((r: any) => r.status === 'absent').length;
+  const leave = attendanceData.filter((r: any) => r.status === 'leave').length;
+
+  return (
+    <div className="bg-white rounded-b-xl p-5 space-y-5">
+      {/* Controls */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
+          <input type="date" value={attendanceDate}
+            onChange={e => { setAttendanceDate(e.target.value); setAttendanceData([]); }}
+            className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+          <button onClick={() => fetchAttendance(attendanceDate)}
+            className="px-4 py-2 bg-emerald-500 text-white rounded-lg text-sm font-semibold hover:bg-emerald-600 transition">
+            Load
+          </button>
+          <button onClick={handleMarkAbsent}
+            className="px-4 py-2 bg-red-500 text-white rounded-lg text-sm font-semibold hover:bg-red-600 transition">
+            Mark Absent (Bulk)
+          </button>
+        </div>
+        <div className="flex gap-2">
+          <button onClick={handleDownloadExcel}
+            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-semibold hover:bg-green-700 transition">
+            <Download size={14} /> Excel
+          </button>
+          <button onClick={handleDownloadPDF}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition">
+            <FileText size={14} /> PDF
+          </button>
+        </div>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-4 gap-3">
+        {[
+          { label: 'Present', value: present, color: 'bg-green-50 text-green-700' },
+          { label: 'Absent',  value: absent,  color: 'bg-red-50 text-red-700' },
+          { label: 'Leave',   value: leave,   color: 'bg-amber-50 text-amber-700' },
+          { label: 'Total',   value: attendanceData.length, color: 'bg-blue-50 text-blue-700' },
+        ].map(s => (
+          <div key={s.label} className={`rounded-xl p-4 text-center ${s.color}`}>
+            <p className="text-2xl font-black">{s.value}</p>
+            <p className="text-xs font-semibold mt-1">{s.label}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Pending Leave Requests */}
+      {leavePending.length > 0 && (
+        <div className="border border-amber-200 rounded-xl p-4 bg-amber-50">
+          <h3 className="text-sm font-bold text-amber-800 mb-3">⏳ Pending Leave Requests ({leavePending.length})</h3>
+          <div className="space-y-2">
+            {leavePending.map((r: any) => (
+              <div key={r.id} className="flex items-center justify-between bg-white rounded-lg p-3 border border-amber-100">
+                <div>
+                  <p className="text-sm font-semibold text-gray-800">{r.student_name}</p>
+                  <p className="text-xs text-gray-500">{r.date} • {r.leave_reason}</p>
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={() => handleApproveLeave(r.id)}
+                    className="px-3 py-1 bg-green-500 text-white text-xs font-bold rounded-lg hover:bg-green-600 transition">
+                    Approve
+                  </button>
+                  <button onClick={() => handleRejectLeave(r.id)}
+                    className="px-3 py-1 bg-red-500 text-white text-xs font-bold rounded-lg hover:bg-red-600 transition">
+                    Reject
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Table */}
+      {attendanceLoading ? (
+        <div className="flex justify-center py-10"><Loader2 className="animate-spin text-emerald-500" size={28} /></div>
+      ) : attendanceData.length === 0 ? (
+        <div className="text-center py-12 text-gray-400">No attendance records for this date</div>
+      ) : (
+        <div className="overflow-x-auto rounded-xl border border-gray-100">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-gray-50 border-b border-gray-100">
+                {['#', 'Student', 'Domain', 'Status', 'Check In', 'Check Out', 'Leave Reason', 'Actions'].map(h => (
+                  <th key={h} className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {attendanceData.map((r: any, i: number) => (
+                <tr key={r.id} className="hover:bg-gray-50 transition">
+                  <td className="px-4 py-3 text-gray-400 text-xs">{i + 1}</td>
+                  <td className="px-4 py-3">
+                    <p className="font-semibold text-gray-800">{r.student_name || '-'}</p>
+                    <p className="text-xs text-gray-400">{r.student_email || '-'}</p>
+                  </td>
+                  <td className="px-4 py-3 text-gray-600 text-xs">{r.domain_name || '-'}</td>
+                  <td className="px-4 py-3">
+                    <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+                      r.status === 'present' ? 'bg-green-100 text-green-700' :
+                      r.status === 'absent'  ? 'bg-red-100 text-red-700' :
+                      r.leave_approved ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'
+                    }`}>
+                      {r.status === 'leave' ? (r.leave_approved ? '✓ Leave' : '⏳ Leave') : r.status}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-gray-600 text-xs">{r.check_in_time ? formatTime12(r.check_in_time) : '—'}</td>
+                  <td className="px-4 py-3 text-gray-600 text-xs">{r.check_out_time ? formatTime12(r.check_out_time) : '—'}</td>
+                  <td className="px-4 py-3 text-gray-500 text-xs max-w-[150px] truncate">{r.leave_reason || '—'}</td>
+                  <td className="px-4 py-3">
+                    {r.status === 'leave' && !r.leave_approved && (
+                      <div className="flex gap-1">
+                        <button onClick={() => handleApproveLeave(r.id)}
+                          className="px-2 py-1 bg-green-500 text-white text-xs font-bold rounded hover:bg-green-600 transition">✓</button>
+                        <button onClick={() => handleRejectLeave(r.id)}
+                          className="px-2 py-1 bg-red-500 text-white text-xs font-bold rounded hover:bg-red-600 transition">✗</button>
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
     </div>
