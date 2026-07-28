@@ -538,9 +538,13 @@ exports.updateAttendance = async (req, res) => {
     const { id } = req.params;
     const { status, check_in_time, check_out_time, leave_reason, remarks } = req.body;
 
+    if (!status) {
+      return res.status(400).json({ message: 'Status is required' });
+    }
+
     await sequelize.query(
       `UPDATE ip_attendance SET 
-        status = :status,
+        status = '${status}',
         check_in_time = :check_in_time,
         check_out_time = :check_out_time,
         leave_reason = :leave_reason,
@@ -549,7 +553,6 @@ exports.updateAttendance = async (req, res) => {
       {
         replacements: {
           id,
-          status,
           check_in_time: check_in_time || null,
           check_out_time: check_out_time || null,
           leave_reason: leave_reason || null,
