@@ -1379,13 +1379,16 @@ function AttendanceTab() {
   });
   const [addLoading, setAddLoading] = useState(false);
 
+  const [selfAddEnabled, setSelfAddEnabled] = useState<boolean>(false);
+  const [selfAddLoading, setSelfAddLoading] = useState(false);
+  const [currentEnrollmentId, setCurrentEnrollmentId] = useState<string | null>(null);
+
   // Load enrolled students list
   useEffect(() => {
     client.get('/attendance/all').then(res => {
       const all = res.data.data || [];
       setAttendanceData(all);
       setLeavePending(all.filter((r: any) => r.status === 'leave' && !r.leave_approved));
-      // Unique students
       const map = new Map();
       all.forEach((r: any) => {
         if (!map.has(r.student_id)) map.set(r.student_id, { id: r.student_id, name: r.student_name, email: r.student_email, domain: r.domain_name });
@@ -1411,13 +1414,24 @@ function AttendanceTab() {
       const res = await client.get(`/attendance/student/${studentId}`);
       setStudentHistory(res.data.data || []);
       setStudentStats(res.data.stats);
-      // Update enrolled students if empty
+      setSelfAddEnabled(res.data.can_self_add || false);
+      setCurrentEnrollmentId(res.data.enrollment_id || null);
       if (enrolledStudents.length === 0) {
         const d = res.data.data[0];
         if (d) setEnrolledStudents([{ id: d.student_id, name: d.student_name, email: d.student_email, domain: d.domain_name }]);
       }
     } catch { toast.error('Failed to load student history'); }
     finally { setStudentLoading(false); }
+  };
+
+  const handleToggleSelfAdd = async (enrollmentId: string, value: boolean) => {
+    setSelfAddLoading(true);
+    try {
+      await client.put(`/attendance/toggle-self-add/${enrollmentId}`, { can_self_add: value });
+      setSelfAddEnabled(value);
+      toast.success(value ? 'Self-add enabled for student' : 'Self-add disabled');
+    } catch { toast.error('Failed to update'); }
+    finally { setSelfAddLoading(false); }
   };
 
   const handleApproveLeave = async (id: string) => {
@@ -1741,6 +1755,8 @@ function AttendanceTab() {
                 setSelectedStudent(s || null);
                 setStudentHistory([]);
                 setStudentStats(null);
+                setSelfAddEnabled(false);
+                setCurrentEnrollmentId(null);
                 if (s) fetchStudentHistory(s.id);
               }}
               className="border border-gray-200 rounded-lg px-3 py-2 text-sm min-w-[240px]"
@@ -1765,25 +1781,66 @@ function AttendanceTab() {
                   className="flex items-center gap-1 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition">
                   <FileText size={14} /> PDF
                 </button>
+                {/* Self-add toggle */}
+                <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 bg-gray-50">
+                  <span className="text-xs font-semibold text-gray-600">Student Self-Add</span>
+                  <button
+                    disabled={selfAddLoading}
+                    onClick={() => {
+                      const enrollmentId = studentHistory[0]?.enrollment_id;
+                      if (enrollmentId) handleToggleSelfAdd(enrollmentId, !selfAddEnabled);
+                    }}
+                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${selfAddEnabled ? 'bg-purple-500' : 'bg-gray-300'} ${selfAddLoading ? 'opacity-50' : ''}`}
+                  >
+                    <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${selfAddEnabled ? 'translate-x-4' : 'translate-x-1'}`} />
+                  </button>
+                  <span className={`text-xs font-bold ${selfAddEnabled ? 'text-purple-600' : 'text-gray-400'}`}>
+                    {selfAddEnabled ? 'ON' : 'OFF'}
+                  </span>
+                </div>
               </>
             )}
           </div>
 
           {/* Student stats */}
           {studentStats && (
-            <div className="grid grid-cols-5 gap-3">
-              {[
-                { label: 'Present',    value: studentStats.present,    color: 'bg-green-50 text-green-700' },
-                { label: 'Absent',     value: studentStats.absent,     color: 'bg-red-50 text-red-700' },
-                { label: 'Leave',      value: studentStats.leave,      color: 'bg-amber-50 text-amber-700' },
-                { label: 'Total',      value: studentStats.total,      color: 'bg-blue-50 text-blue-700' },
-                { label: 'Percentage', value: `${studentStats.percentage}%`, color: 'bg-purple-50 text-purple-700' },
-              ].map(s => (
-                <div key={s.label} className={`rounded-xl p-4 text-center ${s.color}`}>
-                  <p className="text-2xl font-black">{s.value}</p>
-                  <p className="text-xs font-semibold mt-1">{s.label}</p>
+            <div className="space-y-3">
+              <div className="grid grid-cols-5 gap-3">
+                {[
+                  { label: 'Present',    value: studentStats.present,    color: 'bg-green-50 text-green-700' },
+                  { label: 'Absent',     value: studentStats.absent,     color: 'bg-red-50 text-red-700' },
+                  { label: 'Leave',      value: studentStats.leave,      color: 'bg-amber-50 text-amber-700' },
+                  { label: 'Total',      value: studentStats.total,      color: 'bg-blue-50 text-blue-700' },
+                  { label: 'Percentage', value: `${studentStats.percentage}%`, color: 'bg-purple-50 text-purple-700' },
+                ].map(s => (
+                  <div key={s.label} className={`rounded-xl p-4 text-center ${s.color}`}>
+                    <p className="text-2xl font-black">{s.value}</p>
+                    <p className="text-xs font-semibold mt-1">{s.label}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Self-Add Permission Toggle */}
+              <div className={`flex items-center justify-between p-4 rounded-xl border-2 ${selfAddEnabled ? 'border-purple-300 bg-purple-50' : 'border-gray-200 bg-gray-50'}`}>
+                <div>
+                  <p className="text-sm font-bold text-gray-800">🔓 Allow Student to Add Past Attendance</p>
+                  <p className="text-xs text-gray-500 mt-0.5">When ON, student can manually add their past attendance records</p>
                 </div>
-              ))}
+                <button
+                  disabled={selfAddLoading}
+                  onClick={() => {
+                    if (currentEnrollmentId) handleToggleSelfAdd(currentEnrollmentId, !selfAddEnabled);
+                    else toast.error('No enrollment found for this student');
+                  }}
+                  className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition ${
+                    selfAddEnabled
+                      ? 'bg-purple-500 text-white hover:bg-purple-600'
+                      : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                  } ${selfAddLoading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                >
+                  {selfAddLoading ? 'Updating...' : selfAddEnabled ? '✓ Enabled' : 'Enable'}
+                </button>
+              </div>
             </div>
           )}
 
