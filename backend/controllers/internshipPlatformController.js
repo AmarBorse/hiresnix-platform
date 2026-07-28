@@ -975,7 +975,7 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
     doc.rect(26, 26, doc.page.width - 52, doc.page.height - 52).lineWidth(0.35).stroke('#cbd5e1');
     doc.rect(20, pageBottom, doc.page.width - 40, 18).fill('#0f172a');
     doc.fillColor('#94a3b8').fontSize(7).font('Helvetica-Bold')
-      .text('Hiresnix Internship Program', 0, pageBottom + 3, { width: doc.page.width, align: 'center' });
+      .text('Hiresnix', 0, pageBottom + 3, { width: doc.page.width, align: 'center' });
     doc.fillColor('#94a3b8').fontSize(6.5).font('Helvetica')
       .text(`Operated by ${legalEntity}`, 0, pageBottom + 11, { width: doc.page.width, align: 'center' });
   };
@@ -1146,16 +1146,16 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
   doc.moveTo(left, signBlockY).lineTo(left + bodyWidth, signBlockY).lineWidth(0.8).stroke('#cbd5e1');
   doc.fillColor('#1e293b').fontSize(10).font('Helvetica-Bold').text('Regards,', left, signBlockY + 14);
 
-  const sigY = signBlockY + 32;
+  const sigY = signBlockY + 22;
   const founderTextY = sigY + 34;
   const pageW = doc.page.width;
 
   // ── LEFT: Signature + Contact info ───────────────────────────
-  try { doc.image(getSignaturePath('ceo.png'), left, sigY, { fit: [120, 48] }); } catch (err) {}
+  try { doc.image(getSignaturePath('Director.png'), left, sigY, { fit: [120, 48] }); } catch (err) {}
   doc.fillColor('#1e293b').fontSize(11).font('Helvetica-Bold')
-    .text('A S Borse', left, founderTextY, { width: 220, lineGap: 0 });
+    .text('Mr.Jayesh Badgujar', left, founderTextY, { width: 220, lineGap: 0 });
   doc.fillColor('#334155').fontSize(8.8).font('Helvetica')
-    .text('Founder & CEO \u2013 Hiresnix', left, founderTextY + 12, { width: 220, lineGap: 0 })
+    .text('Program Director \u2013 Hiresnix', left, founderTextY + 12, { width: 220, lineGap: 0 })
     .text('For', left, founderTextY + 26, { width: 220, lineGap: 0 })
     .text(legalEntity, left, founderTextY + 36, { width: 220, lineGap: 0 })
     .text('CIN:', left, founderTextY + 49, { width: 220, lineGap: 0 })
