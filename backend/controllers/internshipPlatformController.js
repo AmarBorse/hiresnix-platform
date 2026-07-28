@@ -1146,7 +1146,7 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
   doc.moveTo(left, signBlockY).lineTo(left + bodyWidth, signBlockY).lineWidth(0.8).stroke('#cbd5e1');
   doc.fillColor('#1e293b').fontSize(10).font('Helvetica-Bold').text('Regards,', left, signBlockY + 14);
 
-  const sigY = signBlockY + 32;
+  const sigY = signBlockY + 22;
   const founderTextY = sigY + 34;
   const pageW = doc.page.width;
 
