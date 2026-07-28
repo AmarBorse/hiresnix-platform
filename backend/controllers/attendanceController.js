@@ -1,55 +1,38 @@
-const { createClient } = require('@supabase/supabase-js');
-
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY
-);
+const { QueryTypes } = require('sequelize');
+const { sequelize } = require('../config/db');
 
 // Student: Check In
 exports.checkIn = async (req, res) => {
   try {
     const studentId = req.user.id;
     const today = new Date().toISOString().split('T')[0];
-    const now = new Date().toTimeString().split(' ')[0];
+    const now = new Date().toTimeString().split(' ')[0].substring(0, 8);
 
-    const { data: existing } = await supabase
-      .from('ip_attendance')
-      .select('*')
-      .eq('student_id', studentId)
-      .eq('date', today)
-      .single();
+    const existing = await sequelize.query(
+      `SELECT * FROM ip_attendance WHERE student_id = :studentId AND date = :today LIMIT 1`,
+      { replacements: { studentId, today }, type: QueryTypes.SELECT }
+    );
 
-    if (existing) {
+    if (existing.length > 0) {
       return res.status(400).json({ message: 'Already checked in today' });
     }
 
-    const { data: enrollment } = await supabase
-      .from('ip_enrollments')
-      .select('id, domain')
-      .eq('student_id', studentId)
-      .eq('status', 'active')
-      .single();
+    const enrollment = await sequelize.query(
+      `SELECT id, domain FROM ip_enrollments WHERE student_id = :studentId AND status = 'active' LIMIT 1`,
+      { replacements: { studentId }, type: QueryTypes.SELECT }
+    );
 
-    if (!enrollment) {
+    if (!enrollment.length) {
       return res.status(404).json({ message: 'No active internship enrollment found' });
     }
 
-    const { data, error } = await supabase
-      .from('ip_attendance')
-      .insert({
-        enrollment_id: enrollment.id,
-        student_id: studentId,
-        date: today,
-        status: 'present',
-        marked_by: 'student',
-        check_in_time: now
-      })
-      .select()
-      .single();
+    await sequelize.query(
+      `INSERT INTO ip_attendance (enrollment_id, student_id, date, status, marked_by, check_in_time)
+       VALUES (:enrollmentId, :studentId, :today, 'present', 'student', :now)`,
+      { replacements: { enrollmentId: enrollment[0].id, studentId, today, now }, type: QueryTypes.INSERT }
+    );
 
-    if (error) throw error;
-
-    res.json({ message: 'Checked in successfully', data });
+    res.json({ message: 'Checked in successfully' });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Server error', error: err.message });
@@ -61,37 +44,31 @@ exports.checkOut = async (req, res) => {
   try {
     const studentId = req.user.id;
     const today = new Date().toISOString().split('T')[0];
-    const now = new Date().toTimeString().split(' ')[0];
+    const now = new Date().toTimeString().split(' ')[0].substring(0, 8);
 
-    const { data: existing } = await supabase
-      .from('ip_attendance')
-      .select('*')
-      .eq('student_id', studentId)
-      .eq('date', today)
-      .single();
+    const existing = await sequelize.query(
+      `SELECT * FROM ip_attendance WHERE student_id = :studentId AND date = :today LIMIT 1`,
+      { replacements: { studentId, today }, type: QueryTypes.SELECT }
+    );
 
-    if (!existing) {
+    if (!existing.length) {
       return res.status(400).json({ message: 'Not checked in today' });
     }
 
-    if (existing.check_out_time) {
+    if (existing[0].check_out_time) {
       return res.status(400).json({ message: 'Already checked out today' });
     }
 
-    if (existing.status === 'leave') {
+    if (existing[0].status === 'leave') {
       return res.status(400).json({ message: 'On leave today' });
     }
 
-    const { data, error } = await supabase
-      .from('ip_attendance')
-      .update({ check_out_time: now })
-      .eq('id', existing.id)
-      .select()
-      .single();
+    await sequelize.query(
+      `UPDATE ip_attendance SET check_out_time = :now WHERE id = :id`,
+      { replacements: { now, id: existing[0].id }, type: QueryTypes.UPDATE }
+    );
 
-    if (error) throw error;
-
-    res.json({ message: 'Checked out successfully', data });
+    res.json({ message: 'Checked out successfully' });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Server error', error: err.message });
@@ -103,13 +80,10 @@ exports.getMyAttendance = async (req, res) => {
   try {
     const studentId = req.user.id;
 
-    const { data, error } = await supabase
-      .from('ip_attendance')
-      .select('*')
-      .eq('student_id', studentId)
-      .order('date', { ascending: false });
-
-    if (error) throw error;
+    const data = await sequelize.query(
+      `SELECT * FROM ip_attendance WHERE student_id = :studentId ORDER BY date DESC`,
+      { replacements: { studentId }, type: QueryTypes.SELECT }
+    );
 
     const total = data.length;
     const present = data.filter(d => d.status === 'present').length;
@@ -117,7 +91,6 @@ exports.getMyAttendance = async (req, res) => {
     const leave = data.filter(d => d.status === 'leave' && d.leave_approved).length;
     const percentage = total > 0 ? Math.round((present / total) * 100) : 0;
 
-    // Calculate current streak
     let streak = 0;
     const sorted = [...data].sort((a, b) => new Date(b.date) - new Date(a.date));
     for (const record of sorted) {
@@ -141,24 +114,20 @@ exports.getTodayStatus = async (req, res) => {
     const studentId = req.user.id;
     const today = new Date().toISOString().split('T')[0];
 
-    const { data: todayRecord } = await supabase
-      .from('ip_attendance')
-      .select('*')
-      .eq('student_id', studentId)
-      .eq('date', today)
-      .single();
+    const todayRecord = await sequelize.query(
+      `SELECT * FROM ip_attendance WHERE student_id = :studentId AND date = :today LIMIT 1`,
+      { replacements: { studentId, today }, type: QueryTypes.SELECT }
+    );
 
-    const { data: enrollment } = await supabase
-      .from('ip_enrollments')
-      .select('id, status, domain, start_date, end_date')
-      .eq('student_id', studentId)
-      .eq('status', 'active')
-      .single();
+    const enrollment = await sequelize.query(
+      `SELECT id, status, domain, start_date, end_date FROM ip_enrollments WHERE student_id = :studentId AND status = 'active' LIMIT 1`,
+      { replacements: { studentId }, type: QueryTypes.SELECT }
+    );
 
     res.json({
-      today: todayRecord || null,
-      hasActiveInternship: !!enrollment,
-      enrollment: enrollment || null
+      today: todayRecord[0] || null,
+      hasActiveInternship: enrollment.length > 0,
+      enrollment: enrollment[0] || null
     });
   } catch (err) {
     console.error(err);
@@ -176,45 +145,31 @@ exports.applyLeave = async (req, res) => {
       return res.status(400).json({ message: 'Date and reason required' });
     }
 
-    const { data: existing } = await supabase
-      .from('ip_attendance')
-      .select('*')
-      .eq('student_id', studentId)
-      .eq('date', date)
-      .single();
+    const existing = await sequelize.query(
+      `SELECT * FROM ip_attendance WHERE student_id = :studentId AND date = :date LIMIT 1`,
+      { replacements: { studentId, date }, type: QueryTypes.SELECT }
+    );
 
-    if (existing) {
+    if (existing.length > 0) {
       return res.status(400).json({ message: 'Attendance already marked for this date' });
     }
 
-    const { data: enrollment } = await supabase
-      .from('ip_enrollments')
-      .select('id')
-      .eq('student_id', studentId)
-      .eq('status', 'active')
-      .single();
+    const enrollment = await sequelize.query(
+      `SELECT id FROM ip_enrollments WHERE student_id = :studentId AND status = 'active' LIMIT 1`,
+      { replacements: { studentId }, type: QueryTypes.SELECT }
+    );
 
-    if (!enrollment) {
+    if (!enrollment.length) {
       return res.status(404).json({ message: 'No active internship found' });
     }
 
-    const { data, error } = await supabase
-      .from('ip_attendance')
-      .insert({
-        enrollment_id: enrollment.id,
-        student_id: studentId,
-        date,
-        status: 'leave',
-        marked_by: 'student',
-        leave_reason,
-        leave_approved: false
-      })
-      .select()
-      .single();
+    await sequelize.query(
+      `INSERT INTO ip_attendance (enrollment_id, student_id, date, status, marked_by, leave_reason, leave_approved)
+       VALUES (:enrollmentId, :studentId, :date, 'leave', 'student', :leave_reason, false)`,
+      { replacements: { enrollmentId: enrollment[0].id, studentId, date, leave_reason }, type: QueryTypes.INSERT }
+    );
 
-    if (error) throw error;
-
-    res.json({ message: 'Leave applied successfully', data });
+    res.json({ message: 'Leave applied successfully' });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Server error', error: err.message });
@@ -226,32 +181,36 @@ exports.getAllAttendance = async (req, res) => {
   try {
     const { date, student_id } = req.query;
 
-    let query = supabase
-      .from('ip_attendance')
-      .select(`
-        *,
-        students (
-          id,
-          name,
-          email,
-          college,
-          branch,
-          year
-        ),
-        ip_enrollments (
-          id,
-          domain,
-          start_date,
-          end_date
-        )
-      `)
-      .order('date', { ascending: false });
+    let whereClause = '1=1';
+    const replacements = {};
 
-    if (date) query = query.eq('date', date);
-    if (student_id) query = query.eq('student_id', student_id);
+    if (date) {
+      whereClause += ' AND a.date = :date';
+      replacements.date = date;
+    }
+    if (student_id) {
+      whereClause += ' AND a.student_id = :student_id';
+      replacements.student_id = student_id;
+    }
 
-    const { data, error } = await query;
-    if (error) throw error;
+    const data = await sequelize.query(
+      `SELECT 
+        a.*,
+        s.name as student_name,
+        s.email as student_email,
+        s.college,
+        s.branch,
+        s.year,
+        e.domain,
+        e.start_date,
+        e.end_date
+       FROM ip_attendance a
+       LEFT JOIN students s ON s.id = a.student_id
+       LEFT JOIN ip_enrollments e ON e.id = a.enrollment_id
+       WHERE ${whereClause}
+       ORDER BY a.date DESC`,
+      { replacements, type: QueryTypes.SELECT }
+    );
 
     res.json({ data });
   } catch (err) {
@@ -266,16 +225,12 @@ exports.approveLeave = async (req, res) => {
     const { id } = req.params;
     const adminId = req.user.id;
 
-    const { data, error } = await supabase
-      .from('ip_attendance')
-      .update({ leave_approved: true, leave_approved_by: adminId })
-      .eq('id', id)
-      .select()
-      .single();
+    await sequelize.query(
+      `UPDATE ip_attendance SET leave_approved = true, leave_approved_by = :adminId WHERE id = :id`,
+      { replacements: { adminId, id }, type: QueryTypes.UPDATE }
+    );
 
-    if (error) throw error;
-
-    res.json({ message: 'Leave approved', data });
+    res.json({ message: 'Leave approved' });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Server error', error: err.message });
@@ -287,61 +242,52 @@ exports.rejectLeave = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const { data, error } = await supabase
-      .from('ip_attendance')
-      .update({ status: 'absent', leave_approved: false, leave_reason: null })
-      .eq('id', id)
-      .select()
-      .single();
+    await sequelize.query(
+      `UPDATE ip_attendance SET status = 'absent', leave_approved = false, leave_reason = null WHERE id = :id`,
+      { replacements: { id }, type: QueryTypes.UPDATE }
+    );
 
-    if (error) throw error;
-
-    res.json({ message: 'Leave rejected', data });
+    res.json({ message: 'Leave rejected' });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
 
-// Admin: Mark absent (end of day bulk)
+// Admin: Mark absent (bulk - end of day)
 exports.markAbsent = async (req, res) => {
   try {
     const today = new Date().toISOString().split('T')[0];
 
-    const { data: enrollments } = await supabase
-      .from('ip_enrollments')
-      .select('id, student_id')
-      .eq('status', 'active');
+    const enrollments = await sequelize.query(
+      `SELECT id, student_id FROM ip_enrollments WHERE status = 'active'`,
+      { type: QueryTypes.SELECT }
+    );
 
-    if (!enrollments || enrollments.length === 0) {
+    if (!enrollments.length) {
       return res.json({ message: 'No active enrollments', marked: 0 });
     }
 
-    const { data: todayAttendance } = await supabase
-      .from('ip_attendance')
-      .select('student_id')
-      .eq('date', today);
+    const todayAttendance = await sequelize.query(
+      `SELECT student_id FROM ip_attendance WHERE date = :today`,
+      { replacements: { today }, type: QueryTypes.SELECT }
+    );
 
-    const markedStudentIds = (todayAttendance || []).map(a => a.student_id);
-    const notMarked = enrollments.filter(e => !markedStudentIds.includes(e.student_id));
+    const markedIds = todayAttendance.map(a => String(a.student_id));
+    const notMarked = enrollments.filter(e => !markedIds.includes(String(e.student_id)));
 
-    if (notMarked.length === 0) {
+    if (!notMarked.length) {
       return res.json({ message: 'All students already marked', marked: 0 });
     }
 
-    const absentRecords = notMarked.map(e => ({
-      enrollment_id: e.id,
-      student_id: e.student_id,
-      date: today,
-      status: 'absent',
-      marked_by: 'admin'
-    }));
-
-    const { error } = await supabase
-      .from('ip_attendance')
-      .insert(absentRecords);
-
-    if (error) throw error;
+    for (const e of notMarked) {
+      await sequelize.query(
+        `INSERT INTO ip_attendance (enrollment_id, student_id, date, status, marked_by)
+         VALUES (:enrollmentId, :studentId, :today, 'absent', 'admin')
+         ON CONFLICT (enrollment_id, date) DO NOTHING`,
+        { replacements: { enrollmentId: e.id, studentId: e.student_id, today }, type: QueryTypes.INSERT }
+      );
+    }
 
     res.json({ message: `${notMarked.length} students marked absent`, marked: notMarked.length });
   } catch (err) {
