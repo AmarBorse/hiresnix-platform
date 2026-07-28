@@ -1151,7 +1151,7 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
   const pageW = doc.page.width;
 
   // ── LEFT: Signature + Contact info ───────────────────────────
-  try { doc.image(getSignaturePath('Director.png'), left, sigY, { fit: [115, 48] }); } catch (err) {}
+  try { doc.image(getSignaturePath('Director.png'), left, sigY, { fit: [115, 35] }); } catch (err) {}
   doc.fillColor('#1e293b').fontSize(11).font('Helvetica-Bold')
     .text('Mr.Jayesh Badgujar', left, founderTextY, { width: 220, lineGap: 0 });
   doc.fillColor('#334155').fontSize(8.8).font('Helvetica')
