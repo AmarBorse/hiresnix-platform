@@ -24,6 +24,11 @@ const getEmoji = (t: string) => {
   return '🚀';
 };
 
+const formatDate = (d: string) => {
+  if (!d) return '';
+  return new Date(d).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' });
+};
+
 export function ProjectPortfolio() {
   const { username } = useParams<{ username: string }>();
   const [data, setData] = useState<any>(null);
@@ -54,11 +59,21 @@ export function ProjectPortfolio() {
     </div>
   );
 
-  const { user, student, projects } = data;
+  const { user, student, projects, enrollment, certificate } = data;
   const initials = user.name.split(' ').map((n:string)=>n[0]).join('').slice(0,2).toUpperCase();
   const liveProjects = projects.filter((p:any)=>p.status==='live').length;
   const skills = student.skills ? (Array.isArray(student.skills) ? student.skills : student.skills.split(',')).map((s:string)=>s.trim()).filter(Boolean) : [];
   const firstName = user.name.split(' ')[0];
+  const education = student.education ? (Array.isArray(student.education) ? student.education : []) : [];
+
+  // Internship duration label
+  const getInternshipDuration = () => {
+    if (!enrollment) return null;
+    const start = enrollment.startDate ? formatDate(enrollment.startDate) : null;
+    const end = enrollment.completedAt ? formatDate(enrollment.completedAt) : 'Present';
+    if (!start) return enrollment.status;
+    return `${start} – ${end}`;
+  };
 
   return (
     <div style={{background:'#030508',minHeight:'100vh',color:'#fff',fontFamily:'Inter,sans-serif',overflowX:'hidden'}}>
@@ -70,6 +85,8 @@ export function ProjectPortfolio() {
         .pcard{transition:all 0.3s!important}
         .pcard:hover{transform:translateY(-4px)!important;border-color:rgba(99,102,241,0.5)!important;box-shadow:0 20px 40px rgba(0,0,0,0.5),0 0 30px rgba(99,102,241,0.1)!important}
         .spill:hover{background:rgba(99,102,241,0.2)!important;color:#a5b4fc!important}
+        .sec-card{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.07);border-radius:20px;padding:28px;position:relative;overflow:hidden}
+        .sec-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(99,102,241,0.6),rgba(212,175,55,0.4),transparent)}
       `}</style>
 
       {/* Blobs */}
@@ -87,20 +104,40 @@ export function ProjectPortfolio() {
 
       {/* Hero */}
       <div style={{padding:'80px 40px 60px',position:'relative',zIndex:1,textAlign:'center',maxWidth:900,margin:'0 auto'}}>
-        <div style={{display:'inline-flex',alignItems:'center',gap:8,fontSize:12,padding:'6px 16px',borderRadius:20,border:'1px solid rgba(212,175,55,0.3)',background:'rgba(212,175,55,0.08)',color:'#d4af37',fontWeight:700,marginBottom:24,letterSpacing:'0.5px'}}>
+        {/* Profile Photo */}
+        <div style={{display:'flex',justifyContent:'center',marginBottom:24}}>
+          <div style={{position:'relative'}}>
+            {student.profilePic ? (
+              <img src={student.profilePic} alt={user.name} style={{width:100,height:100,borderRadius:'50%',objectFit:'cover',border:'3px solid rgba(99,102,241,0.5)',boxShadow:'0 0 40px rgba(99,102,241,0.3)'}} />
+            ) : (
+              <div style={{width:100,height:100,borderRadius:'50%',background:'linear-gradient(135deg,#6366f1,#8b5cf6)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:36,fontWeight:900,border:'3px solid rgba(99,102,241,0.5)',boxShadow:'0 0 40px rgba(99,102,241,0.3)'}}>{initials}</div>
+            )}
+            <div style={{position:'absolute',bottom:4,right:4,width:16,height:16,borderRadius:'50%',background:'#22c55e',border:'3px solid #030508',boxShadow:'0 0 8px rgba(34,197,94,0.8)'}} />
+          </div>
+        </div>
+
+        <div style={{display:'inline-flex',alignItems:'center',gap:8,fontSize:12,padding:'6px 16px',borderRadius:20,border:'1px solid rgba(212,175,55,0.3)',background:'rgba(212,175,55,0.08)',color:'#d4af37',fontWeight:700,marginBottom:16,letterSpacing:'0.5px'}}>
           <div style={{width:6,height:6,borderRadius:'50%',background:'#22c55e',boxShadow:'0 0 8px rgba(34,197,94,0.8)'}} />
           Available for opportunities
         </div>
-        <div style={{fontSize:'clamp(48px,8vw,80px)',fontWeight:900,letterSpacing:-3,lineHeight:1,marginBottom:16,background:'linear-gradient(135deg,#fff 40%,rgba(255,255,255,0.7))',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>{user.name}</div>
-        <div style={{fontSize:'clamp(20px,3vw,28px)',fontWeight:800,letterSpacing:-1,marginBottom:20}}>
+        <div style={{fontSize:'clamp(40px,7vw,72px)',fontWeight:900,letterSpacing:-3,lineHeight:1,marginBottom:12,background:'linear-gradient(135deg,#fff 40%,rgba(255,255,255,0.7))',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>{user.name}</div>
+        <div style={{fontSize:'clamp(18px,2.5vw,24px)',fontWeight:800,letterSpacing:-1,marginBottom:12}}>
           <span style={{background:'linear-gradient(135deg,#6366f1,#d4af37)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>{student.domain || 'Developer'}</span>
         </div>
-        {student.bio && <div style={{fontSize:15,color:'rgba(255,255,255,0.45)',lineHeight:1.7,maxWidth:520,margin:'0 auto 32px'}}>{student.bio}</div>}
-        <div style={{display:'flex',gap:12,justifyContent:'center',flexWrap:'wrap',marginBottom:40}}>
-          <a href={`mailto:${user.email}`} style={{padding:'14px 28px',borderRadius:12,background:'linear-gradient(135deg,#6366f1,#8b5cf6)',color:'#fff',fontSize:14,fontWeight:700,textDecoration:'none',boxShadow:'0 4px 20px rgba(99,102,241,0.4)'}}>✉ Get in Touch</a>
-          {student.githubUrl && <a href={student.githubUrl} target="_blank" rel="noopener noreferrer" style={{padding:'14px 28px',borderRadius:12,background:'rgba(255,255,255,0.04)',color:'rgba(255,255,255,0.6)',fontSize:14,fontWeight:600,textDecoration:'none',border:'1px solid rgba(255,255,255,0.1)'}}>⌥ GitHub</a>}
+        {student.college && <div style={{fontSize:13,color:'rgba(255,255,255,0.4)',marginBottom:4}}>🎓 {student.college}{student.department ? ` · ${student.department}` : ''}{student.year ? ` · Year ${student.year}` : ''}</div>}
+        {student.location && <div style={{fontSize:13,color:'rgba(255,255,255,0.35)',marginBottom:16}}>📍 {student.location}</div>}
+        {student.bio && <div style={{fontSize:14,color:'rgba(255,255,255,0.45)',lineHeight:1.7,maxWidth:520,margin:'0 auto 24px'}}>{student.bio}</div>}
+
+        {/* Action Buttons */}
+        <div style={{display:'flex',gap:10,justifyContent:'center',flexWrap:'wrap',marginBottom:32}}>
+          <a href={`mailto:${user.email}`} style={{padding:'12px 24px',borderRadius:12,background:'linear-gradient(135deg,#6366f1,#8b5cf6)',color:'#fff',fontSize:13,fontWeight:700,textDecoration:'none',boxShadow:'0 4px 20px rgba(99,102,241,0.4)'}}>✉ Get in Touch</a>
+          {student.githubUrl && <a href={student.githubUrl} target="_blank" rel="noopener noreferrer" style={{padding:'12px 22px',borderRadius:12,background:'rgba(255,255,255,0.04)',color:'rgba(255,255,255,0.7)',fontSize:13,fontWeight:600,textDecoration:'none',border:'1px solid rgba(255,255,255,0.1)'}}>⌥ GitHub</a>}
+          {student.linkedinUrl && <a href={student.linkedinUrl} target="_blank" rel="noopener noreferrer" style={{padding:'12px 22px',borderRadius:12,background:'rgba(10,102,194,0.15)',color:'#60a5fa',fontSize:13,fontWeight:600,textDecoration:'none',border:'1px solid rgba(10,102,194,0.3)'}}>in LinkedIn</a>}
+          {student.resumeUrl && <a href={student.resumeUrl} target="_blank" rel="noopener noreferrer" style={{padding:'12px 22px',borderRadius:12,background:'rgba(212,175,55,0.1)',color:'#d4af37',fontSize:13,fontWeight:700,textDecoration:'none',border:'1px solid rgba(212,175,55,0.3)'}}>📄 Resume</a>}
         </div>
-        <div style={{display:'flex',gap:32,justifyContent:'center'}}>
+
+        {/* Stats */}
+        <div style={{display:'flex',gap:32,justifyContent:'center',flexWrap:'wrap'}}>
           <div style={{textAlign:'center'}}>
             <div style={{fontSize:28,fontWeight:900,letterSpacing:-1,background:'linear-gradient(135deg,#d4af37,#f5d680)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>{projects.length}</div>
             <div style={{fontSize:12,color:'rgba(255,255,255,0.3)',marginTop:2}}>Projects</div>
@@ -109,12 +146,18 @@ export function ProjectPortfolio() {
             <div style={{fontSize:28,fontWeight:900,color:'#22c55e',textShadow:'0 0 20px rgba(34,197,94,0.6)'}}>{liveProjects}</div>
             <div style={{fontSize:12,color:'rgba(255,255,255,0.3)',marginTop:2}}>Live</div>
           </div>
+          {skills.length > 0 && (
+            <div style={{textAlign:'center'}}>
+              <div style={{fontSize:28,fontWeight:900,color:'#a5b4fc'}}>{skills.length}</div>
+              <div style={{fontSize:12,color:'rgba(255,255,255,0.3)',marginTop:2}}>Skills</div>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Marquee */}
+      {/* Skills Marquee */}
       {skills.length > 0 && (
-        <div style={{padding:'24px 0',borderTop:'1px solid rgba(255,255,255,0.05)',borderBottom:'1px solid rgba(255,255,255,0.05)',overflow:'hidden',position:'relative',zIndex:1}}>
+        <div style={{padding:'20px 0',borderTop:'1px solid rgba(255,255,255,0.05)',borderBottom:'1px solid rgba(255,255,255,0.05)',overflow:'hidden',position:'relative',zIndex:1}}>
           <div style={{display:'flex',animation:'marquee 20s linear infinite',width:'max-content'}}>
             {[...skills,...skills,...skills,...skills].map((s:string,i:number)=>(
               <span key={i} style={{display:'inline-flex',alignItems:'center',gap:10,padding:'0 28px',fontSize:13,fontWeight:600,color:'rgba(255,255,255,0.3)',whiteSpace:'nowrap'}}>
@@ -127,10 +170,10 @@ export function ProjectPortfolio() {
         </div>
       )}
 
-      {/* Profile Card */}
-      <div style={{padding:'40px 40px 0',position:'relative',zIndex:1}}>
-        <div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:24,padding:32,position:'relative',overflow:'hidden',maxWidth:900,margin:'0 auto'}}>
-          <div style={{position:'absolute',top:0,left:0,right:0,height:1,background:'linear-gradient(90deg,transparent,rgba(99,102,241,0.8),rgba(212,175,55,0.6),transparent)'}} />
+      <div style={{padding:'32px 40px 0',position:'relative',zIndex:1,maxWidth:980,margin:'0 auto',display:'flex',flexDirection:'column',gap:24}}>
+
+        {/* Profile Card */}
+        <div className="sec-card">
           <div style={{display:'flex',gap:24,alignItems:'flex-start',flexWrap:'wrap'}}>
             <div style={{position:'relative',flexShrink:0}}>
               {student.profilePic ? (
@@ -142,17 +185,18 @@ export function ProjectPortfolio() {
             </div>
             <div style={{flex:1,minWidth:180}}>
               <div style={{fontSize:22,fontWeight:900,letterSpacing:-0.5,marginBottom:3}}>{user.name}</div>
-              <div style={{fontSize:13,color:'rgba(255,255,255,0.4)',marginBottom:12}}>{student.domain || 'Developer'}{student.location ? ` · ${student.location}` : ''}</div>
+              <div style={{fontSize:13,color:'rgba(255,255,255,0.4)',marginBottom:8}}>{student.domain || 'Developer'}{student.location ? ` · ${student.location}` : ''}</div>
               <div style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:12}}>
                 <span style={{fontSize:10,padding:'4px 10px',borderRadius:20,fontWeight:700,background:'rgba(212,175,55,0.15)',color:'#d4af37',border:'1px solid rgba(212,175,55,0.3)'}}>✦ Hiresnix Verified</span>
-                {student.domain && <span style={{fontSize:10,padding:'4px 10px',borderRadius:20,fontWeight:700,background:'rgba(99,102,241,0.15)',color:'#a5b4fc',border:'1px solid rgba(99,102,241,0.3)'}}>{student.domain}</span>}
+                {enrollment && <span style={{fontSize:10,padding:'4px 10px',borderRadius:20,fontWeight:700,background:'rgba(99,102,241,0.15)',color:'#a5b4fc',border:'1px solid rgba(99,102,241,0.3)'}}>🏢 Hiresnix Intern</span>}
                 <span style={{fontSize:10,padding:'4px 10px',borderRadius:20,fontWeight:700,background:'rgba(34,197,94,0.12)',color:'#4ade80',border:'1px solid rgba(34,197,94,0.25)'}}>● Open to work</span>
               </div>
               <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
                 {student.githubUrl && <a href={student.githubUrl} target="_blank" rel="noopener noreferrer" style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:12,padding:'6px 12px',borderRadius:8,border:'1px solid rgba(255,255,255,0.08)',background:'rgba(255,255,255,0.04)',color:'rgba(255,255,255,0.6)',textDecoration:'none',fontWeight:600}}>⌥ GitHub</a>}
                 {student.linkedinUrl && <a href={student.linkedinUrl} target="_blank" rel="noopener noreferrer" style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:12,padding:'6px 12px',borderRadius:8,border:'1px solid rgba(255,255,255,0.08)',background:'rgba(255,255,255,0.04)',color:'rgba(255,255,255,0.6)',textDecoration:'none',fontWeight:600}}>in LinkedIn</a>}
                 {student.phone && <a href={`https://wa.me/91${student.phone.replace(/\D/g,'')}`} target="_blank" rel="noopener noreferrer" style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:12,padding:'6px 12px',borderRadius:8,border:'1px solid rgba(37,211,102,0.3)',background:'rgba(37,211,102,0.08)',color:'#25d366',textDecoration:'none',fontWeight:700}}>📱 WhatsApp</a>}
-                <a href={`mailto:${user.email}`} style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:12,padding:'6px 12px',borderRadius:8,border:'1px solid rgba(99,102,241,0.4)',background:'rgba(99,102,241,0.1)',color:'#a5b4fc',textDecoration:'none',fontWeight:700}}>✉ Get in Touch</a>
+                {student.resumeUrl && <a href={student.resumeUrl} target="_blank" rel="noopener noreferrer" style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:12,padding:'6px 12px',borderRadius:8,border:'1px solid rgba(212,175,55,0.3)',background:'rgba(212,175,55,0.08)',color:'#d4af37',textDecoration:'none',fontWeight:700}}>📄 Resume</a>}
+                <a href={`mailto:${user.email}`} style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:12,padding:'6px 12px',borderRadius:8,border:'1px solid rgba(99,102,241,0.4)',background:'rgba(99,102,241,0.1)',color:'#a5b4fc',textDecoration:'none',fontWeight:700}}>✉ Contact</a>
               </div>
             </div>
           </div>
@@ -165,18 +209,98 @@ export function ProjectPortfolio() {
             </div>
           )}
         </div>
-      </div>
 
-      {/* Projects */}
-      <div style={{padding:'40px 40px 0',position:'relative',zIndex:1}}>
-        <div style={{maxWidth:980,margin:'0 auto'}}>
-          <div style={{display:'flex',alignItems:'center',gap:16,marginBottom:24}}>
-            <div style={{fontSize:20,fontWeight:800,letterSpacing:-0.5}}>Projects</div>
+        {/* Experience — Hiresnix Internship */}
+        {enrollment && (
+          <div className="sec-card">
+            <div style={{fontSize:13,fontWeight:700,color:'rgba(255,255,255,0.25)',textTransform:'uppercase',letterSpacing:'2px',marginBottom:16}}>Experience</div>
+            <div style={{display:'flex',gap:16,alignItems:'flex-start'}}>
+              <div style={{width:44,height:44,borderRadius:12,background:'linear-gradient(135deg,#6366f1,#d4af37)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:18,fontWeight:900,flexShrink:0}}>H</div>
+              <div style={{flex:1}}>
+                <div style={{fontSize:15,fontWeight:700,marginBottom:2}}>{enrollment.domain_name || 'Technology'} Intern</div>
+                <div style={{fontSize:13,color:'rgba(255,255,255,0.5)',marginBottom:4}}>Hiresnix · Remote</div>
+                <div style={{fontSize:12,color:'rgba(255,255,255,0.3)',marginBottom:8}}>{getInternshipDuration()}</div>
+                <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+                  <span style={{fontSize:10,padding:'3px 10px',borderRadius:20,background:'rgba(212,175,55,0.12)',color:'#d4af37',border:'1px solid rgba(212,175,55,0.25)',fontWeight:600}}>✦ Hiresnix Verified</span>
+                  <span style={{fontSize:10,padding:'3px 10px',borderRadius:20,background:enrollment.status==='Completed'?'rgba(34,197,94,0.12)':'rgba(99,102,241,0.12)',color:enrollment.status==='Completed'?'#4ade80':'#a5b4fc',border:`1px solid ${enrollment.status==='Completed'?'rgba(34,197,94,0.25)':'rgba(99,102,241,0.25)'}`,fontWeight:600}}>
+                    {enrollment.status === 'Completed' ? '✓ Completed' : '⏳ Active'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Certificate */}
+        {certificate && (
+          <div className="sec-card" style={{background:'linear-gradient(135deg,rgba(212,175,55,0.06),rgba(99,102,241,0.04))'}}>
+            <div style={{fontSize:13,fontWeight:700,color:'rgba(255,255,255,0.25)',textTransform:'uppercase',letterSpacing:'2px',marginBottom:16}}>Certifications</div>
+            <div style={{display:'flex',gap:16,alignItems:'center',justifyContent:'space-between',flexWrap:'wrap'}}>
+              <div style={{display:'flex',gap:14,alignItems:'center'}}>
+                <div style={{fontSize:36}}>🏆</div>
+                <div>
+                  <div style={{fontSize:15,fontWeight:700,marginBottom:2}}>Internship Completion Certificate</div>
+                  <div style={{fontSize:13,color:'rgba(255,255,255,0.4)',marginBottom:4}}>Hiresnix · {certificate.domain_name}</div>
+                  {certificate.issuedAt && <div style={{fontSize:12,color:'rgba(255,255,255,0.3)'}}>Issued {formatDate(certificate.issuedAt)}</div>}
+                  <div style={{fontSize:11,color:'rgba(212,175,55,0.7)',marginTop:4,fontWeight:600}}>ID: {certificate.certificateNo}</div>
+                </div>
+              </div>
+              <a href={`https://hiresnix.co.in/verify/${certificate.certificateNo}`} target="_blank" rel="noopener noreferrer"
+                style={{padding:'10px 20px',borderRadius:10,background:'rgba(212,175,55,0.15)',color:'#d4af37',border:'1px solid rgba(212,175,55,0.3)',fontSize:12,fontWeight:700,textDecoration:'none'}}>
+                ✦ Verify Certificate
+              </a>
+            </div>
+          </div>
+        )}
+
+        {/* Education */}
+        {(education.length > 0 || student.college) && (
+          <div className="sec-card">
+            <div style={{fontSize:13,fontWeight:700,color:'rgba(255,255,255,0.25)',textTransform:'uppercase',letterSpacing:'2px',marginBottom:16}}>Education</div>
+            {education.length > 0 ? education.map((edu: any, i: number) => (
+              <div key={i} style={{display:'flex',gap:14,alignItems:'flex-start',paddingBottom:i < education.length-1 ? 16 : 0,borderBottom:i < education.length-1 ? '1px solid rgba(255,255,255,0.05)' : 'none',marginBottom:i < education.length-1 ? 16 : 0}}>
+                <div style={{width:44,height:44,borderRadius:12,background:'rgba(99,102,241,0.15)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:20,flexShrink:0}}>🎓</div>
+                <div>
+                  <div style={{fontSize:15,fontWeight:700,marginBottom:2}}>{edu.degree || edu.course}</div>
+                  <div style={{fontSize:13,color:'rgba(255,255,255,0.5)',marginBottom:2}}>{edu.institution || edu.college}</div>
+                  {edu.year && <div style={{fontSize:12,color:'rgba(255,255,255,0.3)'}}>{edu.year}</div>}
+                </div>
+              </div>
+            )) : (
+              <div style={{display:'flex',gap:14,alignItems:'flex-start'}}>
+                <div style={{width:44,height:44,borderRadius:12,background:'rgba(99,102,241,0.15)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:20,flexShrink:0}}>🎓</div>
+                <div>
+                  <div style={{fontSize:15,fontWeight:700,marginBottom:2}}>{student.department || 'Engineering'}</div>
+                  <div style={{fontSize:13,color:'rgba(255,255,255,0.5)',marginBottom:2}}>{student.college || 'College'}</div>
+                  {student.year && <div style={{fontSize:12,color:'rgba(255,255,255,0.3)'}}>Year {student.year}</div>}
+                  {student.cgpa && <div style={{fontSize:12,color:'rgba(255,255,255,0.3)'}}>CGPA: {student.cgpa}</div>}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Skills detailed */}
+        {skills.length > 0 && (
+          <div className="sec-card">
+            <div style={{fontSize:13,fontWeight:700,color:'rgba(255,255,255,0.25)',textTransform:'uppercase',letterSpacing:'2px',marginBottom:16}}>Skills & Technologies</div>
+            <div style={{display:'flex',flexWrap:'wrap',gap:8}}>
+              {skills.map((s:string) => (
+                <span key={s} className="spill" style={{padding:'8px 16px',borderRadius:10,fontSize:13,fontWeight:600,background:'rgba(99,102,241,0.08)',color:'rgba(165,180,252,0.8)',border:'1px solid rgba(99,102,241,0.15)',cursor:'default',transition:'all 0.2s'}}>{s}</span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Projects */}
+        <div>
+          <div style={{display:'flex',alignItems:'center',gap:16,marginBottom:20}}>
+            <div style={{fontSize:18,fontWeight:800,letterSpacing:-0.5}}>Projects</div>
             <div style={{flex:1,height:1,background:'linear-gradient(90deg,rgba(99,102,241,0.4),transparent)'}} />
             <div style={{fontSize:12,color:'rgba(255,255,255,0.25)',fontWeight:600}}>{projects.length} total</div>
           </div>
           {projects.length === 0 ? (
-            <div style={{textAlign:'center',padding:'60px 20px',color:'rgba(255,255,255,0.3)'}}>
+            <div style={{textAlign:'center',padding:'60px 20px',color:'rgba(255,255,255,0.3)',background:'rgba(255,255,255,0.02)',borderRadius:20,border:'1px solid rgba(255,255,255,0.05)'}}>
               <div style={{fontSize:48,marginBottom:12}}>🚀</div>
               <p>No projects yet</p>
             </div>
@@ -221,17 +345,20 @@ export function ProjectPortfolio() {
       </div>
 
       {/* CTA */}
-      <div style={{margin:'40px 40px 0',background:'linear-gradient(135deg,rgba(212,175,55,0.06),rgba(99,102,241,0.06))',border:'1px solid rgba(212,175,55,0.15)',borderRadius:20,padding:'32px',display:'flex',alignItems:'center',justifyContent:'space-between',gap:20,flexWrap:'wrap',position:'relative',overflow:'hidden',zIndex:1}}>
+      <div style={{margin:'32px 40px 0',maxWidth:980,marginLeft:'auto',marginRight:'auto',background:'linear-gradient(135deg,rgba(212,175,55,0.06),rgba(99,102,241,0.06))',border:'1px solid rgba(212,175,55,0.15)',borderRadius:20,padding:'28px 32px',display:'flex',alignItems:'center',justifyContent:'space-between',gap:20,flexWrap:'wrap',position:'relative',overflow:'hidden',zIndex:1}}>
         <div style={{position:'absolute',top:0,left:0,right:0,height:1,background:'linear-gradient(90deg,transparent,rgba(212,175,55,0.6),rgba(99,102,241,0.5),transparent)'}} />
         <div>
-          <h3 style={{fontSize:20,fontWeight:800,letterSpacing:-0.5,marginBottom:4,background:'linear-gradient(135deg,#fff,#d4af37)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>Interested in hiring {firstName}?</h3>
+          <h3 style={{fontSize:18,fontWeight:800,letterSpacing:-0.5,marginBottom:4,background:'linear-gradient(135deg,#fff,#d4af37)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>Interested in hiring {firstName}?</h3>
           <p style={{fontSize:13,color:'rgba(255,255,255,0.4)'}}>Connect directly — let's build something great together</p>
         </div>
-        <a href={`mailto:${user.email}`} style={{padding:'12px 24px',borderRadius:12,background:'linear-gradient(135deg,#6366f1,#8b5cf6)',color:'#fff',fontSize:13,fontWeight:700,textDecoration:'none',boxShadow:'0 4px 15px rgba(99,102,241,0.3)'}}>✉ Get in Touch</a>
+        <div style={{display:'flex',gap:10,flexWrap:'wrap'}}>
+          <a href={`mailto:${user.email}`} style={{padding:'11px 22px',borderRadius:12,background:'linear-gradient(135deg,#6366f1,#8b5cf6)',color:'#fff',fontSize:13,fontWeight:700,textDecoration:'none',boxShadow:'0 4px 15px rgba(99,102,241,0.3)'}}>✉ Get in Touch</a>
+          {student.resumeUrl && <a href={student.resumeUrl} target="_blank" rel="noopener noreferrer" style={{padding:'11px 22px',borderRadius:12,background:'rgba(212,175,55,0.1)',color:'#d4af37',border:'1px solid rgba(212,175,55,0.3)',fontSize:13,fontWeight:700,textDecoration:'none'}}>📄 View Resume</a>}
+        </div>
       </div>
 
       {/* Footer */}
-      <div style={{textAlign:'center',padding:32,fontSize:12,color:'rgba(255,255,255,0.15)',position:'relative',zIndex:1,marginTop:40}}>
+      <div style={{textAlign:'center',padding:'32px 40px',fontSize:12,color:'rgba(255,255,255,0.15)',position:'relative',zIndex:1,marginTop:40}}>
         Powered by <a href="/" style={{color:'rgba(99,102,241,0.5)',textDecoration:'none',fontWeight:600}}>Hiresnix</a> · Build your portfolio free
       </div>
     </div>

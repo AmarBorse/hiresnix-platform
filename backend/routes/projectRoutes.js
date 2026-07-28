@@ -31,26 +31,64 @@ router.get('/u/:username', asyncHandler(async (req, res) => {
     return slug === username.toLowerCase();
   });
   if (!user) return res.status(404).json({ success: false, message: 'Portfolio not found' });
+
   const studentRows = await sequelize.query(
     `SELECT * FROM students WHERE "userId" = :userId LIMIT 1`,
     { replacements: { userId: user.id }, type: QueryTypes.SELECT }
   );
   const student = studentRows[0] || {};
+
+  // Get internship enrollment
+  const enrollmentRows = await sequelize.query(
+    `SELECT e.id, e.status, e."startDate", e."completedAt", d.name as domain_name
+     FROM ip_enrollments e
+     LEFT JOIN ip_domains d ON d.id = e."domainId"
+     WHERE e."userId" = :userId
+     ORDER BY e."createdAt" DESC LIMIT 1`,
+    { replacements: { userId: user.id }, type: QueryTypes.SELECT }
+  );
+  const enrollment = enrollmentRows[0] || null;
+
+  // Get certificate
+  const certRows = await sequelize.query(
+    `SELECT c."certificateNo", c."issuedAt", d.name as domain_name
+     FROM internship_certificates c
+     LEFT JOIN ip_enrollments e ON e.id = c."enrollmentId"
+     LEFT JOIN ip_domains d ON d.id = e."domainId"
+     WHERE e."userId" = :userId LIMIT 1`,
+    { replacements: { userId: user.id }, type: QueryTypes.SELECT }
+  ).catch(() => []);
+  const certificate = certRows[0] || null;
+
   const projects = await Project.findAll({
     where: { userId: user.id },
     order: [['featured', 'DESC'], ['order', 'ASC'], ['createdAt', 'DESC']],
   });
+
   res.json({
     success: true,
     data: {
       user: { id: user.id, name: user.name, email: user.email },
       student: {
-        phone: student.phone, location: student.location,
-        skills: student.skills, bio: student.bio,
-        linkedinUrl: student.linkedinUrl, githubUrl: student.githubUrl,
-        portfolioUrl: student.portfolioUrl, profilePic: student.profilePic,
+        phone: student.phone,
+        location: student.location,
+        skills: student.skills,
+        bio: student.bio,
+        linkedinUrl: student.linkedin,
+        githubUrl: student.github,
+        portfolioUrl: student.portfolio,
+        profilePic: student.profilePic,
         domain: student.domain,
+        department: student.department,
+        year: student.year,
+        cgpa: student.cgpa,
+        college: student.college,
+        education: student.education,
+        resumeUrl: student.resumeUrl,
+        certifications: student.certifications,
       },
+      enrollment,
+      certificate,
       projects,
       totalProjects: projects.length,
     }
