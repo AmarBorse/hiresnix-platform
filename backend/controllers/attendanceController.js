@@ -123,7 +123,7 @@ exports.getTodayStatus = async (req, res) => {
     );
 
     const enrollment = await sequelize.query(
-      `SELECT e.id, e.status, e."startDate", d.name as domain_name
+      `SELECT e.id, e.status, e."startDate", e."can_self_add", d.name as domain_name
        FROM ip_enrollments e
        LEFT JOIN ip_domains d ON d.id = e."domainId"
        WHERE e."userId" = :studentId AND e.status = 'Active' LIMIT 1`,
@@ -138,6 +138,7 @@ exports.getTodayStatus = async (req, res) => {
         status: enrollment[0].status,
         domain: enrollment[0].domain_name,
         start_date: enrollment[0].startDate,
+        can_self_add: enrollment[0].can_self_add || false,
       } : null
     });
   } catch (err) {
@@ -309,6 +310,17 @@ exports.getStudentAttendance = async (req, res) => {
   try {
     const { studentId } = req.params;
 
+    // Get enrollment first (independent of attendance records)
+    const enrollment = await sequelize.query(
+      `SELECT e.id, e."can_self_add", e."startDate", d.name as domain_name
+       FROM ip_enrollments e
+       LEFT JOIN ip_domains d ON d.id = e."domainId"
+       WHERE e."userId" = :studentId AND e.status = 'Active'
+       LIMIT 1`,
+      { replacements: { studentId }, type: QueryTypes.SELECT }
+    );
+
+    // Get attendance records
     const data = await sequelize.query(
       `SELECT 
         a.*,
@@ -331,12 +343,6 @@ exports.getStudentAttendance = async (req, res) => {
     const absent = data.filter(d => d.status === 'absent').length;
     const leave = data.filter(d => d.status === 'leave').length;
     const percentage = total > 0 ? Math.round((present / total) * 100) : 0;
-
-    // Get enrollment info
-    const enrollment = await sequelize.query(
-      `SELECT id, "can_self_add" FROM ip_enrollments WHERE "userId" = :studentId AND status = 'Active' LIMIT 1`,
-      { replacements: { studentId }, type: QueryTypes.SELECT }
-    );
 
     res.json({
       data,
