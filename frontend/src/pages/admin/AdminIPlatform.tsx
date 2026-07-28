@@ -2018,61 +2018,166 @@ function AttendanceTable({ data, onDelete, onApprove, onReject, showDate }: {
   onApprove: (id: string) => void; onReject: (id: string) => void;
   showDate?: boolean;
 }) {
+  const [editRecord, setEditRecord] = useState<any>(null);
+  const [editForm, setEditForm] = useState<any>({});
+  const [editLoading, setEditLoading] = useState(false);
+
+  const openEdit = (r: any) => {
+    setEditRecord(r);
+    setEditForm({
+      status: r.status,
+      check_in_time: r.check_in_time ? r.check_in_time.substring(0, 5) : '10:00',
+      check_out_time: r.check_out_time ? r.check_out_time.substring(0, 5) : '17:00',
+      leave_reason: r.leave_reason || '',
+      remarks: r.remarks || '',
+    });
+  };
+
+  const handleUpdate = async () => {
+    setEditLoading(true);
+    try {
+      await client.put(`/attendance/${editRecord.id}`, {
+        status: editForm.status,
+        check_in_time: editForm.status === 'present' ? editForm.check_in_time + ':00' : null,
+        check_out_time: editForm.status === 'present' ? editForm.check_out_time + ':00' : null,
+        leave_reason: editForm.status === 'leave' ? editForm.leave_reason : null,
+        remarks: editForm.remarks || null,
+      });
+      toast.success('Attendance updated!');
+      setEditRecord(null);
+      // Reload page to reflect changes
+      window.location.reload();
+    } catch { toast.error('Failed to update'); }
+    finally { setEditLoading(false); }
+  };
+
   return (
-    <div className="overflow-x-auto rounded-xl border border-gray-100">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="bg-gray-50 border-b border-gray-100">
-            <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase">#</th>
-            {!showDate && <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase">Student</th>}
-            {showDate  && <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase">Date</th>}
-            <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase">Domain</th>
-            <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase">Status</th>
-            <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase">Check In</th>
-            <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase">Check Out</th>
-            <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase">Leave Reason</th>
-            <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase">Actions</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-50">
-          {data.map((r: any, i: number) => (
-            <tr key={r.id} className="hover:bg-gray-50 transition">
-              <td className="px-4 py-3 text-gray-400 text-xs">{i + 1}</td>
-              {!showDate && (
-                <td className="px-4 py-3">
-                  <p className="font-semibold text-gray-800">{r.student_name || '-'}</p>
-                  <p className="text-xs text-gray-400">{r.student_email || '-'}</p>
-                </td>
-              )}
-              {showDate && <td className="px-4 py-3 text-gray-700 font-medium text-sm">{r.date}</td>}
-              <td className="px-4 py-3 text-gray-600 text-xs">{r.domain_name || '-'}</td>
-              <td className="px-4 py-3">
-                <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
-                  r.status === 'present' ? 'bg-green-100 text-green-700' :
-                  r.status === 'absent'  ? 'bg-red-100 text-red-700' :
-                  r.leave_approved ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'
-                }`}>
-                  {r.status === 'leave' ? (r.leave_approved ? '✓ Leave' : '⏳ Leave') : r.status}
-                </span>
-              </td>
-              <td className="px-4 py-3 text-gray-600 text-xs">{r.check_in_time ? formatTime12(r.check_in_time) : '—'}</td>
-              <td className="px-4 py-3 text-gray-600 text-xs">{r.check_out_time ? formatTime12(r.check_out_time) : '—'}</td>
-              <td className="px-4 py-3 text-gray-500 text-xs max-w-[140px] truncate">{r.leave_reason || '—'}</td>
-              <td className="px-4 py-3">
-                <div className="flex gap-1">
-                  {r.status === 'leave' && !r.leave_approved && (
-                    <>
-                      <button onClick={() => onApprove(r.id)} className="px-2 py-1 bg-green-500 text-white text-xs font-bold rounded hover:bg-green-600 transition">✓</button>
-                      <button onClick={() => onReject(r.id)}  className="px-2 py-1 bg-amber-500 text-white text-xs font-bold rounded hover:bg-amber-600 transition">✗</button>
-                    </>
-                  )}
-                  <button onClick={() => onDelete(r.id)} className="px-2 py-1 bg-red-100 text-red-600 text-xs font-bold rounded hover:bg-red-200 transition">🗑</button>
-                </div>
-              </td>
+    <>
+      <div className="overflow-x-auto rounded-xl border border-gray-100 max-h-[500px] overflow-y-auto">
+        <table className="w-full text-sm">
+          <thead className="sticky top-0 bg-gray-50 z-10">
+            <tr className="border-b border-gray-100">
+              <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase">#</th>
+              {!showDate && <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase">Student</th>}
+              {showDate  && <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase">Date</th>}
+              <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase">Domain</th>
+              <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase">Status</th>
+              <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase">Check In</th>
+              <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase">Check Out</th>
+              <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase">Leave Reason</th>
+              <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase">Actions</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody className="divide-y divide-gray-50">
+            {data.map((r: any, i: number) => (
+              <tr key={r.id} className="hover:bg-gray-50 transition">
+                <td className="px-4 py-3 text-gray-400 text-xs">{i + 1}</td>
+                {!showDate && (
+                  <td className="px-4 py-3">
+                    <p className="font-semibold text-gray-800">{r.student_name || '-'}</p>
+                    <p className="text-xs text-gray-400">{r.student_email || '-'}</p>
+                  </td>
+                )}
+                {showDate && <td className="px-4 py-3 text-gray-700 font-medium text-sm">{r.date}</td>}
+                <td className="px-4 py-3 text-gray-600 text-xs">{r.domain_name || '-'}</td>
+                <td className="px-4 py-3">
+                  <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+                    r.status === 'present' ? 'bg-green-100 text-green-700' :
+                    r.status === 'absent'  ? 'bg-red-100 text-red-700' :
+                    r.leave_approved ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'
+                  }`}>
+                    {r.status === 'leave' ? (r.leave_approved ? '✓ Leave' : '⏳ Leave') : r.status}
+                  </span>
+                </td>
+                <td className="px-4 py-3 text-gray-600 text-xs">{r.check_in_time ? formatTime12(r.check_in_time) : '—'}</td>
+                <td className="px-4 py-3 text-gray-600 text-xs">{r.check_out_time ? formatTime12(r.check_out_time) : '—'}</td>
+                <td className="px-4 py-3 text-gray-500 text-xs max-w-[140px] truncate">{r.leave_reason || '—'}</td>
+                <td className="px-4 py-3">
+                  <div className="flex gap-1">
+                    {/* Edit button */}
+                    <button onClick={() => openEdit(r)}
+                      className="px-2 py-1 bg-blue-100 text-blue-600 text-xs font-bold rounded hover:bg-blue-200 transition">✏️</button>
+                    {r.status === 'leave' && !r.leave_approved && (
+                      <>
+                        <button onClick={() => onApprove(r.id)} className="px-2 py-1 bg-green-500 text-white text-xs font-bold rounded hover:bg-green-600 transition">✓</button>
+                        <button onClick={() => onReject(r.id)}  className="px-2 py-1 bg-amber-500 text-white text-xs font-bold rounded hover:bg-amber-600 transition">✗</button>
+                      </>
+                    )}
+                    <button onClick={() => onDelete(r.id)} className="px-2 py-1 bg-red-100 text-red-600 text-xs font-bold rounded hover:bg-red-200 transition">🗑</button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Edit Modal */}
+      {editRecord && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl">
+            <h3 className="text-lg font-bold text-gray-800 mb-1">✏️ Edit Attendance</h3>
+            <p className="text-xs text-gray-500 mb-4">{editRecord.student_name} • {editRecord.date}</p>
+
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs font-semibold text-gray-500 block mb-1">Status</label>
+                <select value={editForm.status}
+                  onChange={e => setEditForm((f: any) => ({ ...f, status: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
+                  <option value="present">Present</option>
+                  <option value="absent">Absent</option>
+                  <option value="leave">Leave</option>
+                </select>
+              </div>
+
+              {editForm.status === 'present' && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-semibold text-gray-500 block mb-1">Check In</label>
+                    <input type="time" value={editForm.check_in_time}
+                      onChange={e => setEditForm((f: any) => ({ ...f, check_in_time: e.target.value }))}
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-gray-500 block mb-1">Check Out</label>
+                    <input type="time" value={editForm.check_out_time}
+                      onChange={e => setEditForm((f: any) => ({ ...f, check_out_time: e.target.value }))}
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+                  </div>
+                </div>
+              )}
+
+              {editForm.status === 'leave' && (
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 block mb-1">Leave Reason</label>
+                  <input type="text" value={editForm.leave_reason}
+                    onChange={e => setEditForm((f: any) => ({ ...f, leave_reason: e.target.value }))}
+                    placeholder="Enter reason..." className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+                </div>
+              )}
+
+              <div>
+                <label className="text-xs font-semibold text-gray-500 block mb-1">Remarks (optional)</label>
+                <input type="text" value={editForm.remarks}
+                  onChange={e => setEditForm((f: any) => ({ ...f, remarks: e.target.value }))}
+                  placeholder="Any remarks..." className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-5">
+              <button onClick={() => setEditRecord(null)}
+                className="flex-1 py-2.5 rounded-xl text-sm font-semibold border border-gray-200 text-gray-500 hover:bg-gray-50 transition">
+                Cancel
+              </button>
+              <button onClick={handleUpdate} disabled={editLoading}
+                className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-60 transition">
+                {editLoading ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

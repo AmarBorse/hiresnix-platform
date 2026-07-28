@@ -531,3 +531,37 @@ exports.toggleSelfAddAll = async (req, res) => {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
+
+// Admin: Update/Edit any attendance record
+exports.updateAttendance = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, check_in_time, check_out_time, leave_reason, remarks } = req.body;
+
+    await sequelize.query(
+      `UPDATE ip_attendance SET 
+        status = :status,
+        check_in_time = :check_in_time,
+        check_out_time = :check_out_time,
+        leave_reason = :leave_reason,
+        remarks = :remarks
+       WHERE id = :id`,
+      {
+        replacements: {
+          id,
+          status,
+          check_in_time: check_in_time || null,
+          check_out_time: check_out_time || null,
+          leave_reason: leave_reason || null,
+          remarks: remarks || null,
+        },
+        type: QueryTypes.UPDATE
+      }
+    );
+
+    res.json({ message: 'Attendance updated successfully' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};

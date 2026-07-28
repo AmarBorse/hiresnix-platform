@@ -15,6 +15,7 @@ router.post('/self-add',          protect, authorize('student'), attendanceContr
 router.get('/all',                           protect, authorize('admin'), attendanceController.getAllAttendance);
 router.get('/student/:studentId',            protect, authorize('admin'), attendanceController.getStudentAttendance);
 router.post('/admin-add',                    protect, authorize('admin'), attendanceController.adminAddAttendance);
+router.put('/:id',                           protect, authorize('admin'), attendanceController.updateAttendance);
 router.delete('/:id',                        protect, authorize('admin'), attendanceController.deleteAttendance);
 router.put('/leave/:id/approve',             protect, authorize('admin'), attendanceController.approveLeave);
 router.put('/leave/:id/reject',              protect, authorize('admin'), attendanceController.rejectLeave);
