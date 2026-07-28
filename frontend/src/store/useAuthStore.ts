@@ -47,6 +47,10 @@ export const useAuthStore = create<AuthState>()(
           user: state.user ? { ...state.user, ...updates } : null,
         })),
     }),
-    { name: 'hirenix-auth', version: 2 }
+    { 
+      name: 'hirenix-auth', 
+      version: 2,
+      migrate: () => ({ user: null, token: null, isAuthenticated: false }),
+    }
   )
 );
