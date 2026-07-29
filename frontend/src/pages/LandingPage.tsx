@@ -440,7 +440,7 @@ export function LandingPage() {
           <img src="/hiresnix-logo.png" alt="Hiresnix" style={{ height: 40, width: 'auto', objectFit: 'contain', filter: 'drop-shadow(0 0 10px rgba(59,130,246,0.5))' }} />
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }} className="lp-hide-mobile">
-          {[['#services', 'Services'], ['#products', 'Products'], ['#industries', 'Industries'], ['#about', 'About'], ['#contact', 'Contact']].map(([href, label]) => (
+          {[['#services', 'Services'], ['#products', 'Products'], ['#industries', 'Industries'], ['#careers', 'Careers'], ['#about', 'About'], ['#contact', 'Contact']].map(([href, label]) => (
             <a key={href} href={href} className="lp-nav-link">{label}</a>
           ))}
         </div>
@@ -534,6 +534,91 @@ export function LandingPage() {
                 <p style={{ color: '#6b7a99', fontSize: '0.83rem', lineHeight: 1.65, position: 'relative', zIndex: 1 }}>{s.desc}</p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── CAREERS / INTERNSHIPS ── */}
+      <section id="careers" style={{ padding: '7rem 5%', background: 'linear-gradient(180deg, #080c18 0%, #060910 100%)' }}>
+        <div style={{ maxWidth: 1140, margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: '3.5rem' }}>
+            <span style={{ display: 'inline-block', fontSize: '0.78rem', fontWeight: 700, letterSpacing: '0.12em', color: '#5b8dee', textTransform: 'uppercase', marginBottom: '1rem', padding: '0.4rem 1.2rem', background: 'rgba(91,141,238,0.1)', borderRadius: 20, border: '1px solid rgba(91,141,238,0.2)' }}>
+              🎓 Internship Program
+            </span>
+            <h2 className="lp-section-title lp-reveal lp-d1">Internship & Career Opportunities</h2>
+            <p style={{ color: '#7a8ba8', fontSize: '1.05rem', maxWidth: 580, margin: '1rem auto 0', lineHeight: 1.7 }}>
+              Join Hiresnix's internship program and gain hands-on experience in cutting-edge technologies. We offer structured internships for engineering students across multiple domains.
+            </p>
+          </div>
+
+          {/* Domain Cards */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1.5rem', marginBottom: '4rem' }}>
+            {[
+              { icon: '🤖', domain: 'Artificial Intelligence', skills: 'Python, TensorFlow, ML, Deep Learning', duration: '1-6 Months', color: '#6366f1' },
+              { icon: '🌐', domain: 'Full Stack Development', skills: 'React, Node.js, MongoDB, REST APIs', duration: '1-6 Months', color: '#10b981' },
+              { icon: '📱', domain: 'App Development', skills: 'Flutter, React Native, Android, iOS', duration: '1-6 Months', color: '#f59e0b' },
+              { icon: '📊', domain: 'Data Science & Analytics', skills: 'Python, Pandas, SQL, Power BI', duration: '1-6 Months', color: '#ec4899' },
+              { icon: '🎨', domain: 'UI/UX Design', skills: 'Figma, Adobe XD, Prototyping', duration: '1-6 Months', color: '#8b5cf6' },
+              { icon: '☁️', domain: 'Cloud & DevOps', skills: 'AWS, Docker, CI/CD, Linux', duration: '1-6 Months', color: '#14b8a6' },
+            ].map((item) => (
+              <div key={item.domain} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 16, padding: '1.8rem', transition: 'all 0.25s', cursor: 'default' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.06)'; (e.currentTarget as HTMLDivElement).style.borderColor = `${item.color}40`; (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-4px)'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.03)'; (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(255,255,255,0.07)'; (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)'; }}>
+                <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>{item.icon}</div>
+                <h3 style={{ color: '#e8edf5', fontSize: '1.05rem', fontWeight: 700, marginBottom: '0.5rem' }}>{item.domain}</h3>
+                <p style={{ color: '#7a8ba8', fontSize: '0.82rem', marginBottom: '1rem', lineHeight: 1.6 }}>{item.skills}</p>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span style={{ fontSize: '0.78rem', color: item.color, fontWeight: 600, background: `${item.color}15`, padding: '3px 10px', borderRadius: 20, border: `1px solid ${item.color}30` }}>⏱ {item.duration}</span>
+                  <span style={{ fontSize: '0.78rem', color: '#4ade80', fontWeight: 600 }}>● Open</span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* How to Apply */}
+          <div style={{ background: 'rgba(91,141,238,0.05)', border: '1px solid rgba(91,141,238,0.15)', borderRadius: 20, padding: '3rem', marginBottom: '3rem' }}>
+            <h3 style={{ color: '#e8edf5', fontSize: '1.4rem', fontWeight: 800, textAlign: 'center', marginBottom: '2.5rem' }}>How to Apply</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
+              {[
+                { step: '01', title: 'Register', desc: 'Create your account on Hiresnix Student Portal' },
+                { step: '02', title: 'Apply', desc: 'Browse internship domains and submit your application' },
+                { step: '03', title: 'Approval', desc: 'Our team reviews and approves your application' },
+                { step: '04', title: 'Start', desc: 'Begin your internship and work on real projects' },
+              ].map(s => (
+                <div key={s.step} style={{ textAlign: 'center' }}>
+                  <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'linear-gradient(135deg,#5b8dee,#6366f1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem', fontSize: '0.9rem', fontWeight: 900, color: '#fff' }}>{s.step}</div>
+                  <h4 style={{ color: '#e8edf5', fontWeight: 700, marginBottom: '0.4rem' }}>{s.title}</h4>
+                  <p style={{ color: '#7a8ba8', fontSize: '0.83rem', lineHeight: 1.6 }}>{s.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Internship Benefits */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginBottom: '3rem' }}>
+            {[
+              { icon: '📜', text: 'Internship Completion Certificate' },
+              { icon: '💼', text: 'Real-world Project Experience' },
+              { icon: '🏆', text: 'Letter of Recommendation' },
+              { icon: '🎯', text: 'Industry Mentorship' },
+              { icon: '🔗', text: 'Professional Portfolio Building' },
+              { icon: '✅', text: 'AICTE Recognized Program' },
+            ].map(b => (
+              <div key={b.text} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, padding: '0.9rem 1.2rem' }}>
+                <span style={{ fontSize: '1.2rem' }}>{b.icon}</span>
+                <span style={{ color: '#a8b4c4', fontSize: '0.85rem', fontWeight: 500 }}>{b.text}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* CTA */}
+          <div style={{ textAlign: 'center' }}>
+            <button className="lp-btn-glow" style={{ fontSize: '1.05rem', padding: '1rem 2.5rem', marginRight: '1rem' }} onClick={() => navigate('/auth')}>
+              Apply for Internship →
+            </button>
+            <a href="mailto:hr@hiresnix.co.in" style={{ color: '#5b8dee', fontSize: '0.95rem', fontWeight: 600, textDecoration: 'none' }}>
+              📧 hr@hiresnix.co.in
+            </a>
           </div>
         </div>
       </section>
@@ -923,6 +1008,7 @@ export function LandingPage() {
               {[
                 ['About Us', '/about-us'],
                 ['Contact Us', '/contact-us'],
+                ['Careers', '/#careers'],
                 ['Verify Certificate', '/verify'],
                 ['Privacy Policy', '/privacy-policy'],
                 ['Terms', '/terms-and-conditions'],
