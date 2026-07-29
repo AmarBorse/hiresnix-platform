@@ -2,23 +2,154 @@
 <html lang="en">
   <head>
     <link rel="icon" type="image/png" href="/hiresnix-logo.png" />
-    <!-- Preconnect for faster font load — prevents FOUT (flash of unstyled text) -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+
+    <!-- Theme init — runs before render to prevent flash -->
+    <script>
+      (function() {
+        try {
+          const stored = localStorage.getItem('hx-theme');
+          const isDark = stored ? JSON.parse(stored)?.state?.isDark !== false : true;
+          document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+        } catch(e) {
+          document.documentElement.setAttribute('data-theme', 'dark');
+        }
+      })();
+    </script>
+
     <style>
-      /* Fallback font stack — shows immediately before Inter loads */
       body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; }
-      /* Prevent cursor text on nav links */
       a { cursor: default !important; }
       a:hover { cursor: default !important; }
+
+      /* ── Dark mode (default) ── */
+      :root, [data-theme="dark"] {
+        --hx-sidebar-bg:    #0B0F1A;
+        --hx-main-bg:       #0D1117;
+        --hx-card-bg:       rgba(255,255,255,0.05);
+        --hx-card-border:   rgba(255,255,255,0.08);
+        --hx-text-primary:  #F1F5F9;
+        --hx-text-muted:    #94A3B8;
+        --hx-nav-color:     #94A3B8;
+        --hx-glass-bg:      rgba(255,255,255,0.06);
+        --hx-glass-border:  rgba(255,255,255,0.10);
+        --hx-glass-hover:   rgba(255,255,255,0.10);
+        --hx-header-bg:     rgba(13,17,23,0.8);
+        --hx-header-border: rgba(255,255,255,0.06);
+        --hx-divider:       rgba(255,255,255,0.06);
+        --hx-scrollbar:     rgba(255,255,255,0.12);
+        --hx-toggle-bg:     rgba(255,255,255,0.08);
+        --hx-toggle-border: rgba(255,255,255,0.12);
+      }
+
+      /* ── Light mode ── */
+      [data-theme="light"] {
+        --hx-sidebar-bg:    #F8FAFC;
+        --hx-main-bg:       #F1F5F9;
+        --hx-card-bg:       rgba(255,255,255,0.95);
+        --hx-card-border:   rgba(0,0,0,0.08);
+        --hx-text-primary:  #0F172A;
+        --hx-text-muted:    #64748B;
+        --hx-nav-color:     #64748B;
+        --hx-glass-bg:      rgba(0,0,0,0.03);
+        --hx-glass-border:  rgba(0,0,0,0.08);
+        --hx-glass-hover:   rgba(0,0,0,0.05);
+        --hx-header-bg:     rgba(248,250,252,0.95);
+        --hx-header-border: rgba(0,0,0,0.06);
+        --hx-divider:       rgba(0,0,0,0.06);
+        --hx-scrollbar:     rgba(0,0,0,0.12);
+        --hx-toggle-bg:     rgba(0,0,0,0.05);
+        --hx-toggle-border: rgba(0,0,0,0.10);
+      }
+
+      /* Apply to layouts */
+      [data-theme="light"] #root { background: #F1F5F9; color: #0F172A; }
+      [data-theme="light"] aside { background: var(--hx-sidebar-bg) !important; border-right-color: var(--hx-divider) !important; }
+      [data-theme="light"] main  { background: var(--hx-main-bg) !important; }
+
+      /* Theme toggle button */
+      .hx-theme-btn {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 32px; height: 32px; border-radius: 8px;
+        background: var(--hx-toggle-bg);
+        border: 1px solid var(--hx-toggle-border);
+        color: var(--hx-text-muted);
+        cursor: pointer; transition: all 0.2s;
+        flex-shrink: 0;
+      }
+      .hx-theme-btn:hover {
+        background: var(--hx-glass-hover);
+        color: var(--hx-text-primary);
+        transform: scale(1.08);
+      }
+
+      /* Scrollbar */
+      ::-webkit-scrollbar { width: 4px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb { background: var(--hx-scrollbar); border-radius: 4px; }
     </style>
+
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Hiresnix — Elevating Talent. Empowering Futures.</title>
   </head>
   <body>
     <div id="root"></div>
+
+    <!-- Global theme toggle — injects button into all portal headers -->
+    <script>
+      window.__toggleHxTheme = function() {
+        try {
+          const stored = localStorage.getItem('hx-theme');
+          const current = stored ? JSON.parse(stored)?.state?.isDark !== false : true;
+          const next = !current;
+          localStorage.setItem('hx-theme', JSON.stringify({ state: { isDark: next }, version: 0 }));
+          document.documentElement.setAttribute('data-theme', next ? 'dark' : 'light');
+          document.querySelectorAll('.hx-theme-icon').forEach(el => {
+            el.innerHTML = next ? moonIcon() : sunIcon();
+          });
+        } catch(e) {}
+      };
+
+      function sunIcon() {
+        return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`;
+      }
+      function moonIcon() {
+        return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
+      }
+
+      // Inject toggle button into header after React renders
+      function injectToggle() {
+        const headers = document.querySelectorAll('header.hidden.md\\:flex, header[class*="hidden md:flex"]');
+        headers.forEach(header => {
+          if (header.querySelector('.hx-theme-btn')) return;
+          const stored = localStorage.getItem('hx-theme');
+          const isDark = stored ? JSON.parse(stored)?.state?.isDark !== false : true;
+          const btn = document.createElement('button');
+          btn.className = 'hx-theme-btn';
+          btn.title = 'Toggle Day/Night mode';
+          btn.onclick = window.__toggleHxTheme;
+          btn.innerHTML = `<span class="hx-theme-icon">${isDark ? moonIcon() : sunIcon()}</span>`;
+          const emailSpan = header.querySelector('span.text-xs.text-gray-600');
+          if (emailSpan) {
+            header.insertBefore(btn, emailSpan);
+          } else {
+            header.appendChild(btn);
+          }
+        });
+      }
+
+      // Watch for React to mount
+      const obs = new MutationObserver(() => { injectToggle(); });
+      document.addEventListener('DOMContentLoaded', () => {
+        obs.observe(document.body, { childList: true, subtree: true });
+        setTimeout(injectToggle, 500);
+        setTimeout(injectToggle, 1500);
+      });
+    </script>
+
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
