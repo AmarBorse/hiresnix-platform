@@ -1029,4 +1029,3 @@ export function LandingPage() {
       <HiresnixChatbot />
     </div>
   );
-}
