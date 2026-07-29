@@ -602,7 +602,6 @@ export function LandingPage() {
               { icon: '🏆', text: 'Letter of Recommendation' },
               { icon: '🎯', text: 'Industry Mentorship' },
               { icon: '🔗', text: 'Professional Portfolio Building' },
-              { icon: '✅', text: 'AICTE Recognized Program' },
             ].map(b => (
               <div key={b.text} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, padding: '0.9rem 1.2rem' }}>
                 <span style={{ fontSize: '1.2rem' }}>{b.icon}</span>
