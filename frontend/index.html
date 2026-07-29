@@ -24,7 +24,7 @@
       a { cursor: default !important; }
       a:hover { cursor: default !important; }
 
-      /* ── Dark mode (default) ── */
+      /* ── DARK MODE (default) ── */
       :root, [data-theme="dark"] {
         --hx-sidebar-bg:    #0B0F1A;
         --hx-main-bg:       #0D1117;
@@ -44,11 +44,11 @@
         --hx-toggle-border: rgba(255,255,255,0.12);
       }
 
-      /* ── Light mode ── */
+      /* ── LIGHT MODE ── */
       [data-theme="light"] {
-        --hx-sidebar-bg:    #F8FAFC;
-        --hx-main-bg:       #F1F5F9;
-        --hx-card-bg:       rgba(255,255,255,0.95);
+        --hx-sidebar-bg:    #FFFFFF;
+        --hx-main-bg:       #F4F6FA;
+        --hx-card-bg:       #FFFFFF;
         --hx-card-border:   rgba(0,0,0,0.08);
         --hx-text-primary:  #0F172A;
         --hx-text-muted:    #64748B;
@@ -56,39 +56,101 @@
         --hx-glass-bg:      rgba(0,0,0,0.03);
         --hx-glass-border:  rgba(0,0,0,0.08);
         --hx-glass-hover:   rgba(0,0,0,0.05);
-        --hx-header-bg:     rgba(248,250,252,0.95);
+        --hx-header-bg:     rgba(255,255,255,0.95);
         --hx-header-border: rgba(0,0,0,0.06);
-        --hx-divider:       rgba(0,0,0,0.06);
+        --hx-divider:       rgba(0,0,0,0.07);
         --hx-scrollbar:     rgba(0,0,0,0.12);
         --hx-toggle-bg:     rgba(0,0,0,0.05);
         --hx-toggle-border: rgba(0,0,0,0.10);
       }
 
-      /* Apply to layouts */
-      [data-theme="light"] #root { background: #F1F5F9; color: #0F172A; }
-      [data-theme="light"] aside { background: var(--hx-sidebar-bg) !important; border-right-color: var(--hx-divider) !important; }
-      [data-theme="light"] main  { background: var(--hx-main-bg) !important; }
+      /* ── LIGHT MODE OVERRIDES ── */
+      [data-theme="light"] body,
+      [data-theme="light"] #root { background: #F4F6FA !important; color: #0F172A !important; }
 
-      /* Theme toggle button */
+      /* Sidebar */
+      [data-theme="light"] aside {
+        background: #FFFFFF !important;
+        border-right: 1px solid rgba(0,0,0,0.07) !important;
+      }
+      [data-theme="light"] aside * { color: #64748B !important; }
+      [data-theme="light"] aside .text-white,
+      [data-theme="light"] aside h1,
+      [data-theme="light"] aside p { color: #0F172A !important; }
+      [data-theme="light"] aside a:hover,
+      [data-theme="light"] aside button:hover { background: rgba(0,0,0,0.05) !important; color: #0F172A !important; }
+
+      /* Header */
+      [data-theme="light"] header {
+        background: rgba(255,255,255,0.95) !important;
+        border-bottom: 1px solid rgba(0,0,0,0.06) !important;
+      }
+      [data-theme="light"] header * { color: #64748B !important; }
+
+      /* Main content */
+      [data-theme="light"] main { background: #F4F6FA !important; }
+
+      /* Cards — force white background */
+      [data-theme="light"] .glass-card,
+      [data-theme="light"] .stat-card,
+      [data-theme="light"] [class*="rounded-xl"],
+      [data-theme="light"] [class*="rounded-2xl"] {
+        background: #FFFFFF !important;
+        border-color: rgba(0,0,0,0.08) !important;
+        color: #0F172A !important;
+      }
+
+      /* Text colors in light mode */
+      [data-theme="light"] .text-white  { color: #0F172A !important; }
+      [data-theme="light"] .text-gray-400,
+      [data-theme="light"] .text-gray-500,
+      [data-theme="light"] .text-gray-600 { color: #64748B !important; }
+      [data-theme="light"] .text-slate-400,
+      [data-theme="light"] .text-slate-500 { color: #64748B !important; }
+
+      /* Stats numbers visibility */
+      [data-theme="light"] h1,
+      [data-theme="light"] h2,
+      [data-theme="light"] h3,
+      [data-theme="light"] h4,
+      [data-theme="light"] p,
+      [data-theme="light"] span { color: inherit; }
+
+      /* Background dark overrides */
+      [data-theme="light"] [style*="background: linear-gradient"],
+      [data-theme="light"] [class*="bg-gray-900"],
+      [data-theme="light"] [class*="bg-slate-900"],
+      [data-theme="light"] [class*="bg-\[#0"] {
+        background: #FFFFFF !important;
+      }
+
+      /* Toggle button */
       .hx-theme-btn {
         display: inline-flex; align-items: center; justify-content: center;
-        width: 32px; height: 32px; border-radius: 8px;
+        width: 30px; height: 30px; border-radius: 8px;
         background: var(--hx-toggle-bg);
         border: 1px solid var(--hx-toggle-border);
         color: var(--hx-text-muted);
-        cursor: pointer; transition: all 0.2s;
-        flex-shrink: 0;
+        cursor: pointer !important; transition: all 0.2s;
+        flex-shrink: 0; margin-right: 8px;
       }
       .hx-theme-btn:hover {
         background: var(--hx-glass-hover);
-        color: var(--hx-text-primary);
         transform: scale(1.08);
       }
+      [data-theme="light"] .hx-theme-btn { color: #64748B !important; }
+      [data-theme="dark"]  .hx-theme-btn { color: #94A3B8 !important; }
 
       /* Scrollbar */
       ::-webkit-scrollbar { width: 4px; }
       ::-webkit-scrollbar-track { background: transparent; }
       ::-webkit-scrollbar-thumb { background: var(--hx-scrollbar); border-radius: 4px; }
+
+      /* Smooth transition */
+      *, *::before, *::after {
+        transition: background-color 0.25s ease, border-color 0.2s ease, color 0.15s ease;
+      }
+      img, svg, button { transition: none !important; }
     </style>
 
     <meta charset="UTF-8" />
@@ -98,21 +160,7 @@
   <body>
     <div id="root"></div>
 
-    <!-- Global theme toggle — injects button into all portal headers -->
     <script>
-      window.__toggleHxTheme = function() {
-        try {
-          const stored = localStorage.getItem('hx-theme');
-          const current = stored ? JSON.parse(stored)?.state?.isDark !== false : true;
-          const next = !current;
-          localStorage.setItem('hx-theme', JSON.stringify({ state: { isDark: next }, version: 0 }));
-          document.documentElement.setAttribute('data-theme', next ? 'dark' : 'light');
-          document.querySelectorAll('.hx-theme-icon').forEach(el => {
-            el.innerHTML = next ? moonIcon() : sunIcon();
-          });
-        } catch(e) {}
-      };
-
       function sunIcon() {
         return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`;
       }
@@ -120,33 +168,59 @@
         return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
       }
 
-      // Inject toggle button into header after React renders
-      function injectToggle() {
-        const headers = document.querySelectorAll('header.hidden.md\\:flex, header[class*="hidden md:flex"]');
-        headers.forEach(header => {
-          if (header.querySelector('.hx-theme-btn')) return;
+      function getIsDark() {
+        try {
           const stored = localStorage.getItem('hx-theme');
-          const isDark = stored ? JSON.parse(stored)?.state?.isDark !== false : true;
+          return stored ? JSON.parse(stored)?.state?.isDark !== false : true;
+        } catch(e) { return true; }
+      }
+
+      window.__toggleHxTheme = function() {
+        const next = !getIsDark();
+        try {
+          localStorage.setItem('hx-theme', JSON.stringify({ state: { isDark: next }, version: 0 }));
+        } catch(e) {}
+        document.documentElement.setAttribute('data-theme', next ? 'dark' : 'light');
+        document.querySelectorAll('.hx-theme-icon').forEach(el => {
+          el.innerHTML = next ? moonIcon() : sunIcon();
+        });
+      };
+
+      function injectToggle() {
+        // Target all portal headers
+        const headers = document.querySelectorAll('header');
+        headers.forEach(header => {
+          const classes = header.className || '';
+          // Only desktop headers (hidden on mobile, flex on md)
+          if (!classes.includes('hidden') && !classes.includes('md:flex')) return;
+          if (header.querySelector('.hx-theme-btn')) return;
+
+          const isDark = getIsDark();
           const btn = document.createElement('button');
           btn.className = 'hx-theme-btn';
-          btn.title = 'Toggle Day/Night mode';
+          btn.title = isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode';
           btn.onclick = window.__toggleHxTheme;
           btn.innerHTML = `<span class="hx-theme-icon">${isDark ? moonIcon() : sunIcon()}</span>`;
-          const emailSpan = header.querySelector('span.text-xs.text-gray-600');
+
+          // Insert before email span
+          const emailSpan = header.querySelector('span.text-xs');
           if (emailSpan) {
             header.insertBefore(btn, emailSpan);
           } else {
-            header.appendChild(btn);
+            const lastChild = header.lastElementChild;
+            if (lastChild) header.insertBefore(btn, lastChild);
+            else header.appendChild(btn);
           }
         });
       }
 
-      // Watch for React to mount
-      const obs = new MutationObserver(() => { injectToggle(); });
+      // Observe DOM changes
+      const obs = new MutationObserver(injectToggle);
       document.addEventListener('DOMContentLoaded', () => {
         obs.observe(document.body, { childList: true, subtree: true });
-        setTimeout(injectToggle, 500);
-        setTimeout(injectToggle, 1500);
+        setTimeout(injectToggle, 300);
+        setTimeout(injectToggle, 800);
+        setTimeout(injectToggle, 2000);
       });
     </script>
 
