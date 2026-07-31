@@ -1,6 +1,6 @@
 // src/pages/student/LogicBuilder.tsx
 import { useState, useEffect, useRef, useCallback } from 'react';
-import Editor from '@monaco-editor/react';
+
 import axios from 'axios';
 import { toast } from 'sonner';
 import {
@@ -762,14 +762,23 @@ export function LogicBuilder() {
                     <p className="text-sm font-semibold mb-1" style={{ color: '#818CF8' }}>📋 Problem</p>
                     <p className="text-sm" style={{ color: '#E2E8F0' }}>{dayData.problem}</p>
                   </div>
-                  <div className="rounded-xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.08)' }}>
-                    <Editor
-                      height="280px"
-                      language={MONACO_LANG[lang] || 'python'}
+                  <div className="rounded-xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.08)', background: '#0d1117' }}>
+                    {/* Header like Academy */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', background: '#161b22', borderBottom: '1px solid #30363d' }}>
+                      <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#ef4444' }} />
+                      <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#f59e0b' }} />
+                      <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#22c55e' }} />
+                      <span style={{ color: '#8b949e', fontSize: 11, fontFamily: 'monospace', marginLeft: 8 }}>
+                        {`main.${LANG_TO_PISTON[lang]?.language === 'python' ? 'py' : LANG_TO_PISTON[lang]?.language === 'javascript' ? 'js' : LANG_TO_PISTON[lang]?.language === 'java' ? 'java' : LANG_TO_PISTON[lang]?.language === 'c++' ? 'cpp' : 'py'}`}
+                      </span>
+                    </div>
+                    {/* Textarea like Academy */}
+                    <textarea
                       value={code}
-                      onChange={v => setCode(v || '')}
-                      theme="vs-dark"
-                      options={{ fontSize: 13, minimap: { enabled: false }, scrollBeyondLastLine: false, padding: { top: 12 }, fontFamily: 'JetBrains Mono, monospace' }}
+                      onChange={e => setCode(e.target.value)}
+                      spellCheck={false}
+                      placeholder={`// Write your ${lang} code here...`}
+                      style={{ width: '100%', minHeight: 280, background: 'transparent', border: 'none', padding: '14px 16px', fontFamily: '"Fira Code","Cascadia Code",monospace', fontSize: 13, color: '#e6edf3', outline: 'none', lineHeight: 1.75, boxSizing: 'border-box', resize: 'vertical', colorScheme: 'dark' }}
                     />
                   </div>
                   {aiFeedback && (
