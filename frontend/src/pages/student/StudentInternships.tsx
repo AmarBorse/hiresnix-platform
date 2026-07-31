@@ -1,9 +1,10 @@
 // src/pages/student/StudentInternships.tsx
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { Clock, Users, ChevronRight, Loader2, GraduationCap, CheckCircle, BookOpen, Download } from 'lucide-react';
+import { Clock, Users, ChevronRight, Loader2, GraduationCap, CheckCircle, BookOpen, Download, Brain } from 'lucide-react';
 import client from '../../api/client';
 import { instInternshipClient } from '../../api/instStudent';
+import { LogicBuilder } from './LogicBuilder';
 
 // ── DOMAIN APPLICATION PANEL (Hiresnix internship platform) ───────
 function IPlatformPanel() {
@@ -34,12 +35,10 @@ function IPlatformPanel() {
       setDomains(d.data || []);
       setInstitutions(instList.data || []);
 
-      // If already has hiresnix application use it, else check institution application
       if (a.data) {
         setMyApp(a.data);
       } else if (instApp?.data) {
         const instAppData = instApp.data;
-        // If approved — fetch their enrollment from hiresnix platform too
         let enrollmentData = null;
         if (instAppData.status === 'Approved') {
           try {
@@ -54,7 +53,7 @@ function IPlatformPanel() {
           application: {
             status: instAppData.status || 'Pending',
             domain: { name: instAppData.domain || 'Internship Program' },
-            isInstitutionApply: instAppData.status !== 'Approved', // hide institution tag if approved
+            isInstitutionApply: instAppData.status !== 'Approved',
             institutionName: instAppData.institutionName,
             adminNote: instAppData.status === 'Approved' ? null : 'Applied via institution portal',
           },
@@ -73,7 +72,6 @@ function IPlatformPanel() {
     if (!selected) return;
     setApplying(true);
     try {
-      // Only use instInternshipClient if user is ACTUALLY logged in as inst-student (has hx_inst_student_token AND hx_student_token is absent)
       const instToken = localStorage.getItem('hx_inst_student_token');
       const studentToken = localStorage.getItem('hx_student_token') || localStorage.getItem('hirenix_token');
       const isInstStudent = !!instToken && !studentToken;
@@ -104,42 +102,21 @@ function IPlatformPanel() {
     setDownloading(`${type}-${enrollId}`);
     try {
       let res;
-      
-      // Test multiple possible backend routes to guarantee a match
-      const endpoints = type === 'completion' 
-        ? [
-            `/iplatform/completion-letter/${enrollId}/pdf`,
-            `/iplatform/completion/${enrollId}/pdf`,
-            `/iplatform/completion-letter/${enrollId}`,
-            `/iplatform/completion/${enrollId}`
-          ]
-        : [
-            `/iplatform/${type}/${enrollId}/pdf`,
-            `/iplatform/${type}/${enrollId}`
-          ];
+      const endpoints = type === 'completion'
+        ? [`/iplatform/completion-letter/${enrollId}/pdf`, `/iplatform/completion/${enrollId}/pdf`, `/iplatform/completion-letter/${enrollId}`, `/iplatform/completion/${enrollId}`]
+        : [`/iplatform/${type}/${enrollId}/pdf`, `/iplatform/${type}/${enrollId}`];
 
       let success = false;
       for (const url of endpoints) {
-        try {
-          res = await client.get(url, { responseType: 'blob' });
-          success = true;
-          break; // Stop at the first successful endpoint
-        } catch (err) {
-          // Ignore and try the next fallback URL
-        }
+        try { res = await client.get(url, { responseType: 'blob' }); success = true; break; } catch {}
       }
-      
       if (!success || !res) throw new Error('Not available yet');
-      
       const urlObj = URL.createObjectURL(res.data);
       const a = document.createElement('a');
       a.href = urlObj; a.download = `hiresnix-${type}-${name}.pdf`; a.click();
       URL.revokeObjectURL(urlObj);
       toast.success('PDF downloaded!');
-    } catch (err: any) { 
-      console.error('Download error:', err);
-      toast.error('Not available yet'); 
-    }
+    } catch { toast.error('Not available yet'); }
     finally { setDownloading(null); }
   };
 
@@ -163,10 +140,8 @@ function IPlatformPanel() {
   const app = myApp?.application;
   const enrollment = myApp?.enrollment;
 
-  // Already has application
   if (app) return (
     <div className="max-w-2xl mx-auto">
-      {/* Institution portal apply message */}
       {app.isInstitutionApply && (
         <div className="rounded-2xl border-2 border-blue-200 bg-blue-50 p-6 mb-4">
           <div className="flex items-center gap-3 mb-3">
@@ -181,7 +156,7 @@ function IPlatformPanel() {
             }`}>{app.status}</span>
           </div>
           <p className="text-sm text-gray-600">
-            You have already applied through <strong>{app.institutionName || 'your institution'}</strong>. 
+            You have already applied through <strong>{app.institutionName || 'your institution'}</strong>.
             Your application is being reviewed. You cannot apply again from here.
           </p>
         </div>
@@ -195,66 +170,43 @@ function IPlatformPanel() {
           <div style={{ fontSize: '2rem' }}>{app.status === 'Approved' ? '✅' : app.status === 'Rejected' ? '❌' : '⏳'}</div>
           <div>
             <h3 className="font-bold text-gray-900 text-lg">
-  {app.status === "Approved"
-    ? "You're Enrolled!"
-    : app.status === "Rejected"
-    ? "Application Rejected"
-    : "Application Under Review"}
-</h3>
-
-<p className="text-gray-600 text-sm">
-  {app.domain?.name} Internship
-</p>
-
-{/* Show only while application is under review */}
-{app.status !== "Approved" && app.status !== "Rejected" && (
-  <>
-    {/* Profile Verification */}
-    <div className="mt-5 rounded-lg border border-blue-200 bg-blue-50 p-4">
-      <h4 className="font-semibold text-blue-900 mb-2">
-        📋 Profile Verification
-      </h4>
-
-      <p className="text-sm text-gray-700">
-        Please send the following on <strong>WhatsApp</strong> or <strong>Email</strong>:
-      </p>
-
-      <ul className="mt-2 list-disc ml-5 text-sm text-gray-700 space-y-1">
-        <li>Updated Resume (PDF)</li>
-        <li>LinkedIn Profile URL</li>
-        <li>GitHub Profile URL (if available)</li>
-        <li>Brief Introduction (Skills, Projects & Career Interests)</li>
-      </ul>
-
-      <div className="mt-3 text-sm text-gray-800">
-        <p><strong>📱 WhatsApp:</strong> +91 95291 20977</p>
-        <p><strong>📧 Email:</strong> hr@hiresnix.co.in</p>
-      </div>
-
-      <p className="mt-3 text-xs text-gray-600">
-        Please mention your <strong>Full Name</strong> and <strong>Registered Email Address</strong> while sending your documents <strong>after Profile Verification</strong> You will receive your <strong>Offer Letter</strong> From Hiresnix Team.
-      </p>
-    </div>
-
-    {/* Internship Benefits */}
-    <div className="mt-4 rounded-lg border border-green-200 bg-green-50 p-4">
-      <h4 className="font-semibold text-green-900 mb-2">
-        🚀 Internship Benefits
-      </h4>
-
-      <ul className="text-sm text-gray-700 space-y-1">
-        <li>✅ 3 Industry-Level Projects</li>
-        <li>✅ Professional Portfolio Building</li>
-        <li>✅ Internship Dashboard Access</li>
-        <li>✅ Daily Work Log Tracking</li>
-        <li>✅ Internship Completion Certificate (Eligibility Based)</li>
-        <li>✅ Internship Completion Letter (Eligibility Based)</li>
-        <li>✅ Performance-Based Letter of Recommendation</li>
-        <li>✅ Job Assistance After Successful Completion</li>
-      </ul>
-    </div>
-  </>
-)}
+              {app.status === "Approved" ? "You're Enrolled!" : app.status === "Rejected" ? "Application Rejected" : "Application Under Review"}
+            </h3>
+            <p className="text-gray-600 text-sm">{app.domain?.name} Internship</p>
+            {app.status !== "Approved" && app.status !== "Rejected" && (
+              <>
+                <div className="mt-5 rounded-lg border border-blue-200 bg-blue-50 p-4">
+                  <h4 className="font-semibold text-blue-900 mb-2">📋 Profile Verification</h4>
+                  <p className="text-sm text-gray-700">Please send the following on <strong>WhatsApp</strong> or <strong>Email</strong>:</p>
+                  <ul className="mt-2 list-disc ml-5 text-sm text-gray-700 space-y-1">
+                    <li>Updated Resume (PDF)</li>
+                    <li>LinkedIn Profile URL</li>
+                    <li>GitHub Profile URL (if available)</li>
+                    <li>Brief Introduction (Skills, Projects & Career Interests)</li>
+                  </ul>
+                  <div className="mt-3 text-sm text-gray-800">
+                    <p><strong>📱 WhatsApp:</strong> +91 95291 20977</p>
+                    <p><strong>📧 Email:</strong> hr@hiresnix.co.in</p>
+                  </div>
+                  <p className="mt-3 text-xs text-gray-600">
+                    Please mention your <strong>Full Name</strong> and <strong>Registered Email Address</strong> while sending your documents <strong>after Profile Verification</strong> You will receive your <strong>Offer Letter</strong> From Hiresnix Team.
+                  </p>
+                </div>
+                <div className="mt-4 rounded-lg border border-green-200 bg-green-50 p-4">
+                  <h4 className="font-semibold text-green-900 mb-2">🚀 Internship Benefits</h4>
+                  <ul className="text-sm text-gray-700 space-y-1">
+                    <li>✅ 3 Industry-Level Projects</li>
+                    <li>✅ Professional Portfolio Building</li>
+                    <li>✅ Internship Dashboard Access</li>
+                    <li>✅ Daily Work Log Tracking</li>
+                    <li>✅ Internship Completion Certificate (Eligibility Based)</li>
+                    <li>✅ Internship Completion Letter (Eligibility Based)</li>
+                    <li>✅ Performance-Based Letter of Recommendation</li>
+                    <li>✅ Job Assistance After Successful Completion</li>
+                  </ul>
+                </div>
+              </>
+            )}
             <p className="text-gray-600 text-sm">{app.domain?.name} Internship</p>
           </div>
           <span className={`ml-auto text-xs font-semibold px-3 py-1 rounded-full ${
@@ -265,7 +217,6 @@ function IPlatformPanel() {
         {app.adminNote && <p className="text-sm text-gray-600 italic">Note: {app.adminNote}</p>}
       </div>}
 
-      {/* Enrollment progress */}
       {enrollment && (
         <div className="bg-white rounded-2xl border border-gray-200 p-5 mb-4">
           <h4 className="font-bold text-gray-900 mb-3 flex items-center gap-2"><BookOpen size={16} /> Training Progress</h4>
@@ -286,13 +237,11 @@ function IPlatformPanel() {
               <span className="font-semibold text-gray-800">{(enrollment.taskLogs || []).length}</span>
             </div>
           </div>
-
           {enrollment.status !== 'Completed' && (
             <div className="mt-3">
               <button onClick={() => setShowTaskForm(!showTaskForm)} className="text-xs text-blue-500 hover:text-blue-700 flex items-center gap-0.5 font-semibold">
                 Submit Daily Task <ChevronRight size={11} className={`transition-transform ${showTaskForm ? 'rotate-90' : ''}`} />
               </button>
-              
               {showTaskForm && (
                 <form onSubmit={handleTaskSubmit} className="mt-3 pt-3 border-t border-gray-100 space-y-2">
                   <div className="flex gap-2">
@@ -301,9 +250,8 @@ function IPlatformPanel() {
                       {[1,2,3,4,5,6,7,8,9,10,11,12].map(w => <option key={w} value={w}>Week {w}</option>)}
                     </select>
                   </div>
-                  <textarea rows={2} placeholder="What did you work on today? (Description)" value={taskForm.description} onChange={e => setTaskForm(p => ({ ...p, description: e.target.value }))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 resize-none" />
+                  <textarea rows={2} placeholder="What did you work on today?" value={taskForm.description} onChange={e => setTaskForm(p => ({ ...p, description: e.target.value }))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 resize-none" />
                   <input type="url" placeholder="Project Link / GitHub URL (Optional)" value={taskForm.url} onChange={e => setTaskForm(p => ({ ...p, url: e.target.value }))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" />
-                  
                   <button type="submit" disabled={submittingTask} className="w-full flex items-center justify-center gap-1.5 bg-blue-500 hover:bg-blue-600 disabled:opacity-60 text-white text-xs font-bold py-2.5 rounded-lg transition mt-1">
                     {submittingTask && <Loader2 size={11} className="animate-spin" />} Submit Task
                   </button>
@@ -311,13 +259,9 @@ function IPlatformPanel() {
               )}
             </div>
           )}
-
-          {/* Study Resources */}
           {resources.length > 0 && (
             <div className="mt-4 pt-4 border-t border-gray-100">
-              <h5 className="font-semibold text-gray-800 mb-3 flex items-center gap-1">
-                <BookOpen size={16} className="text-blue-500" /> Study Resources
-              </h5>
+              <h5 className="font-semibold text-gray-800 mb-3 flex items-center gap-1"><BookOpen size={16} className="text-blue-500" /> Study Resources</h5>
               <div className="space-y-2">
                 {resources.map(res => (
                   <a key={res.id} href={res.url} target="_blank" rel="noreferrer" className="block p-3 rounded-xl border border-gray-100 bg-gray-50 hover:bg-blue-50 hover:border-blue-100 transition">
@@ -331,8 +275,6 @@ function IPlatformPanel() {
               </div>
             </div>
           )}
-
-          {/* Download docs if completed */}
           {enrollment.status === 'Completed' && (
             <div>
               <h5 className="font-semibold text-gray-800 mb-2 flex items-center gap-1"><CheckCircle size={14} className="text-green-500" /> Download Your Documents</h5>
@@ -361,7 +303,6 @@ function IPlatformPanel() {
     </div>
   );
 
-  // No application yet — show domain selection
   if (selected) return (
     <div className="max-w-lg mx-auto bg-white rounded-2xl border border-gray-200 p-6">
       <button onClick={() => setSelected(null)} className="text-gray-400 hover:text-gray-600 text-sm mb-4 flex items-center gap-1">← Back to domains</button>
@@ -384,10 +325,8 @@ function IPlatformPanel() {
           <input required className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500"
             placeholder="Your college name" value={form.college} onChange={e => setForm(p => ({ ...p, college: e.target.value }))} />
         </div>
-
-        {/* Institution fields — optional, for inst students applying via student portal */}
         <div className="rounded-xl border border-blue-100 bg-blue-50 p-3 space-y-3">
-          <p className="text-xs text-blue-600 font-semibold flex items-center gap-1">🏫 Institution Details <span className="font-normal text-blue-400">(Optional — only if you belong to a partner institution)</span></p>
+          <p className="text-xs text-blue-600 font-semibold flex items-center gap-1">🏫 Institution Details <span className="font-normal text-blue-400">(Optional)</span></p>
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Select Institution</label>
             <select className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 bg-white"
@@ -407,7 +346,6 @@ function IPlatformPanel() {
             </div>
           )}
         </div>
-
         <div>
           <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Current Year</label>
           <select className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500"
@@ -467,13 +405,42 @@ function IPlatformPanel() {
 
 // ── MAIN COMPONENT ────────────────────────────────────────────────
 export function StudentInternships() {
+  const [activeTab, setActiveTab] = useState<'internship' | 'logic'>('internship');
+
+  const tabs = [
+    { id: 'internship' as const, label: '🎓 Internship Program', desc: 'Apply & track your internship' },
+    { id: 'logic' as const,      label: '🧠 Logic Builder', desc: 'Think before you code', badge: 'NEW' },
+  ];
+
   return (
     <div className="space-y-5 max-w-5xl mx-auto">
       <div>
         <h1 className="text-2xl font-black text-gray-900">Internships</h1>
         <p className="text-sm text-gray-500 mt-1">Gain real-world experience with structured internship programs</p>
       </div>
-      <IPlatformPanel />
+
+      {/* Tab selector */}
+      <div className="flex gap-2 flex-wrap">
+        {tabs.map(t => (
+          <button key={t.id} onClick={() => setActiveTab(t.id)}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all border ${
+              activeTab === t.id
+                ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-500/20'
+                : 'bg-white text-gray-600 border-gray-200 hover:border-indigo-200 hover:text-indigo-600'
+            }`}>
+            {t.label}
+            {t.badge && (
+              <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${activeTab === t.id ? 'bg-white/20 text-white' : 'bg-indigo-100 text-indigo-600'}`}>
+                {t.badge}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      {/* Tab content */}
+      {activeTab === 'internship' && <IPlatformPanel />}
+      {activeTab === 'logic' && <LogicBuilder />}
     </div>
   );
 }

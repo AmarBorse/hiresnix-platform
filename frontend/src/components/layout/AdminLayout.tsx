@@ -4,7 +4,7 @@ import { Outlet, Link, useLocation, useNavigate } from 'react-router';
 import {
   LayoutDashboard, Briefcase, FileText, GraduationCap, Building2, Star, FileSpreadsheet,
   BookOpen, Award, BarChart3, Settings, Users, Menu, X, LogOut,
-  ShieldCheck, MessageSquare, ChevronRight, FilePen
+  ShieldCheck, MessageSquare, ChevronRight, FilePen, Brain
 } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
 import { PORTAL_STYLES, PORTAL_COLORS } from './PortalTheme';
@@ -12,22 +12,23 @@ import { PORTAL_STYLES, PORTAL_COLORS } from './PortalTheme';
 const C = PORTAL_COLORS.admin;
 
 const NAV = [
-  { to: '/admin/dashboard',    icon: LayoutDashboard, label: 'Dashboard'        },
-  { to: '/admin/iplatform',    icon: GraduationCap,   label: 'Hiresnix Intern', badge: 'NEW' },
-  { to: '/admin/jobs',         icon: Briefcase,       label: 'Jobs'             },
-  { to: '/admin/applications', icon: FileText,        label: 'Applications'     },
-  { to: '/admin/internships',  icon: BookOpen,        label: 'Programs'         },
-  { to: '/admin/students',     icon: Users,           label: 'Students'         },
-  { to: '/admin/companies',    icon: Building2,       label: 'Companies'        },
-  { to: '/admin/institutions', icon: GraduationCap,   label: 'Institutions'     },
-  { to: '/admin/resources',    icon: BookOpen,        label: 'Resources'        },
-  { to: '/admin/certificates', icon: Award,           label: 'Certificates'     },
-  { to: '/admin/documents',    icon: FilePen,         label: 'Documents',  badge: 'NEW' },
-  { to: '/admin/enquiries',    icon: MessageSquare,   label: 'Enquiries'        },
-  { to: '/admin/analytics',    icon: BarChart3,       label: 'Analytics'        },
-  { to: '/admin/clients',      icon: Star,            label: 'Clients'          },
-  { to: '/admin/import-tool',  icon: FileSpreadsheet, label: 'Import Tool'      },
-  { to: '/admin/settings',     icon: Settings,        label: 'Settings'         },
+  { to: '/admin/dashboard',     icon: LayoutDashboard, label: 'Dashboard'        },
+  { to: '/admin/iplatform',     icon: GraduationCap,   label: 'Hiresnix Intern', badge: 'NEW' },
+  { to: '/admin/jobs',          icon: Briefcase,       label: 'Jobs'             },
+  { to: '/admin/applications',  icon: FileText,        label: 'Applications'     },
+  { to: '/admin/internships',   icon: BookOpen,        label: 'Programs'         },
+  { to: '/admin/students',      icon: Users,           label: 'Students'         },
+  { to: '/admin/companies',     icon: Building2,       label: 'Companies'        },
+  { to: '/admin/institutions',  icon: GraduationCap,   label: 'Institutions'     },
+  { to: '/admin/resources',     icon: BookOpen,        label: 'Resources'        },
+  { to: '/admin/certificates',  icon: Award,           label: 'Certificates'     },
+  { to: '/admin/documents',     icon: FilePen,         label: 'Documents',  badge: 'NEW' },
+  { to: '/admin/enquiries',     icon: MessageSquare,   label: 'Enquiries'        },
+  { to: '/admin/analytics',     icon: BarChart3,       label: 'Analytics'        },
+  { to: '/admin/clients',       icon: Star,            label: 'Clients'          },
+  { to: '/admin/logic-builder', icon: Brain,           label: 'Logic Builder', badge: 'NEW' },
+  { to: '/admin/import-tool',   icon: FileSpreadsheet, label: 'Import Tool'      },
+  { to: '/admin/settings',      icon: Settings,        label: 'Settings'         },
 ];
 
 function NavItem({ to, icon: Icon, label, badge, onClick }: any) {

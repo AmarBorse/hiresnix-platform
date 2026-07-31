@@ -72,6 +72,7 @@ const AdminIPlatform    = lazy(() => import('./pages/admin/AdminIPlatform').then
 const AdminEnquiries    = lazy(() => import('./pages/admin/AdminEnquiries').then(m => ({ default: m.AdminEnquiries })));
 const AdminDocuments    = lazy(() => import('./pages/admin/AdminDocuments').then(m => ({ default: m.AdminDocuments })));
 const AdminInstitutions = lazy(() => import('./pages/admin/AdminInstitutions').then(m => ({ default: m.AdminInstitutions })));
+const AdminLogicBuilder = lazy(() => import('./pages/admin/AdminLogicBuilder').then(m => ({ default: m.AdminLogicBuilder })));
 
 const InstitutionDashboard    = lazy(() => import('./pages/institution/InstitutionDashboard').then(m => ({ default: m.InstitutionDashboard })));
 const InstitutionStudents     = lazy(() => import('./pages/institution/InstitutionStudents').then(m => ({ default: m.InstitutionStudents })));
@@ -171,7 +172,7 @@ export default function App() {
           <Route path="/student" element={<ProtectedRoute allowedRoles={['student']}><StudentLayout /></ProtectedRoute>}>
             <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard"      element={<StudentDashboard />} />
-            <Route path="attendance"     element={<StudentAttendance />} />  {/* NEW */}
+            <Route path="attendance"     element={<StudentAttendance />} />
             <Route path="internships"    element={<StudentInternships />} />
             <Route path="jobs"           element={<StudentJobs />} />
             <Route path="applications"   element={<StudentApplications />} />
@@ -215,6 +216,7 @@ export default function App() {
             <Route path="clients"      element={<AdminClients />} />
             <Route path="import-tool"  element={<AdminImportTool />} />
             <Route path="settings"     element={<AdminSettings />} />
+            <Route path="logic-builder" element={<AdminLogicBuilder />} />
           </Route>
 
           {/* Institution */}

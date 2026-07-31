@@ -86,6 +86,7 @@ app.use('/api/institution',   require('./routes/institutionRoutes'));
 app.use('/api/mock-interview', require('./routes/mockInterviewRoutes'));
 app.use('/api/chatbot',        require('./routes/chatbotRoutes'));
 app.use('/api/attendance',     require('./routes/attendanceRoutes'));  // NEW
+app.use('/api/logic-builder', require('./routes/logicBuilderRoutes'));
 
 app.get('/api/health', (req, res) => res.json({ status: 'OK', db: 'MySQL/PostgreSQL (Sequelize)', timestamp: new Date() }));
 
