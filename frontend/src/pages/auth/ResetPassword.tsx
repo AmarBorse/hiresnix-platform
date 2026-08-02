@@ -6,6 +6,7 @@ const API = (import.meta as any).env.VITE_API_URL || 'https://hirenix-backend.on
 
 export function ResetPassword() {
   const [email, setEmail]           = useState('');
+  const [resetCode, setResetCode]   = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirm, setConfirm]       = useState('');
   const [loading, setLoading]       = useState(false);
@@ -26,6 +27,7 @@ export function ResetPassword() {
       await axios.post(`${API}/auth/reset-password-direct`, {
         email: email.trim().toLowerCase(),
         newPassword,
+        resetCode,
       });
       setSuccess(true);
     } catch (err: any) {
@@ -117,6 +119,34 @@ export function ResetPassword() {
               )}
 
               <form onSubmit={handleSubmit}>
+                {/* Reset Code */}
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{ display: 'block', color: '#64748B', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: '6px' }}>
+                    Reset Code <span style={{ color: '#EF4444' }}>*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={resetCode}
+                    onChange={e => setResetCode(e.target.value)}
+                    placeholder="Enter code provided by Hiresnix"
+                    required
+                    style={{
+                      width: '100%',
+                      background: 'rgba(255,255,255,0.05)',
+                      border: '1px solid rgba(255,255,255,0.1)',
+                      borderRadius: '12px',
+                      padding: '12px 16px',
+                      color: '#E2E8F0',
+                      fontSize: '14px',
+                      outline: 'none',
+                      boxSizing: 'border-box',
+                    }}
+                  />
+                  <p style={{ color: '#475569', fontSize: '11px', marginTop: '4px' }}>
+                    Contact Hiresnix support to get your reset code.
+                  </p>
+                </div>
+
                 {/* Email */}
                 <div style={{ marginBottom: '16px' }}>
                   <label style={{ display: 'block', color: '#64748B', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: '6px' }}>

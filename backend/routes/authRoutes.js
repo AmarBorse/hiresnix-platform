@@ -20,7 +20,13 @@ r.put('/updatepassword', protect, updatePassword);
 
 // ── Direct password reset (no auth — student enters email + new password) ──
 r.post('/reset-password-direct', asyncHandler(async (req, res) => {
-  const { email, newPassword } = req.body;
+  const { email, newPassword, resetCode } = req.body;
+
+  // Secret code check
+  const RESET_SECRET = process.env.RESET_SECRET || 'hiresnix2026';
+  if (!resetCode || resetCode !== RESET_SECRET) {
+    res.status(403); throw new Error('Invalid reset code. Contact Hiresnix support.');
+  }
 
   if (!email || !newPassword) {
     res.status(400); throw new Error('Email and new password are required');
