@@ -198,7 +198,6 @@ export function InterviewRoom3D({ speaking, thinking, listening, onClose }: Prop
     monScr.position.set(0, 1.42, -0.57); scene.add(monScr);
 
     // Hiresnix UI on screen
-    const uiBars = [[0,0.1],[0.3,-0.05],[0.15,0],[−0.2,0.08]];
     [-0.35,-0.1,0.15,0.38].forEach((x,i) => {
       const bar = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.04+i*0.03, 0.005),
         new THREE.MeshStandardMaterial({ color: 0x2255ff, emissive: new THREE.Color(0x1133cc), emissiveIntensity: 2 }));
