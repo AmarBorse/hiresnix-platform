@@ -15,6 +15,7 @@ export function InterviewRoom3D({ speaking, thinking, listening, onClose }: Prop
   const frameRef  = useRef<number>(0);
   const clockRef  = useRef(new THREE.Clock());
   const stateRef  = useRef({ speaking, thinking, listening });
+  const mouthRef  = useRef<THREE.Mesh | null>(null);
   const [loaded, setLoaded] = useState(false);
 
   // Keep state ref updated
@@ -557,3 +558,8 @@ export function InterviewRoom3D({ speaking, thinking, listening, onClose }: Prop
           background:'rgba(0,0,0,0.7)', border:'1px solid rgba(255,255,255,0.15)',
           borderRadius:'8px', padding:'5px 12px', color:'#94A3B8', cursor:'pointer', fontSize:'11px', fontWeight:600,
         }}>✕ 2D View</button>
+
+      )}
+    </div>
+  );
+}
