@@ -72,6 +72,7 @@ async function askGroq(system: string, user: string): Promise<string> {
       max_tokens: 1000,
       system,
       messages: [{ role: 'user', content: user }],
+      module: 'logic-builder',
     },
     authHeaders()
   );
