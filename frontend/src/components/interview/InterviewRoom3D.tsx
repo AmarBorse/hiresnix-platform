@@ -47,17 +47,17 @@ export function InterviewRoom3D({ speaking, thinking, listening, onClose }: Prop
 
     /* ── Camera ── */
     const camera = new THREE.PerspectiveCamera(55, W / H, 0.1, 100);
-    camera.position.set(0, 1.6, 3.5);
-    camera.lookAt(0, 1.2, 0);
+    camera.position.set(0, 1.55, 2.8);
+    camera.lookAt(0, 1.35, -1.5);
     cameraRef.current = camera;
 
     /* ── Lights ── */
     // Ambient
-    const ambient = new THREE.AmbientLight(0x1a1a2e, 0.8);
+    const ambient = new THREE.AmbientLight(0x334466, 1.5);
     scene.add(ambient);
 
     // Main ceiling light
-    const ceiling = new THREE.DirectionalLight(0xffffff, 1.2);
+    const ceiling = new THREE.DirectionalLight(0xffffff, 2.0);
     ceiling.position.set(0, 5, 2);
     ceiling.castShadow = true;
     ceiling.shadow.mapSize.width = 2048;
@@ -70,19 +70,24 @@ export function InterviewRoom3D({ speaking, thinking, listening, onClose }: Prop
     ceiling.shadow.camera.bottom = -6;
     scene.add(ceiling);
 
+    // Face light - directly on avatar
+    const faceLight = new THREE.PointLight(0xffeedd, 3.0, 5);
+    faceLight.position.set(0, 2.5, 0.5);
+    scene.add(faceLight);
+
     // Desk lamp - warm glow
-    const deskLight = new THREE.PointLight(0x4488ff, 2, 4);
-    deskLight.position.set(0, 1.8, -0.5);
+    const deskLight = new THREE.PointLight(0x6699ff, 2.5, 5);
+    deskLight.position.set(0, 2.2, -0.5);
     scene.add(deskLight);
 
     // Rim light (behind avatar - blue accent)
-    const rimLight = new THREE.PointLight(0x2244ff, 1.5, 6);
-    rimLight.position.set(0, 2, -3);
+    const rimLight = new THREE.PointLight(0x2244ff, 2.0, 6);
+    rimLight.position.set(0, 2.5, -3);
     scene.add(rimLight);
 
     // Screen glow (front - blue-ish)
-    const screenGlow = new THREE.PointLight(0x3366ff, 0.8, 3);
-    screenGlow.position.set(0, 1.4, 2);
+    const screenGlow = new THREE.PointLight(0x3366ff, 1.2, 4);
+    screenGlow.position.set(0, 1.8, 1.5);
     scene.add(screenGlow);
 
     /* ── Materials ── */
@@ -226,7 +231,7 @@ export function InterviewRoom3D({ speaking, thinking, listening, onClose }: Prop
 
     /* ── AI AVATAR ── */
     const avatar = new THREE.Group();
-    avatar.position.set(0, 0, -1.8);
+    avatar.position.set(0, 0.5, -1.2);
     scene.add(avatar);
     avatarRef.current = avatar;
 
