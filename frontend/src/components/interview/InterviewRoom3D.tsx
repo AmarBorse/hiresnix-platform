@@ -34,19 +34,19 @@ export function InterviewRoom3D({ speaking, thinking, listening, onClose }: Prop
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.4;
-    renderer.setClearColor(0x060a14);
+    renderer.setClearColor(0x0d1525);
     mountRef.current.appendChild(renderer.domElement);
     rendRef.current = renderer;
 
     /* ── SCENE ── */
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x060a14);
-    scene.fog = new THREE.Fog(0x060a14, 8, 18);
+    scene.background = new THREE.Color(0x0d1525);
+    scene.fog = new THREE.Fog(0x0d1525, 6, 16);
 
     /* ── CAMERA — eye level, slight angle ── */
     const camera = new THREE.PerspectiveCamera(48, W / H, 0.1, 30);
-    camera.position.set(0, 1.62, 2.2);
-    camera.lookAt(0, 1.45, -0.5);
+    camera.position.set(0, 1.55, 1.5);
+    camera.lookAt(0, 1.44, -0.1);
 
     /* ════════════════════════════════════════
        LIGHTS
@@ -352,18 +352,18 @@ export function InterviewRoom3D({ speaking, thinking, listening, onClose }: Prop
     const rsk = lsk.clone(); rsk.position.set(0.072,1.46,0.177); headG.add(rsk);
 
     // Eyes white
-    const ewG = new THREE.SphereGeometry(0.033,12,12);
+    const ewG = new THREE.SphereGeometry(0.024,12,12);
     const lew = new THREE.Mesh(ewG,mEyeW); lew.position.set(-0.072,1.462,0.182); headG.add(lew);
     const rew = lew.clone(); rew.position.set(0.072,1.462,0.182); headG.add(rew);
 
     // Iris
-    const irisG = new THREE.SphereGeometry(0.022,10,10);
+    const irisG = new THREE.SphereGeometry(0.016,10,10);
     const irisM = new THREE.MeshStandardMaterial({ color: 0x3d1f00, roughness: 0.3 });
     const li = new THREE.Mesh(irisG,irisM); li.position.set(-0.072,1.462,0.2); headG.add(li);
     const ri = li.clone(); ri.position.set(0.072,1.462,0.2); headG.add(ri);
 
     // Pupil
-    const pupG = new THREE.SphereGeometry(0.013,8,8);
+    const pupG = new THREE.SphereGeometry(0.009,8,8);
     const lpu = new THREE.Mesh(pupG,mDark); lpu.position.set(-0.072,1.462,0.208); headG.add(lpu);
     const rpu = lpu.clone(); rpu.position.set(0.072,1.462,0.208); headG.add(rpu);
 
@@ -374,7 +374,7 @@ export function InterviewRoom3D({ speaking, thinking, listening, onClose }: Prop
     const rsh2 = lsh2.clone(); rsh2.position.set(0.082,1.47,0.212); headG.add(rsh2);
 
     // Eyelids
-    const elidG = new THREE.SphereGeometry(0.036,12,6,0,Math.PI*2,0,Math.PI/2);
+    const elidG = new THREE.SphereGeometry(0.026,12,6,0,Math.PI*2,0,Math.PI/2);
     const elidM = new THREE.MeshStandardMaterial({ color: 0xb87048, roughness: 0.8 });
     const llid = new THREE.Mesh(elidG,elidM); llid.position.set(-0.072,1.462,0.182); llid.rotation.x=Math.PI; llid.scale.y=0.0; headG.add(llid);
     const rlid = llid.clone(); rlid.position.set(0.072,1.462,0.182); rlid.scale.y=0.0; headG.add(rlid);
