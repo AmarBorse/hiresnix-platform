@@ -327,6 +327,9 @@ export function LogicBuilder() {
   const [code, setCode] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
   const [aiFeedback, setAiFeedback] = useState('');
+  const [aiHint, setAiHint] = useState('');
+  const [correctAnswer, setCorrectAnswer] = useState('');
+  const [hintLoading, setHintLoading] = useState(false);
   const [edgeCases, setEdgeCases] = useState<string[]>([]);
   const [edgeAnswers, setEdgeAnswers] = useState<Record<number, string>>({});
 
@@ -415,6 +418,13 @@ export function LogicBuilder() {
       const raw = await askGroq(system, prompt);
       const parsed = JSON.parse(raw.replace(/```json|```/g, '').trim());
       setAiFeedback(parsed.feedback);
+      if (parsed.score < 8) {
+        const cRaw = await askGroq(
+          `You are a programming teacher. Give the CORRECT simple explanation of this concept in 3-4 sentences a student can learn from.`,
+          `Concept: "${dayData?.concept}" in ${lang}. Definition: "${dayData?.definition}". Give ideal student-friendly explanation.`
+        );
+        setCorrectAnswer(cRaw);
+      } else { setCorrectAnswer(''); }
       markStepDone(0, parsed.score, parsed.feedback);
     } catch { toast.error('AI check failed'); }
     setAiLoading(false);
@@ -429,6 +439,13 @@ export function LogicBuilder() {
       const raw = await askGroq(system, prompt);
       const parsed = JSON.parse(raw.replace(/```json|```/g, '').trim());
       setAiFeedback(parsed.feedback);
+      if (parsed.score < 12) {
+        const cRaw = await askGroq(
+          `You are a programming logic teacher. Give the CORRECT pseudocode/steps for this problem in simple numbered steps.`,
+          `Problem: "${dayData?.problem}" in ${lang}. Give ideal pseudocode in 5-8 steps.`
+        );
+        setCorrectAnswer(cRaw);
+      } else { setCorrectAnswer(''); }
       markStepDone(1, parsed.score, parsed.feedback);
     } catch { toast.error('AI check failed'); }
     setAiLoading(false);
@@ -458,6 +475,13 @@ export function LogicBuilder() {
       const raw = await askGroq(system, prompt);
       const parsed = JSON.parse(raw.replace(/```json|```/g, '').trim());
       setAiFeedback(`${parsed.feedback}\n\nExecution: ${executionResult}`);
+      if (parsed.score < 15) {
+        const cRaw = await askGroq(
+          `You are a code reviewer. Provide the CORRECT clean solution code with brief comments.`,
+          `Problem: "${dayData?.problem}" in ${lang}. Write the ideal solution code.`
+        );
+        setCorrectAnswer(cRaw);
+      } else { setCorrectAnswer(''); }
       markStepDone(3, parsed.score, parsed.feedback);
     } catch { toast.error('Evaluation failed'); }
     setAiLoading(false);
@@ -484,9 +508,37 @@ export function LogicBuilder() {
       const raw = await askGroq(system, `Problem: "${dayData?.problem}"\n\n${answersText}`);
       const parsed = JSON.parse(raw.replace(/```json|```/g, '').trim());
       setAiFeedback(parsed.feedback);
+      if (parsed.score < 6) {
+        const cRaw = await askGroq(
+          `You are a programming teacher. Explain how to correctly handle each edge case.`,
+          `Problem: "${dayData?.problem}". Edge cases:\n${edgeCases.join('\n')}\nExplain correct handling in ${lang}.`
+        );
+        setCorrectAnswer(cRaw);
+      } else { setCorrectAnswer(''); }
       markStepDone(5, parsed.score, parsed.feedback);
     } catch { toast.error('Verification failed'); }
     setAiLoading(false);
+  };
+
+  // ── Get Hint ──────────────────────────────────────────────────
+  const getHint = async (stepId: number) => {
+    setHintLoading(true); setAiHint('');
+    const hintPrompts: Record<number, string> = {
+      0: `Give a short, friendly hint on how to explain "${dayData?.concept}" in own words. Suggest a real-life analogy. Max 2-3 sentences.`,
+      1: `Give a short hint on how to write pseudocode for: "${dayData?.problem}". Suggest the first 2 steps only. Don't give full answer.`,
+      2: `Give a short hint on how to draw a flowchart for: "${dayData?.problem}". Remind what shapes to use. Max 2 sentences.`,
+      3: `Give a short coding hint for: "${dayData?.problem}" in ${lang}. Suggest the approach only, not the full code. Max 2-3 sentences.`,
+      4: `Give a short hint on how to do a dry run. Suggest what variables to track for this problem. Max 2 sentences.`,
+      5: `Give a short hint — what edge cases should a student think about for: "${dayData?.problem}"? Give 1-2 examples only.`,
+    };
+    try {
+      const raw = await askGroq(
+        `You are a helpful programming tutor. Give a short encouraging hint. Don't give the full answer.`,
+        hintPrompts[stepId] || `Give a hint for solving: "${dayData?.problem}" in ${lang}.`
+      );
+      setAiHint(raw);
+    } catch { toast.error('Could not get hint'); }
+    setHintLoading(false);
   };
 
   const totalScore = Object.values(stepScores).reduce((a, b) => a + b, 0);
@@ -708,6 +760,24 @@ export function LogicBuilder() {
                       {aiFeedback}
                     </div>
                   )}
+                  <button onClick={() => { setAiHint(''); setCorrectAnswer(''); getHint(0); }} disabled={hintLoading}
+                    className="w-full py-2 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition disabled:opacity-50 mb-2"
+                    style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)', color: '#F59E0B' }}>
+                    {hintLoading ? <Loader2 size={13} className="animate-spin" /> : <Lightbulb size={13} />}
+                    💡 Get Hint
+                  </button>
+                  {aiHint && (
+                    <div className="p-3 rounded-xl text-sm mb-3" style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', color: '#FCD34D' }}>
+                      <p className="font-bold text-xs mb-1" style={{ color: '#F59E0B' }}>💡 HINT</p>
+                      {aiHint}
+                    </div>
+                  )}
+                  {correctAnswer && (
+                    <div className="p-3 rounded-xl text-sm mb-3" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.3)', color: '#6EE7B7', whiteSpace: 'pre-wrap' }}>
+                      <p className="font-bold text-xs mb-1" style={{ color: '#10B981' }}>✅ CORRECT ANSWER</p>
+                      {correctAnswer}
+                    </div>
+                  )}
                   <button onClick={verifyConceptExplain} disabled={aiLoading}
                     className="w-full py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition disabled:opacity-50"
                     style={{ background: 'linear-gradient(135deg,#6366F1,#4F46E5)', color: '#fff' }}>
@@ -735,6 +805,24 @@ export function LogicBuilder() {
                   {aiFeedback && (
                     <div className="p-4 rounded-xl text-sm" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)', color: '#6EE7B7' }}>
                       {aiFeedback}
+                    </div>
+                  )}
+                  <button onClick={() => { setAiHint(''); setCorrectAnswer(''); getHint(1); }} disabled={hintLoading}
+                    className="w-full py-2 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition disabled:opacity-50 mb-2"
+                    style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)', color: '#F59E0B' }}>
+                    {hintLoading ? <Loader2 size={13} className="animate-spin" /> : <Lightbulb size={13} />}
+                    💡 Get Hint
+                  </button>
+                  {aiHint && (
+                    <div className="p-3 rounded-xl text-sm mb-3" style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', color: '#FCD34D' }}>
+                      <p className="font-bold text-xs mb-1" style={{ color: '#F59E0B' }}>💡 HINT</p>
+                      {aiHint}
+                    </div>
+                  )}
+                  {correctAnswer && (
+                    <div className="p-3 rounded-xl text-sm mb-3" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.3)', color: '#6EE7B7', whiteSpace: 'pre-wrap' }}>
+                      <p className="font-bold text-xs mb-1" style={{ color: '#10B981' }}>✅ CORRECT ANSWER</p>
+                      {correctAnswer}
                     </div>
                   )}
                   <button onClick={verifyPseudocode} disabled={aiLoading}
@@ -784,6 +872,24 @@ export function LogicBuilder() {
                   {aiFeedback && (
                     <div className="p-4 rounded-xl text-sm whitespace-pre-wrap" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)', color: '#6EE7B7' }}>
                       {aiFeedback}
+                    </div>
+                  )}
+                  <button onClick={() => { setAiHint(''); setCorrectAnswer(''); getHint(3); }} disabled={hintLoading}
+                    className="w-full py-2 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition disabled:opacity-50 mb-2"
+                    style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)', color: '#F59E0B' }}>
+                    {hintLoading ? <Loader2 size={13} className="animate-spin" /> : <Lightbulb size={13} />}
+                    💡 Get Hint
+                  </button>
+                  {aiHint && (
+                    <div className="p-3 rounded-xl text-sm mb-3" style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', color: '#FCD34D' }}>
+                      <p className="font-bold text-xs mb-1" style={{ color: '#F59E0B' }}>💡 HINT</p>
+                      {aiHint}
+                    </div>
+                  )}
+                  {correctAnswer && (
+                    <div className="p-3 rounded-xl text-sm mb-3" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.3)', color: '#6EE7B7', whiteSpace: 'pre-wrap' }}>
+                      <p className="font-bold text-xs mb-1" style={{ color: '#10B981' }}>✅ CORRECT ANSWER</p>
+                      {correctAnswer}
                     </div>
                   )}
                   <button onClick={runAndEvaluateCode} disabled={aiLoading}
@@ -849,7 +955,7 @@ export function LogicBuilder() {
 
               {/* Navigation */}
               <div className="flex items-center justify-between mt-6 pt-4" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-                <button onClick={() => setStep(s => Math.max(0, s - 1))} disabled={step === 0}
+                <button onClick={() => { setStep(s => Math.max(0, s - 1)); setAiHint(''); setCorrectAnswer(''); setAiFeedback(''); }} disabled={step === 0}
                   className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition disabled:opacity-30"
                   style={{ background: 'rgba(255,255,255,0.06)', color: '#94A3B8' }}>
                   <ChevronLeft size={12} /> Previous
