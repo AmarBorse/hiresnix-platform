@@ -1,4 +1,5 @@
 // src/pages/student/StudentMockInterview.tsx
+import { InterviewRoom3D } from '../../components/interview/InterviewRoom3D';
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Mic, MicOff, Video, VideoOff, RotateCcw, Award, BarChart2, Play, Volume2, VolumeX, AlertTriangle, Lock, Upload, ChevronRight, SkipForward, FileText, Download } from 'lucide-react';
 import client from '../../api/client';
@@ -77,6 +78,7 @@ export function StudentMockInterview() {
   const [aiThinking,  setAiThinking] = useState(false);
   const [camOn,       setCamOn]      = useState(false);
   const [muted,       setMuted]      = useState(false);
+  const [show3D,      setShow3D]     = useState(false);
   const [micError,    setMicError]   = useState('');
   const [faceWarning, setFaceWarning]= useState(false);
   const [lookAwayCount,setLookAwayCount]=useState(0);
@@ -321,7 +323,7 @@ Respond ONLY in JSON: {"nextQuestion":"...","feedback":"...","score":0-10,"isCom
     const res=await fetch(`${(import.meta as any).env.VITE_API_URL}/groq/chat`,{
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},
-      body:JSON.stringify({system:sys,messages:msgs,model:'llama-3.3-70b-versatile',temperature:0.85,max_tokens:500,module:'mock-interview'}),
+      body:JSON.stringify({system:sys,messages:msgs,model:'llama-3.3-70b-versatile',temperature:0.85,max_tokens:500}),
     });
     const d=await res.json();
     const raw=d.content;
@@ -570,6 +572,10 @@ Respond ONLY in JSON: {"nextQuestion":"...","feedback":"...","score":0-10,"isCom
           <button onClick={()=>setMuted(m=>!m)} className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition">
             {muted?<VolumeX size={15} className="text-gray-400"/>:<Volume2 size={15} className="text-indigo-400"/>}
           </button>
+          <button onClick={()=>setShow3D(s=>!s)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition ${show3D?'bg-blue-600 text-white':'bg-gray-800 text-blue-400 hover:bg-gray-700'}`}>
+            {show3D ? '📷 2D View' : '🎮 3D Room'}
+          </button>
           <div className={`px-3 py-1.5 rounded-lg font-mono font-bold text-lg ${timer<=20?'bg-red-900/30 text-red-400':timer<=40?'bg-amber-900/30 text-amber-400':'bg-emerald-900/30 text-emerald-400'}`}>{timer}s</div>
           <button onClick={handleSkip} disabled={aiSpeaking||aiThinking}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-800 text-gray-300 text-xs font-medium hover:bg-gray-700 transition disabled:opacity-40">
@@ -585,7 +591,18 @@ Respond ONLY in JSON: {"nextQuestion":"...","feedback":"...","score":0-10,"isCom
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="bg-gradient-to-br from-gray-900 to-indigo-950 rounded-2xl p-6 flex flex-col items-center justify-between min-h-[400px]">
           <div className="flex-1 flex flex-col items-center justify-center space-y-5 w-full">
-            <AIAvatar speaking={aiSpeaking} thinking={aiThinking}/>
+            {show3D ? (
+              <div style={{ width: '100%', height: '340px', borderRadius: '12px', overflow: 'hidden' }}>
+                <InterviewRoom3D
+                  speaking={aiSpeaking}
+                  thinking={aiThinking}
+                  listening={micOn}
+                  onClose={() => setShow3D(false)}
+                />
+              </div>
+            ) : (
+              <AIAvatar speaking={aiSpeaking} thinking={aiThinking}/>
+            )}
             {currentQ&&!feedback&&(
               <div className="w-full bg-white/10 rounded-xl p-4 border border-white/10">
                 <p className="text-indigo-300 text-xs font-semibold mb-1">QUESTION {qNumber}</p>
