@@ -44,9 +44,9 @@ export function InterviewRoom3D({ speaking, thinking, listening, onClose }: Prop
     scene.fog = new THREE.Fog(0x0d1525, 6, 16);
 
     /* ── CAMERA — eye level, slight angle ── */
-    const camera = new THREE.PerspectiveCamera(48, W / H, 0.1, 30);
-    camera.position.set(0, 1.55, 1.5);
-    camera.lookAt(0, 1.44, -0.1);
+    const camera = new THREE.PerspectiveCamera(35, W / H, 0.1, 30);
+    camera.position.set(0, 1.44, 1.2);
+    camera.lookAt(0, 1.44, -0.2);
 
     /* ════════════════════════════════════════
        LIGHTS
@@ -74,9 +74,14 @@ export function InterviewRoom3D({ speaking, thinking, listening, onClose }: Prop
     scene.add(rim); scene.add(rim.target);
 
     // Dynamic face light
-    const faceLight = new THREE.PointLight(0xffeedd, 3.5, 3.5);
-    faceLight.position.set(0, 2.0, 1.2);
+    const faceLight = new THREE.PointLight(0xffeedd, 6.0, 4.0);
+    faceLight.position.set(0, 1.8, 1.0);
     scene.add(faceLight);
+
+    // Extra fill light directly on face
+    const faceLight2 = new THREE.PointLight(0xffd0aa, 4.0, 3.0);
+    faceLight2.position.set(0.5, 1.6, 0.8);
+    scene.add(faceLight2);
 
     // Monitor screen glow
     const screenGlow = new THREE.PointLight(0x2244ff, 2.0, 3);
