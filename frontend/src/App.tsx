@@ -73,6 +73,7 @@ const AdminEnquiries    = lazy(() => import('./pages/admin/AdminEnquiries').then
 const AdminDocuments    = lazy(() => import('./pages/admin/AdminDocuments').then(m => ({ default: m.AdminDocuments })));
 const AdminInstitutions = lazy(() => import('./pages/admin/AdminInstitutions').then(m => ({ default: m.AdminInstitutions })));
 const AdminLogicBuilder = lazy(() => import('./pages/admin/AdminLogicBuilder').then(m => ({ default: m.AdminLogicBuilder })));
+const ResetPassword    = lazy(() => import('./pages/auth/ResetPassword').then(m => ({ default: m.ResetPassword })));
 
 const InstitutionDashboard    = lazy(() => import('./pages/institution/InstitutionDashboard').then(m => ({ default: m.InstitutionDashboard })));
 const InstitutionStudents     = lazy(() => import('./pages/institution/InstitutionStudents').then(m => ({ default: m.InstitutionStudents })));
@@ -154,6 +155,7 @@ export default function App() {
               ? <AuthRedirect /> : <AuthPage />
           } />
           <Route path="/inst-login" element={<InstStudentLogin />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
 
           {/* Institution Student */}
           <Route path="/inst-student" element={<InstStudentRoute><InstStudentLayout /></InstStudentRoute>}>
