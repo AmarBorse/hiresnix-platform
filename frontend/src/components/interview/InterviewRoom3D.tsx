@@ -3,511 +3,320 @@ import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 
 interface Props {
-  speaking: boolean;   // AI is speaking
-  thinking: boolean;   // AI is thinking
-  listening: boolean;  // AI is listening to student
+  speaking: boolean;
+  thinking: boolean;
+  listening: boolean;
   onClose?: () => void;
 }
 
 export function InterviewRoom3D({ speaking, thinking, listening, onClose }: Props) {
-  const mountRef   = useRef<HTMLDivElement>(null);
-  const sceneRef   = useRef<THREE.Scene | null>(null);
-  const cameraRef  = useRef<THREE.PerspectiveCamera | null>(null);
-  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
-  const frameRef   = useRef<number>(0);
-  const avatarRef  = useRef<THREE.Group | null>(null);
-  const avatarHeadRef = useRef<THREE.Mesh | null>(null);
-  const mouthRef   = useRef<THREE.Mesh | null>(null);
-  const eyeBlinkRef = useRef<THREE.Mesh[]>([]);
-  const clockRef   = useRef(new THREE.Clock());
+  const mountRef     = useRef<HTMLDivElement>(null);
+  const rendererRef  = useRef<THREE.WebGLRenderer | null>(null);
+  const frameRef     = useRef<number>(0);
+  const clockRef     = useRef(new THREE.Clock());
+  const avatarRef    = useRef<THREE.Group | null>(null);
+  const mouthRef     = useRef<THREE.Mesh | null>(null);
+  const eyelidsRef   = useRef<THREE.Mesh[]>([]);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     if (!mountRef.current) return;
-
-    const W = mountRef.current.clientWidth;
-    const H = mountRef.current.clientHeight;
+    const W = mountRef.current.clientWidth  || 600;
+    const H = mountRef.current.clientHeight || 400;
 
     /* ── Renderer ── */
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(W, H);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.2;
+    renderer.setClearColor(0x0d1117);
     mountRef.current.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
     /* ── Scene ── */
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x0a0a1a);
-    scene.fog = new THREE.Fog(0x0a0a1a, 12, 25);
-    sceneRef.current = scene;
+    scene.background = new THREE.Color(0x0d1117);
+    scene.fog = new THREE.FogExp2(0x0d1117, 0.08);
 
-    /* ── Camera ── */
-    const camera = new THREE.PerspectiveCamera(55, W / H, 0.1, 100);
-    camera.position.set(0, 1.55, 2.8);
-    camera.lookAt(0, 1.35, -1.5);
-    cameraRef.current = camera;
+    /* ── Camera — close up on avatar face ── */
+    const camera = new THREE.PerspectiveCamera(50, W / H, 0.1, 50);
+    camera.position.set(0, 1.55, 1.8);
+    camera.lookAt(0, 1.4, 0);
 
     /* ── Lights ── */
-    // Ambient
-    const ambient = new THREE.AmbientLight(0x334466, 1.5);
-    scene.add(ambient);
+    scene.add(new THREE.AmbientLight(0x223355, 2.5));
 
-    // Main ceiling light
-    const ceiling = new THREE.DirectionalLight(0xffffff, 2.0);
-    ceiling.position.set(0, 5, 2);
-    ceiling.castShadow = true;
-    ceiling.shadow.mapSize.width = 2048;
-    ceiling.shadow.mapSize.height = 2048;
-    ceiling.shadow.camera.near = 0.5;
-    ceiling.shadow.camera.far = 20;
-    ceiling.shadow.camera.left = -6;
-    ceiling.shadow.camera.right = 6;
-    ceiling.shadow.camera.top = 6;
-    ceiling.shadow.camera.bottom = -6;
-    scene.add(ceiling);
+    const keyLight = new THREE.DirectionalLight(0xffffff, 3.0);
+    keyLight.position.set(1, 3, 3);
+    scene.add(keyLight);
 
-    // Face light - directly on avatar
-    const faceLight = new THREE.PointLight(0xffeedd, 3.0, 5);
-    faceLight.position.set(0, 2.5, 0.5);
-    scene.add(faceLight);
+    const fillLight = new THREE.DirectionalLight(0x4466aa, 1.5);
+    fillLight.position.set(-2, 2, 1);
+    scene.add(fillLight);
 
-    // Desk lamp - warm glow
-    const deskLight = new THREE.PointLight(0x6699ff, 2.5, 5);
-    deskLight.position.set(0, 2.2, -0.5);
-    scene.add(deskLight);
-
-    // Rim light (behind avatar - blue accent)
-    const rimLight = new THREE.PointLight(0x2244ff, 2.0, 6);
-    rimLight.position.set(0, 2.5, -3);
+    const rimLight = new THREE.DirectionalLight(0x2244ff, 2.0);
+    rimLight.position.set(0, 1, -3);
     scene.add(rimLight);
 
-    // Screen glow (front - blue-ish)
-    const screenGlow = new THREE.PointLight(0x3366ff, 1.2, 4);
-    screenGlow.position.set(0, 1.8, 1.5);
-    scene.add(screenGlow);
+    const faceLight = new THREE.PointLight(0xffeedd, 4.0, 4);
+    faceLight.position.set(0, 2.2, 1.5);
+    scene.add(faceLight);
 
-    /* ── Materials ── */
-    const wallMat = new THREE.MeshLambertMaterial({ color: 0x1a1a2e });
-    const floorMat = new THREE.MeshLambertMaterial({ color: 0x111128 });
-    const woodMat  = new THREE.MeshLambertMaterial({ color: 0x3d2b1f });
-    const glassMat = new THREE.MeshLambertMaterial({ color: 0x88aaff, transparent: true, opacity: 0.15 });
-    const metalMat = new THREE.MeshLambertMaterial({ color: 0x334455 });
-    const screenMat = new THREE.MeshLambertMaterial({ color: 0x0033aa, emissive: new THREE.Color(0x001155), emissiveIntensity: 1 });
-    const chairMat = new THREE.MeshLambertMaterial({ color: 0x222244 });
+    /* ── BACKGROUND WALL ── */
+    const wallMat = new THREE.MeshLambertMaterial({ color: 0x1a1f35 });
+    const wall = new THREE.Mesh(new THREE.PlaneGeometry(8, 5), wallMat);
+    wall.position.set(0, 1.5, -2.5);
+    scene.add(wall);
 
-    /* ── ROOM ── */
-    // Floor
-    const floor = new THREE.Mesh(new THREE.PlaneGeometry(10, 10), floorMat);
+    // Wall panel lines
+    for (let i = -3; i <= 3; i++) {
+      const line = new THREE.Mesh(
+        new THREE.BoxGeometry(0.02, 4, 0.01),
+        new THREE.MeshLambertMaterial({ color: 0x2a3050 })
+      );
+      line.position.set(i, 1.5, -2.49);
+      scene.add(line);
+    }
+
+    /* ── FLOOR ── */
+    const floor = new THREE.Mesh(
+      new THREE.PlaneGeometry(8, 8),
+      new THREE.MeshLambertMaterial({ color: 0x111520 })
+    );
     floor.rotation.x = -Math.PI / 2;
     floor.receiveShadow = true;
     scene.add(floor);
 
-    // Back wall
-    const backWall = new THREE.Mesh(new THREE.PlaneGeometry(10, 6), wallMat);
-    backWall.position.set(0, 3, -4);
-    backWall.receiveShadow = true;
-    scene.add(backWall);
-
-    // Left wall
-    const leftWall = new THREE.Mesh(new THREE.PlaneGeometry(8, 6), wallMat);
-    leftWall.position.set(-5, 3, -1);
-    leftWall.rotation.y = Math.PI / 2;
-    scene.add(leftWall);
-
-    // Right wall
-    const rightWall = new THREE.Mesh(new THREE.PlaneGeometry(8, 6), wallMat);
-    rightWall.position.set(5, 3, -1);
-    rightWall.rotation.y = -Math.PI / 2;
-    scene.add(rightWall);
-
-    // Ceiling
-    const ceiling2 = new THREE.Mesh(new THREE.PlaneGeometry(10, 8), new THREE.MeshLambertMaterial({ color: 0x0f0f1e }));
-    ceiling2.rotation.x = Math.PI / 2;
-    ceiling2.position.set(0, 6, -1);
-    scene.add(ceiling2);
-
-    // Ceiling light panel
-    const lightPanel = new THREE.Mesh(
-      new THREE.BoxGeometry(2, 0.05, 1),
-      new THREE.MeshLambertMaterial({ color: 0x8899ff, emissive: new THREE.Color(0x334488), emissiveIntensity: 2 })
-    );
-    lightPanel.position.set(0, 5.95, 0);
-    scene.add(lightPanel);
-
-    /* ── DESK ── */
-    const desk = new THREE.Mesh(new THREE.BoxGeometry(3.5, 0.08, 1.4), woodMat);
-    desk.position.set(0, 0.78, -0.5);
-    desk.castShadow = true;
+    /* ── DESK (simple, clean) ── */
+    const deskMat = new THREE.MeshLambertMaterial({ color: 0x2d1f10 });
+    const desk = new THREE.Mesh(new THREE.BoxGeometry(3, 0.06, 1.2), deskMat);
+    desk.position.set(0, 0.82, 0.3);
     desk.receiveShadow = true;
     scene.add(desk);
 
-    // Desk legs
-    [[-1.6, -0.6], [1.6, -0.6], [-1.6, 0.15], [1.6, 0.15]].forEach(([x, z]) => {
-      const leg = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.8, 0.06), metalMat);
-      leg.position.set(x, 0.38, z);
-      scene.add(leg);
+    // Desk glow strip
+    const strip = new THREE.Mesh(
+      new THREE.BoxGeometry(2.8, 0.02, 0.02),
+      new THREE.MeshLambertMaterial({ color: 0x3366ff, emissive: new THREE.Color(0x1133cc), emissiveIntensity: 3 })
+    );
+    strip.position.set(0, 0.86, -0.3);
+    scene.add(strip);
+
+    /* ── MONITOR (behind avatar) ── */
+    const monBase = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.02, 0.15),
+      new THREE.MeshLambertMaterial({ color: 0x222233 }));
+    monBase.position.set(0, 0.83, -0.55);
+    scene.add(monBase);
+
+    const monStand = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.28, 0.04),
+      new THREE.MeshLambertMaterial({ color: 0x222233 }));
+    monStand.position.set(0, 0.98, -0.58);
+    scene.add(monStand);
+
+    const monFrame = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.65, 0.05),
+      new THREE.MeshLambertMaterial({ color: 0x111122 }));
+    monFrame.position.set(0, 1.38, -0.65);
+    scene.add(monFrame);
+
+    const screenMat = new THREE.MeshLambertMaterial({
+      color: 0x0022aa,
+      emissive: new THREE.Color(0x001166),
+      emissiveIntensity: 1.5,
     });
+    const monScreen = new THREE.Mesh(new THREE.PlaneGeometry(0.98, 0.55), screenMat);
+    monScreen.position.set(0, 1.38, -0.62);
+    scene.add(monScreen);
 
-    // Desk surface glass
-    const deskGlass = new THREE.Mesh(new THREE.BoxGeometry(3.4, 0.02, 1.3), glassMat);
-    deskGlass.position.set(0, 0.82, -0.5);
-    scene.add(deskGlass);
+    // "HIRESNIX" text bar on screen
+    const hBar = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.35, 0.07),
+      new THREE.MeshLambertMaterial({ color: 0x3366ff, emissive: new THREE.Color(0x2255ee), emissiveIntensity: 3 })
+    );
+    hBar.position.set(0, 1.42, -0.61);
+    scene.add(hBar);
 
-    /* ── MONITOR ── */
-    const monitorStand = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.4, 0.05), metalMat);
-    monitorStand.position.set(0, 1.02, -1.0);
-    scene.add(monitorStand);
-
-    const monitorBase = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.02, 0.2), metalMat);
-    monitorBase.position.set(0, 0.82, -1.0);
-    scene.add(monitorBase);
-
-    const monitor = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.7, 0.06), metalMat);
-    monitor.position.set(0, 1.45, -1.05);
-    monitor.castShadow = true;
-    scene.add(monitor);
-
-    const screen = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 0.62), screenMat);
-    screen.position.set(0, 1.45, -1.02);
-    scene.add(screen);
-
-    // Hiresnix logo on screen
-    const logoGeo = new THREE.PlaneGeometry(0.4, 0.1);
-    const logoMat = new THREE.MeshLambertMaterial({ color: 0x4488ff, emissive: new THREE.Color(0x2255cc), emissiveIntensity: 2 });
-    const logo = new THREE.Mesh(logoGeo, logoMat);
-    logo.position.set(0, 1.52, -1.015);
-    scene.add(logo);
-
-    /* ── KEYBOARD ── */
-    const keyboard = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.02, 0.2), metalMat);
-    keyboard.position.set(0.3, 0.83, -0.65);
-    scene.add(keyboard);
-
-    /* ── NOTEBOOK ── */
-    const notebook = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.015, 0.28),
-      new THREE.MeshLambertMaterial({ color: 0x1a3a5c }));
-    notebook.position.set(-1.0, 0.83, -0.6);
-    notebook.rotation.y = 0.3;
-    scene.add(notebook);
-
-    /* ── COFFEE CUP ── */
-    const cup = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.035, 0.1, 12),
-      new THREE.MeshLambertMaterial({ color: 0xdddddd }));
-    cup.position.set(1.2, 0.88, -0.7);
-    scene.add(cup);
-
-    /* ── INTERVIEWER CHAIR ── */
-    const chairBase = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.06, 0.8), chairMat);
-    chairBase.position.set(0, 0.46, -2.0);
-    scene.add(chairBase);
-
-    const chairBack = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.0, 0.06), chairMat);
-    chairBack.position.set(0, 1.0, -2.4);
-    scene.add(chairBack);
-
-    const chairArm1 = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.3, 0.5), chairMat);
-    chairArm1.position.set(-0.37, 0.72, -2.1);
-    scene.add(chairArm1);
-
-    const chairArm2 = chairArm1.clone();
-    chairArm2.position.set(0.37, 0.72, -2.1);
-    scene.add(chairArm2);
-
-    // Chair wheels
-    [[-0.3, -0.3], [0.3, -0.3], [-0.3, 0.3], [0.3, 0.3], [0, 0]].forEach(([x, z]) => {
-      const wheel = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 8), metalMat);
-      wheel.position.set(x, 0.05, -2.0 + z);
-      scene.add(wheel);
-    });
-
-    /* ── STUDENT CHAIR (front - partial view) ── */
-    const studentChair = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.06, 0.8), chairMat);
-    studentChair.position.set(0, 0.46, 2.2);
-    scene.add(studentChair);
-
-    /* ── AI AVATAR ── */
+    /* ── AVATAR GROUP ── */
     const avatar = new THREE.Group();
-    avatar.position.set(0, 0.5, -1.2);
+    avatar.position.set(0, 0.5, -0.1);
     scene.add(avatar);
     avatarRef.current = avatar;
 
-    // Body (suit)
-    const bodyGeo = new THREE.CylinderGeometry(0.22, 0.28, 0.6, 12);
-    const bodyMat = new THREE.MeshLambertMaterial({ color: 0x1a1a3e });
-    const body = new THREE.Mesh(bodyGeo, bodyMat);
-    body.position.set(0, 0.78, 0);
-    body.castShadow = true;
-    avatar.add(body);
+    const skin  = new THREE.MeshLambertMaterial({ color: 0xc8956a });
+    const suit  = new THREE.MeshLambertMaterial({ color: 0x1a2040 });
+    const white = new THREE.MeshLambertMaterial({ color: 0xffffff });
+    const dark  = new THREE.MeshLambertMaterial({ color: 0x111111 });
+    const hair  = new THREE.MeshLambertMaterial({ color: 0x0d0600 });
+    const blue  = new THREE.MeshLambertMaterial({ color: 0x2244cc });
 
-    // Shirt collar
-    const collar = new THREE.Mesh(
-      new THREE.BoxGeometry(0.15, 0.25, 0.22),
-      new THREE.MeshLambertMaterial({ color: 0xffffff })
-    );
-    collar.position.set(0, 0.92, 0.12);
-    avatar.add(collar);
+    // Torso
+    const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.25, 0.55, 12), suit);
+    torso.position.set(0, 0.82, 0);
+    torso.castShadow = true;
+    avatar.add(torso);
+
+    // Shirt strip
+    const shirt = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.3, 0.21), white);
+    shirt.position.set(0, 0.9, 0);
+    avatar.add(shirt);
 
     // Tie
-    const tie = new THREE.Mesh(
-      new THREE.BoxGeometry(0.04, 0.22, 0.02),
-      new THREE.MeshLambertMaterial({ color: 0x3344cc })
-    );
-    tie.position.set(0, 0.85, 0.22);
+    const tie = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.22, 0.015), blue);
+    tie.position.set(0, 0.84, 0.21);
     avatar.add(tie);
 
     // Shoulders
-    const shoulderGeo = new THREE.CylinderGeometry(0.08, 0.08, 0.4, 8);
-    const shoulder1 = new THREE.Mesh(shoulderGeo, bodyMat);
-    shoulder1.rotation.z = Math.PI / 2;
-    shoulder1.position.set(-0.35, 1.02, 0);
-    avatar.add(shoulder1);
-    const shoulder2 = shoulder1.clone();
-    shoulder2.position.set(0.35, 1.02, 0);
-    avatar.add(shoulder2);
+    const sGeo = new THREE.CylinderGeometry(0.07, 0.07, 0.38, 8);
+    const ls = new THREE.Mesh(sGeo, suit); ls.rotation.z = Math.PI/2; ls.position.set(-0.32, 1.02, 0); avatar.add(ls);
+    const rs = new THREE.Mesh(sGeo, suit); rs.rotation.z = Math.PI/2; rs.position.set( 0.32, 1.02, 0); avatar.add(rs);
 
     // Arms
-    const armGeo = new THREE.CylinderGeometry(0.055, 0.055, 0.5, 8);
-    const arm1 = new THREE.Mesh(armGeo, bodyMat);
-    arm1.position.set(-0.38, 0.72, 0.05);
-    arm1.rotation.z = 0.15;
-    avatar.add(arm1);
-    const arm2 = arm1.clone();
-    arm2.position.set(0.38, 0.72, 0.05);
-    arm2.rotation.z = -0.15;
-    avatar.add(arm2);
+    const aGeo = new THREE.CylinderGeometry(0.05, 0.05, 0.45, 8);
+    const la = new THREE.Mesh(aGeo, suit); la.position.set(-0.35, 0.72, 0.05); la.rotation.z = 0.12; avatar.add(la);
+    const ra = new THREE.Mesh(aGeo, suit); ra.position.set( 0.35, 0.72, 0.05); ra.rotation.z = -0.12; avatar.add(ra);
 
-    // Hands on desk
-    const handGeo = new THREE.SphereGeometry(0.07, 8, 8);
-    const skinMat = new THREE.MeshLambertMaterial({ color: 0xd4956a });
-    const hand1 = new THREE.Mesh(handGeo, skinMat);
-    hand1.position.set(-0.42, 0.46, 0.1);
-    avatar.add(hand1);
-    const hand2 = hand1.clone();
-    hand2.position.set(0.42, 0.46, 0.1);
-    avatar.add(hand2);
+    // Hands (resting on desk)
+    const hGeo = new THREE.SphereGeometry(0.065, 8, 8);
+    const lh = new THREE.Mesh(hGeo, skin); lh.position.set(-0.38, 0.42, 0.12); avatar.add(lh);
+    const rh = new THREE.Mesh(hGeo, skin); rh.position.set( 0.38, 0.42, 0.12); avatar.add(rh);
 
     // Neck
-    const neck = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.07, 0.09, 0.15, 12),
-      skinMat
-    );
-    neck.position.set(0, 1.16, 0);
+    const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.072, 0.09, 0.14, 12), skin);
+    neck.position.set(0, 1.17, 0);
     avatar.add(neck);
 
-    // Head
-    const headGeo = new THREE.SphereGeometry(0.18, 16, 16);
-    const head = new THREE.Mesh(headGeo, skinMat);
-    head.position.set(0, 1.38, 0);
+    // HEAD — bigger, more prominent
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.195, 24, 24), skin);
+    head.position.set(0, 1.405, 0);
     head.castShadow = true;
     avatar.add(head);
-    avatarHeadRef.current = head;
 
-    // Hair
-    const hair = new THREE.Mesh(
-      new THREE.SphereGeometry(0.185, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2),
-      new THREE.MeshLambertMaterial({ color: 0x1a0a00 })
+    // Hair top
+    const hairMesh = new THREE.Mesh(
+      new THREE.SphereGeometry(0.2, 16, 8, 0, Math.PI * 2, 0, Math.PI * 0.48),
+      hair
     );
-    hair.position.set(0, 1.38, 0);
-    avatar.add(hair);
+    hairMesh.position.set(0, 1.405, 0);
+    avatar.add(hairMesh);
 
-    // Eyes
-    const eyeGeo = new THREE.SphereGeometry(0.028, 8, 8);
-    const eyeWhite = new THREE.MeshLambertMaterial({ color: 0xffffff });
-    const eyeBlack = new THREE.MeshLambertMaterial({ color: 0x111111 });
+    // Hair back/sides
+    const hairBack = new THREE.Mesh(new THREE.SphereGeometry(0.198, 12, 8, 0, Math.PI * 2, 0, Math.PI * 0.65), hair);
+    hairBack.position.set(0, 1.385, -0.02);
+    avatar.add(hairBack);
 
-    const leftEyeWhite = new THREE.Mesh(eyeGeo, eyeWhite);
-    leftEyeWhite.position.set(-0.065, 1.40, 0.155);
-    avatar.add(leftEyeWhite);
-
-    const rightEyeWhite = new THREE.Mesh(eyeGeo, eyeWhite);
-    rightEyeWhite.position.set(0.065, 1.40, 0.155);
-    avatar.add(rightEyeWhite);
-
-    const pupilGeo = new THREE.SphereGeometry(0.015, 8, 8);
-    const leftPupil = new THREE.Mesh(pupilGeo, eyeBlack);
-    leftPupil.position.set(-0.065, 1.40, 0.175);
-    avatar.add(leftPupil);
-
-    const rightPupil = new THREE.Mesh(pupilGeo, eyeBlack);
-    rightPupil.position.set(0.065, 1.40, 0.175);
-    avatar.add(rightPupil);
-
-    // Eyelids (for blinking)
-    const eyelidGeo = new THREE.SphereGeometry(0.03, 8, 4, 0, Math.PI * 2, 0, Math.PI / 2);
-    const eyelidMat = new THREE.MeshLambertMaterial({ color: 0xd4956a });
-
-    const leftEyelid = new THREE.Mesh(eyelidGeo, eyelidMat);
-    leftEyelid.position.set(-0.065, 1.40, 0.155);
-    leftEyelid.rotation.x = Math.PI;
-    leftEyelid.scale.y = 0; // start open
-    avatar.add(leftEyelid);
-
-    const rightEyelid = new THREE.Mesh(eyelidGeo, eyelidMat);
-    rightEyelid.position.set(0.065, 1.40, 0.155);
-    rightEyelid.rotation.x = Math.PI;
-    rightEyelid.scale.y = 0;
-    avatar.add(rightEyelid);
-    eyeBlinkRef.current = [leftEyelid, rightEyelid];
+    // Ears
+    const eGeo = new THREE.SphereGeometry(0.038, 8, 8);
+    const le = new THREE.Mesh(eGeo, skin); le.position.set(-0.2, 1.40, 0); le.scale.set(0.6, 0.9, 0.5); avatar.add(le);
+    const re = new THREE.Mesh(eGeo, skin); re.position.set( 0.2, 1.40, 0); re.scale.set(0.6, 0.9, 0.5); avatar.add(re);
 
     // Eyebrows
-    const browGeo = new THREE.BoxGeometry(0.055, 0.008, 0.012);
-    const browMat = new THREE.MeshLambertMaterial({ color: 0x1a0a00 });
-    const leftBrow = new THREE.Mesh(browGeo, browMat);
-    leftBrow.position.set(-0.065, 1.435, 0.165);
-    avatar.add(leftBrow);
-    const rightBrow = leftBrow.clone();
-    rightBrow.position.set(0.065, 1.435, 0.165);
-    avatar.add(rightBrow);
+    const browGeo = new THREE.BoxGeometry(0.06, 0.01, 0.015);
+    const browMat = new THREE.MeshLambertMaterial({ color: 0x1a0800 });
+    const lb = new THREE.Mesh(browGeo, browMat); lb.position.set(-0.068, 1.45, 0.172); avatar.add(lb);
+    const rb = new THREE.Mesh(browGeo, browMat); rb.position.set( 0.068, 1.45, 0.172); avatar.add(rb);
+
+    // Eyes (white)
+    const ewGeo = new THREE.SphereGeometry(0.03, 10, 10);
+    const lew = new THREE.Mesh(ewGeo, white); lew.position.set(-0.068, 1.415, 0.168); avatar.add(lew);
+    const rew = new THREE.Mesh(ewGeo, white); rew.position.set( 0.068, 1.415, 0.168); avatar.add(rew);
+
+    // Pupils
+    const pGeo = new THREE.SphereGeometry(0.016, 8, 8);
+    const lp = new THREE.Mesh(pGeo, dark); lp.position.set(-0.068, 1.415, 0.19); avatar.add(lp);
+    const rp = new THREE.Mesh(pGeo, dark); rp.position.set( 0.068, 1.415, 0.19); avatar.add(rp);
+
+    // Eye shine
+    const shineGeo = new THREE.SphereGeometry(0.006, 6, 6);
+    const shineMat = new THREE.MeshLambertMaterial({ color: 0xffffff, emissive: new THREE.Color(0xffffff), emissiveIntensity: 2 });
+    const ls2 = new THREE.Mesh(shineGeo, shineMat); ls2.position.set(-0.062, 1.422, 0.2); avatar.add(ls2);
+    const rs2 = new THREE.Mesh(shineGeo, shineMat); rs2.position.set( 0.074, 1.422, 0.2); avatar.add(rs2);
+
+    // Eyelids (for blinking)
+    const elidGeo = new THREE.SphereGeometry(0.032, 10, 5, 0, Math.PI*2, 0, Math.PI/2);
+    const elidMat = new THREE.MeshLambertMaterial({ color: 0xc8956a });
+    const llid = new THREE.Mesh(elidGeo, elidMat); llid.position.set(-0.068,1.415,0.168); llid.rotation.x=Math.PI; llid.scale.y=0; avatar.add(llid);
+    const rlid = new THREE.Mesh(elidGeo, elidMat); rlid.position.set( 0.068,1.415,0.168); rlid.rotation.x=Math.PI; rlid.scale.y=0; avatar.add(rlid);
+    eyelidsRef.current = [llid, rlid];
 
     // Nose
-    const nose = new THREE.Mesh(
-      new THREE.ConeGeometry(0.022, 0.06, 6),
-      skinMat
-    );
-    nose.rotation.x = -Math.PI / 2;
-    nose.position.set(0, 1.36, 0.175);
+    const nose = new THREE.Mesh(new THREE.ConeGeometry(0.024, 0.055, 6), skin);
+    nose.rotation.x = -Math.PI/2;
+    nose.position.set(0, 1.375, 0.185);
     avatar.add(nose);
 
     // Mouth
-    const mouthGeo = new THREE.BoxGeometry(0.08, 0.015, 0.01);
-    const mouthMat = new THREE.MeshLambertMaterial({ color: 0x8b3a3a });
-    const mouth = new THREE.Mesh(mouthGeo, mouthMat);
-    mouth.position.set(0, 1.32, 0.172);
-    avatar.add(mouth);
-    mouthRef.current = mouth;
-
-    // Ears
-    const earGeo = new THREE.SphereGeometry(0.04, 8, 8);
-    const leftEar = new THREE.Mesh(earGeo, skinMat);
-    leftEar.position.set(-0.185, 1.38, 0);
-    leftEar.scale.set(0.6, 0.8, 0.5);
-    avatar.add(leftEar);
-    const rightEar = leftEar.clone();
-    rightEar.position.set(0.185, 1.38, 0);
-    avatar.add(rightEar);
-
-    /* ── BOOKSHELF (background) ── */
-    const shelf = new THREE.Mesh(new THREE.BoxGeometry(1.5, 2, 0.3), woodMat);
-    shelf.position.set(-3.5, 1.2, -3.5);
-    scene.add(shelf);
-
-    // Books
-    const bookColors = [0x334488, 0x883344, 0x448833, 0x884433, 0x558866];
-    bookColors.forEach((color, i) => {
-      const book = new THREE.Mesh(
-        new THREE.BoxGeometry(0.12, 0.4, 0.22),
-        new THREE.MeshLambertMaterial({ color })
-      );
-      book.position.set(-3.8 + i * 0.15, 1.5, -3.5);
-      scene.add(book);
-    });
-
-    /* ── PLANT ── */
-    const pot = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.1, 0.08, 0.2, 8),
-      new THREE.MeshLambertMaterial({ color: 0x884422 })
+    const mouthMesh = new THREE.Mesh(
+      new THREE.BoxGeometry(0.085, 0.018, 0.01),
+      new THREE.MeshLambertMaterial({ color: 0x7a2525 })
     );
-    pot.position.set(3.5, 0.12, -3.0);
-    scene.add(pot);
+    mouthMesh.position.set(0, 1.338, 0.18);
+    avatar.add(mouthMesh);
+    mouthRef.current = mouthMesh;
 
-    const leaves = new THREE.Mesh(
-      new THREE.SphereGeometry(0.25, 8, 8),
-      new THREE.MeshLambertMaterial({ color: 0x224422 })
-    );
-    leaves.position.set(3.5, 0.55, -3.0);
-    scene.add(leaves);
+    // Cheek blush
+    const blushGeo = new THREE.CircleGeometry(0.03, 8);
+    const blushMat = new THREE.MeshLambertMaterial({ color: 0xd4856a, transparent: true, opacity: 0.4 });
+    const lbl = new THREE.Mesh(blushGeo, blushMat); lbl.position.set(-0.135, 1.385, 0.175); lbl.rotation.y = -0.3; avatar.add(lbl);
+    const rbl = new THREE.Mesh(blushGeo, blushMat); rbl.position.set( 0.135, 1.385, 0.175); rbl.rotation.y =  0.3; avatar.add(rbl);
 
-    /* ── STATUS INDICATOR (glowing orb on desk) ── */
-    const orb = new THREE.Mesh(
-      new THREE.SphereGeometry(0.04, 12, 12),
-      new THREE.MeshLambertMaterial({ color: 0x44ff88, emissive: new THREE.Color(0x22cc66), emissiveIntensity: 2 })
-    );
-    orb.position.set(0.8, 0.85, -0.8);
+    /* ── STATUS ORBS on desk ── */
+    const orbMat = new THREE.MeshLambertMaterial({ color: 0x44ff88, emissive: new THREE.Color(0x22cc55), emissiveIntensity: 3 });
+    const orb = new THREE.Mesh(new THREE.SphereGeometry(0.025, 10, 10), orbMat);
+    orb.position.set(0.9, 0.88, 0.0);
     scene.add(orb);
 
     setLoaded(true);
 
-    /* ── ANIMATION LOOP ── */
-    let blinkTimer = 0;
-    let blinkState = 0; // 0=open, 1=closing, 2=opening
-    let headBobT = 0;
+    /* ── ANIMATION ── */
+    let blinkT = 0, blinkPhase = 0, headT = 0;
 
     const animate = () => {
       frameRef.current = requestAnimationFrame(animate);
-      const delta = clockRef.current.getDelta();
-      const elapsed = clockRef.current.getElapsedTime();
+      const dt = clockRef.current.getDelta();
+      const t  = clockRef.current.getElapsedTime();
 
-      if (avatarRef.current && avatarHeadRef.current && mouthRef.current) {
-        // ── HEAD BOB ──
-        headBobT += delta;
+      if (avatarRef.current && mouthRef.current) {
+        headT += dt;
+
+        // Head subtle movement
         if (speaking) {
-          avatarRef.current.position.y = Math.sin(headBobT * 4) * 0.008;
-          avatarHeadRef.current.rotation.z = Math.sin(headBobT * 2) * 0.02;
+          avatarRef.current.rotation.y = Math.sin(headT * 1.5) * 0.04;
+          avatarRef.current.position.y = 0.5 + Math.sin(headT * 3) * 0.005;
         } else if (thinking) {
-          avatarRef.current.position.y = Math.sin(headBobT * 1.5) * 0.005;
-          avatarHeadRef.current.rotation.x = 0.05; // slight downward tilt
+          avatarRef.current.rotation.z = Math.sin(headT * 1.2) * 0.03;
+          avatarRef.current.rotation.y = Math.sin(headT * 0.8) * 0.05;
         } else {
-          avatarRef.current.position.y = Math.sin(headBobT * 0.8) * 0.003;
-          avatarHeadRef.current.rotation.x = 0;
-          avatarHeadRef.current.rotation.z = 0;
+          avatarRef.current.rotation.y = Math.sin(headT * 0.5) * 0.02;
+          avatarRef.current.position.y = 0.5 + Math.sin(headT * 0.8) * 0.003;
         }
 
-        // ── MOUTH ANIMATION ──
+        // Mouth
         if (speaking) {
-          mouthRef.current.scale.y = 1 + Math.abs(Math.sin(elapsed * 12)) * 3;
-          mouthRef.current.position.y = 1.32 - Math.abs(Math.sin(elapsed * 12)) * 0.008;
-          // Change mouth material color
-          (mouthRef.current.material as THREE.MeshLambertMaterial).emissive.setHex(0x330000);
-          (mouthRef.current.material as THREE.MeshLambertMaterial).emissiveIntensity = Math.abs(Math.sin(elapsed * 8)) * 0.5;
+          const open = Math.abs(Math.sin(t * 10)) * 0.025;
+          mouthRef.current.scale.y = 1 + open * 60;
+          mouthRef.current.position.y = 1.338 - open * 0.5;
+          (mouthRef.current.material as THREE.MeshLambertMaterial).color.setHex(0x991122);
         } else {
           mouthRef.current.scale.y = 1;
-          mouthRef.current.position.y = 1.32;
-          (mouthRef.current.material as THREE.MeshLambertMaterial).emissiveIntensity = 0;
+          mouthRef.current.position.y = 1.338;
+          (mouthRef.current.material as THREE.MeshLambertMaterial).color.setHex(0x7a2525);
         }
 
-        // ── BLINK ──
-        blinkTimer += delta;
-        if (blinkState === 0 && blinkTimer > 3 + Math.random() * 2) {
-          blinkState = 1;
-          blinkTimer = 0;
+        // Blink
+        blinkT += dt;
+        if (blinkPhase === 0 && blinkT > 3 + Math.random() * 2) { blinkPhase = 1; blinkT = 0; }
+        if (blinkPhase === 1) {
+          eyelidsRef.current.forEach(l => { l.scale.y = Math.min(l.scale.y + dt * 10, 1); });
+          if (eyelidsRef.current[0]?.scale.y >= 1) blinkPhase = 2;
         }
-        if (blinkState === 1) {
-          eyeBlinkRef.current.forEach(lid => {
-            lid.scale.y = Math.min(lid.scale.y + delta * 8, 1);
-          });
-          if (eyeBlinkRef.current[0]?.scale.y >= 1) blinkState = 2;
-        }
-        if (blinkState === 2) {
-          eyeBlinkRef.current.forEach(lid => {
-            lid.scale.y = Math.max(lid.scale.y - delta * 8, 0);
-          });
-          if (eyeBlinkRef.current[0]?.scale.y <= 0) { blinkState = 0; blinkTimer = 0; }
-        }
-
-        // ── THINKING: head tilt side to side ──
-        if (thinking) {
-          avatarHeadRef.current.rotation.z = Math.sin(elapsed * 1.5) * 0.06;
+        if (blinkPhase === 2) {
+          eyelidsRef.current.forEach(l => { l.scale.y = Math.max(l.scale.y - dt * 10, 0); });
+          if (eyelidsRef.current[0]?.scale.y <= 0) { blinkPhase = 0; blinkT = 0; }
         }
       }
 
-      // ── DESK LIGHT COLOR based on state ──
-      if (speaking) {
-        deskLight.color.setHex(0x4499ff);
-        deskLight.intensity = 2 + Math.sin(elapsed * 8) * 0.5;
-      } else if (thinking) {
-        deskLight.color.setHex(0xffaa22);
-        deskLight.intensity = 1.5 + Math.sin(elapsed * 3) * 0.3;
-      } else {
-        deskLight.color.setHex(0x4488ff);
-        deskLight.intensity = 1.8;
-      }
-
-      // ── MONITOR SCREEN PULSE ──
-      (screen.material as THREE.MeshLambertMaterial).emissiveIntensity = 0.8 + Math.sin(elapsed * 2) * 0.2;
+      // Dynamic face light
+      faceLight.intensity = speaking ? 4 + Math.sin(t * 8) * 0.5 : thinking ? 3 + Math.sin(t * 2) * 0.3 : 3.5;
+      faceLight.color.setHex(speaking ? 0x88aaff : thinking ? 0xffcc77 : 0xffeedd);
 
       renderer.render(scene, camera);
     };
@@ -528,55 +337,51 @@ export function InterviewRoom3D({ speaking, thinking, listening, onClose }: Prop
       window.removeEventListener('resize', onResize);
       cancelAnimationFrame(frameRef.current);
       renderer.dispose();
-      if (mountRef.current && renderer.domElement.parentNode === mountRef.current) {
+      if (mountRef.current?.contains(renderer.domElement)) {
         mountRef.current.removeChild(renderer.domElement);
       }
     };
   }, []);
 
-  // State label
-  const stateLabel = speaking ? '🔊 Speaking...' : thinking ? '⏳ Thinking...' : '👂 Listening';
-  const stateColor = speaking ? '#4488ff' : thinking ? '#ffaa22' : '#44cc88';
+  const stateLabel = speaking ? '🔊 Speaking...' : thinking ? '⏳ Thinking...' : listening ? '👂 Listening...' : '💤 Idle';
+  const stateColor = speaking ? '#4488ff' : thinking ? '#ffaa33' : '#44cc88';
 
   return (
-    <div style={{ position: 'relative', width: '100%', height: '100%', minHeight: '400px', borderRadius: '16px', overflow: 'hidden', background: '#0a0a1a' }}>
-      {/* 3D Canvas */}
+    <div style={{ position: 'relative', width: '100%', height: '100%', minHeight: '360px', borderRadius: '14px', overflow: 'hidden', background: '#0d1117' }}>
       <div ref={mountRef} style={{ width: '100%', height: '100%' }} />
 
-      {/* Loading overlay */}
       {!loaded && (
-        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0a0a1a', color: '#4488ff', fontSize: '14px', fontWeight: 700 }}>
-          ⚡ Loading 3D Interview Room...
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0d1117', color: '#4488ff', fontSize: '14px', fontWeight: 700 }}>
+          ⚡ Loading 3D Room...
         </div>
       )}
 
-      {/* Status badge */}
+      {/* Status */}
       <div style={{
-        position: 'absolute', top: '12px', left: '50%', transform: 'translateX(-50%)',
-        background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)',
-        border: `1px solid ${stateColor}40`,
-        borderRadius: '20px', padding: '6px 16px',
-        display: 'flex', alignItems: 'center', gap: '8px',
+        position: 'absolute', top: '10px', left: '50%', transform: 'translateX(-50%)',
+        background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)',
+        border: `1px solid ${stateColor}50`, borderRadius: '20px', padding: '5px 14px',
+        display: 'flex', alignItems: 'center', gap: '7px',
       }}>
-        <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: stateColor, boxShadow: `0 0 6px ${stateColor}` }} />
-        <span style={{ color: '#fff', fontSize: '12px', fontWeight: 700 }}>Alex — {stateLabel}</span>
+        <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: stateColor, boxShadow: `0 0 8px ${stateColor}` }} />
+        <span style={{ color: '#fff', fontSize: '11px', fontWeight: 700 }}>Alex — {stateLabel}</span>
       </div>
 
-      {/* Corner label */}
+      {/* Name tag */}
       <div style={{
-        position: 'absolute', bottom: '12px', left: '12px',
-        background: 'rgba(0,0,0,0.6)', borderRadius: '8px', padding: '4px 10px',
+        position: 'absolute', bottom: '10px', left: '50%', transform: 'translateX(-50%)',
+        background: 'rgba(10,20,50,0.85)', backdropFilter: 'blur(8px)',
+        border: '1px solid rgba(68,136,255,0.4)', borderRadius: '10px', padding: '5px 16px',
       }}>
-        <span style={{ color: '#4488ff', fontSize: '11px', fontWeight: 700 }}>HIRESNIX AI</span>
-        <span style={{ color: '#475569', fontSize: '10px', marginLeft: '6px' }}>3D Interview Room</span>
+        <span style={{ color: '#4488ff', fontSize: '12px', fontWeight: 800 }}>ALEX</span>
+        <span style={{ color: '#475569', fontSize: '11px', marginLeft: '6px' }}>AI Interviewer · Hiresnix</span>
       </div>
 
-      {/* Close button */}
       {onClose && (
         <button onClick={onClose} style={{
-          position: 'absolute', top: '12px', right: '12px',
-          background: 'rgba(0,0,0,0.6)', border: '1px solid rgba(255,255,255,0.1)',
-          borderRadius: '8px', padding: '6px 12px', color: '#94A3B8', cursor: 'pointer', fontSize: '12px',
+          position: 'absolute', top: '10px', right: '10px',
+          background: 'rgba(0,0,0,0.6)', border: '1px solid rgba(255,255,255,0.15)',
+          borderRadius: '8px', padding: '5px 10px', color: '#94A3B8', cursor: 'pointer', fontSize: '11px',
         }}>
           ✕ Exit 3D
         </button>
