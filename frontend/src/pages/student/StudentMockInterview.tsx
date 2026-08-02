@@ -321,7 +321,7 @@ Respond ONLY in JSON: {"nextQuestion":"...","feedback":"...","score":0-10,"isCom
     const res=await fetch(`${(import.meta as any).env.VITE_API_URL}/groq/chat`,{
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},
-      body:JSON.stringify({system:sys,messages:msgs,model:'llama-3.3-70b-versatile',temperature:0.85,max_tokens:500}),
+      body:JSON.stringify({system:sys,messages:msgs,model:'llama-3.3-70b-versatile',temperature:0.85,max_tokens:500,module:'mock-interview'}),
     });
     const d=await res.json();
     const raw=d.content;
