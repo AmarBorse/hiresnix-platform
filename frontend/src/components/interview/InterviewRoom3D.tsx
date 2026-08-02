@@ -44,9 +44,9 @@ export function InterviewRoom3D({ speaking, thinking, listening, onClose }: Prop
     scene.fog = new THREE.Fog(0x0d1525, 6, 16);
 
     /* ── CAMERA — eye level, slight angle ── */
-    const camera = new THREE.PerspectiveCamera(35, W / H, 0.1, 30);
-    camera.position.set(0, 1.44, 1.2);
-    camera.lookAt(0, 1.44, -0.2);
+    const camera = new THREE.PerspectiveCamera(42, W / H, 0.1, 30);
+    camera.position.set(0, 1.95, 1.4);
+    camera.lookAt(0, 1.88, -0.1);
 
     /* ════════════════════════════════════════
        LIGHTS
