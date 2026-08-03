@@ -21,7 +21,7 @@ export const studentApi = {
     return res.data;
   },
   getMyCertificates: async () => {
-    const res = await client.get('/certificates/my');
+    const res = await client.get('/iplatform/my-certificates');
     return res.data;
   },
   verifyCertificate: async (certId: string) => {

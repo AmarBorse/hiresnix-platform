@@ -18,6 +18,17 @@ export const internshipsApi = {
     return res.data;
   },
 
+  // iplatform enrollments (ip_enrollments table)
+  getMyIplatformEnrollments: async () => {
+    const res = await client.get('/iplatform/my-application');
+    // Wrap enrollment in array for dashboard compatibility
+    const data = res.data?.data;
+    if (data?.enrollment) {
+      return { success: true, data: [data.enrollment] };
+    }
+    return { success: true, data: [] };
+  },
+
   enroll: async (internshipId: number) => {
     const res = await client.post(`/internships/${internshipId}/enroll`);
     return res.data;

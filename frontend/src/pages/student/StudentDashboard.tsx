@@ -39,7 +39,7 @@ const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
 
 export function StudentDashboard() {
   const { user } = useAuthStore();
-  const { data: enrollments, loading: eLoading, error: eError } = useFetch(() => internshipsApi.getMyEnrollments());
+  const { data: enrollments, loading: eLoading, error: eError } = useFetch(() => internshipsApi.getMyIplatformEnrollments());
   const { data: applications, loading: aLoading } = useFetch(() => applicationsApi.getMyApplications());
   const { data: profileData, loading: pLoading } = useFetch(() => studentApi.getProfile());
   const { data: certs, loading: cLoading } = useFetch(() => studentApi.getMyCertificates());
