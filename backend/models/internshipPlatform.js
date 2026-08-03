@@ -71,6 +71,8 @@ const InternshipEnrollment = sequelize.define('InternshipEnrollment', {
   institutionName: { type: DataTypes.STRING(200), allowNull: true },
   // LOR verification ID
   lor_id:          { type: DataTypes.STRING(50), allowNull: true, unique: true },
+  // Attendance self-add toggle (admin controlled)
+  can_self_add:    { type: DataTypes.BOOLEAN, defaultValue: false },
 }, { tableName: 'ip_enrollments', timestamps: true });
 
 // ── INTERNSHIP RESOURCE (domain-wise) ─────────────────────────────
