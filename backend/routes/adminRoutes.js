@@ -1,6 +1,8 @@
 // routes/adminRoutes.js
 const express = require('express');
+const asyncHandler = require('express-async-handler');
 const { protect, authorize } = require('../middleware/auth');
+const { User } = require('../models');
 const {
   verifyCompany, getAdminAnalytics,
   getInstitutions, getInstitution, approveInstitution, rejectInstitution, deleteInstitution,
@@ -50,8 +52,6 @@ r.get('/academy-progress',       ...admin, getAllAcademyProgress);
 // ── Reset institution student passwords ──────────────────────────
 const bcrypt = require('bcryptjs');
 const { sequelize } = require('../config/db');
-const asyncHandler = require('express-async-handler');
-
 r.post('/reset-inst-passwords', ...admin, asyncHandler(async (req, res) => {
   // Get all institution students
   const students = await sequelize.query(
