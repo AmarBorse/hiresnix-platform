@@ -29,6 +29,7 @@ export const useAuthStore = create<AuthState>()(
         if (user.role === 'admin')       localStorage.setItem('hx_admin_token', token);
         if (user.role === 'institution') localStorage.setItem('hx_institution_token', token);
         if (user.role === 'company')     localStorage.setItem('hx_company_token', token);
+        if (user.role === 'sub-admin')   localStorage.setItem('hx_sub_admin_token', token);
         set({ user, token, isAuthenticated: true });
       },
 
@@ -39,6 +40,7 @@ export const useAuthStore = create<AuthState>()(
         localStorage.removeItem('hx_admin_token');
         localStorage.removeItem('hx_institution_token');
         localStorage.removeItem('hx_company_token');
+        localStorage.removeItem('hx_sub_admin_token');
         set({ user: null, token: null, isAuthenticated: false });
       },
 

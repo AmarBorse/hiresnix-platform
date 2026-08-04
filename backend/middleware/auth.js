@@ -28,7 +28,12 @@ const protect = asyncHandler(async (req, res, next) => {
 });
 
 const authorize = (...roles) => (req, res, next) => {
-  if (!roles.includes(req.user.role)) {
+  // sub-admin gets access wherever 'admin' is allowed
+  const effectiveRole = req.user.role === 'sub-admin' && roles.includes('admin')
+    ? 'admin'
+    : req.user.role;
+
+  if (!roles.includes(effectiveRole)) {
     res.status(403);
     throw new Error(`Role '${req.user.role}' is not authorized for this action`);
   }

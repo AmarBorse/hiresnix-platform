@@ -1,11 +1,10 @@
 // src/components/common/ProtectedRoute.tsx
 import { Navigate, useLocation } from 'react-router';
 import { useAuthStore } from '../../store/useAuthStore';
-import { Role } from '../../types';
 
 interface Props {
   children: React.ReactNode;
-  allowedRoles: Role[];
+  allowedRoles: string[];
 }
 
 export function ProtectedRoute({ children, allowedRoles }: Props) {
@@ -17,14 +16,14 @@ export function ProtectedRoute({ children, allowedRoles }: Props) {
   }
 
   if (!allowedRoles.includes(user.role)) {
-    // Redirect to the correct dashboard
-    const redirectMap: Record<Role, string> = {
-      student: '/student/dashboard',
-      company: '/company/dashboard',
-      admin: '/admin/dashboard',
+    const redirectMap: Record<string, string> = {
+      student:   '/student/dashboard',
+      company:   '/company/dashboard',
+      admin:     '/admin/dashboard',
       institution: '/institution/dashboard',
+      'sub-admin': '/sub-admin/dashboard',
     };
-    return <Navigate to={redirectMap[user.role]} replace />;
+    return <Navigate to={redirectMap[user.role] || '/auth'} replace />;
   }
 
   return <>{children}</>;
