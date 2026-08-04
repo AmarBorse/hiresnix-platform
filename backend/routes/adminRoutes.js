@@ -78,7 +78,6 @@ r.post('/reset-inst-passwords', ...admin, asyncHandler(async (req, res) => {
 
 module.exports = r;
 // ── SUB-ADMIN MANAGEMENT ──────────────────────────────────────────
-const bcrypt = require('bcryptjs');
 
 // GET all sub-admins
 r.get('/sub-admins', ...admin, asyncHandler(async (req, res) => {

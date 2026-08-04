@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { UserPlus, Trash2, ToggleLeft, ToggleRight, KeyRound, ShieldHalf, Eye, EyeOff } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 
 const API = (import.meta as any).env.VITE_API_URL || 'https://hirenix-backend.onrender.com/api';
 const authHeaders = () => ({
