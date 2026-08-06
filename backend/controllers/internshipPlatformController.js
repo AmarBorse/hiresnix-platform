@@ -86,9 +86,9 @@ const applyInternship = asyncHandler(async (req, res) => {
     batchStart = new Date(today.getFullYear(), today.getMonth(), 1);
   }
 
-  // Duration: student chosen (1-6 months) or custom end date, default 6 months
+  // Duration: student chosen months or custom end date, default 6 months
   const endDate = new Date(batchStart);
-  if (req.body.endDate) {
+  if (req.body.endDate && req.body.duration === 'custom') {
     const customEnd = new Date(req.body.endDate);
     if (!isNaN(customEnd.getTime()) && customEnd > batchStart) {
       endDate.setTime(customEnd.getTime());

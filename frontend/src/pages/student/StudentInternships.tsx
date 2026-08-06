@@ -543,17 +543,19 @@ function InternshipOverview({ enrollment, app }: { enrollment: any; app: any }) 
   const startDate = enrollment.startDate ? new Date(enrollment.startDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
 
   // Calculate end date from duration field
-  const durationStr: string = enrollment.domain?.duration || '8 Weeks';
-  const durationMatch = durationStr.match(/(\d+)/);
-  const durationNum = durationMatch ? parseInt(durationMatch[1]) : 8;
-  const isMonths = /month/i.test(durationStr);
+  // Calculate actual duration from startDate + 6 months (or from offerEndDate if available)
   let endDateDisplay = '—';
+  let durationDisplay = '6 Months';
   if (enrollment.startDate) {
     const sd = new Date(enrollment.startDate);
-    const ed = new Date(sd);
-    if (isMonths) ed.setMonth(ed.getMonth() + durationNum);
-    else ed.setDate(ed.getDate() + durationNum * 7);
+    // Use offerEndDate from application if available, else startDate + 6 months
+    const appEndDate = app?.offerEndDate;
+    const ed = appEndDate ? new Date(appEndDate) : new Date(sd);
+    if (!appEndDate) ed.setMonth(ed.getMonth() + 6);
     endDateDisplay = ed.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+    // Calculate actual months difference
+    const months = (ed.getFullYear() - sd.getFullYear()) * 12 + (ed.getMonth() - sd.getMonth());
+    durationDisplay = months > 0 ? `${months} Month${months === 1 ? '' : 's'}` : '6 Months';
   }
 
   const internshipId = `HX-INT-${String(enrollment.id).padStart(5, '0')}`;
@@ -563,7 +565,7 @@ function InternshipOverview({ enrollment, app }: { enrollment: any; app: any }) 
     { label: 'Internship ID', value: internshipId, icon: '🆔' },
     { label: 'Batch ID', value: batchId, icon: '📦' },
     { label: 'Domain', value: domainName, icon: '💻' },
-    { label: 'Duration', value: durationStr, icon: '⏱️' },
+    { label: 'Duration', value: durationDisplay, icon: '⏱️' },
     { label: 'Start Date', value: startDate, icon: '🗓️' },
     { label: 'End Date', value: endDateDisplay, icon: '🏁' },
     { label: 'Mode', value: 'Remote', icon: '🌐' },
