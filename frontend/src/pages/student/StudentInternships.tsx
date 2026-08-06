@@ -28,6 +28,8 @@ function IPlatformPanel() {
   const [submittingTask, setSubmittingTask] = useState(false);
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [resources, setResources] = useState<any[]>([]);
+  const [certPaid, setCertPaid] = useState<boolean | null>(null);
+  const [paymentLoading, setPaymentLoading] = useState(false);
 
   const load = async () => {
     const token = localStorage.getItem('hirenix_token') || localStorage.getItem('hx_student_token');
@@ -69,6 +71,11 @@ function IPlatformPanel() {
         });
       }
       setResources(p.data?.resources || []);
+      // Check payment status
+      try {
+        const ps = await client.get('/iplatform/cert-payment-status');
+        setCertPaid(ps.data?.paid || false);
+      } catch { setCertPaid(false); }
     } catch {}
     finally { setLoading(false); }
   };
@@ -109,7 +116,7 @@ function IPlatformPanel() {
     } finally { setApplying(false); }
   };
 
-  const downloadDoc = async (type: string, enrollId: number | string, name: string) => {
+  const triggerDownload = async (type: string, enrollId: number | string, name: string) => {
     setDownloading(`${type}-${enrollId}`);
     try {
       let res;
@@ -118,7 +125,6 @@ function IPlatformPanel() {
         : type === 'offer-letter'
         ? [`/iplatform/offer-letter/${enrollId}/pdf`, `/iplatform/generate-offer-pdf/${enrollId}`]
         : [`/iplatform/${type}/${enrollId}/pdf`, `/iplatform/${type}/${enrollId}`];
-
       let success = false;
       for (const url of endpoints) {
         try { res = await client.get(url, { responseType: 'blob' }); success = true; break; } catch {}
@@ -131,6 +137,43 @@ function IPlatformPanel() {
       toast.success('PDF downloaded!');
     } catch { toast.error('Not available yet'); }
     finally { setDownloading(null); }
+  };
+
+  const downloadDoc = async (type: string, enrollId: number | string, name: string) => {
+    if (type === 'offer-letter') { triggerDownload(type, enrollId, name); return; }
+    if (certPaid) { triggerDownload(type, enrollId, name); return; }
+    setPaymentLoading(true);
+    try {
+      const res = await client.post('/iplatform/cert-payment-order');
+      const { orderId, keyId, amount } = res.data?.data || {};
+      if (!orderId || !keyId) { toast.error('Payment service unavailable. Contact hr@hiresnix.co.in'); return; }
+      await new Promise<void>((resolve, reject) => {
+        if ((window as any).Razorpay) { resolve(); return; }
+        const s = document.createElement('script');
+        s.src = 'https://checkout.razorpay.com/v1/checkout.js';
+        s.onload = () => resolve();
+        s.onerror = () => reject(new Error('Failed to load payment gateway'));
+        document.head.appendChild(s);
+      });
+      const rzp = new (window as any).Razorpay({
+        key: keyId, amount, currency: 'INR',
+        name: 'Hiresnix', description: 'Internship Certificate Download',
+        order_id: orderId,
+        handler: async (response: any) => {
+          try {
+            await client.post('/iplatform/cert-payment-verify', response);
+            toast.success('Payment successful! Downloading...');
+            setCertPaid(true);
+            setTimeout(() => triggerDownload(type, enrollId, name), 500);
+          } catch { toast.error('Payment verification failed. Contact support.'); }
+        },
+        prefill: { name },
+        theme: { color: '#3b82f6' },
+      });
+      rzp.open();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to load payment gateway');
+    } finally { setPaymentLoading(false); }
   };
 
   const handleTaskSubmit = async (e: React.FormEvent) => {
@@ -308,6 +351,9 @@ function IPlatformPanel() {
           {enrollment.status === 'Completed' && (
             <div>
               <h5 className="font-semibold text-gray-800 mb-2 flex items-center gap-1"><CheckCircle size={14} className="text-green-500" /> Download Your Documents</h5>
+              {certPaid === false && (
+                <p className="text-xs text-amber-600 mb-2 font-semibold">💳 Payment required (₹100) — click any document to pay & download</p>
+              )}
               <div className="grid grid-cols-3 gap-2">
                 {[
                   { type: 'certificate', label: 'Certificate', emoji: '🏆' },
@@ -316,13 +362,13 @@ function IPlatformPanel() {
                 ].map(({ type, label, emoji }) => (
                   <button key={type}
                     onClick={() => downloadDoc(type, enrollment.id, enrollment.studentName || '')}
-                    disabled={downloading === `${type}-${enrollment.id}`}
+                    disabled={downloading === `${type}-${enrollment.id}` || paymentLoading}
                     className="flex flex-col items-center gap-1 p-3 rounded-xl border-2 border-green-200 bg-green-50 hover:bg-green-100 transition-all active:scale-95 disabled:opacity-50">
-                    {downloading === `${type}-${enrollment.id}`
+                    {downloading === `${type}-${enrollment.id}` || paymentLoading
                       ? <Loader2 size={18} className="animate-spin text-green-600" />
-                      : <span style={{ fontSize: '1.4rem' }}>{emoji}</span>}
+                      : <span style={{ fontSize: '1.4rem' }}>{certPaid ? emoji : '🔒'}</span>}
                     <span className="text-xs font-semibold text-green-800 text-center">{label}</span>
-                    <Download size={11} className="text-green-600" />
+                    {certPaid ? <Download size={11} className="text-green-600" /> : <span className="text-xs text-amber-600">₹100</span>}
                   </button>
                 ))}
               </div>
