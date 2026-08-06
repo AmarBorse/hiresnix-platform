@@ -366,6 +366,10 @@ function IPlatformPanel() {
           <a href="mailto:hr@hiresnix.co.in" className="text-blue-500 font-semibold hover:underline">hr@hiresnix.co.in</a>
         </div>
       )}
+      {/* Certificates — shown right after offer letter for completed students */}
+      {enrollment && enrollment.status === 'Completed' && (
+        <CertificatePaymentSection enrollment={enrollment} />
+      )}
       {enrollment && <InternshipExtendedSections enrollment={enrollment} app={app} onReload={load} />}
 
     </div>
