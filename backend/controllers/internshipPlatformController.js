@@ -74,13 +74,38 @@ const applyInternship = asyncHandler(async (req, res) => {
   const isInstitution = !!instStudentId || !!institutionName || !!careerId;
   const source = isInstitution ? 'institution' : 'hiresnix';
 
+  // ── AUTO-APPROVE & AUTO-ENROLL ──────────────────────────────────
+  const today = new Date();
+
+  // Calculate batch start date (1st of current month)
+  const batchStart = new Date(today.getFullYear(), today.getMonth(), 1);
+
+  // Calculate end date from domain duration (e.g. "10 Weeks" or "3 Months")
+  const durationStr = domain.duration || '8 Weeks';
+  const durationMatch = durationStr.match(/(\d+)/);
+  const durationNum = durationMatch ? parseInt(durationMatch[1]) : 8;
+  const isMonths = /month/i.test(durationStr);
+  const endDate = new Date(batchStart);
+  if (isMonths) endDate.setMonth(endDate.getMonth() + durationNum);
+  else endDate.setDate(endDate.getDate() + durationNum * 7);
+
+  // Generate unique internship offer letter ID
+  const crypto = require('crypto');
+  const offerId = `HSH-INT-${today.getFullYear()}-${crypto.randomBytes(2).toString('hex').toUpperCase()}`;
+
   const application = await InternshipApplication.create({
     userId: req.user.id,
     domainId,
     studentName: user.name,
     email: user.email,
     phone, college, year, whyJoin,
-    status: 'Pending',
+    status: 'Approved',
+    approvedAt: today,
+    offerLetterId: offerId,
+    offerLetterDate: today,
+    offerJoiningDate: batchStart,
+    offerEndDate: endDate,
+    offerMode: 'Remote',
     source,
     instStudentId: instStudentId ? parseInt(instStudentId) : null,
     institutionId: institutionId ? parseInt(institutionId) : null,
@@ -88,7 +113,25 @@ const applyInternship = asyncHandler(async (req, res) => {
     careerId: careerId || null,
   });
 
-  res.status(201).json({ success: true, data: application, message: 'Application submitted! Admin will review soon.' });
+  // Auto-create enrollment immediately
+  await InternshipEnrollment.create({
+    applicationId: application.id,
+    userId: req.user.id,
+    domainId,
+    studentName: user.name,
+    email: user.email,
+    startDate: batchStart,
+    status: 'Active',
+    source,
+    instStudentId: instStudentId ? parseInt(instStudentId) : null,
+    institutionId: institutionId ? parseInt(institutionId) : null,
+    institutionName: institutionName || null,
+  });
+
+  // Increment filled seats
+  await domain.increment('filledSeats');
+
+  res.status(201).json({ success: true, data: application, message: 'You are now enrolled! Welcome to Hiresnix Internship Program.' });
 });
 
 const getMyApplication = asyncHandler(async (req, res) => {
