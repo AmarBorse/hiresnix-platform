@@ -160,7 +160,7 @@ const checkCertPaymentStatus = asyncHandler(async (req, res) => {
   if (!enrollment) return res.json({ success: true, paid: false, isLegacy: false });
 
   // Legacy = enrolled before Aug 7, 2026 (payment system deploy date)
-  const PAYMENT_CUTOFF = new Date('2026-08-06T23:59:59.000Z'); // Students enrolled before/on Aug 6 2026 get free certificates
+  const PAYMENT_CUTOFF = new Date('2026-08-05T23:59:59.000Z'); // Students enrolled before Aug 6 2026 get free certificates
   const enrolledAt = new Date(enrollment.createdAt);
   const isLegacy = enrolledAt < PAYMENT_CUTOFF;
 
