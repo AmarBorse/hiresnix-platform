@@ -2846,14 +2846,28 @@ function CertificatePaymentSection({ enrollment }: { enrollment: any }) {
               { type: 'completion', label: 'Completion Letter', emoji: '📄' },
               { type: 'lor', label: 'Letter of Recommendation', emoji: '✉️' },
             ].map(({ type, label, emoji }) => (
-              <a key={type}
-                href={`/api/iplatform/${type === 'completion' ? 'completion' : type}/${enrollment.id}/pdf`}
-                target="_blank" rel="noreferrer"
+              <button key={type}
+                onClick={async () => {
+                  try {
+                    const endpoints = type === 'completion'
+                      ? [`/iplatform/completion-letter/${enrollment.id}/pdf`, `/iplatform/completion/${enrollment.id}/pdf`]
+                      : [`/iplatform/${type}/${enrollment.id}/pdf`];
+                    let res; let success = false;
+                    for (const url of endpoints) {
+                      try { res = await (await import('../../api/client')).default.get(url, { responseType: 'blob' }); success = true; break; } catch {}
+                    }
+                    if (!success || !res) { alert('Not available yet'); return; }
+                    const urlObj = URL.createObjectURL(res.data);
+                    const a = document.createElement('a');
+                    a.href = urlObj; a.download = `hiresnix-${type}-${enrollment.studentName || ''}.pdf`; a.click();
+                    URL.revokeObjectURL(urlObj);
+                  } catch { alert('Download failed. Try again.'); }
+                }}
                 className="flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 border-green-200 bg-green-50 dark:bg-green-900/20 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-900/40 transition group">
                 <span style={{ fontSize: '1.6rem' }}>{emoji}</span>
                 <span className="text-xs font-semibold text-green-800 dark:text-green-300 text-center">{label}</span>
                 <Download size={12} className="text-green-600 group-hover:scale-110 transition" />
-              </a>
+              </button>
             ))}
           </div>
         </div>
