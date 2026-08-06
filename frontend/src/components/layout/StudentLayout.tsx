@@ -19,6 +19,7 @@ const LOCKED_AFTER_1_YEAR = [
 ];
 
 const NAV = [
+  { to: '/student/overview',       icon: Info,             label: 'Portal Guide 📖'    },
   { to: '/student/dashboard',      icon: LayoutDashboard,  label: 'Dashboard'         },
   { to: '/student/attendance',     icon: CalendarCheck,    label: 'Attendance 🆕'     },
   { to: '/student/internships',    icon: Briefcase,        label: 'Internships'        },
@@ -32,7 +33,6 @@ const NAV = [
   { to: '/student/roadmap',        icon: Map,              label: 'Career Roadmap 🗺️', lockable: true },
   { to: '/student/certificates',   icon: Award,            label: 'Certificates'       },
   { to: '/student/profile',        icon: User,             label: 'Profile'            },
-  { to: '/student/overview',       icon: Info,             label: 'Portal Guide 📖'    },
 ];
 
 /* ── Countdown Hook ──────────────────────────────────────────────── */
