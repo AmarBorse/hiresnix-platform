@@ -943,108 +943,338 @@ const STUDENT_PROJECTS: Record<string, any> = {
   ]},
 };
 
-// Domain → project mapping (from HireSnix Assignment Sheet 2026)
+// Domain → project mapping — 15 domains, 235+ projects
 const DOMAIN_PROJECTS: Record<string, any> = {
-  'full stack development': {
-    title: 'Full Stack Development Projects (3 Stages)',
+  "data science": {
+    title: "Data Science Projects (3 Stages)",
     projects: [
-      { stage: '🟢 Stage 1 — Simple', title: 'Personal Task Manager App', tech: 'React.js, Node.js, MySQL, JWT', desc: 'Task CRUD, priority tags, due-date filter, completion toggle, user auth.' },
-      { stage: '🟡 Stage 2 — Medium', title: 'Job Application Tracker', tech: 'React.js, Node.js, PostgreSQL, Chart.js, JWT', desc: 'Track applications by status, Kanban view, deadline alerts, stats dashboard.' },
-      { stage: '🔴 Stage 3 — Hard', title: 'Multi-Tenant Project Management SaaS', tech: 'React.js, Node.js, PostgreSQL, Socket.io, Stripe', desc: 'Org/workspace/board/card CRUD, real-time updates, role access, Stripe billing.' },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "COVID-19 India State Analysis", tech: "Python, Pandas, Plotly, Geopandas", desc: "State-level case/death/recovery data, choropleth map, peak identification." },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "Netflix Content EDA", tech: "Python, Pandas, Seaborn, Matplotlib", desc: "Genre distribution, country treemap, release-year trend analysis." },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "World Population Growth Study", tech: "Python, Pandas, Plotly", desc: "UN population data, country growth rate chart, 2050 projection." },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "IPL Cricket Data Analysis", tech: "Python, Pandas, Plotly, Streamlit", desc: "Ball-by-ball data, player strike rate, team win%, venue run-rate." },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "Titanic Survival EDA", tech: "Python, Pandas, Seaborn, Matplotlib", desc: "Passenger survival factors, age/class/gender breakdown." },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "Zomato Restaurant EDA", tech: "Python, Pandas, Plotly, Streamlit", desc: "Restaurant ratings, cuisine trends, price analysis by city." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "Indian Stock Market EDA & Forecast", tech: "Python, Pandas, yfinance, Prophet, Plotly", desc: "NSE multi-stock OHLCV, 30-day forecast, sector performance comparison." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "Crime Pattern Analysis Dashboard", tech: "Python, Pandas, Folium, Plotly, Streamlit", desc: "City crime dataset, type/time/location EDA, monthly trend, hotspot map." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "Air Quality Index India EDA", tech: "Python, Pandas, Plotly, Geopandas", desc: "AQI data across cities, pollutant trend, seasonal pattern analysis." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "Startup Ecosystem India Report", tech: "Python, Pandas, Plotly, NetworkX", desc: "Funding + sector data, investor network graph, city startup map." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "Healthcare Cost Driver Analysis", tech: "Python, Pandas, Plotly, Scikit-learn", desc: "Insurance + hospital cost data, driver regression, cost by diagnosis." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "Electric Vehicle Adoption Analysis", tech: "Python, Pandas, Plotly, Geopandas", desc: "EV registration data, state-wise adoption, charging infra correlation." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "Social Mobility & Income Inequality Study", tech: "Python, Pandas, Plotly, Geopandas, Scikit-learn", desc: "World Bank + OECD data, Gini index trend, mobility predictor, interactive report." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "Smart City Sensor Data Analysis", tech: "Python, Pandas, Plotly, Folium, Prophet", desc: "IoT sensor dataset (air/noise/traffic), anomaly detection, zone comparison, forecast." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "NLP-Powered Financial Report Analyzer", tech: "Python, spaCy, Gensim, Plotly, Streamlit", desc: "Scrape annual report PDFs, topic extraction, sentiment trend, KPI comparison." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "Predictive Population Health Dashboard", tech: "Python, Pandas, Scikit-learn, Prophet, Plotly", desc: "District health data, disease burden forecast, risk stratification, intervention planner." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "Geospatial Urban Sprawl Study", tech: "Python, Geopandas, OSMnx, Folium, Plotly", desc: "Satellite-derived urban boundary data, expansion rate, green cover loss, 3-city compare." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "Agricultural Market Price Analyzer", tech: "Python, Pandas, Plotly, Prophet, Streamlit", desc: "APMC mandi price data, crop price forecast, seasonal trend, district comparison." },
     ],
     submission: 'hr@hiresnix.co.in',
   },
-  'data analyst': {
-    title: 'Data Analyst Projects (3 Stages)',
+  "machine learning": {
+    title: "Machine Learning Projects (3 Stages)",
     projects: [
-      { stage: '🟢 Stage 1 — Simple', title: 'Superstore Sales Performance Report', tech: 'Python, Pandas, Plotly, Power BI', desc: 'Kaggle Superstore data, regional KPIs, top-product bar chart, manager summary PDF.' },
-      { stage: '🟡 Stage 2 — Medium', title: 'Retail Store Footfall Insights', tech: 'Python, Pandas, Plotly, Power BI', desc: 'Hourly footfall + sales data, peak-hour analysis, conversion rate, staff optimizer.' },
-      { stage: '🔴 Stage 3 — Hard', title: 'Real-Time Sales Command Center', tech: 'Python, Pandas, Streamlit, Plotly, SQL', desc: 'Live DB connection, auto-refreshing KPI tiles, drill-down by region/rep/product.' },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "Iris Flower Species Classifier", tech: "Python, Scikit-learn, Pandas, Matplotlib", desc: "Logistic Regression on Iris dataset, confusion matrix, species predictor UI." },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "Diabetes Risk Predictor", tech: "Python, Scikit-learn, Pandas, Streamlit", desc: "Logistic Regression on Pima dataset, patient form, recall-optimized threshold." },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "Boston Housing Price Estimator", tech: "Python, Scikit-learn, Pandas, Matplotlib", desc: "Linear/Ridge regression, RMSE/R\u00b2, residual plot, feature coefficient chart." },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "Titanic Survival Predictor", tech: "Python, Pandas, Scikit-learn, Streamlit", desc: "Binary classification, feature engineering, ROC curve, Streamlit input form." },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "Wine Quality Classifier", tech: "Python, Scikit-learn, Pandas, Seaborn", desc: "Multi-class RF on UCI Wine, accuracy comparison, feature importance chart." },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "Spam SMS Detector", tech: "Python, NLTK, Naive Bayes, Streamlit", desc: "TF-IDF on SMS Spam Collection, ROC curve, live message tester." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "Crop Yield Prediction System", tech: "Python, XGBoost, Pandas, Streamlit", desc: "Regression on crop dataset, soil+weather inputs, district-level yield map." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "House Rent Price Predictor", tech: "Python, XGBoost, Pandas, Streamlit", desc: "Feature engineering on rental dataset, neighborhood filter, rent estimator." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "Road Traffic Volume Predictor", tech: "Python, Scikit-learn, Pandas, Folium", desc: "Traffic dataset, time + weather features, city intersection heatmap." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "Twitter Sentiment Dashboard", tech: "Python, Tweepy, TextBlob, Plotly, Streamlit", desc: "Real-time tweet sentiment, trending keyword cloud, sentiment timeline." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "Electricity Consumption Predictor", tech: "Python, Prophet, Pandas, Streamlit", desc: "Household power dataset, daily consumption forecast, anomaly flagging." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "Fake Job Posting Detector", tech: "Python, NLTK, TF-IDF, Scikit-learn, Streamlit", desc: "Binary NLP classifier on EMSCAD dataset, keyword explainability." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "Real-Time Pose Estimation Trainer", tech: "Python, MediaPipe, TensorFlow, Flask, Socket.io", desc: "Live webcam pose detection, rep counter for exercises, form feedback API." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "AI-Powered Resume Parser & Ranker", tech: "Python, spaCy, BERT, FastAPI, React", desc: "Batch resume upload, JD matching, ranked shortlist, skills gap PDF report." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "Sign Language to Text Converter", tech: "Python, MediaPipe, LSTM, TensorFlow, Gradio", desc: "Real-time hand gesture capture, sequence-to-text decoder, accuracy chart." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "Predictive Maintenance System", tech: "Python, Scikit-learn, Pandas, Plotly, Streamlit", desc: "Sensor time-series, failure prediction, maintenance schedule optimizer." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "Sarcasm Detection in Social Media", tech: "Python, RoBERTa HuggingFace, FastAPI, React", desc: "Fine-tune on Reddit sarcasm dataset, confidence score, batch CSV API." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "Driver Drowsiness Detection System", tech: "Python, OpenCV, MediaPipe, Keras, Flask", desc: "Real-time eye/face detection, drowsiness alert system, video feed demo." },
     ],
     submission: 'hr@hiresnix.co.in',
   },
-  'machine learning': {
-    title: 'Machine Learning Projects (3 Stages)',
+  "artificial intelligence": {
+    title: "Artificial Intelligence Projects (3 Stages)",
     projects: [
-      { stage: '🟢 Stage 1 — Simple', title: 'Iris Flower Species Classifier', tech: 'Python, Scikit-learn, Pandas, Matplotlib', desc: 'Logistic Regression on Iris dataset, confusion matrix, species predictor UI.' },
-      { stage: '🟡 Stage 2 — Medium', title: 'Crop Yield Prediction System', tech: 'Python, XGBoost, Pandas, Streamlit', desc: 'Regression on crop dataset, soil+weather inputs, district-level yield map.' },
-      { stage: '🔴 Stage 3 — Hard', title: 'Real-Time Pose Estimation Trainer', tech: 'Python, MediaPipe, TensorFlow, Flask, Socket.io', desc: 'Live webcam pose detection, rep counter for exercises, form feedback API.' },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "Keyword-Based FAQ Chatbot", tech: "Python, NLTK, Flask, Bootstrap", desc: "Intent matching on custom FAQ dataset, response retrieval, multi-turn conversation log." },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "AI Text Summarizer Tool", tech: "Python, HuggingFace BART, Streamlit", desc: "Paste article \u2192 abstractive summary, length slider, copy button." },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "AI Quote & Motivation Generator", tech: "Python, Gemini API, Flask, Bootstrap", desc: "Topic input, AI generates 5 quotes, mood filter, save-to-favourites." },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "AI Recipe Generator from Ingredients", tech: "Python, Gemini API, Streamlit", desc: "Enter available ingredients, AI suggests 3 recipes with steps, dietary filter." },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "AI Grammar Correction Assistant", tech: "Python, LanguageTool API, Flask, React", desc: "Text input, error highlighting, corrected output, confidence color-code." },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "AI Joke & Story Generator", tech: "Python, Gemini API, Streamlit", desc: "Genre/mood selector, AI-generated jokes or short stories, regenerate button." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "AI Interview Question Generator", tech: "Python, Gemini API, FastAPI, React", desc: "Upload JD/resume, generate role-specific questions by difficulty, PDF export." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "AI Product Description Writer", tech: "Python, Gemini API, FastAPI, React", desc: "Enter product name + features, generate 3 tone-varied descriptions, SEO score." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "Conversational Language Tutor", tech: "Python, Gemini API, Flask, Bootstrap", desc: "Choose language + level, AI conducts lesson, grammar correction, vocab quiz." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "AI Document Classifier", tech: "Python, spaCy, BERT, FastAPI", desc: "Multi-class document type tagger (invoice/contract/report), confidence, batch CSV API." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "Agentic Research Assistant", tech: "Python, LangChain, DuckDuckGo Tool, Streamlit", desc: "Input research topic, agent searches + summarizes web sources, cited report." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "AI Meeting Minutes Generator", tech: "Python, Whisper ASR, Gemini API, Streamlit", desc: "Upload audio recording, transcription, action items extraction, summary PDF." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "Multi-Agent Task Automation System", tech: "Python, LangChain Agents, FastAPI, React", desc: "Planner + executor agents, multi-step task decomposition, tool use (search/code/file)." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "RAG Chatbot on Custom Knowledge Base", tech: "Python, LangChain, ChromaDB, Gemini API, Streamlit", desc: "Multi-PDF ingestion, vector embeddings, semantic search, source citation, multi-turn." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "AI Legal Contract Analyzer", tech: "Python, GPT-4o/Gemini, LangChain, Streamlit", desc: "Upload contract PDF, clause extraction, risk flagging, plain-English summary." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "AI-Powered Mock Interview Coach", tech: "Python, Whisper ASR, Gemini API, React, Flask", desc: "Voice-based interview, speech-to-text, AI follow-up questions, answer scoring, report." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "Autonomous Data Analysis Agent", tech: "Python, LangChain, Pandas, Streamlit", desc: "Upload CSV, agent auto-detects columns, runs EDA, generates insights report." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "AI Video Scene Describer", tech: "Python, CLIP HuggingFace, OpenCV, FastAPI", desc: "Upload video, keyframe extraction, CLIP caption per scene, narrative summary." },
     ],
     submission: 'hr@hiresnix.co.in',
   },
-  'artificial intelligence': {
-    title: 'Artificial Intelligence Projects (3 Stages)',
+  "full stack development": {
+    title: "Full Stack Development Projects (3 Stages)",
     projects: [
-      { stage: '🟢 Stage 1 — Simple', title: 'Keyword-Based FAQ Chatbot', tech: 'Python, NLTK, Flask, Bootstrap', desc: 'Intent matching on custom FAQ dataset, response retrieval, multi-turn conversation log.' },
-      { stage: '🟡 Stage 2 — Medium', title: 'AI Interview Question Generator', tech: 'Python, Gemini API, FastAPI, React', desc: 'Upload JD/resume, generate role-specific questions by difficulty, PDF export.' },
-      { stage: '🔴 Stage 3 — Hard', title: 'Multi-Agent Task Automation System', tech: 'Python, LangChain Agents, FastAPI, React', desc: 'Planner + executor agents, multi-step task decomposition, tool use (search/code/file), audit log.' },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "Personal Task Manager App", tech: "React.js, Node.js, MySQL, JWT", desc: "Task CRUD, priority tags, due-date filter, completion toggle, user auth." },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "Notes & Bookmarks Web App", tech: "React.js, Express, MongoDB, JWT", desc: "Create/edit/delete notes, tag system, URL bookmark saver, search filter." },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "Contact Directory App", tech: "React.js, Node.js, PostgreSQL, JWT", desc: "CRUD contacts, search/filter, import CSV, profile photos, dark mode." },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "Simple Blog Platform", tech: "React.js, Node.js, MongoDB, JWT", desc: "Create/edit posts, markdown editor, tags, comments, user profiles." },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "Recipe Book Web App", tech: "React.js, Express, MongoDB", desc: "Add/search recipes, ingredient list, step-by-step cooking mode, favorites." },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "Poll & Voting App", tech: "React.js, Node.js, PostgreSQL, Socket.io", desc: "Create polls, real-time vote count, results chart, expiry timer." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "Job Application Tracker", tech: "React.js, Node.js, PostgreSQL, Chart.js, JWT", desc: "Track applications by status, Kanban view, deadline alerts, stats dashboard." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "Online Quiz Platform", tech: "React.js, Node.js, MongoDB, Socket.io", desc: "Question bank, timed quiz, live leaderboard, auto-grade, result analytics." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "Budget Tracking Web App", tech: "React.js, Node.js, PostgreSQL, Chart.js", desc: "Income/expense CRUD, category budgets, monthly trend chart, PDF report." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "Student Attendance Management", tech: "React.js, Node.js, MySQL, JWT, Chart.js", desc: "QR code check-in, absent alerts, attendance report, teacher dashboard." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "Expense Split App", tech: "React.js, Node.js, MongoDB, Socket.io", desc: "Group expenses, auto-split, settle-up tracker, real-time balance update." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "College Event Management System", tech: "React.js, Node.js, PostgreSQL, Cloudinary", desc: "Event CRUD, registration, seat booking, QR ticket, attendance report." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "Multi-Tenant Project Management SaaS", tech: "React.js, Node.js, PostgreSQL, Socket.io, Stripe", desc: "Org/workspace/board/card CRUD, real-time updates, role access, Stripe billing." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "E-Learning Platform with Certificates", tech: "React.js, Node.js, MongoDB, Cloudinary, Stripe", desc: "Course builder, video streaming, quiz engine, progress tracking, PDF cert generator." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "Healthcare Appointment System", tech: "React.js, Node.js, PostgreSQL, Socket.io, Nodemailer", desc: "Doctor/patient portal, slot booking, video consult, prescription PDF, reminders." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "Real-Time Online Auction Platform", tech: "React.js, Node.js, PostgreSQL, Socket.io, Stripe", desc: "Live bidding, countdown timer, auto-outbid, payment, seller dashboard." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "Freelance Marketplace Platform", tech: "React.js, Node.js, PostgreSQL, Stripe, Socket.io", desc: "Gig listing, proposal system, escrow payment, review/rating, chat." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "Corporate HR & Payroll System", tech: "React.js, Node.js, PostgreSQL, PDFKit, JWT", desc: "Employee CRUD, leave management, payroll calculator, payslip PDF, role access." },
     ],
     submission: 'hr@hiresnix.co.in',
   },
-  'data science': {
-    title: 'Data Science Projects (3 Stages)',
+  "data analyst": {
+    title: "Data Analyst Projects (3 Stages)",
     projects: [
-      { stage: '🟢 Stage 1 — Simple', title: 'COVID-19 India State Analysis', tech: 'Python, Pandas, Plotly, Geopandas', desc: 'State-level case/death/recovery data, choropleth, peak identification, wave analysis.' },
-      { stage: '🟡 Stage 2 — Medium', title: 'Indian Stock Market EDA & Forecast', tech: 'Python, Pandas, yfinance, Prophet, Plotly', desc: 'NSE multi-stock OHLCV, 30-day forecast, sector performance comparison.' },
-      { stage: '🔴 Stage 3 — Hard', title: 'Social Mobility & Income Inequality Study', tech: 'Python, Pandas, Plotly, Geopandas, Scikit-learn', desc: 'World Bank + OECD data, Gini index trend, mobility predictor, interactive report.' },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "Superstore Sales Performance Report", tech: "Python, Pandas, Plotly, Power BI", desc: "Kaggle Superstore data, regional KPIs, top-product bar chart, manager summary PDF." },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "HR Headcount & Turnover Dashboard", tech: "Python, Pandas, Seaborn, Matplotlib", desc: "Employee dataset, dept headcount, attrition rate chart, YoY trend." },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "E-Commerce Return Rate Analyzer", tech: "Python, Pandas, Plotly, Streamlit", desc: "Returns dataset, reason categorization, SKU-level return rate, seller report." },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "Website Traffic Analytics Dashboard", tech: "Python, Pandas, Plotly, Streamlit", desc: "GA export data, session/bounce/conversion trend, channel breakdown." },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "Attendance & Punctuality Tracker", tech: "Python, Pandas, Openpyxl, Plotly", desc: "Employee check-in data, late arrival pattern, dept comparison, monthly PDF." },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "Monthly Revenue Trend Analyzer", tech: "Python, Pandas, Plotly, Power BI", desc: "Revenue CSV, MoM growth, product mix chart, top-10 customers." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "Retail Store Footfall Insights", tech: "Python, Pandas, Plotly, Power BI", desc: "Hourly footfall + sales data, peak-hour analysis, conversion rate, staff optimizer." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "Product Profitability Analysis", tech: "Python, Pandas, Plotly, Seaborn", desc: "Revenue \u2013 COGS model, margin by SKU/category, waterfall P&L chart, pricing levers." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "Customer Cohort Retention Dashboard", tech: "Python, Pandas, Plotly, Streamlit", desc: "Monthly cohort table, retention heatmap, churn inflection finder, segment filter." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "Ad Spend Attribution Analyzer", tech: "Python, Pandas, Plotly, Streamlit", desc: "Multi-channel ad data, ROAS by channel, attribution model comparison." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "Inventory Turnover Analysis", tech: "Python, Pandas, Plotly, Openpyxl", desc: "Stock movement data, turnover ratio, slow-mover alert, reorder point calculator." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "Employee Productivity Score Card", tech: "Python, Pandas, Plotly, Streamlit", desc: "Task completion, quality score, peer review data, monthly performance card." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "Real-Time Sales Command Center", tech: "Python, Pandas, Streamlit, Plotly, SQL", desc: "Live DB connection, auto-refreshing KPI tiles, drill-down by region/rep/product." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "Predictive Churn Cohort Tracker", tech: "Python, Pandas, Scikit-learn, Plotly, Power BI", desc: "Cohort CLV + ML churn risk, early-warning segment filter, retention action log." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "Multi-Source Data Pipeline Dashboard", tech: "Python, Pandas, SQLAlchemy, Plotly, Airflow", desc: "ETL from 3 sources (CSV, API, DB), unified dashboard, scheduled refresh." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "HR Analytics & Workforce Planning Tool", tech: "Python, Pandas, Plotly, Scikit-learn, Streamlit", desc: "Headcount forecast, skill gap analysis, succession planning matrix, org chart." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "Omnichannel Sales Attribution Dashboard", tech: "Python, Pandas, Plotly, SQL, Streamlit", desc: "Online + offline sales merge, touchpoint attribution, ROAS by channel, exec report." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "Financial Risk Exposure Dashboard", tech: "Python, Pandas, Plotly, Scikit-learn", desc: "Portfolio data, VaR calculation, stress test scenarios, risk heatmap." },
     ],
     submission: 'hr@hiresnix.co.in',
   },
-  'front end development': {
-    title: 'Front End Development Projects (3 Stages)',
+  "front end development": {
+    title: "Front End Development Projects (3 Stages)",
     projects: [
-      { stage: '🟢 Stage 1 — Simple', title: 'Personal Portfolio Website', tech: 'React.js, CSS3, EmailJS', desc: 'Animated hero, projects grid, skills bar, contact form, dark/light toggle.' },
-      { stage: '🟡 Stage 2 — Medium', title: 'Job Board UI with Filters', tech: 'React.js, Tailwind CSS, Context API', desc: 'Job card listing, search + multi-filter, bookmark, pagination, skeleton loader.' },
-      { stage: '🔴 Stage 3 — Hard', title: 'Real-Time Collaborative Notes App', tech: 'React.js, Socket.io, Tailwind, Quill.js', desc: 'Multi-user note editing, live cursor, undo/redo, room links, export PDF.' },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "Personal Portfolio Website", tech: "React.js, CSS3, EmailJS", desc: "Animated hero, projects grid, skills bar, contact form, dark/light toggle." },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "Currency Converter App", tech: "React.js, Exchange Rate API, Tailwind", desc: "Real-time rates, 150+ currencies, swap button, conversion history." },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "BMI Calculator with Chart", tech: "React.js, Chart.js, Tailwind CSS", desc: "Height/weight input, BMI result, category indicator, trend line chart." },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "Age Calculator App", tech: "React.js, date-fns, Tailwind CSS", desc: "DOB input, exact age (years/months/days), next birthday countdown." },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "Pomodoro Productivity Timer", tech: "React.js, Tailwind, Web Audio API", desc: "25/5 min timer, custom intervals, session counter, break alarm sound." },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "Trivia Quiz Game", tech: "React.js, Open Trivia API, Tailwind", desc: "Category/difficulty selector, 10 questions, score tracker, leaderboard." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "Job Board UI with Filters", tech: "React.js, Tailwind CSS, Context API", desc: "Job card listing, search + multi-filter, bookmark, pagination, skeleton loader." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "Crypto Price Tracker Dashboard", tech: "React.js, CoinGecko API, Chart.js, Tailwind", desc: "Live prices, 7-day sparkline, portfolio tracker, price alert toggle." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "Travel Itinerary Planner", tech: "React.js, Google Maps API, Tailwind", desc: "Trip builder, day-wise stops, map view, distance calculator, PDF export." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "Music Player with Visualizer", tech: "React.js, Web Audio API, Canvas, Tailwind", desc: "Playlist CRUD, frequency visualizer, equalizer, waveform display." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "Recipe Finder App", tech: "React.js, Spoonacular API, Tailwind", desc: "Ingredient-based search, dietary filter, nutrition info, save favorites." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "Movie Recommendation App", tech: "React.js, TMDB API, Tailwind, Redux", desc: "Search/browse movies, genre filter, similar movies, watchlist, ratings." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "Real-Time Collaborative Notes App", tech: "React.js, Socket.io, Tailwind, Quill.js", desc: "Multi-user note editing, live cursor, undo/redo, room links, export PDF." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "3D Interactive Portfolio", tech: "React.js, Three.js, GSAP, Tailwind", desc: "3D scene hero, scroll animations, project showcase, particle effects." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "E-Commerce Frontend with Cart", tech: "React.js, Redux, Stripe.js, Tailwind", desc: "Product listing, filters, cart, checkout flow, order confirmation, wishlist." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "Social Media Dashboard", tech: "React.js, Socket.io, Redux, Tailwind", desc: "Feed, stories, likes/comments real-time, notifications, dark mode." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "Online Code Editor", tech: "React.js, Monaco Editor, Tailwind, Piston API", desc: "Multi-language support, syntax highlight, run code, share snippet, themes." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "Kanban Project Board", tech: "React.js, DnD-Kit, Socket.io, Tailwind", desc: "Drag-drop cards, multi-board, real-time sync, labels, due dates, members." },
     ],
     submission: 'hr@hiresnix.co.in',
   },
-  'cloud computing': {
-    title: 'Cloud Computing Projects (3 Stages)',
+  "cloud computing": {
+    title: "Cloud Computing Projects (3 Stages)",
     projects: [
-      { stage: '🟢 Stage 1 — Simple', title: 'Containerized Microservices on AWS', tech: 'Docker, AWS ECS, ECR, ALB', desc: 'Dockerize 3 microservices, push to ECR, deploy via ECS Fargate, ALB routing.' },
-      { stage: '🟡 Stage 2 — Medium', title: 'Multi-Region Disaster Recovery Setup', tech: 'AWS Route53, RDS, S3, CloudFormation', desc: 'Active-passive DR, RDS cross-region replica, Route53 health-check failover.' },
-      { stage: '🔴 Stage 3 — Hard', title: 'Serverless Event-Driven Architecture', tech: 'AWS Lambda, SQS, SNS, DynamoDB, API Gateway', desc: 'Order processing pipeline, fan-out with SNS, dead-letter queue, CloudWatch dashboard.' },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "Static Site Hosting with CDN on AWS", tech: "AWS S3, CloudFront, Route53", desc: "Deploy React app to S3, CloudFront distribution, custom domain, SSL cert." },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "Serverless Image Resizer", tech: "AWS Lambda, S3, API Gateway, Python", desc: "Upload image \u2192 Lambda resizes to 3 sizes \u2192 S3 storage, presigned URL response." },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "Cloud File Storage App", tech: "AWS S3, EC2, Node.js, React", desc: "Upload/download/delete files via S3, file listing UI, file type filter." },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "Auto-Scaling Web Server", tech: "AWS EC2, Auto Scaling, ALB, CloudWatch", desc: "Launch template, scaling policy, health checks, load balancer, dashboard." },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "RDS MySQL Setup with Backups", tech: "AWS RDS, EC2, MySQL, CloudWatch", desc: "Multi-AZ RDS, automated backups, parameter group, monitoring alarms." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "Containerized Microservices on AWS", tech: "Docker, AWS ECS, ECR, ALB", desc: "Dockerize 3 microservices, push to ECR, deploy via ECS Fargate, ALB routing." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "CI/CD Pipeline with GitHub Actions", tech: "GitHub Actions, AWS EC2, S3, CodeDeploy", desc: "Push-to-deploy pipeline, staging + prod environments, rollback mechanism." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "Cloud Cost Optimization Dashboard", tech: "AWS Cost Explorer, Lambda, S3, QuickSight", desc: "Daily cost report, unused resource detector, savings recommendation, PDF." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "VPC with Public/Private Subnets", tech: "AWS VPC, NAT Gateway, EC2, Security Groups", desc: "3-tier VPC architecture, bastion host, NAT gateway, NACLs, flow logs." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "Kubernetes Cluster on EKS", tech: "AWS EKS, kubectl, Helm, CloudWatch", desc: "EKS cluster setup, deploy sample app, HPA, ingress controller, monitoring." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "CloudFormation Infrastructure Stack", tech: "AWS CloudFormation, EC2, RDS, S3, SNS", desc: "Full infra as code, nested stacks, parameters, outputs, change sets." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "Multi-Region Disaster Recovery Setup", tech: "AWS Route53, RDS, S3, CloudFormation", desc: "Active-passive DR, RDS cross-region replica, Route53 health-check failover." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "Serverless Event-Driven Architecture", tech: "AWS Lambda, SQS, SNS, DynamoDB, API Gateway", desc: "Order processing pipeline, fan-out with SNS, dead-letter queue, CloudWatch." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "Full CI/CD Pipeline with Kubernetes", tech: "Jenkins, Docker, Kubernetes, AWS EKS, Helm", desc: "Multi-stage pipeline, Docker build, Helm deploy to EKS, Slack notifications." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "Data Lake on AWS", tech: "AWS S3, Glue, Athena, QuickSight, Lambda", desc: "Raw/curated/processed zones, Glue ETL jobs, Athena queries, BI dashboard." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "ML Model Deployment on AWS", tech: "AWS SageMaker, Lambda, API Gateway, S3", desc: "Train model in SageMaker, deploy endpoint, REST API, A/B testing, monitoring." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "Zero-Trust Security Architecture", tech: "AWS IAM, Cognito, WAF, Shield, GuardDuty", desc: "Identity-based access, MFA enforcement, WAF rules, threat detection, audit." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "Hybrid Cloud with AWS Direct Connect", tech: "AWS Direct Connect, VPN, Transit Gateway, VPC", desc: "On-prem to AWS connectivity, BGP routing, failover VPN, latency testing." },
     ],
     submission: 'hr@hiresnix.co.in',
   },
-  'ui/ux design': {
-    title: 'UI/UX Design Projects (3 Stages)',
+  "cyber security": {
+    title: "Cyber Security Projects (3 Stages)",
     projects: [
-      { stage: '🟢 Stage 1 — Simple', title: 'E-Commerce Mobile App Redesign', tech: 'Figma, Adobe XD', desc: 'Audit existing app UX, redesign product listing + cart flow, usability test report.' },
-      { stage: '🟡 Stage 2 — Medium', title: 'Healthcare Patient Portal UX', tech: 'Figma, Maze, FigJam', desc: 'User research, journey map, hi-fi prototype, accessibility audit (WCAG 2.1 AA).' },
-      { stage: '🔴 Stage 3 — Hard', title: 'AI Product Dashboard Design System', tech: 'Figma, Storybook, Tokens Studio', desc: 'Component library with design tokens, responsive grid, dark/light themes, Storybook docs.' },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "Network Vulnerability Scanner", tech: "Python, Nmap, Flask, Bootstrap", desc: "Port scanning on local subnet, open-port risk rating, CVE lookup, HTML report." },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "Password Strength Analyzer", tech: "Python, Flask, zxcvbn, React", desc: "Strength scoring, crack-time estimate, secure password generator." },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "Phishing Email Detector", tech: "Python, NLTK, Scikit-learn, Flask", desc: "ML classifier on email dataset, phishing URL checker, confidence score." },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "File Integrity Monitor", tech: "Python, hashlib, Flask, SQLite", desc: "SHA-256 baseline, tamper detection, alert log, scheduled scan." },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "Basic Firewall Rules Simulator", tech: "Python, iptables, Flask, Bootstrap", desc: "Rule builder UI, traffic allow/block simulation, rule priority, log viewer." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "Web Application Firewall (WAF) Tool", tech: "Python, Flask, regex, SQLite", desc: "XSS/SQLi pattern detection, request logging, block list management." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "Security Audit Report Generator", tech: "Python, OpenVAS, Nmap, Jinja2, PDFKit", desc: "Automated scan, severity classification, remediation steps, PDF report." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "Honeypot Deployment & Analysis", tech: "Python, Cowrie, ELK Stack, Kibana", desc: "SSH honeypot, attacker IP log, command analysis, Kibana dashboard." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "Malware Sample Analyzer", tech: "Python, YARA, VirusTotal API, Flask", desc: "Static analysis, YARA rule matching, VT hash lookup, threat report." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "Encrypted Chat Application", tech: "Python, RSA/AES, Flask, Socket.io", desc: "End-to-end encryption, key exchange, message integrity, secure login." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "OSINT Reconnaissance Tool", tech: "Python, Shodan API, WHOIS, Flask", desc: "Domain/IP OSINT, subdomain enum, email harvesting, risk report." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "Web Application Penetration Testing Report", tech: "Python, OWASP ZAP, Burp Suite, Markdown", desc: "Automated scan on demo app, XSS/SQLi/CSRF findings, CVSS scoring, PDF." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "SIEM Dashboard with Threat Detection", tech: "Python, ELK Stack, Kibana, Wazuh", desc: "Log ingestion from 5 sources, correlation rules, alert dashboard, incident response." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "Zero-Day Vulnerability Research Report", tech: "Python, GDB, Ghidra, Metasploit", desc: "Binary analysis, exploit development, CVE documentation, responsible disclosure." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "Blockchain-Based Digital Evidence System", tech: "Python, Ethereum, Web3.py, Flask", desc: "Evidence hash on blockchain, chain of custody, tamper-proof audit trail." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "AI-Powered Intrusion Detection System", tech: "Python, Scikit-learn, Kafka, ELK, Flask", desc: "Network traffic ML classifier, real-time streaming detection, alert + block." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "Red Team Simulation Report", tech: "Python, Metasploit, Cobalt Strike, Nmap", desc: "Full kill-chain simulation, lateral movement, data exfil demo, blue team debrief." },
     ],
     submission: 'hr@hiresnix.co.in',
   },
-  'cyber security': {
-    title: 'Cyber Security Projects (3 Stages)',
+  "software testing (qa)": {
+    title: "Software Testing (Qa) Projects (3 Stages)",
     projects: [
-      { stage: '🟢 Stage 1 — Simple', title: 'Network Vulnerability Scanner', tech: 'Python, Nmap, Flask, Bootstrap', desc: 'Port scanning on local subnet, open-port risk rating, CVE lookup, HTML report.' },
-      { stage: '🟡 Stage 2 — Medium', title: 'Password Strength Analyzer & Generator', tech: 'Python, Flask, zxcvbn, React', desc: 'Strength scoring, crack-time estimate, secure password generator, breach-check API.' },
-      { stage: '🔴 Stage 3 — Hard', title: 'Web Application Penetration Testing Report', tech: 'Python, OWASP ZAP, Burp Suite, Markdown', desc: 'Automated scan on demo app, XSS/SQLi/CSRF findings, CVSS scoring, remediation PDF.' },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "Manual Test Plan for E-Commerce Site", tech: "Excel, JIRA, TestRail", desc: "Test cases for cart/checkout/payment, bug reports, severity classification." },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "Mobile App Manual Testing Report", tech: "Android Studio, TestRail, JIRA", desc: "Functional + UI test cases for Android app, defect log, regression checklist." },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "API Testing with Postman", tech: "Postman, Newman, Excel", desc: "REST API test collection, status/schema/response validation, HTML report." },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "Database Testing Report", tech: "MySQL, Excel, JIRA", desc: "Data integrity, constraint validation, stored procedure testing, test cases." },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "Regression Test Suite Document", tech: "Excel, JIRA, TestRail", desc: "Full regression suite, priority matrix, pass/fail tracking, release report." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "Automated UI Testing with Selenium", tech: "Python, Selenium, pytest, Allure", desc: "Page Object Model, cross-browser test suite, CI integration, HTML report." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "Performance Testing with JMeter", tech: "Apache JMeter, Grafana, InfluxDB", desc: "Load/stress/spike tests, throughput/latency metrics, bottleneck analysis." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "Mobile Automation with Appium", tech: "Python, Appium, pytest, Android", desc: "Native Android app automation, gesture simulation, screenshot on failure." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "BDD Testing with Cucumber", tech: "Java, Cucumber, Selenium, Maven", desc: "Gherkin feature files, step definitions, scenario outline, CI integration." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "Security Testing Checklist & Report", tech: "OWASP ZAP, Burp Suite, Excel", desc: "OWASP Top 10 checks, XSS/SQLi/CSRF findings, severity rating, fix recommendations." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "CI Testing Pipeline Setup", tech: "Jenkins, GitHub Actions, Selenium, pytest", desc: "Auto-trigger on PR, parallel test execution, Slack notification, test report." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "API Testing & Performance Dashboard", tech: "Postman, k6, Grafana, Jenkins", desc: "REST API test collection, load test with k6, performance dashboard, CI pipeline." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "End-to-End Test Automation Framework", tech: "Python, Playwright, pytest, Docker, CI", desc: "Multi-browser E2E framework, parallel execution, Docker container, CI/CD." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "Chaos Engineering Experiment", tech: "Chaos Monkey, AWS, Grafana, Prometheus", desc: "Failure injection on prod-like env, resilience validation, recovery SLA report." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "AI-Assisted Test Case Generator", tech: "Python, Gemini API, Selenium, FastAPI", desc: "Input requirements \u2192 AI generates test cases \u2192 auto-execute \u2192 results dashboard." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "Quality Metrics Dashboard", tech: "Python, JIRA API, Plotly, Streamlit", desc: "Defect density, test coverage, MTTR, release quality trend, exec report." },
     ],
     submission: 'hr@hiresnix.co.in',
   },
-  'software testing (qa)': {
-    title: 'Software Testing (QA) Projects (3 Stages)',
+  "app development": {
+    title: "App Development Projects (3 Stages)",
     projects: [
-      { stage: '🟢 Stage 1 — Simple', title: 'Manual Test Plan for E-Commerce Site', tech: 'Excel, JIRA, TestRail', desc: 'Test cases for cart/checkout/payment, bug reports, severity classification.' },
-      { stage: '🟡 Stage 2 — Medium', title: 'Automated UI Testing with Selenium', tech: 'Python, Selenium, pytest, Allure', desc: 'Page Object Model, cross-browser test suite, CI integration, HTML report.' },
-      { stage: '🔴 Stage 3 — Hard', title: 'API Testing & Performance Dashboard', tech: 'Postman, k6, Grafana, Jenkins', desc: 'REST API test collection, load test with k6, performance dashboard, CI pipeline.' },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "BMI Calculator App", tech: "Flutter, Dart", desc: "Height/weight input, BMI result, category color, history list, dark mode." },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "To-Do List App", tech: "Flutter, Dart, SQLite", desc: "Task CRUD, priority, due date, completion toggle, local storage." },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "Weather App", tech: "Flutter, Dart, OpenWeather API", desc: "Location-based weather, 5-day forecast, condition icons, unit toggle." },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "Currency Converter App", tech: "Flutter, Dart, Exchange Rate API", desc: "Real-time rates, swap currencies, conversion history, offline support." },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "Quiz App", tech: "Flutter, Dart, SQLite", desc: "Category/difficulty selector, timer, score tracker, results screen." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "Expense Tracker App", tech: "Flutter, Dart, SQLite, Charts", desc: "Income/expense CRUD, category budget, monthly trend chart, PDF report." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "Fitness Tracker App", tech: "Flutter, Dart, SQLite, HealthKit", desc: "Workout log, step counter, calorie burn, progress chart, goal setting." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "Recipe App with Offline Support", tech: "Flutter, Dart, SQLite, REST API", desc: "Search recipes, save offline, step-by-step cook mode, shopping list." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "Chat Application", tech: "Flutter, Dart, Firebase", desc: "Real-time messaging, read receipts, image sharing, push notifications." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "News Reader App", tech: "Flutter, Dart, News API, SQLite", desc: "Category filter, bookmarks, offline reading, dark mode, share." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "E-Commerce App", tech: "Flutter, Dart, Firebase, Stripe", desc: "Product listing, cart, wishlist, checkout, order tracking, reviews." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "Food Delivery App", tech: "Flutter, Dart, Firebase, Google Maps", desc: "Restaurant listing, live tracking, real-time orders, driver app, ratings." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "Telemedicine App", tech: "Flutter, Dart, Firebase, Agora SDK", desc: "Doctor/patient portal, video consultation, prescription, appointment booking." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "Social Media App", tech: "Flutter, Dart, Firebase, Cloud Functions", desc: "Feed, stories, real-time likes/comments, DM, notifications, explore page." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "Ride-Sharing App", tech: "Flutter, Dart, Firebase, Google Maps, Stripe", desc: "Driver/rider app, live tracking, fare calculator, payment, ratings." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "AI-Powered Personal Assistant App", tech: "Flutter, Dart, Gemini API, Firebase", desc: "Voice commands, calendar integration, smart reminders, task automation." },
     ],
     submission: 'hr@hiresnix.co.in',
   },
-  default: {
-    title: 'Capstone Portfolio Project',
+  "ui/ux design": {
+    title: "Ui/Ux Design Projects (3 Stages)",
     projects: [
-      { stage: '🟢 Stage 1 — Simple', title: 'Foundation Project', tech: 'Domain-specific stack', desc: 'Build a foundational project showcasing core skills of your domain.' },
-      { stage: '🟡 Stage 2 — Medium', title: 'Core Project', tech: 'Domain-specific stack', desc: 'Intermediate project with real-world data and APIs.' },
-      { stage: '🔴 Stage 3 — Hard', title: 'Capstone Project', tech: 'Domain-specific stack', desc: 'Production-level capstone project for your portfolio.' },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "Personal Portfolio Redesign", tech: "Figma", desc: "Audit existing site, redesign hero + projects + contact, mobile-first layout." },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "Restaurant Menu App UI", tech: "Figma, Adobe XD", desc: "Menu browsing, item detail, cart flow, order confirmation screens." },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "Login & Onboarding Flow", tech: "Figma", desc: "5-screen onboarding, login/signup, error states, success animation." },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "Dashboard UI Design", tech: "Figma, Tailwind CSS reference", desc: "Admin dashboard, KPI cards, charts, sidebar nav, light/dark theme." },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "Mobile Banking App UI", tech: "Figma", desc: "Home, transfer, history, settings screens, accessibility compliant." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "E-Commerce Mobile App Redesign", tech: "Figma, Adobe XD, Maze", desc: "Audit existing app UX, redesign product listing + cart flow, usability test." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "Healthcare Patient Portal UX", tech: "Figma, Maze, FigJam", desc: "User research, journey map, hi-fi prototype, accessibility audit WCAG 2.1." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "EdTech Platform UX Research", tech: "Figma, Maze, Google Forms", desc: "User interviews, affinity mapping, persona, lo-fi + hi-fi wireframes." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "Food Delivery App Redesign", tech: "Figma, Principle", desc: "IA audit, user flow redesign, micro-interactions, prototype, usability test." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "SaaS Dashboard Design System", tech: "Figma, Tokens Studio", desc: "Design tokens, component library, responsive grid, interactive prototype." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "Accessibility Audit & Redesign", tech: "Figma, Axe, WAVE", desc: "WCAG audit of existing site, severity report, redesigned accessible components." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "AI Product Dashboard Design System", tech: "Figma, Storybook, Tokens Studio", desc: "Component library with design tokens, responsive grid, dark/light themes, docs." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "Full App Design Sprint", tech: "Figma, FigJam, Maze, Principle", desc: "5-day sprint: problem framing, ideation, prototype, test, iteration report." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "Design System for Fintech App", tech: "Figma, Zeroheight, Tokens Studio", desc: "Color/typography/spacing system, 50+ components, do/don't guidelines, Zeroheight docs." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "AR/VR UX Prototype", tech: "Figma, Spline, Unity (concept)", desc: "Spatial UI design, 3D component concepts, interaction model, usability study." },
+    ],
+    submission: 'hr@hiresnix.co.in',
+  },
+  "devops": {
+    title: "Devops Projects (3 Stages)",
+    projects: [
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "Dockerize a Web Application", tech: "Docker, Docker Compose, Nginx", desc: "Dockerfile for Node.js app, docker-compose with DB, Nginx reverse proxy." },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "Linux Server Setup & Hardening", tech: "Ubuntu, bash, ufw, fail2ban", desc: "User management, SSH key auth, firewall rules, fail2ban, cron jobs." },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "Git Workflow Setup", tech: "Git, GitHub, GitFlow", desc: "Branch strategy, PR templates, commit conventions, tag releases, .gitignore." },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "Basic Monitoring with Prometheus", tech: "Prometheus, Grafana, Node Exporter", desc: "Node exporter setup, Prometheus scrape config, Grafana dashboard." },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "Nginx Load Balancer Setup", tech: "Nginx, Docker, 3 Node.js instances", desc: "Round-robin load balancing, health checks, upstream config, access logs." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "CI/CD Pipeline with Jenkins", tech: "Jenkins, Docker, GitHub, Maven", desc: "Multibranch pipeline, build/test/deploy stages, Slack notification, rollback." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "Kubernetes Cluster Setup", tech: "Kubernetes, kubectl, Helm, Minikube", desc: "Deployment/service/ingress, HPA, ConfigMaps, secrets, rolling update." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "Infrastructure as Code with Terraform", tech: "Terraform, AWS, HCL", desc: "VPC + EC2 + RDS + S3 IaC, state management, modules, plan/apply workflow." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "ELK Stack Log Management", tech: "Elasticsearch, Logstash, Kibana, Filebeat", desc: "Log ingestion from 3 sources, index patterns, Kibana dashboards, alerts." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "Ansible Configuration Management", tech: "Ansible, YAML, SSH, AWS EC2", desc: "Playbooks for web server setup, idempotent tasks, inventory management." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "GitOps with ArgoCD", tech: "ArgoCD, Kubernetes, Helm, GitHub", desc: "App deployment via Git, sync policies, rollback, multi-env management." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "Full DevOps Pipeline on AWS", tech: "Jenkins, Docker, EKS, Terraform, Helm", desc: "IaC infra, containerized app, CI/CD to K8s, monitoring, security scan." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "Service Mesh with Istio", tech: "Istio, Kubernetes, Kiali, Jaeger", desc: "Traffic management, mTLS, circuit breaker, distributed tracing, dashboards." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "Platform Engineering with Backstage", tech: "Backstage, Kubernetes, GitHub, AWS", desc: "Developer portal, software catalog, scaffolder templates, TechDocs." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "SRE Runbook & SLO Dashboard", tech: "Prometheus, Grafana, PagerDuty, Python", desc: "SLI/SLO definition, error budget, alerting rules, runbook, incident review." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "Multi-Cloud Deployment Strategy", tech: "Terraform, AWS, GCP, Azure, Kubernetes", desc: "Cloud-agnostic IaC, workload portability, cost comparison, failover demo." },
+    ],
+    submission: 'hr@hiresnix.co.in',
+  },
+  "blockchain development": {
+    title: "Blockchain Development Projects (3 Stages)",
+    projects: [
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "Hello World Smart Contract", tech: "Solidity, Hardhat, Ethers.js", desc: "Deploy ERC-20-like contract to testnet, interact via script, verify on Etherscan." },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "Cryptocurrency Wallet UI", tech: "React.js, MetaMask, Ethers.js", desc: "Connect wallet, display balance, send ETH, transaction history." },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "Token Airdrop Contract", tech: "Solidity, Hardhat, OpenZeppelin", desc: "ERC-20 token, whitelist airdrop, claim function, event logging." },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "Simple Voting DApp", tech: "Solidity, Hardhat, React.js, Ethers.js", desc: "Create proposals, cast votes, prevent double voting, result display." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "NFT Minting Platform", tech: "Solidity, IPFS, React.js, Ethers.js", desc: "ERC-721 contract, IPFS metadata, mint UI, gallery, OpenSea compatible." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "Decentralized Crowdfunding DApp", tech: "Solidity, Hardhat, React.js, Ethers.js", desc: "Campaign CRUD, ETH contributions, goal/deadline, refund mechanism." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "Token Swap Interface", tech: "Solidity, Uniswap V2, React.js, Ethers.js", desc: "Token pair selection, price quote, slippage setting, swap execution." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "Multi-Signature Wallet", tech: "Solidity, Hardhat, React.js, Ethers.js", desc: "N-of-M signature requirement, proposal/approve/execute flow, event log." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "Supply Chain Tracker on Blockchain", tech: "Solidity, Hardhat, React.js, IPFS", desc: "Product lifecycle on-chain, QR scan to verify, tamper-proof history." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "DAO Governance Contract", tech: "Solidity, OpenZeppelin Governor, React.js", desc: "Proposal creation, token-weighted voting, timelock execution, dashboard." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "DeFi Lending Protocol", tech: "Solidity, Hardhat, Aave fork, React.js", desc: "Deposit/borrow/repay/liquidate, interest rate model, price oracle, dashboard." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "Cross-Chain Bridge", tech: "Solidity, Hardhat, Chainlink CCIP, React.js", desc: "Lock-and-mint bridge between 2 testnets, relayer, proof verification." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "Decentralized Exchange (DEX)", tech: "Solidity, AMM, Hardhat, React.js", desc: "Liquidity pool, constant product formula, swap, LP token, fee distribution." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "NFT Marketplace", tech: "Solidity, IPFS, React.js, Ethers.js, Stripe", desc: "List/buy/auction NFTs, royalties, featured drops, creator dashboard." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "ZK-Proof Voting System", tech: "Solidity, Circom, snarkjs, React.js", desc: "Anonymous voting with ZK proof, nullifier to prevent double vote, verifier contract." },
+    ],
+    submission: 'hr@hiresnix.co.in',
+  },
+  "hr assistant": {
+    title: "Hr Assistant Projects (3 Stages)",
+    projects: [
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "Employee Onboarding Checklist App", tech: "React.js, Node.js, MongoDB", desc: "Onboarding task list, progress tracker, document upload, manager sign-off." },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "Leave Management System", tech: "React.js, Node.js, PostgreSQL", desc: "Leave request, approval workflow, balance tracker, calendar view, email alert." },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "Job Description Generator", tech: "Python, Gemini API, Streamlit", desc: "Role/level/skills input, AI generates JD, tone selector, export to Word." },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "Interview Scheduler Tool", tech: "React.js, Node.js, Google Calendar API", desc: "Candidate booking, panel availability, Zoom link gen, reminder email." },
+      { stage: "\ud83d\udfe2 Stage \u2014 Simple", title: "Employee Directory App", tech: "React.js, Node.js, PostgreSQL", desc: "Staff profiles, org chart, department filter, search, export CSV." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "HR Chatbot for Policy Queries", tech: "Python, Gemini API, LangChain, Streamlit", desc: "Upload HR policy PDF, RAG chatbot answers employee queries, escalation flow." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "Performance Review System", tech: "React.js, Node.js, PostgreSQL, PDFKit", desc: "360\u00b0 review form, rating aggregation, manager comments, PDF appraisal." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "Recruitment Pipeline Tracker", tech: "React.js, Node.js, PostgreSQL, Chart.js", desc: "Job posting, applicant Kanban, stage tracking, source analytics, offer letter." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "Payroll Calculator Dashboard", tech: "React.js, Node.js, PostgreSQL, PDFKit", desc: "CTC breakdown, deduction calculator, payslip generator, bulk processing." },
+      { stage: "\ud83d\udfe1 Stage \u2014 Medium", title: "Training & Development Tracker", tech: "React.js, Node.js, MongoDB, Chart.js", desc: "Course assignment, completion tracking, skill matrix, L&D budget dashboard." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "AI Resume Screening System", tech: "Python, spaCy, BERT, FastAPI, React", desc: "Bulk resume upload, JD matching, ranked shortlist, bias detection, report." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "HR Analytics Dashboard", tech: "Python, Pandas, Plotly, Scikit-learn, Streamlit", desc: "Headcount forecast, attrition prediction, diversity metrics, workforce planning." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "Compensation Benchmarking Tool", tech: "Python, Pandas, Plotly, React, FastAPI", desc: "Market salary data, pay equity analysis, band setting, pay gap report." },
+      { stage: "\ud83d\udd34 Stage \u2014 Hard", title: "AI-Powered Succession Planning", tech: "Python, Gemini API, React, FastAPI, PostgreSQL", desc: "Talent mapping, role criticality, successor identification, development plan." },
+    ],
+    submission: 'hr@hiresnix.co.in',
+  },
+  'default': {
+    title: 'Internship Capstone Projects (3 Stages)',
+    projects: [
+      { stage: '🟢 Stage — Simple', title: 'Foundation Project', tech: 'Domain-specific stack', desc: 'Build a foundational project showcasing core skills of your domain.' },
+      { stage: '🟡 Stage — Medium', title: 'Core Project', tech: 'Domain-specific stack', desc: 'Intermediate project with real-world data and APIs.' },
+      { stage: '🔴 Stage — Hard', title: 'Capstone Project', tech: 'Domain-specific stack', desc: 'Production-level capstone project for your portfolio.' },
     ],
     submission: 'hr@hiresnix.co.in',
   },
 };
+
 
 function getProjectForDomain(domainName: string) {
   const key = (domainName || '').toLowerCase();
@@ -1147,17 +1377,28 @@ function InternshipTimeline({ enrollment }: { enrollment: any }) {
 function AssignedProject({ enrollment }: { enrollment: any }) {
   const domainKey = (enrollment.domain?.name || '').toLowerCase();
   
-  // Check if this is an existing student from the assignment sheet
+  // Match by email first (most reliable), then name, then domain default
+  const studentEmail = (enrollment.email || '').toLowerCase().trim();
   const studentName = (enrollment.studentName || '').toLowerCase().trim();
-  const existingStudent = Object.values(STUDENT_PROJECTS).find(
-    (s: any) => s.name.toLowerCase().trim() === studentName
-  ) as any;
+
+  // 1. Email match from batch files (July + August)
+  const emailMatch = studentEmail ? (STUDENT_AUG_PROJECTS[studentEmail] || STUDENT_EMAIL_PROJECTS[studentEmail]) : null;
   
-  // Use student-specific projects if found, else domain defaults
-  const projectData = existingStudent || null;
-  const projects = projectData?.projects || (DOMAIN_PROJECTS[domainKey] || DOMAIN_PROJECTS['default']).projects;
-  const title = projectData 
-    ? `${enrollment.domain?.name || ''} Projects — Assigned to ${enrollment.studentName}`
+  // 2. Name match from assignment sheet
+  const nameMatch = !emailMatch ? Object.values(STUDENT_PROJECTS).find((s: any) => {
+    const dbName = s.name.toLowerCase().trim();
+    if (dbName === studentName) return true;
+    const dbParts = dbName.split(' ');
+    const nameParts = studentName.split(' ');
+    return dbParts[0] === nameParts[0] && dbParts.length > 1 && nameParts.length > 1 && dbParts[dbParts.length-1] === nameParts[nameParts.length-1];
+  }) as any : null;
+
+  const projectData = emailMatch || nameMatch || null;
+  const projects = projectData?.projects?.length 
+    ? projectData.projects 
+    : (DOMAIN_PROJECTS[domainKey] || DOMAIN_PROJECTS['default']).projects;
+  const title = projectData
+    ? `Assigned Projects — ${enrollment.studentName}`
     : (DOMAIN_PROJECTS[domainKey] || DOMAIN_PROJECTS['default']).title;
 
   return sectionCard('Assigned Project', <Target size={17} className="text-orange-500" />,
