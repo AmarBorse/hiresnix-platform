@@ -87,6 +87,12 @@ function IPlatformPanel() {
     if (!selected) return;
     setApplying(true);
     try {
+      // Validate Career ID if institution selected
+      if (form.institutionName && !form.careerId.trim()) {
+        toast.error('Career ID is required for institution students');
+        setApplying(false);
+        return;
+      }
       const instToken = localStorage.getItem('hx_inst_student_token');
       const studentToken = localStorage.getItem('hx_student_token') || localStorage.getItem('hirenix_token');
       const isInstStudent = !!instToken && !studentToken;
@@ -401,10 +407,11 @@ function IPlatformPanel() {
           </div>
           {form.institutionName && (
             <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Career ID / Student ID</label>
-              <input className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 bg-white"
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Career ID / Student ID <span className="text-red-500">*</span></label>
+              <input required className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 bg-white"
                 placeholder="e.g. HX-ABC-2026-0001"
                 value={form.careerId} onChange={e => setForm(p => ({ ...p, careerId: e.target.value.toUpperCase() }))} />
+              <p className="text-xs text-red-500 mt-1">⚠️ Career ID is mandatory for institution students</p>
             </div>
           )}
         </div>
@@ -470,6 +477,38 @@ function IPlatformPanel() {
 
   return (
     <div>
+      {/* Attractive Automation Banner */}
+      <div className="mb-5 rounded-2xl overflow-hidden border border-indigo-200 shadow-lg shadow-indigo-500/10">
+        <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-blue-600 px-5 py-4">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-2xl">⚡</span>
+            <h3 className="font-black text-white text-lg tracking-tight">100% Automated Internship Platform</h3>
+          </div>
+          <p className="text-indigo-100 text-sm font-medium">Apply once — everything happens automatically. No manual steps needed!</p>
+        </div>
+        <div className="bg-white dark:bg-gray-800 px-5 py-3 grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {[
+            { icon: '🎓', text: 'Instant Enrollment' },
+            { icon: '📄', text: 'Auto Offer Letter' },
+            { icon: '📊', text: 'Live Progress Tracking' },
+            { icon: '🏆', text: 'Auto Certificates' },
+          ].map(item => (
+            <div key={item.text} className="flex items-center gap-2">
+              <span className="text-lg">{item.icon}</span>
+              <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">{item.text}</span>
+            </div>
+          ))}
+        </div>
+        <div className="bg-indigo-50 dark:bg-indigo-900/20 px-5 py-2.5 border-t border-indigo-100 dark:border-indigo-800">
+          <p className="text-xs text-indigo-700 dark:text-indigo-300 font-medium text-center">
+            ✅ Offer Letter &nbsp;•&nbsp; ✅ Daily Logs &nbsp;•&nbsp; ✅ Completion Certificate &nbsp;•&nbsp; ✅ LOR &nbsp;•&nbsp; ✅ QR Verification — All on this portal!
+          </p>
+          <p className="text-xs text-indigo-500 dark:text-indigo-400 text-center mt-1">
+            Having trouble? Contact us on <a href="tel:9322690710" className="font-bold text-indigo-700 dark:text-indigo-300 hover:underline">📞 9322690710</a>
+          </p>
+        </div>
+      </div>
+
       <div className="mb-5 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl border border-blue-100">
         <h3 className="font-bold text-gray-900 flex items-center gap-2"><GraduationCap size={18} className="text-blue-600" /> Hiresnix Internship Program</h3>
         <p className="text-sm text-gray-600 mt-1">Select a domain, apply, get approved, and earn certificates upon completion!</p>
