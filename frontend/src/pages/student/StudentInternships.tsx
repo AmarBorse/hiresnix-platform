@@ -106,12 +106,14 @@ function IPlatformPanel() {
     } finally { setApplying(false); }
   };
 
-  const downloadDoc = async (type: string, enrollId: number, name: string) => {
+  const downloadDoc = async (type: string, enrollId: number | string, name: string) => {
     setDownloading(`${type}-${enrollId}`);
     try {
       let res;
       const endpoints = type === 'completion'
         ? [`/iplatform/completion-letter/${enrollId}/pdf`, `/iplatform/completion/${enrollId}/pdf`, `/iplatform/completion-letter/${enrollId}`, `/iplatform/completion/${enrollId}`]
+        : type === 'offer-letter'
+        ? [`/iplatform/offer-letter/${enrollId}/pdf`, `/iplatform/generate-offer-pdf/${enrollId}`]
         : [`/iplatform/${type}/${enrollId}/pdf`, `/iplatform/${type}/${enrollId}`];
 
       let success = false;
@@ -245,6 +247,23 @@ function IPlatformPanel() {
               <span className="font-semibold text-gray-800">{(enrollment.taskLogs || []).length}</span>
             </div>
           </div>
+          {/* Offer Letter — visible to all enrolled students */}
+          {app?.offerLetterId && (
+            <div className="mt-3 pt-3 border-t border-gray-100">
+              <h5 className="font-semibold text-gray-800 mb-2 flex items-center gap-1"><Download size={14} className="text-blue-500" /> Your Offer Letter</h5>
+              <button
+                onClick={() => downloadDoc('offer-letter', app.offerLetterId, enrollment.studentName || '')}
+                disabled={downloading === `offer-letter-${app.offerLetterId}`}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 border-blue-200 bg-blue-50 hover:bg-blue-100 transition-all active:scale-95 disabled:opacity-50 text-sm font-semibold text-blue-800">
+                {downloading === `offer-letter-${app.offerLetterId}`
+                  ? <Loader2 size={14} className="animate-spin text-blue-600" />
+                  : <span>📄</span>}
+                Download Offer Letter
+              </button>
+              <p className="text-xs text-amber-600 mt-2 font-semibold">⚠️ Post your Offer Letter on LinkedIn within 48 hours and tag Hiresnix!</p>
+            </div>
+          )}
+
           {enrollment.status !== 'Completed' && (
             <div className="mt-3">
               <button onClick={() => setShowTaskForm(!showTaskForm)} className="text-xs text-blue-500 hover:text-blue-700 flex items-center gap-0.5 font-semibold">

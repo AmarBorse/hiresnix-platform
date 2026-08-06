@@ -225,7 +225,7 @@ const getResources = asyncHandler(async (req, res) => {
     const enrollment = await InternshipEnrollment.findOne({
       where: { userId: req.user.id, status: { [Op.in]: ['Active', 'Completed'] } },
     });
-    if (!enrollment) { res.status(403); throw new Error('You are not enrolled in any internship'); }
+    if (!enrollment) { return res.json({ success: true, data: [] }); }
     where.domainId = enrollment.domainId;
   }
 
@@ -266,7 +266,7 @@ const getMyProgress = asyncHandler(async (req, res) => {
     ],
     order: [['createdAt', 'DESC']],
   });
-  if (!enrollment) { res.status(404); throw new Error('No active enrollment found'); }
+  if (!enrollment) { return res.json({ success: true, data: { enrollment: null, resources: [] } }); }
 
   const resources = await InternshipResource.findAll({ where: { domainId: enrollment.domainId }, order: [['week', 'ASC']] });
   res.json({ success: true, data: { enrollment, resources } });
@@ -2172,13 +2172,38 @@ const generateStipendSlip = asyncHandler(async (req, res) => {
   doc.end();
 });
 
+// ── STUDENT: Download their own offer letter by offerId ───────────
+const downloadOfferLetterByStudent = asyncHandler(async (req, res) => {
+  const offerId = (req.params.offerId || '').trim();
+  if (!offerId) { res.status(400); throw new Error('Offer ID required'); }
+
+  // Find application belonging to this student with this offerId
+  const application = await InternshipApplication.findOne({
+    where: { userId: req.user.id, offerLetterId: offerId },
+    include: [{ model: Domain, as: 'domain' }],
+  });
+  if (!application) { res.status(404); throw new Error('Offer letter not found'); }
+
+  // Re-use existing generateOfferLetter logic by injecting req.body fields
+  req.body = {
+    applicationId: application.id,
+    candidateName: application.studentName,
+    role: application.domain?.name || 'Intern',
+    joiningDate: application.offerJoiningDate,
+    endDate: application.offerEndDate,
+    offerLetterDate: application.offerLetterDate,
+    mode: application.offerMode || 'Remote',
+  };
+  return generateOfferLetter(req, res);
+});
+
 module.exports = {
   getDomains, createDomain, deleteDomain,
   applyInternship, getMyApplication, getAllApplications, updateApplicationStatus,
   getResources, addResource, deleteResource,
   getMyProgress, submitTask, markComplete,
   getMyCertificates, downloadCertificate, downloadCompletionLetter, downloadLOR,
-  generateOfferLetter,
+  generateOfferLetter, downloadOfferLetterByStudent,
   getStats, getEnrolledStudents, getAllEnrollments,
   verifyCertificate, verifyOfferLetter, verifyRecommendationLetter,
   generateAppointmentLetter, generateJoiningLetter, generateStipendSlip,
