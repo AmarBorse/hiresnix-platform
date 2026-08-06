@@ -348,40 +348,13 @@ function IPlatformPanel() {
               </div>
             </div>
           )}
-          {enrollment.status === 'Completed' && (
-            <div>
-              <h5 className="font-semibold text-gray-800 mb-2 flex items-center gap-1"><CheckCircle size={14} className="text-green-500" /> Download Your Documents</h5>
-              {certPaid === false && (
-                <p className="text-xs text-amber-600 mb-2 font-semibold">💳 Payment required (₹100) — click any document to pay & download</p>
-              )}
-              <div className="grid grid-cols-3 gap-2">
-                {[
-                  { type: 'certificate', label: 'Certificate', emoji: '🏆' },
-                  { type: 'completion', label: 'Completion Letter', emoji: '📄' },
-                  { type: 'lor', label: 'LOR', emoji: '✉️' },
-                ].map(({ type, label, emoji }) => (
-                  <button key={type}
-                    onClick={() => downloadDoc(type, enrollment.id, enrollment.studentName || '')}
-                    disabled={downloading === `${type}-${enrollment.id}` || paymentLoading}
-                    className="flex flex-col items-center gap-1 p-3 rounded-xl border-2 border-green-200 bg-green-50 hover:bg-green-100 transition-all active:scale-95 disabled:opacity-50">
-                    {downloading === `${type}-${enrollment.id}` || paymentLoading
-                      ? <Loader2 size={18} className="animate-spin text-green-600" />
-                      : <span style={{ fontSize: '1.4rem' }}>{certPaid ? emoji : '🔒'}</span>}
-                    <span className="text-xs font-semibold text-green-800 text-center">{label}</span>
-                    {certPaid ? <Download size={11} className="text-green-600" /> : <span className="text-xs text-amber-600">₹100</span>}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+
         </div>
       )}
 
       {/* ── NEW EXTENDED SECTIONS (added below existing content) ── */}
       {enrollment && <InternshipExtendedSections enrollment={enrollment} app={app} onReload={load} />}
 
-      {/* Community Section — shown for all enrolled students */}
-      <CommunitySection />
     </div>
   );
 
@@ -1113,15 +1086,42 @@ function ExceptionContact() {
 
 // ── Wrapper for all new sections ─────────────────────────────────
 function InternshipExtendedSections({ enrollment, app, onReload }: { enrollment: any; app: any; onReload: () => void }) {
+  const [openTab, setOpenTab] = React.useState<string | null>(null);
+  const toggle = (tab: string) => setOpenTab(prev => prev === tab ? null : tab);
+
+  const tabs = [
+    { id: 'overview', label: '📋 Overview', icon: null },
+    { id: 'timeline', label: '📈 Timeline', icon: null },
+    { id: 'project', label: '🎯 Project', icon: null },
+    { id: 'log', label: '📝 Daily Log', icon: null, hide: enrollment.status === 'Completed' },
+    { id: 'progress', label: '📊 Progress', icon: null },
+    { id: 'certificates', label: '🏆 Certificates', icon: null, hide: enrollment.status !== 'Completed' },
+  ].filter(t => !t.hide);
+
   return (
-    <div className="mt-2">
-      <InternshipOverview enrollment={enrollment} app={app} />
-      <InternshipTimeline enrollment={enrollment} />
-      <AssignedProject enrollment={enrollment} />
-      <DailyInternshipLog enrollment={enrollment} />
-      <ProgressTracker enrollment={enrollment} />
-      <CertificatePaymentSection enrollment={enrollment} />
+    <div className="mt-3 space-y-2">
+      {tabs.map(tab => (
+        <div key={tab.id} className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <button
+            onClick={() => toggle(tab.id)}
+            className="w-full flex items-center justify-between px-5 py-3.5 text-sm font-semibold text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
+            <span>{tab.label}</span>
+            <span className={`text-gray-400 transition-transform duration-200 ${openTab === tab.id ? 'rotate-180' : ''}`}>▾</span>
+          </button>
+          {openTab === tab.id && (
+            <div className="px-5 pb-5 border-t border-gray-100 dark:border-gray-700 pt-4">
+              {tab.id === 'overview' && <InternshipOverview enrollment={enrollment} app={app} />}
+              {tab.id === 'timeline' && <InternshipTimeline enrollment={enrollment} />}
+              {tab.id === 'project' && <AssignedProject enrollment={enrollment} />}
+              {tab.id === 'log' && <DailyInternshipLog enrollment={enrollment} />}
+              {tab.id === 'progress' && <ProgressTracker enrollment={enrollment} />}
+              {tab.id === 'certificates' && <CertificatePaymentSection enrollment={enrollment} />}
+            </div>
+          )}
+        </div>
+      ))}
       <ExceptionContact />
+      <CommunitySection />
     </div>
   );
 }
