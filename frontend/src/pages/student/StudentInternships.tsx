@@ -353,6 +353,13 @@ function IPlatformPanel() {
       )}
 
       {/* ── NEW EXTENDED SECTIONS (added below existing content) ── */}
+      {/* Exception Contact — top */}
+      {enrollment && (
+        <div className="p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 text-center text-xs text-gray-500 dark:text-gray-400">
+          If additional verification is required (College Verification or Email Verification), please contact us at{' '}
+          <a href="mailto:hr@hiresnix.co.in" className="text-blue-500 font-semibold hover:underline">hr@hiresnix.co.in</a>
+        </div>
+      )}
       {enrollment && <InternshipExtendedSections enrollment={enrollment} app={app} onReload={load} />}
 
     </div>
