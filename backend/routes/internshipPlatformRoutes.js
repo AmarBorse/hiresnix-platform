@@ -7,6 +7,7 @@ const express = require('express');
 const asyncHandler = require('express-async-handler');
 const r = express.Router();
 const ctrl = require('../controllers/internshipPlatformController');
+const dailyLogCtrl = require('../controllers/internshipDailyLog');
 const { protect, authorize } = require('../middleware/auth');
 
 // ── DOMAINS ──────────────────────────────────────────────────────
@@ -51,6 +52,15 @@ r.get('/my-progress',                protect, authorize('student'), ctrl.getMyPr
 r.post('/task-submit',               protect, authorize('student'), ctrl.submitTask);
 r.put('/enrollments/:id/complete',   protect, authorize('admin'),   ctrl.markComplete);
 
+// ── DAILY LOGS (NEW) ──────────────────────────────────────────────
+r.get('/daily-logs',                 protect, authorize('student'), dailyLogCtrl.getMyDailyLogs);
+r.post('/daily-logs',                protect, authorize('student'), dailyLogCtrl.submitDailyLog);
+
+// ── CERTIFICATE PAYMENT (NEW) ─────────────────────────────────────
+r.get('/cert-payment-status',        protect, authorize('student'), dailyLogCtrl.checkCertPaymentStatus);
+r.post('/cert-payment-order',        protect, authorize('student'), dailyLogCtrl.createCertPaymentOrder);
+r.post('/cert-payment-verify',       protect, authorize('student'), dailyLogCtrl.verifyCertPayment);
+
 // ── CERTIFICATES / LETTERS (PDF) ──────────────────────────────────
 r.get('/verify/:certId',             ctrl.verifyCertificate);
 r.get('/verify-offer/:offerId',      ctrl.verifyOfferLetter);
@@ -66,14 +76,12 @@ r.get('/stats',                      protect, authorize('admin'), ctrl.getStats)
 r.get('/enrolled-students',          protect, authorize('admin'), ctrl.getEnrolledStudents);
 r.get('/all-enrollments',            protect, authorize('admin'), ctrl.getAllEnrollments);
 
-
 // Institution Certificate verification — single route, type-aware
 const verifyCert = (expectedType) => asyncHandler(async (req, res) => {
   const id = req.params.id || req.query.id;
   if (!id) { res.status(400); throw new Error('Certificate ID required'); }
   const { InstitutionCertificate, Institution } = require('../models');
 
-  // Find by ID only first
   const cert = await InstitutionCertificate.findOne({
     where: { certificateId: id.toString().toUpperCase().trim() },
     include: [{ model: Institution, as: 'institution', attributes: ['institutionName','city','state'] }]
@@ -81,7 +89,6 @@ const verifyCert = (expectedType) => asyncHandler(async (req, res) => {
 
   if (!cert) return res.json({ valid: false, message: 'Certificate not found' });
 
-  // Check type matches
   if (expectedType && cert.type !== expectedType) {
     return res.json({
       valid: false,

@@ -1,12 +1,20 @@
 // src/pages/student/StudentInternships.tsx
-import React, { useState, useEffect } from 'react';
+// ⚠️ EXISTING CODE PRESERVED — only extended below with new sections
+import React, { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
-import { Clock, Users, ChevronRight, Loader2, GraduationCap, CheckCircle, BookOpen, Download, Brain } from 'lucide-react';
+import {
+  Clock, Users, ChevronRight, Loader2, GraduationCap, CheckCircle,
+  BookOpen, Download, Brain, Calendar, Target, FileText, Award,
+  Linkedin, MessageCircle, AlertCircle, TrendingUp, Briefcase,
+  ExternalLink, Github, ClipboardList, Flame, BarChart2, Lock, Unlock,
+} from 'lucide-react';
 import client from '../../api/client';
 import { instInternshipClient } from '../../api/instStudent';
 import { LogicBuilder } from './LogicBuilder';
 
-// ── DOMAIN APPLICATION PANEL (Hiresnix internship platform) ───────
+// ═══════════════════════════════════════════════════════════════════
+// ── EXISTING IPLATFORM PANEL (UNCHANGED) ──────────────────────────
+// ═══════════════════════════════════════════════════════════════════
 function IPlatformPanel() {
   const [domains, setDomains]     = useState<any[]>([]);
   const [institutions, setInstitutions] = useState<any[]>([]);
@@ -300,6 +308,12 @@ function IPlatformPanel() {
           )}
         </div>
       )}
+
+      {/* ── NEW EXTENDED SECTIONS (added below existing content) ── */}
+      {enrollment && <InternshipExtendedSections enrollment={enrollment} app={app} onReload={load} />}
+
+      {/* Community Section — shown for all enrolled students */}
+      <CommunitySection />
     </div>
   );
 
@@ -399,11 +413,612 @@ function IPlatformPanel() {
           })}
         </div>
       )}
+      {/* Community section shown on domain listing too */}
+      <div className="mt-6"><CommunitySection /></div>
     </div>
   );
 }
 
-// ── MAIN COMPONENT ────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
+// ── NEW: EXTENDED INTERNSHIP SECTIONS ─────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
+
+// Domain → project mapping
+const DOMAIN_PROJECTS: Record<string, any> = {
+  default: {
+    title: 'Capstone Portfolio Project',
+    description: 'Build a comprehensive project showcasing all skills learned during your internship. This will be a key piece of your professional portfolio.',
+    resources: ['Your domain study resources', 'GitHub documentation', 'Hiresnix resource library'],
+    github: '',
+    submission: 'hr@hiresnix.co.in',
+    deadline: 'Before internship end date',
+  },
+  'cloud computing': {
+    title: 'Cloud Infrastructure Setup & Deployment',
+    description: 'Design and deploy a scalable cloud infrastructure using AWS/GCP/Azure. Implement auto-scaling, load balancing, and CI/CD pipelines.',
+    resources: ['AWS Free Tier', 'Google Cloud Skills Boost', 'Azure Learn'],
+    github: 'https://github.com/hiresnix-commits',
+    submission: 'hr@hiresnix.co.in',
+    deadline: 'Before internship end date',
+  },
+  'full stack development': {
+    title: 'Full Stack Web Application',
+    description: 'Build a production-ready full stack app with React frontend, Node.js backend, and PostgreSQL database. Include authentication, CRUD operations, and deployment.',
+    resources: ['React Docs', 'Node.js Docs', 'Supabase Quickstart'],
+    github: 'https://github.com/hiresnix-commits',
+    submission: 'hr@hiresnix.co.in',
+    deadline: 'Before internship end date',
+  },
+  'data science': {
+    title: 'End-to-End Data Analysis Project',
+    description: 'Perform EDA, build ML models, and create a dashboard showcasing insights from a real-world dataset. Present findings in a Jupyter Notebook.',
+    resources: ['Kaggle Datasets', 'Scikit-learn Docs', 'Matplotlib/Seaborn'],
+    github: 'https://github.com/hiresnix-commits',
+    submission: 'hr@hiresnix.co.in',
+    deadline: 'Before internship end date',
+  },
+};
+
+function getProjectForDomain(domainName: string) {
+  const key = (domainName || '').toLowerCase();
+  return DOMAIN_PROJECTS[key] || DOMAIN_PROJECTS['default'];
+}
+
+function sectionCard(title: string, icon: React.ReactNode, children: React.ReactNode) {
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5 mt-5">
+      <h4 className="font-bold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2 text-base">
+        {icon}{title}
+      </h4>
+      {children}
+    </div>
+  );
+}
+
+// ── Internship Overview ───────────────────────────────────────────
+function InternshipOverview({ enrollment, app }: { enrollment: any; app: any }) {
+  const domainName = enrollment.domain?.name || app?.domain?.name || 'Internship';
+  const startDate = enrollment.startDate ? new Date(enrollment.startDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+
+  // Calculate end date from duration field
+  const durationStr: string = enrollment.domain?.duration || '8 Weeks';
+  const durationMatch = durationStr.match(/(\d+)/);
+  const durationNum = durationMatch ? parseInt(durationMatch[1]) : 8;
+  const isMonths = /month/i.test(durationStr);
+  let endDateDisplay = '—';
+  if (enrollment.startDate) {
+    const sd = new Date(enrollment.startDate);
+    const ed = new Date(sd);
+    if (isMonths) ed.setMonth(ed.getMonth() + durationNum);
+    else ed.setDate(ed.getDate() + durationNum * 7);
+    endDateDisplay = ed.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  }
+
+  const internshipId = `HX-INT-${String(enrollment.id).padStart(5, '0')}`;
+  const batchId = `HX-BATCH-${new Date(enrollment.createdAt || Date.now()).getFullYear()}-${String(Math.ceil((new Date(enrollment.createdAt || Date.now()).getMonth() + 1) / 1)).padStart(2, '0')}`;
+
+  const stats = [
+    { label: 'Internship ID', value: internshipId, icon: '🆔' },
+    { label: 'Batch ID', value: batchId, icon: '📦' },
+    { label: 'Domain', value: domainName, icon: '💻' },
+    { label: 'Duration', value: durationStr, icon: '⏱️' },
+    { label: 'Start Date', value: startDate, icon: '🗓️' },
+    { label: 'End Date', value: endDateDisplay, icon: '🏁' },
+    { label: 'Mode', value: 'Remote', icon: '🌐' },
+    { label: 'Status', value: enrollment.status, icon: enrollment.status === 'Completed' ? '✅' : '🔄' },
+  ];
+
+  return sectionCard('Internship Overview', <Briefcase size={17} className="text-blue-500" />,
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      {stats.map(s => (
+        <div key={s.label} className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-3">
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">{s.icon} {s.label}</p>
+          <p className="font-semibold text-gray-800 dark:text-gray-200 text-sm truncate">{s.value}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── Internship Timeline ───────────────────────────────────────────
+function InternshipTimeline({ enrollment }: { enrollment: any }) {
+  const steps = [
+    { label: 'Application Submitted', done: true, icon: '📝', desc: 'You applied for the internship' },
+    { label: 'Application Approved', done: true, icon: '✅', desc: 'Admin reviewed and approved your application' },
+    { label: 'Offer Letter Issued', done: !!enrollment.startDate, icon: '📄', desc: 'Internship offer letter generated' },
+    { label: 'Internship Started', done: !!enrollment.startDate, icon: '🚀', desc: 'Internship officially commenced' },
+    { label: 'In Progress', done: enrollment.progress > 20, icon: '⚙️', desc: 'Actively working on tasks and logs' },
+    { label: 'Internship Completed', done: enrollment.status === 'Completed', icon: '🎓', desc: 'All tasks completed successfully' },
+    { label: 'Certificates Generated', done: enrollment.status === 'Completed', icon: '🏆', desc: 'Completion certificate & documents ready' },
+  ];
+
+  return sectionCard('Internship Timeline', <TrendingUp size={17} className="text-purple-500" />,
+    <div className="relative">
+      <div className="absolute left-4 top-4 bottom-4 w-0.5 bg-gray-200 dark:bg-gray-600" />
+      <div className="space-y-4">
+        {steps.map((step, i) => (
+          <div key={i} className="flex items-start gap-4 relative">
+            <div className={`z-10 w-8 h-8 rounded-full flex items-center justify-center text-sm flex-shrink-0 border-2 ${
+              step.done ? 'bg-blue-500 border-blue-500 text-white' : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600'
+            }`}>
+              {step.done ? <CheckCircle size={14} /> : <span className="text-xs text-gray-400">{i + 1}</span>}
+            </div>
+            <div className="pt-1 pb-1">
+              <p className={`font-semibold text-sm ${step.done ? 'text-gray-900 dark:text-gray-100' : 'text-gray-400 dark:text-gray-500'}`}>{step.label}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{step.desc}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Assigned Project ─────────────────────────────────────────────
+function AssignedProject({ enrollment }: { enrollment: any }) {
+  const project = getProjectForDomain(enrollment.domain?.name || '');
+
+  return sectionCard('Assigned Project', <Target size={17} className="text-orange-500" />,
+    <div>
+      <div className="flex items-start justify-between mb-3">
+        <div>
+          <h5 className="font-bold text-gray-900 dark:text-gray-100 text-base">{project.title}</h5>
+          <span className="inline-block mt-1 text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 font-semibold">Optional — Submission Not Mandatory</span>
+        </div>
+      </div>
+      <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">{project.description}</p>
+
+      <div className="grid sm:grid-cols-2 gap-3">
+        <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-3">
+          <p className="text-xs font-semibold text-blue-700 dark:text-blue-400 mb-2 flex items-center gap-1"><BookOpen size={12} /> Resources</p>
+          <ul className="space-y-1">
+            {project.resources.map((r: string, i: number) => (
+              <li key={i} className="text-xs text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-400 flex-shrink-0" />{r}
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className="space-y-2">
+          {project.github && (
+            <a href={project.github} target="_blank" rel="noreferrer"
+              className="flex items-center gap-2 text-xs text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 rounded-lg px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 transition">
+              <Github size={13} className="text-gray-600" /> View GitHub Repository <ExternalLink size={11} />
+            </a>
+          )}
+          <div className="bg-gray-50 dark:bg-gray-700 rounded-lg px-3 py-2">
+            <p className="text-xs text-gray-500 dark:text-gray-400">📨 Submission Email</p>
+            <p className="text-xs font-semibold text-gray-800 dark:text-gray-200">{project.submission}</p>
+          </div>
+          <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg px-3 py-2">
+            <p className="text-xs text-amber-600 dark:text-amber-400">⏰ Recommended Deadline</p>
+            <p className="text-xs font-semibold text-gray-800 dark:text-gray-200">{project.deadline}</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-3 p-3 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
+        <p className="text-xs text-green-800 dark:text-green-300 flex items-start gap-1.5">
+          <CheckCircle size={13} className="text-green-600 mt-0.5 flex-shrink-0" />
+          <span><strong>Note:</strong> Project completion is recommended for your portfolio. However, whether you submit the project or not, your Internship Completion Certificate and documents will be generated automatically once the internship duration is successfully completed.</span>
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ── Daily Internship Log ──────────────────────────────────────────
+function DailyInternshipLog({ enrollment }: { enrollment: any }) {
+  const [logs, setLogs] = useState<any[]>([]);
+  const [loadingLogs, setLoadingLogs] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({ todaysWork: '', hoursWorked: '', learning: '', challenges: '', tomorrowPlan: '' });
+
+  const today = new Date().toISOString().slice(0, 10);
+  const todayLog = logs.find(l => l.logDate === today);
+
+  const fetchLogs = useCallback(async () => {
+    try {
+      const res = await client.get('/iplatform/daily-logs');
+      setLogs(res.data?.data || []);
+    } catch { setLogs([]); }
+    finally { setLoadingLogs(false); }
+  }, []);
+
+  useEffect(() => { fetchLogs(); }, [fetchLogs]);
+
+  // Pre-fill with today's log if exists
+  useEffect(() => {
+    if (todayLog) {
+      setForm({
+        todaysWork: todayLog.todaysWork || '',
+        hoursWorked: todayLog.hoursWorked || '',
+        learning: todayLog.learning || '',
+        challenges: todayLog.challenges || '',
+        tomorrowPlan: todayLog.tomorrowPlan || '',
+      });
+    }
+  }, [todayLog]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.todaysWork) return toast.error("Today's work is required");
+    setSubmitting(true);
+    try {
+      await client.post('/iplatform/daily-logs', form);
+      toast.success(todayLog ? "Today's log updated!" : "Daily log saved!");
+      fetchLogs();
+      setShowForm(false);
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Failed to save log');
+    } finally { setSubmitting(false); }
+  };
+
+  const totalHours = logs.reduce((acc, l) => acc + parseFloat(l.hoursWorked || 0), 0);
+  const streak = (() => {
+    if (!logs.length) return 0;
+    const sorted = [...logs].sort((a, b) => new Date(b.logDate).getTime() - new Date(a.logDate).getTime());
+    let s = 0;
+    let cursor = new Date();
+    cursor.setHours(0, 0, 0, 0);
+    for (const log of sorted) {
+      const ld = new Date(log.logDate);
+      ld.setHours(0, 0, 0, 0);
+      const diff = Math.round((cursor.getTime() - ld.getTime()) / 86400000);
+      if (diff <= 1) { s++; cursor = ld; }
+      else break;
+    }
+    return s;
+  })();
+
+  if (enrollment.status === 'Completed') return null; // hide log form after completion
+
+  return sectionCard('Daily Internship Log', <ClipboardList size={17} className="text-teal-500" />,
+    <div>
+      {/* Stats row */}
+      <div className="grid grid-cols-3 gap-3 mb-4">
+        <div className="bg-teal-50 dark:bg-teal-900/20 rounded-xl p-3 text-center">
+          <p className="text-2xl font-black text-teal-600">{logs.length}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Total Logs</p>
+        </div>
+        <div className="bg-orange-50 dark:bg-orange-900/20 rounded-xl p-3 text-center">
+          <p className="text-2xl font-black text-orange-500 flex items-center justify-center gap-1">{streak}<Flame size={16} /></p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Day Streak</p>
+        </div>
+        <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-3 text-center">
+          <p className="text-2xl font-black text-blue-600">{totalHours.toFixed(0)}h</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Total Hours</p>
+        </div>
+      </div>
+
+      {/* Today's log button */}
+      <button onClick={() => setShowForm(!showForm)}
+        className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition mb-4 ${
+          todayLog ? 'bg-teal-100 text-teal-700 hover:bg-teal-200' : 'bg-teal-500 text-white hover:bg-teal-600'
+        }`}>
+        <ClipboardList size={15} />
+        {todayLog ? "✏️ Update Today's Log" : "📝 Submit Today's Log"}
+      </button>
+
+      {showForm && (
+        <form onSubmit={handleSubmit} className="space-y-3 border border-teal-200 dark:border-teal-800 rounded-xl p-4 bg-teal-50 dark:bg-teal-900/20 mb-4">
+          <p className="text-xs font-bold text-teal-700 dark:text-teal-400 uppercase tracking-wider">📅 {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })}</p>
+          {[
+            { key: 'todaysWork', label: "Today's Work *", placeholder: "What did you work on today?" },
+            { key: 'learning', label: 'Key Learnings', placeholder: 'What did you learn today?' },
+            { key: 'challenges', label: 'Challenges Faced', placeholder: 'Any blockers or challenges?' },
+            { key: 'tomorrowPlan', label: "Tomorrow's Plan", placeholder: 'What will you work on tomorrow?' },
+          ].map(field => (
+            <div key={field.key}>
+              <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">{field.label}</label>
+              <textarea rows={2} placeholder={field.placeholder}
+                value={(form as any)[field.key]}
+                onChange={e => setForm(p => ({ ...p, [field.key]: e.target.value }))}
+                className="w-full border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-teal-500 resize-none text-gray-800 dark:text-gray-200" />
+            </div>
+          ))}
+          <div>
+            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">Hours Worked Today</label>
+            <input type="number" min="0" max="24" step="0.5" placeholder="e.g. 4"
+              value={form.hoursWorked}
+              onChange={e => setForm(p => ({ ...p, hoursWorked: e.target.value }))}
+              className="w-full border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-teal-500 text-gray-800 dark:text-gray-200" />
+          </div>
+          <button type="submit" disabled={submitting}
+            className="w-full flex items-center justify-center gap-2 bg-teal-500 hover:bg-teal-600 disabled:opacity-60 text-white text-sm font-bold py-2.5 rounded-lg transition">
+            {submitting ? <Loader2 size={13} className="animate-spin" /> : <CheckCircle size={13} />}
+            {submitting ? 'Saving...' : todayLog ? 'Update Log' : 'Save Log'}
+          </button>
+        </form>
+      )}
+
+      {/* Past logs */}
+      {loadingLogs ? (
+        <div className="flex justify-center py-4"><Loader2 size={18} className="animate-spin text-teal-400" /></div>
+      ) : logs.length > 0 ? (
+        <div className="space-y-2">
+          <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Previous Logs</p>
+          {logs.slice(0, 5).map(log => (
+            <div key={log.id} className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-3">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs font-bold text-gray-700 dark:text-gray-300">
+                  {new Date(log.logDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                </span>
+                {log.hoursWorked > 0 && (
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-semibold">{log.hoursWorked}h</span>
+                )}
+              </div>
+              {log.todaysWork && <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2">{log.todaysWork}</p>}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="text-center text-sm text-gray-400 py-3">No logs submitted yet. Start tracking your daily progress!</p>
+      )}
+    </div>
+  );
+}
+
+// ── Progress Tracker ──────────────────────────────────────────────
+function ProgressTracker({ enrollment }: { enrollment: any }) {
+  const taskLogs = enrollment.taskLogs || [];
+  const progress = enrollment.progress || 0;
+
+  const durationStr: string = enrollment.domain?.duration || '8 Weeks';
+  const durationMatch = durationStr.match(/(\d+)/);
+  const durationNum = durationMatch ? parseInt(durationMatch[1]) : 8;
+  const isMonths = /month/i.test(durationStr);
+  const totalDays = isMonths ? durationNum * 30 : durationNum * 7;
+
+  let daysElapsed = 0;
+  if (enrollment.startDate) {
+    const sd = new Date(enrollment.startDate);
+    const now = new Date();
+    daysElapsed = Math.min(totalDays, Math.max(0, Math.round((now.getTime() - sd.getTime()) / 86400000)));
+  }
+  const timeProgress = totalDays > 0 ? Math.round((daysElapsed / totalDays) * 100) : 0;
+
+  return sectionCard('Progress Tracker', <BarChart2 size={17} className="text-indigo-500" />,
+    <div className="space-y-4">
+      <div>
+        <div className="flex justify-between items-center mb-1.5">
+          <span className="text-xs font-semibold text-gray-600 dark:text-gray-400">Task Completion</span>
+          <span className="text-xs font-bold text-blue-600">{progress}%</span>
+        </div>
+        <div className="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-2.5">
+          <div className="bg-blue-500 h-2.5 rounded-full transition-all duration-700" style={{ width: `${progress}%` }} />
+        </div>
+      </div>
+      <div>
+        <div className="flex justify-between items-center mb-1.5">
+          <span className="text-xs font-semibold text-gray-600 dark:text-gray-400">Time Elapsed</span>
+          <span className="text-xs font-bold text-purple-600">{timeProgress}%</span>
+        </div>
+        <div className="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-2.5">
+          <div className="bg-purple-500 h-2.5 rounded-full transition-all duration-700" style={{ width: `${timeProgress}%` }} />
+        </div>
+        <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{daysElapsed} of {totalDays} days completed</p>
+      </div>
+
+      <div className="grid grid-cols-3 gap-3 pt-1">
+        <div className="text-center bg-indigo-50 dark:bg-indigo-900/20 rounded-xl p-3">
+          <p className="text-xl font-black text-indigo-600">{taskLogs.length}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">Tasks Done</p>
+        </div>
+        <div className="text-center bg-green-50 dark:bg-green-900/20 rounded-xl p-3">
+          <p className="text-xl font-black text-green-600">{daysElapsed}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">Days In</p>
+        </div>
+        <div className="text-center bg-amber-50 dark:bg-amber-900/20 rounded-xl p-3">
+          <p className="text-xl font-black text-amber-600">{Math.max(0, totalDays - daysElapsed)}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">Days Left</p>
+        </div>
+      </div>
+
+      {enrollment.status === 'Completed' && (
+        <div className="flex items-center gap-2 p-3 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
+          <CheckCircle size={16} className="text-green-600 flex-shrink-0" />
+          <p className="text-sm font-semibold text-green-800 dark:text-green-300">🎉 Internship Successfully Completed!</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Certificate Payment Gate ─────────────────────────────────────
+function CertificatePaymentSection({ enrollment }: { enrollment: any }) {
+  const [checking, setChecking] = useState(true);
+  const [paid, setPaid] = useState(false);
+  const [isLegacy, setIsLegacy] = useState(false);
+  const [processingPayment, setProcessingPayment] = useState(false);
+
+  useEffect(() => {
+    if (enrollment.status !== 'Completed') return;
+    client.get('/iplatform/cert-payment-status')
+      .then(r => {
+        setPaid(r.data?.paid || false);
+        setIsLegacy(r.data?.isLegacy || false);
+      })
+      .catch(() => {})
+      .finally(() => setChecking(false));
+  }, [enrollment.status]);
+
+  if (enrollment.status !== 'Completed') return null;
+  if (checking) return (
+    <div className="mt-5 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5 flex justify-center">
+      <Loader2 size={20} className="animate-spin text-indigo-400" />
+    </div>
+  );
+
+  const handlePayment = async () => {
+    setProcessingPayment(true);
+    try {
+      const res = await client.post('/iplatform/cert-payment-order');
+      const { orderId, keyId, amount } = res.data?.data || {};
+      if (!orderId || !keyId) {
+        toast.error('Payment service unavailable. Contact hr@hiresnix.co.in');
+        return;
+      }
+      const options = {
+        key: keyId,
+        amount,
+        currency: 'INR',
+        name: 'Hiresnix',
+        description: 'Internship Certificate Download',
+        order_id: orderId,
+        handler: async (response: any) => {
+          try {
+            await client.post('/iplatform/cert-payment-verify', response);
+            toast.success('🎉 Payment successful! Certificates unlocked!');
+            setPaid(true);
+          } catch { toast.error('Payment verification failed. Contact support.'); }
+        },
+        prefill: { name: enrollment.studentName, email: enrollment.email || '' },
+        theme: { color: '#3b82f6' },
+      };
+      const Razorpay = (window as any).Razorpay;
+      if (!Razorpay) {
+        // Load Razorpay script
+        await new Promise<void>((resolve, reject) => {
+          const s = document.createElement('script');
+          s.src = 'https://checkout.razorpay.com/v1/checkout.js';
+          s.onload = () => resolve();
+          s.onerror = () => reject(new Error('Failed to load payment gateway'));
+          document.head.appendChild(s);
+        });
+      }
+      const rzp = new (window as any).Razorpay(options);
+      rzp.open();
+    } catch (err: any) {
+      toast.error(err.message || 'Payment initialization failed');
+    } finally { setProcessingPayment(false); }
+  };
+
+  return sectionCard('Internship Certificates', <Award size={17} className="text-yellow-500" />,
+    <div>
+      {(paid || isLegacy) ? (
+        <div>
+          {isLegacy && (
+            <div className="mb-3 p-3 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+              <p className="text-xs text-blue-800 dark:text-blue-300 flex items-center gap-1.5">
+                <Unlock size={13} /> Your certificates are free as an existing student. No payment required!
+              </p>
+            </div>
+          )}
+          <p className="text-sm text-green-700 dark:text-green-400 font-semibold mb-3 flex items-center gap-2">
+            <CheckCircle size={15} /> Certificates unlocked — download anytime!
+          </p>
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { type: 'certificate', label: 'Completion Certificate', emoji: '🏆' },
+              { type: 'completion', label: 'Completion Letter', emoji: '📄' },
+              { type: 'lor', label: 'Letter of Recommendation', emoji: '✉️' },
+            ].map(({ type, label, emoji }) => (
+              <a key={type}
+                href={`/api/iplatform/${type === 'completion' ? 'completion' : type}/${enrollment.id}/pdf`}
+                target="_blank" rel="noreferrer"
+                className="flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 border-green-200 bg-green-50 dark:bg-green-900/20 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-900/40 transition group">
+                <span style={{ fontSize: '1.6rem' }}>{emoji}</span>
+                <span className="text-xs font-semibold text-green-800 dark:text-green-300 text-center">{label}</span>
+                <Download size={12} className="text-green-600 group-hover:scale-110 transition" />
+              </a>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div>
+          <div className="flex items-center gap-3 p-4 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 mb-4">
+            <Lock size={20} className="text-amber-600 flex-shrink-0" />
+            <div>
+              <p className="font-semibold text-amber-900 dark:text-amber-300 text-sm">Certificates Generated & Ready!</p>
+              <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">Your Completion Certificate, Completion Letter, and LOR have been automatically generated. Click below to unlock all downloads.</p>
+            </div>
+          </div>
+          <button onClick={handlePayment} disabled={processingPayment}
+            className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-500 to-blue-500 hover:from-indigo-600 hover:to-blue-600 disabled:opacity-60 text-white font-bold py-3 rounded-xl text-sm transition shadow-lg shadow-blue-500/20">
+            {processingPayment ? <Loader2 size={15} className="animate-spin" /> : <Unlock size={15} />}
+            {processingPayment ? 'Opening Payment...' : 'Unlock All Certificates — ₹100'}
+          </button>
+          <p className="text-xs text-gray-400 dark:text-gray-500 text-center mt-2">One-time payment • Unlimited downloads • QR Verification activated</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Community Section ─────────────────────────────────────────────
+function CommunitySection() {
+  return (
+    <div className="bg-gradient-to-br from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 rounded-2xl border border-green-200 dark:border-green-800 p-5 mt-5">
+      <h4 className="font-bold text-gray-900 dark:text-gray-100 mb-1 flex items-center gap-2">
+        <MessageCircle size={17} className="text-green-600" /> Hiresnix Community
+      </h4>
+      <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">Connect with fellow interns and stay updated</p>
+
+      <div className="grid sm:grid-cols-2 gap-3 mb-4">
+        <a href="https://chat.whatsapp.com/IhxnCopKJSy7phOcU3qCCE?s=cl&p=a&ilr=4" target="_blank" rel="noreferrer"
+          className="flex items-center gap-3 p-3 rounded-xl bg-green-500 hover:bg-green-600 text-white transition group">
+          <MessageCircle size={20} className="flex-shrink-0" />
+          <div>
+            <p className="font-bold text-sm">WhatsApp Community</p>
+            <p className="text-xs opacity-80">Join official Hiresnix group</p>
+          </div>
+          <ExternalLink size={13} className="ml-auto opacity-70 group-hover:opacity-100" />
+        </a>
+        <a href="https://www.linkedin.com/company/hiresnix/" target="_blank" rel="noreferrer"
+          className="flex items-center gap-3 p-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white transition group">
+          <Linkedin size={20} className="flex-shrink-0" />
+          <div>
+            <p className="font-bold text-sm">Follow on LinkedIn</p>
+            <p className="text-xs opacity-80">@Hiresnix</p>
+          </div>
+          <ExternalLink size={13} className="ml-auto opacity-70 group-hover:opacity-100" />
+        </a>
+      </div>
+
+      <div className="bg-white dark:bg-gray-800 rounded-xl p-3 border border-amber-200 dark:border-amber-800">
+        <p className="text-xs font-bold text-amber-700 dark:text-amber-400 flex items-center gap-1.5 mb-1">
+          <AlertCircle size={13} /> Important Notice
+        </p>
+        <p className="text-xs text-gray-700 dark:text-gray-300">
+          Students are required to <strong>post their Internship Offer Letter on LinkedIn within 48 hours</strong> of receiving it and <strong>tag Hiresnix</strong> in the post.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ── Exception Contact Section ────────────────────────────────────
+function ExceptionContact() {
+  return (
+    <div className="mt-4 p-4 rounded-xl bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600">
+      <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
+        If additional verification is required (College Verification or Email Verification), please contact us at{' '}
+        <a href="mailto:hr@hiresnix.co.in" className="text-blue-500 font-semibold hover:underline">hr@hiresnix.co.in</a>
+      </p>
+    </div>
+  );
+}
+
+// ── Wrapper for all new sections ─────────────────────────────────
+function InternshipExtendedSections({ enrollment, app, onReload }: { enrollment: any; app: any; onReload: () => void }) {
+  return (
+    <div className="mt-2">
+      <InternshipOverview enrollment={enrollment} app={app} />
+      <InternshipTimeline enrollment={enrollment} />
+      <AssignedProject enrollment={enrollment} />
+      <DailyInternshipLog enrollment={enrollment} />
+      <ProgressTracker enrollment={enrollment} />
+      <CertificatePaymentSection enrollment={enrollment} />
+      <ExceptionContact />
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// ── MAIN COMPONENT (UNCHANGED) ────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
 export function StudentInternships() {
   const [activeTab, setActiveTab] = useState<'internship' | 'logic'>('internship');
 
@@ -415,7 +1030,7 @@ export function StudentInternships() {
   return (
     <div className="space-y-5 max-w-5xl mx-auto">
       <div>
-        <h1 className="text-2xl font-black text-gray-900">Internships</h1>
+        <h1 className="text-2xl font-black text-gray-900 dark:text-gray-100">Internships</h1>
         <p className="text-sm text-gray-500 mt-1">Gain real-world experience with structured internship programs</p>
       </div>
 
@@ -426,7 +1041,7 @@ export function StudentInternships() {
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all border ${
               activeTab === t.id
                 ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-500/20'
-                : 'bg-white text-gray-600 border-gray-200 hover:border-indigo-200 hover:text-indigo-600'
+                : 'bg-white text-gray-600 border-gray-200 hover:border-indigo-200 hover:text-indigo-600 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600'
             }`}>
             {t.label}
             {t.badge && (
