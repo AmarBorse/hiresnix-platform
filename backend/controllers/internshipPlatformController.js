@@ -77,17 +77,28 @@ const applyInternship = asyncHandler(async (req, res) => {
   // ── AUTO-APPROVE & AUTO-ENROLL ──────────────────────────────────
   const today = new Date();
 
-  // Calculate batch start date (1st of current month)
-  const batchStart = new Date(today.getFullYear(), today.getMonth(), 1);
+  // Student can choose start date; default = 1st of current month
+  let batchStart;
+  if (req.body.startDate) {
+    batchStart = new Date(req.body.startDate);
+    if (isNaN(batchStart.getTime())) batchStart = new Date(today.getFullYear(), today.getMonth(), 1);
+  } else {
+    batchStart = new Date(today.getFullYear(), today.getMonth(), 1);
+  }
 
-  // Calculate end date from domain duration (e.g. "10 Weeks" or "3 Months")
-  const durationStr = domain.duration || '8 Weeks';
-  const durationMatch = durationStr.match(/(\d+)/);
-  const durationNum = durationMatch ? parseInt(durationMatch[1]) : 8;
-  const isMonths = /month/i.test(durationStr);
+  // Duration: student chosen (1-6 months) or custom end date, default 6 months
   const endDate = new Date(batchStart);
-  if (isMonths) endDate.setMonth(endDate.getMonth() + durationNum);
-  else endDate.setDate(endDate.getDate() + durationNum * 7);
+  if (req.body.endDate) {
+    const customEnd = new Date(req.body.endDate);
+    if (!isNaN(customEnd.getTime()) && customEnd > batchStart) {
+      endDate.setTime(customEnd.getTime());
+    } else {
+      endDate.setMonth(endDate.getMonth() + 6);
+    }
+  } else {
+    const durationMonths = parseInt(req.body.duration) || 6;
+    endDate.setMonth(endDate.getMonth() + durationMonths);
+  }
 
   // Generate unique internship offer letter ID
   const crypto = require('crypto');

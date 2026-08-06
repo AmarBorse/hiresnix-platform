@@ -23,7 +23,7 @@ function IPlatformPanel() {
   const [loading, setLoading]     = useState(true);
   const [applying, setApplying]   = useState(false);
   const [downloading, setDownloading] = useState<string | null>(null);
-  const [form, setForm] = useState({ phone: '', college: '', year: '4th Year', whyJoin: '', institutionName: '', careerId: '' });
+  const [form, setForm] = useState({ phone: '', college: '', year: '4th Year', whyJoin: '', institutionName: '', careerId: '', startDate: '', duration: '6', endDate: '' });
   const [taskForm, setTaskForm] = useState({ title: '', description: '', url: '', week: 1 });
   const [submittingTask, setSubmittingTask] = useState(false);
   const [showTaskForm, setShowTaskForm] = useState(false);
@@ -92,6 +92,9 @@ function IPlatformPanel() {
         whyJoin: form.whyJoin,
         ...(form.institutionName && { institutionName: form.institutionName }),
         ...(form.careerId && { careerId: form.careerId }),
+        ...(form.startDate && { startDate: form.startDate }),
+        duration: form.duration !== 'custom' ? form.duration : undefined,
+        ...(form.duration === 'custom' && form.endDate && { endDate: form.endDate }),
       };
       if (isInstStudent) {
         await instInternshipClient.post('/iplatform/apply', payload);
@@ -390,6 +393,46 @@ function IPlatformPanel() {
           <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Why do you want to join?</label>
           <textarea required rows={3} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 resize-none"
             placeholder="Tell us about your motivation..." value={form.whyJoin} onChange={e => setForm(p => ({ ...p, whyJoin: e.target.value }))} />
+        </div>
+        <div className="rounded-xl border border-blue-100 bg-blue-50 p-3 space-y-3">
+          <p className="text-xs text-blue-600 font-semibold">📅 Internship Schedule <span className="font-normal text-blue-400">(Optional)</span></p>
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Preferred Start Date</label>
+            <input type="date" min={new Date().toISOString().slice(0,10)}
+              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 bg-white"
+              value={form.startDate} onChange={e => setForm(p => ({ ...p, startDate: e.target.value }))} />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Internship Duration</label>
+            <select className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 bg-white"
+              value={form.duration} onChange={e => setForm(p => ({ ...p, duration: e.target.value }))}>
+              <option value="6">6 Months (Recommended)</option>
+              <option value="1">1 Month</option>
+              <option value="2">2 Months</option>
+              <option value="3">3 Months</option>
+              <option value="4">4 Months</option>
+              <option value="5">5 Months</option>
+              <option value="custom">Custom End Date</option>
+            </select>
+          </div>
+          {form.duration === 'custom' && (
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Custom End Date</label>
+              <input type="date" min={form.startDate || new Date().toISOString().slice(0,10)}
+                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 bg-white"
+                value={form.endDate} onChange={e => setForm(p => ({ ...p, endDate: e.target.value }))} />
+            </div>
+          )}
+          <p className="text-xs text-gray-400">
+            {form.duration === 'custom'
+              ? form.endDate ? `End Date: ${new Date(form.endDate).toLocaleDateString('en-IN', {day:'2-digit', month:'short', year:'numeric'})}` : 'Please select end date'
+              : (() => {
+                  const sd = form.startDate ? new Date(form.startDate) : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+                  const ed = new Date(sd); ed.setMonth(ed.getMonth() + parseInt(form.duration || '6'));
+                  return `End Date: ${ed.toLocaleDateString('en-IN', {day:'2-digit', month:'short', year:'numeric'})}`;
+                })()
+            }
+          </p>
         </div>
         <button type="submit" disabled={applying}
           className="w-full flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 disabled:opacity-60 text-white font-bold py-2.5 rounded-xl text-sm transition">
