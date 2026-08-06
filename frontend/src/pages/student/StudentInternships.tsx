@@ -550,39 +550,499 @@ function IPlatformPanel() {
 // ── NEW: EXTENDED INTERNSHIP SECTIONS ─────────────────────────────
 // ═══════════════════════════════════════════════════════════════════
 
-// Domain → project mapping
+const STUDENT_PROJECTS: Record<string, any> = {
+  'NIK001': { name: "NIKITA PATIL", domain: "full stack development", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "Personal Task Manager App", tech: "React.js, Node.js, MySQL, JWT", desc: "Task CRUD, priority tags, due-date filter, completion toggle, user auth." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "Job Application Tracker", tech: "React.js, Node.js, PostgreSQL, Chart.js, JWT", desc: "Track applications by status, Kanban view, deadline alerts, stats dashboard." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "Multi-Tenant Project Management SaaS", tech: "React.js, Node.js, PostgreSQL, Socket.io, Stripe", desc: "Org/workspace/board/card CRUD, real-time updates, role access, Stripe billing." },
+  ]},
+  'GAY002': { name: "Gayatri Arun Gaikwad", domain: "data analyst", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "Superstore Sales Performance Report", tech: "Python, Pandas, Plotly, Power BI", desc: "Kaggle Superstore data, regional KPIs, top-product bar chart, manager summary PDF." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "Retail Store Footfall Insights", tech: "Python, Pandas, Plotly, Power BI", desc: "Hourly footfall + sales data, peak-hour analysis, conversion rate, staff optimizer." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "Real-Time Sales Command Center", tech: "Python, Pandas, Streamlit, Plotly, SQL", desc: "Live DB connection, auto-refreshing KPI tiles, drill-down by region/rep/product." },
+  ]},
+  'JAY003': { name: "Jayshri Girase", domain: "machine learning", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "Iris Flower Species Classifier", tech: "Python, Scikit-learn, Pandas, Matplotlib", desc: "Logistic Regression on Iris dataset, confusion matrix, species predictor UI." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "Crop Yield Prediction System", tech: "Python, XGBoost, Pandas, Streamlit", desc: "Regression on crop dataset, soil+weather inputs, district-level yield map." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "Real-Time Pose Estimation Trainer", tech: "Python, MediaPipe, TensorFlow, Flask, Socket.io", desc: "Live webcam pose detection, rep counter for exercises, form feedback API." },
+  ]},
+  'ANU004': { name: "anushka ghat", domain: "machine learning", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "Titanic Survival Predictor", tech: "Python, Pandas, Scikit-learn, Streamlit", desc: "Binary classification, feature engineering, ROC curve, Streamlit input form." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "Fake Job Posting Detector", tech: "Python, NLTK, TF-IDF, Scikit-learn, Streamlit", desc: "Binary NLP classifier on EMSCAD dataset, keyword explainability." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "Multimodal Product Review Analyzer", tech: "Python, CLIP HuggingFace, FastAPI, React", desc: "Image + text review inputs, sentiment + quality score, REST API." },
+  ]},
+  'SUY005': { name: "Suyog Ahire", domain: "full stack development", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "Notes & Bookmarks Web App", tech: "React.js, Express, MongoDB, JWT", desc: "Create/edit/delete notes, tag system, URL bookmark saver, search filter." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "Online Quiz Platform", tech: "React.js, Node.js, MongoDB, Socket.io", desc: "Question bank, timed quiz, live leaderboard, auto-grade, result analytics." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "E-Learning Platform with Certificates", tech: "React.js, Node.js, MongoDB, Cloudinary, Stripe", desc: "Course builder, video streaming, quiz engine, progress tracking, PDF cert generator." },
+  ]},
+  'KIR006': { name: "Kiran Suresh Gadekar", domain: "artificial intelligence", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "Keyword-Based FAQ Chatbot", tech: "Python, NLTK, Flask, Bootstrap", desc: "Intent matching on custom FAQ dataset, response retrieval, multi-turn conversation log." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "AI Interview Question Generator", tech: "Python, Gemini API, FastAPI, React", desc: "Upload JD/resume, generate role-specific questions by difficulty, PDF export." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "Multi-Agent Task Automation System", tech: "Python, LangChain Agents, FastAPI, React", desc: "Planner + executor agents, multi-step task decomposition, tool use (search/code/file), audit log." },
+  ]},
+  'ANK007': { name: "Ankita Patil", domain: "artificial intelligence", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "AI Text Summarizer Tool", tech: "Python, HuggingFace Transformers BART, Streamlit", desc: "Paste article \u2192 abstractive summary, length slider, copy button." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "AI Product Description Writer", tech: "Python, Gemini API, FastAPI, React", desc: "Enter product name + features, generate 3 tone-varied descriptions, SEO score." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "AI Video Scene Describer", tech: "Python, CLIP HuggingFace, OpenCV, FastAPI", desc: "Upload video, keyframe extraction, CLIP caption per scene, narrative summary." },
+  ]},
+  'SAM008': { name: "Sameeksha Nerkar", domain: "data analyst", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "HR Headcount & Turnover Dashboard", tech: "Python, Pandas, Seaborn, Matplotlib", desc: "Employee dataset, dept headcount, attrition rate chart, YoY trend." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "Product Profitability Analysis", tech: "Python, Pandas, Plotly, Seaborn", desc: "Revenue \u2013 COGS model, margin by SKU/category, waterfall P&L chart, pricing levers." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "Predictive Churn Cohort Tracker", tech: "Python, Pandas, Scikit-learn, Plotly, Power BI", desc: "Cohort CLV + ML churn risk, early-warning segment filter, retention action log." },
+  ]},
+  'SHR009': { name: "Shruti Borse", domain: "cyber security", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "Network Vulnerability Scanner", tech: "Python, Nmap, Flask, Bootstrap", desc: "Port scanning on local subnet, open-port risk rating, CVE lookup, HTML report." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "Password Strength Analyzer & Generator", tech: "Python, Flask, zxcvbn, React", desc: "Strength scoring, crack-time estimate, secure password generator, breach-check API." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "Web Application Penetration Testing Report", tech: "Python, OWASP ZAP, Burp Suite, Markdown", desc: "Automated scan on demo app, XSS/SQLi/CSRF findings, CVSS scoring, remediation PDF." },
+  ]},
+  'VIS010': { name: "vishakha kailas chaudhari", domain: "front end development", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "Personal Portfolio Website", tech: "React.js, CSS3, EmailJS", desc: "Animated hero, projects grid, skills bar, contact form, dark/light toggle." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "Job Board UI with Filters", tech: "React.js, Tailwind CSS, Context API", desc: "Job card listing, search + multi-filter, bookmark, pagination, skeleton loader." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "Real-Time Collaborative Notes App", tech: "React.js, Socket.io, Tailwind, Quill.js", desc: "Multi-user note editing, live cursor, undo/redo, room links, export PDF." },
+  ]},
+  'NEH011': { name: "Neha Ravindra Patil", domain: "data science", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "COVID-19 India State Analysis", tech: "Python, Pandas, Plotly, Geopandas", desc: "State-level case/death/recovery data, choropleth, peak identification, wave analysis." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "Indian Stock Market EDA & Forecast", tech: "Python, Pandas, yfinance, Prophet, Plotly", desc: "NSE multi-stock OHLCV, 30-day forecast, sector performance comparison." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "Social Mobility & Income Inequality Study", tech: "Python, Pandas, Plotly, Geopandas, Scikit-learn", desc: "World Bank + OECD data, Gini index trend, mobility predictor, interactive report." },
+  ]},
+  'ADI012': { name: "Aditi Rajesh Sawale", domain: "machine learning", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "Wine Quality Classifier", tech: "Python, Scikit-learn, Pandas, Seaborn", desc: "Multi-class RF on UCI Wine, accuracy comparison, feature importance chart." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "Twitter Sentiment Dashboard", tech: "Python, Tweepy, TextBlob, Plotly, Streamlit", desc: "Real-time tweet sentiment, trending keyword cloud, sentiment timeline." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "Autonomous Stock Trading Bot", tech: "Python, yfinance, RL Stable-Baselines3, Streamlit", desc: "PPO agent on historical data, portfolio simulation, cumulative return chart." },
+  ]},
+  'GAY013': { name: "Gayatri Kailas Dhurkunde", domain: "machine learning", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "Diabetes Risk Predictor", tech: "Python, Scikit-learn, Pandas, Streamlit", desc: "Logistic Regression on Pima dataset, patient form, recall-optimized threshold." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "House Rent Price Predictor", tech: "Python, XGBoost, Pandas, Streamlit", desc: "Feature engineering on rental dataset, neighborhood filter, rent estimator." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "AI-Powered Resume Parser & Ranker", tech: "Python, spaCy, BERT, FastAPI, React", desc: "Batch resume upload, JD matching, ranked shortlist, skills gap PDF report." },
+  ]},
+  'YAS014': { name: "Yashwi Vijay wagh", domain: "data science", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "World Population Growth Analysis", tech: "Python, Pandas, Plotly, Seaborn", desc: "UN population data, country growth rate chart, density map, 2050 projection line." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "Crime Pattern Analysis Dashboard", tech: "Python, Pandas, Folium, Plotly, Streamlit", desc: "City crime dataset, type/time/location EDA, monthly trend, hotspot map." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "Smart City Sensor Data Analysis", tech: "Python, Pandas, Plotly, Folium, Prophet", desc: "IoT sensor dataset (air/noise/traffic), anomaly detection, zone comparison, forecast." },
+  ]},
+  'ANJ015': { name: "Anjali Amrutkar", domain: "data science", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "Titanic Survival EDA", tech: "Python, Pandas, Seaborn, Matplotlib", desc: "Classic Titanic dataset, passenger survival factors, age/class/gender breakdown." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "Climate Change & Extreme Events EDA", tech: "Python, Pandas, Plotly, Geopandas", desc: "NOAA/NASA dataset, temperature anomaly, extreme events correlation, 2040 projection." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "NLP-Powered Financial Report Analyzer", tech: "Python, spaCy, Gensim, Plotly, Streamlit", desc: "Scrape annual report PDFs, topic extraction, sentiment trend, KPI comparison." },
+  ]},
+  'ANJ016': { name: "Anjali Premsing Girase", domain: "data science", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "Indian Premier League EDA", tech: "Python, Pandas, Plotly, Streamlit", desc: "IPL ball-by-ball data, player strike rate, team win %, venue run-rate chart." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "Healthcare Cost Driver Analysis", tech: "Python, Pandas, Plotly, Scikit-learn", desc: "Insurance + hospital cost data, driver regression, cost by diagnosis dashboard." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "Geospatial Urban Sprawl Study", tech: "Python, Geopandas, OSMnx, Folium, Plotly", desc: "Satellite-derived urban boundary data, expansion rate, green cover loss, 3-city compare." },
+  ]},
+  'MAN017': { name: "Mandlik Sairaj Sunil", domain: "machine learning", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "Boston Housing Price Estimator", tech: "Python, Scikit-learn, Pandas, Matplotlib", desc: "Linear/Ridge regression, RMSE/R\u00b2, residual plot, feature coefficient chart." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "Product Review Sentiment Classifier", tech: "Python, DistilBERT, Scikit-learn, Flask", desc: "Fine-tune DistilBERT on product reviews, star-rating predictor, live demo." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "Medical Report Summarizer", tech: "Python, T5 HuggingFace, LangChain, FastAPI", desc: "Upload clinical report PDF, abstractive summary, key findings extraction." },
+  ]},
+  'GAY018': { name: "Gayatri Chopade", domain: "data analyst", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "E-Commerce Return Rate Analyzer", tech: "Python, Pandas, Plotly, Streamlit", desc: "Returns dataset, reason categorization, SKU-level return rate, seller report." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "Customer Cohort Retention Dashboard", tech: "Python, Pandas, Plotly, Streamlit", desc: "Monthly cohort table, retention heatmap, churn inflection finder, segment filter." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "Multi-Source Data Pipeline Dashboard", tech: "Python, Pandas, SQLAlchemy, Plotly, Airflow", desc: "ETL from 3 sources (CSV, API, DB), unified dashboard, scheduled refresh." },
+  ]},
+  'DIP019': { name: "Dipak Chaudhari", domain: "artificial intelligence", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "AI Grammar Correction Assistant", tech: "Python, LanguageTool API, Flask, React", desc: "Text input, error highlighting, corrected output, confidence color-code." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "AI-Powered Bug Fixer", tech: "Python, Gemini API, FastAPI, React", desc: "Paste buggy code, AI identifies errors, suggests fixed code, diff viewer." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "Autonomous Data Analysis Agent", tech: "Python, LangChain, Pandas, Streamlit", desc: "Upload CSV, agent auto-detects columns, runs EDA, generates insights report without prompting." },
+  ]},
+  'KOM020': { name: "Komal Gopal Varude", domain: "data science", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "Netflix Movies & Shows EDA", tech: "Python, Pandas, Seaborn, WordCloud", desc: "Content catalog data, genre distribution, country treemap, release-year trend." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "Startup Ecosystem India Report", tech: "Python, Pandas, Plotly, NetworkX, Streamlit", desc: "Funding + sector data, investor network graph, city startup map, YoY trend." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "Multi-Year Education Outcome Study", tech: "Python, Pandas, Plotly, Scikit-learn, Geopandas", desc: "DISE/ASER data, learning outcome regression, district map, policy scenario." },
+  ]},
+  'SNE021': { name: "Mankar Snehal Venunath", domain: "machine learning", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "Movie Rating Predictor", tech: "Python, Pandas, Scikit-learn, Streamlit", desc: "Regression on IMDB features, genre/runtime/budget inputs, prediction confidence." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "Stock Market Volatility Predictor", tech: "Python, yfinance, Scikit-learn, Plotly", desc: "GARCH features, RF volatility classifier, multi-stock comparison chart." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "Sign Language to Text Converter", tech: "Python, MediaPipe, LSTM, TensorFlow, Gradio", desc: "Real-time hand gesture capture, sequence-to-text decoder, accuracy chart." },
+  ]},
+  'RIT022': { name: "Ritesh Parmeshwar Panpatil", domain: "artificial intelligence", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "AI Joke & Story Generator", tech: "Python, Gemini API, Streamlit", desc: "Genre/mood selector, AI-generated jokes or short stories, regenerate button, share card." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "Conversational Language Tutor", tech: "Python, Gemini API, Flask, Bootstrap", desc: "Choose language + level, AI conducts lesson, grammar correction, vocab quiz." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "AI Legal Contract Analyzer", tech: "Python, GPT-4o/Gemini, LangChain, Streamlit", desc: "Upload contract PDF, clause extraction, risk flagging, plain-English summary, negotiation tips." },
+  ]},
+  'TAN023': { name: "Tanuja Kinge", domain: "machine learning", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "Spam SMS Detector", tech: "Python, NLTK, Naive Bayes, Streamlit", desc: "TF-IDF on SMS Spam Collection, ROC curve, live message tester." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "Electricity Consumption Predictor", tech: "Python, Prophet, Pandas, Streamlit", desc: "Household power dataset, daily consumption forecast, anomaly flagging." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "3D Object Reconstruction from 2D", tech: "Python, OpenCV, Open3D, Flask", desc: "Multi-angle image upload, point-cloud reconstruction, 3D viewer, depth map export." },
+  ]},
+  'SHA024': { name: "Shraddha Pradeep Patil", domain: "machine learning", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "Bank Customer Churn Classifier", tech: "Python, Scikit-learn, Pandas, Seaborn", desc: "LR + DT on banking dataset, feature heatmap, churn probability output." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "Road Traffic Volume Predictor", tech: "Python, Scikit-learn, Pandas, Folium", desc: "Traffic dataset, time + weather features, city intersection heatmap." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "Sarcasm Detection in Social Media", tech: "Python, RoBERTa HuggingFace, FastAPI, React", desc: "Fine-tune on Reddit sarcasm dataset, confidence score, batch CSV API." },
+  ]},
+  'UDI025': { name: "Uditansh Mishra", domain: "artificial intelligence", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "AI Quote & Motivation Generator", tech: "Python, Gemini API, Flask, Bootstrap", desc: "Topic input, AI generates 5 quotes, mood filter, save-to-favourites, copy button." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "AI Document Classifier", tech: "Python, spaCy, BERT, FastAPI", desc: "Multi-class document type tagger (invoice/contract/report), confidence, batch CSV API." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "AI-Powered Mock Interview Coach", tech: "Python, Whisper ASR, Gemini API, React, Flask", desc: "Voice-based interview, speech-to-text, AI follow-up questions, answer scoring, report." },
+  ]},
+  'GAY026': { name: "Gayatri Kapadnis", domain: "data science", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "Global Unemployment Trends", tech: "Python, Pandas, Plotly, Geopandas", desc: "World Bank data, country unemployment choropleth, age/gender breakdown, 10-year trend." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "Airbnb Price Determinant Study", tech: "Python, Pandas, Plotly, Scikit-learn", desc: "Listing data, price regression, amenity impact, neighbourhood map." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "Predictive Population Health Dashboard", tech: "Python, Pandas, Scikit-learn, Prophet, Plotly", desc: "District health data, disease burden forecast, risk stratification, intervention planner." },
+  ]},
+  'AVA027': { name: "Avanti kailas zore", domain: "artificial intelligence", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "AI Recipe Generator from Ingredients", tech: "Python, Gemini API, Streamlit", desc: "Enter available ingredients, AI suggests 3 recipes with steps, dietary filter toggle." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "Agentic Research Assistant", tech: "Python, LangChain, DuckDuckGo Tool, Streamlit", desc: "Input research topic, agent searches + summarizes web sources, cited report." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "RAG Chatbot on Custom Knowledge Base", tech: "Python, LangChain, ChromaDB, Gemini API, Streamlit", desc: "Multi-PDF ingestion, vector embeddings, semantic search, source citation, multi-turn." },
+  ]},
+  'ROH028': { name: "Rohit Birare", domain: "artificial intelligence", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "AI Cover Letter Writer", tech: "Python, Gemini API, FastAPI, React", desc: "Upload resume + JD, AI generates tailored cover letter, tone selector, download as PDF." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "AI Social Media Post Generator", tech: "Python, Gemini API, FastAPI, React", desc: "Input topic + platform, generate 5 post variations, hashtag suggester, tone picker." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "AI Autonomous Web Scraper Agent", tech: "Python, LangChain Agents, Playwright, FastAPI", desc: "LLM-driven agent navigates sites, extracts structured data, CSV export, REST trigger." },
+  ]},
+  'BOH029': { name: "Bohri Mohammad", domain: "data analyst", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "Monthly Revenue Trend Analyzer", tech: "Python, Pandas, Plotly, Excel", desc: "Sales transaction data, MoM revenue chart, growth rate table, forecast line." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "Fraud Incident Analysis Report", tech: "Python, Pandas, Plotly, Power BI", desc: "Banking transaction log, fraud pattern by time/location, loss quantification dashboard." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "Supply Chain Analytics Command Center", tech: "Python, Pandas, Plotly, NetworkX, Streamlit", desc: "End-to-end supply chain data, bottleneck detection, vendor performance scoring." },
+  ]},
+  'APU030': { name: "Apurva Niranjankumar Bansod", domain: "data analyst", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "Customer Satisfaction Survey Analyzer", tech: "Python, Pandas, Matplotlib, WordCloud", desc: "NPS survey data, score distribution, open-comment word cloud, segment heatmap." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "Logistics Delivery Performance Tracker", tech: "Python, Pandas, Folium, Plotly", desc: "Shipment dataset, on-time vs delayed %, carrier comparison, city delay heatmap." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "Customer 360 Analytics Platform", tech: "Python, Pandas, Scikit-learn, Plotly, Streamlit", desc: "Multi-source customer data merge, segment profiling, propensity scoring dashboard." },
+  ]},
+  'NID031': { name: "Nidhi Gopal Patil", domain: "artificial intelligence", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "AI Flashcard Generator", tech: "Python, Gemini API, Streamlit", desc: "Paste study topic text, AI creates Q&A flashcards, quiz mode, export to PDF." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "AI Meeting Minutes Generator", tech: "Python, Whisper ASR, Gemini API, Streamlit", desc: "Upload audio/transcript, AI extracts action items, decisions, summary, export DOCX." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "AI Personal Finance Advisor", tech: "Python, Gemini API, LangChain, Streamlit", desc: "Upload bank statement PDF, transaction categorization, savings suggestions, Q&A on spending." },
+  ]},
+  'MAN032': { name: "Mansi Jadhav", domain: "data science", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "Amazon Top-50 Bestsellers Analysis", tech: "Python, Pandas, Seaborn, Plotly", desc: "Bestsellers dataset, genre/price/rating scatter, fiction vs non-fiction KPIs." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "Football Player Performance EDA", tech: "Python, Pandas, Plotly, Seaborn", desc: "FBRef dataset, top scorer/passer/dribbler charts, radar comparison, club analysis." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "Open Government Data Story Dashboard", tech: "Python, Pandas, Plotly, Geopandas, Streamlit", desc: "Central/state open data portal, 5-year trend story, annotation layer, shareable embed." },
+  ]},
+  'DIP033': { name: "Dipali Manohar Badgujar", domain: "artificial intelligence", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "AI News Headline Summarizer", tech: "Python, Gemini API, Flask, Bootstrap", desc: "Enter news URL, AI fetches + summarizes in 3 bullet points, share button." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "AI Personalized Study Planner", tech: "Python, Gemini API, FastAPI, React", desc: "Input subjects + exam date, AI generates day-wise study plan, progress tracker, reminder setup." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "Multimodal Image Caption Generator", tech: "Python, BLIP-2 HuggingFace, FastAPI, React", desc: "Upload image \u2192 generate descriptive caption, style selector (formal/casual/SEO), batch API." },
+  ]},
+  'NIK034': { name: "Nikita Prakash Salunke", domain: "ui/ux design", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "E-Commerce Mobile App Redesign", tech: "Figma, FigJam, Maze", desc: "User research (5 interviews), affinity map, wireframes, hi-fi prototype, usability test report." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "Healthcare Patient Portal UX", tech: "Figma, Maze, Miro", desc: "Personas, patient journey map, accessibility audit, interactive prototype, A/B test plan." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "AI Product Dashboard Design System", tech: "Figma, Tokens Studio, Storybook (handoff)", desc: "Design tokens, component library (50+ atoms), dark/light mode, dev handoff specs, motion guide." },
+  ]},
+  'MOH035': { name: "Mohit Karankal", domain: "full stack development", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "Student Result Portal", tech: "React.js, Node.js, PostgreSQL, JWT", desc: "Admin uploads results, student login views own grades, semester GPA chart." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "Blog Publishing Platform", tech: "Next.js, Node.js, MongoDB, Cloudinary, MDX", desc: "Rich text editor, image upload, tag system, comment section, author dashboard." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "Healthcare Appointment System", tech: "Next.js, Node.js, PostgreSQL, Twilio, Google Calendar API", desc: "Doctor search, availability calendar, SMS reminder, prescription notes, admin panel." },
+  ]},
+  'ASH036': { name: "Ashwini Patil", domain: "full stack development", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "Contact Directory App", tech: "React.js, Node.js, MySQL, JWT", desc: "Add/edit/delete contacts, search, group filter, import/export CSV, profile photo upload." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "Budget Tracking Web App", tech: "React.js, Node.js, PostgreSQL, Chart.js", desc: "Income/expense CRUD, category budget, monthly summary chart, CSV export." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "Freelance Marketplace Platform", tech: "Next.js, Node.js, MongoDB, Stripe Connect, Socket.io", desc: "Gig listing/bidding, milestone payments, client-freelancer chat, review system." },
+  ]},
+  'AAK037': { name: "Aakash Pradeep Patil", domain: "full stack development", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "Simple Blog Platform", tech: "React.js, Express, MongoDB, JWT", desc: "Write/publish/delete posts, categories, comment section, author dashboard, rich text editor." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "Service Booking Portal", tech: "Next.js, Node.js, PostgreSQL, Nodemailer", desc: "Service listing, slot selection, email confirmation, booking history, admin panel." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "Real-Time Online Auction Platform", tech: "React.js, Node.js, Socket.io, PostgreSQL, Stripe", desc: "Live bidding, countdown timers, bid history, Stripe escrow, push notification." },
+  ]},
+  'KRU038': { name: "Krushnai Chandrashekhar Borse", domain: "front end development", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "Currency Converter App", tech: "React.js, ExchangeRate API, CSS3", desc: "Real-time currency conversion, 10-currency selector, rate history mini chart." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "Pomodoro Productivity Timer", tech: "React.js, Tailwind, Framer Motion", desc: "Work/break cycle timer, session log, progress ring animation, sound alert, dark mode." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "3D Interactive Portfolio", tech: "React.js, Three.js, Tailwind, GSAP", desc: "3D scene hero, scroll-triggered animations, interactive project cards, WebGL background." },
+  ]},
+  'ISH039': { name: "Ishita Pate", domain: "front end development", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "BMI Calculator with Chart", tech: "React.js, Chart.js, Tailwind CSS", desc: "Height/weight inputs, BMI result, healthy-range bar chart, category badge." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "Crypto Price Tracker Dashboard", tech: "React.js, CoinGecko API, Chart.js, Tailwind", desc: "Live crypto prices, 7-day sparkline, watchlist, gainers/losers cards." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "Travel Itinerary Planner", tech: "React.js, Mapbox GL JS, Tailwind, LocalStorage", desc: "Destination search, day-wise drag-drop planner, map pin plotting, PDF itinerary export." },
+  ]},
+  'DEV040': { name: "Devang Bhavesh Khairnar", domain: "data science", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "Google Play Store App Analysis", tech: "Python, Pandas, Plotly, Seaborn", desc: "App metadata, category distribution, rating histogram, installs vs reviews scatter." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "Global Inflation Impact Study", tech: "Python, Pandas, Plotly, Geopandas", desc: "IMF CPI data, country inflation choropleth, commodity correlation, policy comparison." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "Sports Analytics Deep Dive Platform", tech: "Python, Pandas, Plotly, Scikit-learn, Streamlit", desc: "Multi-season player + match data, performance clustering, scouting score, radar charts." },
+  ]},
+  'SHU041': { name: "Shubham Wagh", domain: "data science", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "Museum Visitors Data Analysis", tech: "Python, Pandas, Matplotlib, Plotly", desc: "Attendance data by year/exhibit, peak period finder, visitor growth chart." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "Road Safety in India Analysis", tech: "Python, Pandas, Folium, Plotly", desc: "MoRTH accident data, state-level fatality map, cause breakdown, seasonal trend." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "Food Security & Hunger Index EDA", tech: "Python, Pandas, Plotly, Geopandas, Scikit-learn", desc: "GHI dataset, calorie availability, drought correlation, 2030 risk forecast map." },
+  ]},
+  'PRI042': { name: "Priyanka Patil", domain: "data science", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "Zomato Pune Restaurant EDA", tech: "Python, Pandas, Seaborn, Folium", desc: "Local restaurant data, locality cuisine map, cost vs rating scatter, top-rated list." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "E-Commerce Funnel Drop-off Study", tech: "Python, Pandas, Plotly, Streamlit", desc: "Clickstream + purchase data, funnel conversion, drop-off root-cause, A/B segment." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "Trade & Export Pattern Analyzer", tech: "Python, Pandas, Plotly, NetworkX, Geopandas", desc: "UN Comtrade data, trade flow Sankey, commodity dependency, partner diversification score." },
+  ]},
+  'ADI043': { name: "Aditya Pagare", domain: "data analyst", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "Website Traffic Analytics Dashboard", tech: "Python, Pandas, Plotly, Streamlit", desc: "GA-export style dataset, sessions/bounce/CTR KPIs, traffic source pie, time-series." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "Ad Spend Attribution Analyzer", tech: "Python, Pandas, Plotly, Streamlit", desc: "Multi-touch attribution model on ad data, channel ROAS, budget reallocation table." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "HR Analytics & Workforce Planning Tool", tech: "Python, Pandas, Plotly, Scikit-learn, Power BI", desc: "Headcount forecast, attrition ML model, hiring pipeline tracker, cost projection." },
+  ]},
+  'SAK044': { name: "Sakshi Shimpi", domain: "data science", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "WHO Global Health Statistics EDA", tech: "Python, Pandas, Plotly, Geopandas", desc: "Life expectancy, mortality, disease burden data, country ranking chart, decade trend." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "Electric Vehicle Adoption Analysis", tech: "Python, Pandas, Plotly, Geopandas", desc: "EV registration data, charging station map, brand growth trend, range comparison." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "Environmental Pollution Trends Study", tech: "Python, Pandas, Plotly, Folium, Prophet", desc: "CPCB AQI + water quality data, pollution hotspot map, season decomposition, 2027 forecast." },
+  ]},
+  'RUS045': { name: "Rushekesh Dusane", domain: "cloud computing", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "Containerized Microservices on AWS", tech: "AWS ECS, Docker, ECR, ALB, Terraform, CloudWatch", desc: "3 microservices (auth/product/order), Docker build+push, ECS Fargate deploy, ALB routing, auto-scaling, CloudWatch logs." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "Multi-Region Disaster Recovery Setup", tech: "AWS EC2, RDS, S3, Route53, CloudFormation", desc: "Primary + failover region, RDS read replica, S3 cross-region replication, Route53 health-check failover, RTO/RPO report." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "Serverless Event-Driven Architecture", tech: "AWS Lambda, EventBridge, SQS, DynamoDB, API Gateway, CDK", desc: "Event bus triggers Lambdas, SQS fanout, DynamoDB CRUD, CDK IaC, end-to-end integration test." },
+  ]},
+  'DHA046': { name: "Dhanshri Prashant Chaudhari", domain: "machine learning", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "Bike Sharing Demand Forecaster", tech: "Python, Scikit-learn, Pandas, Plotly", desc: "Time-feature regression on Kaggle Bike dataset, hourly demand chart." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "E-Learning Course Recommender", tech: "Python, Surprise, Pandas, Streamlit", desc: "Collaborative filtering on Coursera-style data, personalized course list." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "Driver Drowsiness Detection System", tech: "Python, OpenCV, Dlib, Flask, Socket.io", desc: "Eye-aspect-ratio fatigue detector, real-time webcam alert, event log dashboard." },
+  ]},
+  'TAN047': { name: "Tanvi Patil", domain: "full stack development", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "Expense Split App", tech: "React.js, Node.js, PostgreSQL, JWT", desc: "Group expense entry, smart split calculation, settlement tracker, email summary." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "College Event Management System", tech: "React.js, Node.js, MySQL, QR Code, Nodemailer", desc: "Event creation, student registration, QR pass, attendance scan, organizer dashboard." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "Corporate HR & Payroll System", tech: "React.js, Node.js, PostgreSQL, PDF-lib, JWT", desc: "Employee records, attendance, leave management, payslip PDF generator, HR admin." },
+  ]},
+  'AIS048': { name: "Aishwarya Prashant Sisodiya", domain: "full stack development", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "Poll & Voting App", tech: "React.js, Node.js, MongoDB, Socket.io", desc: "Create polls, real-time vote count, result chart, share link, expiry timer." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "Fitness Goal Tracker App", tech: "React.js, Node.js, PostgreSQL, Chart.js", desc: "Workout log, goal setter, streak calendar, progress chart, notification reminder." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "Supply Chain Tracking Platform", tech: "Next.js, Node.js, MongoDB, Mapbox, QR Code", desc: "Shipment creation, QR scan checkpoints, live map route, ETA prediction, stakeholder portal." },
+  ]},
+  'HAR049': { name: "Harshada Jagdish More", domain: "data science", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "Kaggle Survey Data Science Trends", tech: "Python, Pandas, Plotly, Seaborn", desc: "Annual Kaggle survey data, tool popularity, salary by country, experience distribution." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "Mental Health & Workplace Survey EDA", tech: "Python, Pandas, Plotly, Seaborn", desc: "OSMI survey data, industry breakdown, treatment-seeking rate, remote work impact." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "Demographic Dividend Analysis", tech: "Python, Pandas, Plotly, Geopandas, Statsmodels", desc: "Census data, age pyramid animation, dependency ratio, workforce projection." },
+  ]},
+  'OMW050': { name: "Om Jalindar Walke", domain: "full stack development", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "Recipe Book Web App", tech: "React.js, Node.js, MySQL, Cloudinary", desc: "Add/edit recipes, ingredient list, step-by-step view, image upload, search by ingredient." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "Online Polling & Survey Platform", tech: "React.js, Node.js, MongoDB, Chart.js", desc: "Create surveys, multi-type questions, real-time results, export to CSV, share link." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "Crowdfunding Platform", tech: "Next.js, Node.js, MongoDB, Stripe, Socket.io", desc: "Campaign creation, reward tiers, Stripe pledge, live funding meter, backer notifications." },
+  ]},
+  'MAD051': { name: "MADHURA KULKARNI", domain: "software testing (qa)", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "Manual Test Plan for E-Commerce Site", tech: "Excel/Notion, Jira, Zephyr", desc: "Test scenarios for cart/checkout/auth, test cases, defect log, traceability matrix, execution report." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "Automated UI Testing with Selenium", tech: "Python, Selenium, Pytest, Allure", desc: "Page Object Model, 30 test cases for web app, CI run on GitHub Actions, Allure report." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "API Testing & Performance Dashboard", tech: "Postman, Newman, k6, Grafana", desc: "REST API collection (50 endpoints), schema validation, k6 load test (500 VU), Grafana metrics board." },
+  ]},
+  'PRA052': { name: "Prachi Anil Mahajan", domain: "machine learning", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "Breast Cancer Diagnosis Classifier", tech: "Python, Scikit-learn, Pandas, Streamlit", desc: "SVM on Wisconsin dataset, SHAP summary, diagnosis probability output." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "Resume Skill Gap Analyzer", tech: "Python, spaCy, Scikit-learn, Streamlit", desc: "NER on resume text, JD comparison, missing skill radar chart." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "Multilingual Sentiment Analyzer", tech: "Python, mBERT HuggingFace, FastAPI, React", desc: "5-language sentiment classification, language auto-detect, confidence dashboard." },
+  ]},
+  'HAR053': { name: "Harshada Jayprakash Khairnar", domain: "machine learning", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "Heart Attack Risk Screener", tech: "Python, Scikit-learn, Pandas, Matplotlib", desc: "LR on Cleveland dataset, ROC-AUC, patient input widget." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "Grocery Demand Forecaster", tech: "Python, Prophet, Pandas, Plotly", desc: "Product-level time-series on Kaggle grocery data, 30-day demand forecast." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "AI-Powered Code Auto-Completer", tech: "Python, GPT-2 Fine-tuned, FastAPI, React", desc: "Train on GitHub code corpus, token-level prediction, inline IDE widget." },
+  ]},
+  'POO054': { name: "Pooja Aher", domain: "data analyst", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "Marketing Campaign Performance Report", tech: "Python, Pandas, Seaborn, Plotly", desc: "Multi-channel campaign data, ROI comparison, conversion funnel, A/B result table." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "Employee Productivity Score Card", tech: "Python, Pandas, Plotly, Excel", desc: "Task completion + attendance data, individual score, dept ranking, KPI drilldown." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "Executive KPI Scorecard Builder", tech: "Python, Pandas, Plotly, ReportLab, Streamlit", desc: "Auto-generate PDF KPI scorecards from uploaded data, drill-down filters, delta indicators." },
+  ]},
+  'SAR055': { name: "Sarthak Mahesh Sonje", domain: "data analyst", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "Inventory Turnover Analysis", tech: "Python, Pandas, Plotly, Excel", desc: "Stock + sales data, days-on-hand metric, slow-mover alert, category comparison." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "Pricing Competitiveness Report", tech: "Python, Pandas, Seaborn, Plotly", desc: "Scraped competitor price data, price index by category, under/over-priced flag." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "Omnichannel Sales Attribution Dashboard", tech: "Python, Pandas, Plotly, Scikit-learn, Streamlit", desc: "Multi-channel order data, attribution modelling, revenue contribution chart, ROI optimizer." },
+  ]},
+  'PRA056': { name: "Pranali Patil", domain: "machine learning", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "Student Grade Predictor", tech: "Python, Scikit-learn, Pandas, Streamlit", desc: "Multiple regression on student features, grade range output, study-hours analyzer." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "Water Potability Classifier", tech: "Python, XGBoost, SHAP, Streamlit", desc: "Multi-feature water quality dataset, potability score, parameter importance." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "Generative Adversarial Image Synthesizer", tech: "Python, TensorFlow GAN, Flask, React", desc: "Train DCGAN on CelebA subset, latent space slider, image grid gallery." },
+  ]},
+  'PRT057': { name: "pratik agrawal", domain: "data science", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "Stack Overflow Developer Survey EDA", tech: "Python, Pandas, Plotly, Seaborn", desc: "Developer survey data, language popularity, remote work trend, salary distribution." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "EdTech Platform Engagement EDA", tech: "Python, Pandas, Plotly, Seaborn", desc: "MOOC engagement dataset, course completion rate, dropout pattern, learner segment." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "Disaster Risk & Resilience Dashboard", tech: "Python, Pandas, Plotly, Folium, Scikit-learn", desc: "EM-DAT disaster data, economic loss regression, country resilience score, risk map." },
+  ]},
+  'SID058': { name: "Siddhi", domain: "data science", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "Indian Railways Punctuality Study", tech: "Python, Pandas, Plotly, Folium", desc: "Train delay dataset, route-wise OTP analysis, busiest station map, seasonal trend." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "GST Revenue Collection Analysis", tech: "Python, Pandas, Plotly, Geopandas", desc: "State-wise GST collection data, sector contribution, compliance rate trend, monthly pattern." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "Healthcare Infrastructure Gap Study", tech: "Python, Pandas, Plotly, Geopandas, Scikit-learn", desc: "HMIS facility data, doctor-patient ratio map, underserved district finder, need score." },
+  ]},
+  'KIR059': { name: "Kirti Patil", domain: "data analyst", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "Attendance & Punctuality Tracker", tech: "Python, Pandas, Matplotlib, Excel", desc: "Employee log data, late-arrival rate, dept comparison chart, monthly heatmap." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "Budget vs Actual Variance Dashboard", tech: "Python, Pandas, Plotly, Power BI", desc: "Finance dataset, dept-wise variance, overspend flag, waterfall variance chart." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "Demand Forecasting & Inventory Optimizer", tech: "Python, Prophet, Pandas, Plotly, Streamlit", desc: "Product-level demand forecast, reorder point calculator, overstock/understock alert." },
+  ]},
+  'HRS060': { name: "Harshal Pandhare", domain: "cloud computing", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "Static Site Hosting with CDN on AWS", tech: "AWS S3, CloudFront, Route53, ACM, Terraform", desc: "Deploy static React app to S3, CloudFront distribution, custom domain via Route53, SSL cert, cache invalidation." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "Cloud Cost Optimization Dashboard", tech: "AWS Cost Explorer API, Python, Grafana, Terraform", desc: "Fetch billing data, visualize spend by service/tag, anomaly alert, right-sizing recommendation report." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "Full CI/CD Pipeline with Kubernetes", tech: "GitHub Actions, Docker, Amazon EKS, Helm, Prometheus, Grafana", desc: "Full CI pipeline, rolling deployments, Helm charts, Grafana monitoring dashboard, alert rules." },
+  ]},
+  'HRB061': { name: "Harshal Kishor Bhaisare", domain: "machine learning", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "Car Price Estimator", tech: "Python, Scikit-learn, Pandas, Plotly", desc: "Regression on car dataset, mileage/brand/year inputs, residual analysis." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "Earthquake Risk Zone Mapper", tech: "Python, Scikit-learn, Pandas, Folium", desc: "USGS seismic data, magnitude regression, risk choropleth, alert setter." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "Vehicle License Plate OCR System", tech: "Python, YOLOv8, PaddleOCR, Flask", desc: "Detect + read plates from images/video, confidence score, CSV export." },
+  ]},
+  'SAK062': { name: "Sakshi Sandipan Vyavhare", domain: "data science", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "Swiggy/Zomato Delivery Time EDA", tech: "Python, Pandas, Seaborn, Plotly", desc: "Food delivery dataset, avg delivery time by area, weather impact, partner performance." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "E-Waste Generation & Recycling EDA", tech: "Python, Pandas, Plotly, Geopandas", desc: "Global e-waste dataset, country production rate, recycling gap, 2030 projection." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "Agricultural Market Price Analyzer", tech: "Python, Pandas, Prophet, Plotly, Streamlit", desc: "AGMARKNET mandi price data, commodity price forecast, seasonal pattern, state comparison." },
+  ]},
+  'PAL063': { name: "Palak Ramchandra Pawar", domain: "data science", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "Air Quality Index India EDA", tech: "Python, Pandas, Plotly, Folium", desc: "CPCB AQI city dataset, pollutant breakdown, season comparison, worst city ranking." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "Indian Tourism & Travel Trends EDA", tech: "Python, Pandas, Plotly, Folium", desc: "Domestic/international tourist data, top destination map, seasonal pattern, revenue analysis." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "Women Workforce Participation Study", tech: "Python, Pandas, Plotly, Geopandas, Seaborn", desc: "ILO + Census data, sector-wise participation, wage gap analysis, decade trend map." },
+  ]},
+  'DHA064': { name: "Dhanshri Prakash Chavhan", domain: "front end development", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "Age Calculator App", tech: "React.js, Tailwind CSS", desc: "DOB input, exact age in years/months/days, next birthday countdown, zodiac sign display." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "Trivia Quiz Game", tech: "React.js, Open Trivia DB API, Framer Motion, Tailwind", desc: "Category/difficulty picker, timed questions, score animation, share card." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "Music Player with Visualizer", tech: "React.js, Web Audio API, Canvas, CSS3", desc: "Upload MP3, frequency bar visualizer, waveform display, playlist, equalizer, keyboard controls." },
+  ]},
+  'PRT065': { name: "Pratiksha Tarange", domain: "data science", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "Bollywood Box Office EDA", tech: "Python, Pandas, Seaborn, Plotly", desc: "2000-2024 movie data, genre revenue trend, actor/director impact, OTT vs theatre compare." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "Banking NPA & Loan Default EDA", tech: "Python, Pandas, Plotly, Seaborn", desc: "RBI/banking NPA dataset, sector-wise default rate, trend analysis, recovery rate compare." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "Public Transport Efficiency Dashboard", tech: "Python, Pandas, Plotly, Folium, Scikit-learn", desc: "GTFS transit data, route coverage, ridership forecast, underserved zone identifier." },
+  ]},
+  'SAN066': { name: "Saniya Sudharma Patil", domain: "full stack development", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "Complaint Management Portal", tech: "React.js, Node.js, PostgreSQL, Nodemailer", desc: "Submit complaint, status tracking, admin resolve panel, email notification, report export." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "Student Attendance Management System", tech: "React.js, Node.js, MySQL, Chart.js, JWT", desc: "Teacher marks attendance, student view, monthly report, absentee alert email." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "Online Examination Portal", tech: "React.js, Node.js, PostgreSQL, Socket.io", desc: "Question bank, timed exam, auto-grading, plagiarism detection, result analytics." },
+  ]},
+  'PRT067': { name: "Pratik Magar", domain: "data science", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "Paytm/UPI Transaction Trend EDA", tech: "Python, Pandas, Plotly, Seaborn", desc: "Digital payment trend data, transaction volume growth, category split, city-wise adoption." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "Crop Minimum Support Price Analysis", tech: "Python, Pandas, Plotly, Geopandas", desc: "MSP historical data, commodity price trend, procurement vs production gap, state map." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "Digital India Adoption Tracker", tech: "Python, Pandas, Plotly, Geopandas, Prophet", desc: "TRAI + MEITY data, internet penetration trend, state comparison, 2030 projection." },
+  ]},
+  'DAR068': { name: "Darshan Akhadmal", domain: "machine learning", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "Employee Salary Predictor", tech: "Python, Scikit-learn, Pandas, Streamlit", desc: "Ridge regression on HR dataset, role/experience/location inputs, salary band output." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "Video Game Genre Classifier", tech: "Python, Scikit-learn, NLP, Streamlit", desc: "Text + metadata features on game descriptions, multi-class genre tagger." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "Real-Time Emotion Recognition Camera", tech: "Python, TensorFlow, OpenCV, Flask, Socket.io", desc: "FER2013 CNN, live webcam emotion overlay, session emotion timeline chart." },
+  ]},
+  'NIS069': { name: "Nisheeta Panchal", domain: "data science", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "NEET/JEE Exam Performance EDA", tech: "Python, Pandas, Plotly, Seaborn", desc: "Entrance exam result dataset, state-wise performance, score distribution, category analysis." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "Mobile App Usage Pattern EDA", tech: "Python, Pandas, Plotly, Seaborn", desc: "App usage log dataset, session length distribution, retention rate, top feature usage, hour-of-day pattern." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "Cost of Living Comparative Study", tech: "Python, Pandas, Plotly, Seaborn, Streamlit", desc: "Numbeo + govt data, city-wise cost index, purchasing power comparison, affordability score." },
+  ]},
+  'NIH070': { name: "Nikam Harshada Shankarrao", domain: "machine learning", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "Loan Approval Predictor", tech: "Python, Scikit-learn, Pandas, Streamlit", desc: "Binary classifier on loan dataset, approval probability, explainability report." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "Customer Lifetime Value Predictor", tech: "Python, Lifetimes, Pandas, Plotly", desc: "BG/NBD model on retail transaction data, CLV segment dashboard." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "Predictive Maintenance System", tech: "Python, XGBoost, SHAP, FastAPI, React", desc: "Sensor time-series, failure probability, remaining useful life estimator dashboard." },
+  ]},
+  'MAY071': { name: "Mayuri Santosh Patil", domain: "machine learning", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "Flight Price Predictor", tech: "Python, Scikit-learn, Pandas, Seaborn", desc: "Regression on flight booking data, airline/stops/date inputs, fare estimate." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "Medical Cost Prediction Model", tech: "Python, Scikit-learn, Pandas, Streamlit", desc: "Regression on insurance dataset, risk-factor inputs, premium estimator." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "AI Document QA Bot", tech: "Python, LangChain, FAISS, Gemini API, Streamlit", desc: "Multi-PDF ingestion, semantic search, cited answer generation, history log." },
+  ]},
+  'SOH072': { name: "Soham patil", domain: "machine learning", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "Supermarket Sales Forecaster", tech: "Python, Scikit-learn, Pandas, Plotly", desc: "Linear regression on grocery data, product-line revenue chart, seasonality note." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "Shipping Delay Classifier", tech: "Python, XGBoost, Pandas, Plotly", desc: "E-commerce supply chain dataset, delay risk predictor, dashboard." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "Object Counting in Crowd Images", tech: "Python, YOLOv8, OpenCV, Streamlit", desc: "Fine-tune on crowd dataset, density map, zone-based count overlay." },
+  ]},
+  'POO073': { name: "Poonam Nana Patil", domain: "machine learning", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "Penguin Species Classifier", tech: "Python, Scikit-learn, Pandas, Streamlit", desc: "KNN on Palmer Penguins, 3-class confusion matrix, species image map." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "Energy Usage Anomaly Detector", tech: "Python, Isolation Forest, Pandas, Plotly", desc: "Smart meter data, unsupervised anomaly detection, alert timeline." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "Time Series Anomaly Detection Dashboard", tech: "Python, LSTM Autoencoder, Keras, Streamlit", desc: "Encode-decode reconstruction error, anomaly threshold, multi-sensor dashboard." },
+  ]},
+  'HEM074': { name: "Hemangi Chaudhari", domain: "machine learning", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "Customer Purchase Intent Predictor", tech: "Python, Pandas, Scikit-learn, Seaborn", desc: "Logistic Regression on online shoppers dataset, intent probability, session features." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "Forest Fire Risk Classifier", tech: "Python, Scikit-learn, Pandas, Folium", desc: "Algerian forest fire dataset, weather features, risk zone map overlay." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "AI Caption Generator for Accessibility", tech: "Python, BLIP-2 HuggingFace, gTTS, FastAPI", desc: "Image \u2192 descriptive caption \u2192 audio TTS, accessibility download bundle." },
+  ]},
+  'AAD075': { name: "Aaditi Rane", domain: "machine learning", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "Rain Tomorrow Predictor", tech: "Python, Scikit-learn, Pandas, Streamlit", desc: "Binary weather classifier on Australia dataset, precision-recall, tomorrow prediction form." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "News Category Classifier", tech: "Python, TF-IDF, Scikit-learn, Flask", desc: "Multi-class classifier on AG News, REST API, live headline tagger." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "Explainable AI Dashboard XAI", tech: "Python, SHAP, LIME, Plotly, Streamlit", desc: "Multi-model explanations (RF, XGB, NN), SHAP waterfall + force plots, LIME text." },
+  ]},
+  'OMC076': { name: "Om Dnyaneshwar Chaudhari", domain: "machine learning", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "Air Passenger Count Forecaster", tech: "Python, Statsmodels ARIMA, Pandas, Matplotlib", desc: "Classic airline dataset, ARIMA fit, 12-month forecast chart." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "Sentiment Analysis on Product Feedback", tech: "Python, VADER, Scikit-learn, Streamlit", desc: "Customer feedback CSV, positive/negative/neutral classifier, word cloud, topic trend chart." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "Hate Speech Detection API", tech: "Python, BERT HuggingFace, FastAPI, React", desc: "Fine-tune on hate speech dataset, category scores, moderation webhook." },
+  ]},
+  'VID077': { name: "Vidhi Borse", domain: "data analyst", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "Social Media KPI Tracker", tech: "Python, Pandas, Plotly, Streamlit", desc: "Platform metrics dataset, follower growth, engagement rate, post-type performance." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "Customer Complaint Root-Cause Report", tech: "Python, Pandas, LDA, Plotly", desc: "Support ticket text + category, complaint cluster, resolution-time trend, priority matrix." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "Financial Risk Exposure Dashboard", tech: "Python, Pandas, Plotly, Scikit-learn, Streamlit", desc: "Portfolio data, VaR calculation, sector concentration, stress-test scenario builder." },
+  ]},
+  'DAR078': { name: "Darshan Shinde", domain: "data science", projects: [
+    { stage: "\ud83d\udfe2 Stage 1 \u2014 Simple", title: "Indian Agriculture Production EDA", tech: "Python, Pandas, Plotly, Geopandas", desc: "State-wise crop production data, seasonal pattern, yield per hectare, top producing states." },
+    { stage: "\ud83d\udfe1 Stage 2 \u2014 Medium", title: "Indian Startup Unicorn Study", tech: "Python, Pandas, Plotly, NetworkX", desc: "Unicorn company data, sector breakdown, funding journey, founding year trend, city concentration map." },
+    { stage: "\ud83d\udd34 Stage 3 \u2014 Hard", title: "Youth Unemployment Crisis EDA", tech: "Python, Pandas, Plotly, Geopandas, Scikit-learn", desc: "ILO youth employment data, skill mismatch index, district risk map, policy gap finder." },
+  ]},
+};
+
+// Domain → project mapping (from HireSnix Assignment Sheet 2026)
 const DOMAIN_PROJECTS: Record<string, any> = {
-  default: {
-    title: 'Capstone Portfolio Project',
-    description: 'Build a comprehensive project showcasing all skills learned during your internship. This will be a key piece of your professional portfolio.',
-    resources: ['Your domain study resources', 'GitHub documentation', 'Hiresnix resource library'],
-    github: '',
-    submission: 'hr@hiresnix.co.in',
-    deadline: 'Before internship end date',
-  },
-  'cloud computing': {
-    title: 'Cloud Infrastructure Setup & Deployment',
-    description: 'Design and deploy a scalable cloud infrastructure using AWS/GCP/Azure. Implement auto-scaling, load balancing, and CI/CD pipelines.',
-    resources: ['AWS Free Tier', 'Google Cloud Skills Boost', 'Azure Learn'],
-    github: 'https://github.com/hiresnix-commits',
-    submission: 'hr@hiresnix.co.in',
-    deadline: 'Before internship end date',
-  },
   'full stack development': {
-    title: 'Full Stack Web Application',
-    description: 'Build a production-ready full stack app with React frontend, Node.js backend, and PostgreSQL database. Include authentication, CRUD operations, and deployment.',
-    resources: ['React Docs', 'Node.js Docs', 'Supabase Quickstart'],
-    github: 'https://github.com/hiresnix-commits',
+    title: 'Full Stack Development Projects (3 Stages)',
+    projects: [
+      { stage: '🟢 Stage 1 — Simple', title: 'Personal Task Manager App', tech: 'React.js, Node.js, MySQL, JWT', desc: 'Task CRUD, priority tags, due-date filter, completion toggle, user auth.' },
+      { stage: '🟡 Stage 2 — Medium', title: 'Job Application Tracker', tech: 'React.js, Node.js, PostgreSQL, Chart.js, JWT', desc: 'Track applications by status, Kanban view, deadline alerts, stats dashboard.' },
+      { stage: '🔴 Stage 3 — Hard', title: 'Multi-Tenant Project Management SaaS', tech: 'React.js, Node.js, PostgreSQL, Socket.io, Stripe', desc: 'Org/workspace/board/card CRUD, real-time updates, role access, Stripe billing.' },
+    ],
     submission: 'hr@hiresnix.co.in',
-    deadline: 'Before internship end date',
+  },
+  'data analyst': {
+    title: 'Data Analyst Projects (3 Stages)',
+    projects: [
+      { stage: '🟢 Stage 1 — Simple', title: 'Superstore Sales Performance Report', tech: 'Python, Pandas, Plotly, Power BI', desc: 'Kaggle Superstore data, regional KPIs, top-product bar chart, manager summary PDF.' },
+      { stage: '🟡 Stage 2 — Medium', title: 'Retail Store Footfall Insights', tech: 'Python, Pandas, Plotly, Power BI', desc: 'Hourly footfall + sales data, peak-hour analysis, conversion rate, staff optimizer.' },
+      { stage: '🔴 Stage 3 — Hard', title: 'Real-Time Sales Command Center', tech: 'Python, Pandas, Streamlit, Plotly, SQL', desc: 'Live DB connection, auto-refreshing KPI tiles, drill-down by region/rep/product.' },
+    ],
+    submission: 'hr@hiresnix.co.in',
+  },
+  'machine learning': {
+    title: 'Machine Learning Projects (3 Stages)',
+    projects: [
+      { stage: '🟢 Stage 1 — Simple', title: 'Iris Flower Species Classifier', tech: 'Python, Scikit-learn, Pandas, Matplotlib', desc: 'Logistic Regression on Iris dataset, confusion matrix, species predictor UI.' },
+      { stage: '🟡 Stage 2 — Medium', title: 'Crop Yield Prediction System', tech: 'Python, XGBoost, Pandas, Streamlit', desc: 'Regression on crop dataset, soil+weather inputs, district-level yield map.' },
+      { stage: '🔴 Stage 3 — Hard', title: 'Real-Time Pose Estimation Trainer', tech: 'Python, MediaPipe, TensorFlow, Flask, Socket.io', desc: 'Live webcam pose detection, rep counter for exercises, form feedback API.' },
+    ],
+    submission: 'hr@hiresnix.co.in',
+  },
+  'artificial intelligence': {
+    title: 'Artificial Intelligence Projects (3 Stages)',
+    projects: [
+      { stage: '🟢 Stage 1 — Simple', title: 'Keyword-Based FAQ Chatbot', tech: 'Python, NLTK, Flask, Bootstrap', desc: 'Intent matching on custom FAQ dataset, response retrieval, multi-turn conversation log.' },
+      { stage: '🟡 Stage 2 — Medium', title: 'AI Interview Question Generator', tech: 'Python, Gemini API, FastAPI, React', desc: 'Upload JD/resume, generate role-specific questions by difficulty, PDF export.' },
+      { stage: '🔴 Stage 3 — Hard', title: 'Multi-Agent Task Automation System', tech: 'Python, LangChain Agents, FastAPI, React', desc: 'Planner + executor agents, multi-step task decomposition, tool use (search/code/file), audit log.' },
+    ],
+    submission: 'hr@hiresnix.co.in',
   },
   'data science': {
-    title: 'End-to-End Data Analysis Project',
-    description: 'Perform EDA, build ML models, and create a dashboard showcasing insights from a real-world dataset. Present findings in a Jupyter Notebook.',
-    resources: ['Kaggle Datasets', 'Scikit-learn Docs', 'Matplotlib/Seaborn'],
-    github: 'https://github.com/hiresnix-commits',
+    title: 'Data Science Projects (3 Stages)',
+    projects: [
+      { stage: '🟢 Stage 1 — Simple', title: 'COVID-19 India State Analysis', tech: 'Python, Pandas, Plotly, Geopandas', desc: 'State-level case/death/recovery data, choropleth, peak identification, wave analysis.' },
+      { stage: '🟡 Stage 2 — Medium', title: 'Indian Stock Market EDA & Forecast', tech: 'Python, Pandas, yfinance, Prophet, Plotly', desc: 'NSE multi-stock OHLCV, 30-day forecast, sector performance comparison.' },
+      { stage: '🔴 Stage 3 — Hard', title: 'Social Mobility & Income Inequality Study', tech: 'Python, Pandas, Plotly, Geopandas, Scikit-learn', desc: 'World Bank + OECD data, Gini index trend, mobility predictor, interactive report.' },
+    ],
     submission: 'hr@hiresnix.co.in',
-    deadline: 'Before internship end date',
+  },
+  'front end development': {
+    title: 'Front End Development Projects (3 Stages)',
+    projects: [
+      { stage: '🟢 Stage 1 — Simple', title: 'Personal Portfolio Website', tech: 'React.js, CSS3, EmailJS', desc: 'Animated hero, projects grid, skills bar, contact form, dark/light toggle.' },
+      { stage: '🟡 Stage 2 — Medium', title: 'Job Board UI with Filters', tech: 'React.js, Tailwind CSS, Context API', desc: 'Job card listing, search + multi-filter, bookmark, pagination, skeleton loader.' },
+      { stage: '🔴 Stage 3 — Hard', title: 'Real-Time Collaborative Notes App', tech: 'React.js, Socket.io, Tailwind, Quill.js', desc: 'Multi-user note editing, live cursor, undo/redo, room links, export PDF.' },
+    ],
+    submission: 'hr@hiresnix.co.in',
+  },
+  'cloud computing': {
+    title: 'Cloud Computing Projects (3 Stages)',
+    projects: [
+      { stage: '🟢 Stage 1 — Simple', title: 'Containerized Microservices on AWS', tech: 'Docker, AWS ECS, ECR, ALB', desc: 'Dockerize 3 microservices, push to ECR, deploy via ECS Fargate, ALB routing.' },
+      { stage: '🟡 Stage 2 — Medium', title: 'Multi-Region Disaster Recovery Setup', tech: 'AWS Route53, RDS, S3, CloudFormation', desc: 'Active-passive DR, RDS cross-region replica, Route53 health-check failover.' },
+      { stage: '🔴 Stage 3 — Hard', title: 'Serverless Event-Driven Architecture', tech: 'AWS Lambda, SQS, SNS, DynamoDB, API Gateway', desc: 'Order processing pipeline, fan-out with SNS, dead-letter queue, CloudWatch dashboard.' },
+    ],
+    submission: 'hr@hiresnix.co.in',
+  },
+  'ui/ux design': {
+    title: 'UI/UX Design Projects (3 Stages)',
+    projects: [
+      { stage: '🟢 Stage 1 — Simple', title: 'E-Commerce Mobile App Redesign', tech: 'Figma, Adobe XD', desc: 'Audit existing app UX, redesign product listing + cart flow, usability test report.' },
+      { stage: '🟡 Stage 2 — Medium', title: 'Healthcare Patient Portal UX', tech: 'Figma, Maze, FigJam', desc: 'User research, journey map, hi-fi prototype, accessibility audit (WCAG 2.1 AA).' },
+      { stage: '🔴 Stage 3 — Hard', title: 'AI Product Dashboard Design System', tech: 'Figma, Storybook, Tokens Studio', desc: 'Component library with design tokens, responsive grid, dark/light themes, Storybook docs.' },
+    ],
+    submission: 'hr@hiresnix.co.in',
+  },
+  'cyber security': {
+    title: 'Cyber Security Projects (3 Stages)',
+    projects: [
+      { stage: '🟢 Stage 1 — Simple', title: 'Network Vulnerability Scanner', tech: 'Python, Nmap, Flask, Bootstrap', desc: 'Port scanning on local subnet, open-port risk rating, CVE lookup, HTML report.' },
+      { stage: '🟡 Stage 2 — Medium', title: 'Password Strength Analyzer & Generator', tech: 'Python, Flask, zxcvbn, React', desc: 'Strength scoring, crack-time estimate, secure password generator, breach-check API.' },
+      { stage: '🔴 Stage 3 — Hard', title: 'Web Application Penetration Testing Report', tech: 'Python, OWASP ZAP, Burp Suite, Markdown', desc: 'Automated scan on demo app, XSS/SQLi/CSRF findings, CVSS scoring, remediation PDF.' },
+    ],
+    submission: 'hr@hiresnix.co.in',
+  },
+  'software testing (qa)': {
+    title: 'Software Testing (QA) Projects (3 Stages)',
+    projects: [
+      { stage: '🟢 Stage 1 — Simple', title: 'Manual Test Plan for E-Commerce Site', tech: 'Excel, JIRA, TestRail', desc: 'Test cases for cart/checkout/payment, bug reports, severity classification.' },
+      { stage: '🟡 Stage 2 — Medium', title: 'Automated UI Testing with Selenium', tech: 'Python, Selenium, pytest, Allure', desc: 'Page Object Model, cross-browser test suite, CI integration, HTML report.' },
+      { stage: '🔴 Stage 3 — Hard', title: 'API Testing & Performance Dashboard', tech: 'Postman, k6, Grafana, Jenkins', desc: 'REST API test collection, load test with k6, performance dashboard, CI pipeline.' },
+    ],
+    submission: 'hr@hiresnix.co.in',
+  },
+  default: {
+    title: 'Capstone Portfolio Project',
+    projects: [
+      { stage: '🟢 Stage 1 — Simple', title: 'Foundation Project', tech: 'Domain-specific stack', desc: 'Build a foundational project showcasing core skills of your domain.' },
+      { stage: '🟡 Stage 2 — Medium', title: 'Core Project', tech: 'Domain-specific stack', desc: 'Intermediate project with real-world data and APIs.' },
+      { stage: '🔴 Stage 3 — Hard', title: 'Capstone Project', tech: 'Domain-specific stack', desc: 'Production-level capstone project for your portfolio.' },
+    ],
+    submission: 'hr@hiresnix.co.in',
   },
 };
 
@@ -685,51 +1145,56 @@ function InternshipTimeline({ enrollment }: { enrollment: any }) {
 
 // ── Assigned Project ─────────────────────────────────────────────
 function AssignedProject({ enrollment }: { enrollment: any }) {
-  const project = getProjectForDomain(enrollment.domain?.name || '');
+  const domainKey = (enrollment.domain?.name || '').toLowerCase();
+  
+  // Check if this is an existing student from the assignment sheet
+  const studentName = (enrollment.studentName || '').toLowerCase().trim();
+  const existingStudent = Object.values(STUDENT_PROJECTS).find(
+    (s: any) => s.name.toLowerCase().trim() === studentName
+  ) as any;
+  
+  // Use student-specific projects if found, else domain defaults
+  const projectData = existingStudent || null;
+  const projects = projectData?.projects || (DOMAIN_PROJECTS[domainKey] || DOMAIN_PROJECTS['default']).projects;
+  const title = projectData 
+    ? `${enrollment.domain?.name || ''} Projects — Assigned to ${enrollment.studentName}`
+    : (DOMAIN_PROJECTS[domainKey] || DOMAIN_PROJECTS['default']).title;
 
   return sectionCard('Assigned Project', <Target size={17} className="text-orange-500" />,
     <div>
       <div className="flex items-start justify-between mb-3">
         <div>
-          <h5 className="font-bold text-gray-900 dark:text-gray-100 text-base">{project.title}</h5>
+          <h5 className="font-bold text-gray-900 dark:text-gray-100 text-base">{title}</h5>
           <span className="inline-block mt-1 text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 font-semibold">Optional — Submission Not Mandatory</span>
         </div>
       </div>
-      <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">{project.description}</p>
 
-      <div className="grid sm:grid-cols-2 gap-3">
-        <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-3">
-          <p className="text-xs font-semibold text-blue-700 dark:text-blue-400 mb-2 flex items-center gap-1"><BookOpen size={12} /> Resources</p>
-          <ul className="space-y-1">
-            {project.resources.map((r: string, i: number) => (
-              <li key={i} className="text-xs text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-blue-400 flex-shrink-0" />{r}
-              </li>
-            ))}
-          </ul>
-        </div>
-        <div className="space-y-2">
-          {project.github && (
-            <a href={project.github} target="_blank" rel="noreferrer"
-              className="flex items-center gap-2 text-xs text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 rounded-lg px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 transition">
-              <Github size={13} className="text-gray-600" /> View GitHub Repository <ExternalLink size={11} />
-            </a>
-          )}
-          <div className="bg-gray-50 dark:bg-gray-700 rounded-lg px-3 py-2">
-            <p className="text-xs text-gray-500 dark:text-gray-400">📨 Submission Email</p>
-            <p className="text-xs font-semibold text-gray-800 dark:text-gray-200">{project.submission}</p>
+      <div className="space-y-3 mb-4">
+        {projects.map((p: any, i: number) => (
+          <div key={i} className={`rounded-xl p-3 border ${
+            i === 0 ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' :
+            i === 1 ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800' :
+            'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
+          }`}>
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs font-bold text-gray-600 dark:text-gray-400">{p.stage}</span>
+            </div>
+            <p className="font-semibold text-sm text-gray-900 dark:text-gray-100">{p.title}</p>
+            <p className="text-xs text-blue-600 dark:text-blue-400 mt-0.5 font-medium">🛠 {p.tech}</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">{p.desc}</p>
           </div>
-          <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg px-3 py-2">
-            <p className="text-xs text-amber-600 dark:text-amber-400">⏰ Recommended Deadline</p>
-            <p className="text-xs font-semibold text-gray-800 dark:text-gray-200">{project.deadline}</p>
-          </div>
-        </div>
+        ))}
       </div>
 
-      <div className="mt-3 p-3 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
+      <div className="bg-gray-50 dark:bg-gray-700 rounded-lg px-3 py-2 mb-3">
+        <p className="text-xs text-gray-500 dark:text-gray-400">📨 Submit your project to</p>
+        <p className="text-xs font-semibold text-gray-800 dark:text-gray-200">hr@hiresnix.co.in</p>
+      </div>
+
+      <div className="p-3 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
         <p className="text-xs text-green-800 dark:text-green-300 flex items-start gap-1.5">
           <CheckCircle size={13} className="text-green-600 mt-0.5 flex-shrink-0" />
-          <span><strong>Note:</strong> Project completion is recommended for your portfolio. However, whether you submit the project or not, your Internship Completion Certificate and documents will be generated automatically once the internship duration is successfully completed.</span>
+          <span><strong>Note:</strong> Project completion is recommended for your portfolio. Whether you submit or not, your Internship Completion Certificate and documents will be generated automatically once internship duration is completed.</span>
         </p>
       </div>
     </div>
