@@ -13,7 +13,6 @@ import { Role } from './types';
 import { StudentLayout }     from './components/layout/StudentLayout';
 import { CompanyLayout }     from './components/layout/CompanyLayout';
 import { AdminLayout }       from './components/layout/AdminLayout';
-import { SubAdminLayout }    from './components/layout/SubAdminLayout';
 import { InstitutionLayout } from './components/layout/InstitutionLayout';
 import { InstStudentLayout } from './components/layout/InstStudentLayout';
 
@@ -42,6 +41,7 @@ const StudentResources    = lazy(() => import('./pages/student/StudentResources'
 const StudentCertificates = lazy(() => import('./pages/student/StudentCertificates').then(m => ({ default: m.StudentCertificates })));
 const StudentProfile      = lazy(() => import('./pages/student/StudentProfile').then(m => ({ default: m.StudentProfile })));
 const StudentMockInterview= lazy(() => import('./pages/student/StudentMockInterview').then(m => ({ default: m.StudentMockInterview })));
+const StudentOverview     = lazy(() => import('./pages/student/StudentOverview').then(m => ({ default: m.StudentOverview })));
 const StudentMockDashboard= lazy(() => import('./pages/student/StudentMockDashboard').then(m => ({ default: m.StudentMockDashboard })));
 const StudentResumeBuilder= lazy(() => import('./pages/student/StudentResumeBuilder').then(m => ({ default: m.StudentResumeBuilder })));
 const StudentProjects     = lazy(() => import('./pages/student/StudentProjects').then(m => ({ default: m.StudentProjects })));
@@ -69,24 +69,12 @@ const AdminAnalytics    = lazy(() => import('./pages/admin/AdminAnalytics').then
 const AdminClients      = lazy(() => import('./pages/admin/AdminClients').then(m => ({ default: m.AdminClients })));
 const AdminImportTool   = lazy(() => import('./pages/admin/AdminImportTool').then(m => ({ default: m.AdminImportTool })));
 const AdminSettings     = lazy(() => import('./pages/admin/AdminSettings').then(m => ({ default: m.AdminSettings })));
-const AdminSubAdmins    = lazy(() => import('./pages/admin/AdminSubAdmins').then(m => ({ default: m.AdminSubAdmins })));
-// Sub-Admin (reuses admin pages)
-const SubAdminDashboard    = lazy(() => import('./pages/admin/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
-const SubAdminStudents     = lazy(() => import('./pages/admin/AdminStudents').then(m => ({ default: m.AdminStudents })));
-const SubAdminCompanies    = lazy(() => import('./pages/admin/AdminCompanies').then(m => ({ default: m.AdminCompanies })));
-const SubAdminJobs         = lazy(() => import('./pages/admin/AdminJobs').then(m => ({ default: m.AdminJobs })));
-const SubAdminApplications = lazy(() => import('./pages/admin/AdminApplications').then(m => ({ default: m.AdminApplications })));
-const SubAdminInternships  = lazy(() => import('./pages/admin/AdminInternships').then(m => ({ default: m.AdminInternships })));
-const SubAdminResources    = lazy(() => import('./pages/admin/AdminResources').then(m => ({ default: m.AdminResources })));
-const SubAdminCertificates = lazy(() => import('./pages/admin/AdminCertificates').then(m => ({ default: m.AdminCertificates })));
-const SubAdminIPlatform    = lazy(() => import('./pages/admin/AdminIPlatform').then(m => ({ default: m.AdminIPlatform })));
-const SubAdminEnquiries    = lazy(() => import('./pages/admin/AdminEnquiries').then(m => ({ default: m.AdminEnquiries })));
-const SubAdminInstitutions = lazy(() => import('./pages/admin/AdminInstitutions').then(m => ({ default: m.AdminInstitutions })));
 const AdminIPlatform    = lazy(() => import('./pages/admin/AdminIPlatform').then(m => ({ default: m.AdminIPlatform })));
 const AdminEnquiries    = lazy(() => import('./pages/admin/AdminEnquiries').then(m => ({ default: m.AdminEnquiries })));
 const AdminDocuments    = lazy(() => import('./pages/admin/AdminDocuments').then(m => ({ default: m.AdminDocuments })));
 const AdminInstitutions = lazy(() => import('./pages/admin/AdminInstitutions').then(m => ({ default: m.AdminInstitutions })));
 const AdminLogicBuilder = lazy(() => import('./pages/admin/AdminLogicBuilder').then(m => ({ default: m.AdminLogicBuilder })));
+const ResetPassword    = lazy(() => import('./pages/auth/ResetPassword').then(m => ({ default: m.ResetPassword })));
 
 const InstitutionDashboard    = lazy(() => import('./pages/institution/InstitutionDashboard').then(m => ({ default: m.InstitutionDashboard })));
 const InstitutionStudents     = lazy(() => import('./pages/institution/InstitutionStudents').then(m => ({ default: m.InstitutionStudents })));
@@ -123,7 +111,6 @@ function AuthRedirect() {
   if (role === 'student')     return <Navigate to="/student/dashboard" replace />;
   if (role === 'company')     return <Navigate to="/company/dashboard" replace />;
   if (role === 'admin')       return <Navigate to="/admin/dashboard" replace />;
-  if (role === 'sub-admin')   return <Navigate to="/sub-admin/dashboard" replace />;
   if (role === 'institution') return <Navigate to="/institution/dashboard" replace />;
   return <Navigate to="/auth" replace />;
 }
@@ -169,6 +156,7 @@ export default function App() {
               ? <AuthRedirect /> : <AuthPage />
           } />
           <Route path="/inst-login" element={<InstStudentLogin />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
 
           {/* Institution Student */}
           <Route path="/inst-student" element={<InstStudentRoute><InstStudentLayout /></InstStudentRoute>}>
@@ -199,6 +187,7 @@ export default function App() {
             <Route path="mock-dashboard" element={<StudentMockDashboard />} />
             <Route path="certificates"   element={<StudentCertificates />} />
             <Route path="profile"        element={<StudentProfile />} />
+            <Route path="overview"       element={<StudentOverview />} />
           </Route>
 
           {/* Company */}
@@ -231,24 +220,7 @@ export default function App() {
             <Route path="clients"      element={<AdminClients />} />
             <Route path="import-tool"  element={<AdminImportTool />} />
             <Route path="settings"     element={<AdminSettings />} />
-            <Route path="sub-admins"   element={<AdminSubAdmins />} />
             <Route path="logic-builder" element={<AdminLogicBuilder />} />
-          </Route>
-
-          {/* Sub-Admin */}
-          <Route path="/sub-admin" element={<ProtectedRoute allowedRoles={['sub-admin']}><SubAdminLayout /></ProtectedRoute>}>
-            <Route index element={<Navigate to="dashboard" replace />} />
-            <Route path="dashboard"    element={<Suspense fallback={<PageSpinner />}><SubAdminDashboard /></Suspense>} />
-            <Route path="iplatform"    element={<Suspense fallback={<PageSpinner />}><SubAdminIPlatform /></Suspense>} />
-            <Route path="students"     element={<Suspense fallback={<PageSpinner />}><SubAdminStudents /></Suspense>} />
-            <Route path="companies"    element={<Suspense fallback={<PageSpinner />}><SubAdminCompanies /></Suspense>} />
-            <Route path="institutions" element={<Suspense fallback={<PageSpinner />}><SubAdminInstitutions /></Suspense>} />
-            <Route path="jobs"         element={<Suspense fallback={<PageSpinner />}><SubAdminJobs /></Suspense>} />
-            <Route path="applications" element={<Suspense fallback={<PageSpinner />}><SubAdminApplications /></Suspense>} />
-            <Route path="internships"  element={<Suspense fallback={<PageSpinner />}><SubAdminInternships /></Suspense>} />
-            <Route path="resources"    element={<Suspense fallback={<PageSpinner />}><SubAdminResources /></Suspense>} />
-            <Route path="certificates" element={<Suspense fallback={<PageSpinner />}><SubAdminCertificates /></Suspense>} />
-            <Route path="enquiries"    element={<Suspense fallback={<PageSpinner />}><SubAdminEnquiries /></Suspense>} />
           </Route>
 
           {/* Institution */}

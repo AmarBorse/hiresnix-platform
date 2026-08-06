@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router';
 import { LayoutDashboard, Briefcase, BookOpen, Award, FileText, User, Menu, X, LogOut,
-  BotMessageSquare, Send, BarChart2, Map, CalendarCheck, Lock, Clock } from 'lucide-react';
+  BotMessageSquare, Send, BarChart2, Map, CalendarCheck, Lock, Clock, Info } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
 import { PORTAL_STYLES, PORTAL_COLORS } from './PortalTheme';
 import axios from 'axios';
@@ -32,6 +32,7 @@ const NAV = [
   { to: '/student/roadmap',        icon: Map,              label: 'Career Roadmap 🗺️', lockable: true },
   { to: '/student/certificates',   icon: Award,            label: 'Certificates'       },
   { to: '/student/profile',        icon: User,             label: 'Profile'            },
+  { to: '/student/overview',       icon: Info,             label: 'Portal Guide 📖'    },
 ];
 
 /* ── Countdown Hook ──────────────────────────────────────────────── */
