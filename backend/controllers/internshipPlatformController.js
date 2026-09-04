@@ -124,6 +124,11 @@ const applyInternship = asyncHandler(async (req, res) => {
     careerId: careerId || null,
   });
 
+  // Auto-assign project based on domain
+  const { assignProject } = require('../utils/projectAssigner');
+  const domainEnrollCount = await InternshipEnrollment.count({ where: { domainId } });
+  const assignedProjects = assignProject(domain.name, domainEnrollCount);
+
   // Auto-create enrollment immediately
   await InternshipEnrollment.create({
     applicationId: application.id,
@@ -137,6 +142,7 @@ const applyInternship = asyncHandler(async (req, res) => {
     instStudentId: instStudentId ? parseInt(instStudentId) : null,
     institutionId: institutionId ? parseInt(institutionId) : null,
     institutionName: institutionName || null,
+    completedTasks: [{ _type: 'project_assignment', projects: assignedProjects, assignedAt: new Date().toISOString() }],
   });
 
   // Increment filled seats
@@ -144,6 +150,63 @@ const applyInternship = asyncHandler(async (req, res) => {
 
   res.status(201).json({ success: true, data: application, message: 'You are now enrolled! Welcome to Hiresnix Internship Program.' });
 });
+
+// ── AUTO-COMPLETE INTERNSHIP IF END DATE PASSED ──────────────
+async function autoCompleteIfEnded(enrollment, application) {
+  if (!enrollment || enrollment.status === 'Completed') return enrollment;
+
+  // Determine end date: from application offerEndDate, or startDate + duration
+  let endDate = null;
+  if (application?.offerEndDate) {
+    endDate = new Date(application.offerEndDate);
+  } else if (enrollment.startDate) {
+    const sd = new Date(enrollment.startDate);
+    const durationStr = enrollment.domain?.duration || '6 Months';
+    const m = durationStr.match(/(\d+)/);
+    const num = m ? parseInt(m[1]) : 6;
+    const isMonths = /month/i.test(durationStr);
+    endDate = new Date(sd);
+    if (isMonths) endDate.setMonth(endDate.getMonth() + num);
+    else endDate.setDate(endDate.getDate() + num * 7);
+  }
+
+  if (!endDate || isNaN(endDate.getTime())) return enrollment;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  endDate.setHours(0, 0, 0, 0);
+
+  // End date has passed → auto complete
+  if (today >= endDate) {
+    await enrollment.update({
+      status: 'Completed',
+      progress: 100,
+      completedAt: endDate,
+      adminRemark: enrollment.adminRemark || 'Demonstrated excellent performance throughout the internship. The student was consistent, responsible, and showed a strong willingness to learn and apply new concepts. Successfully completed assigned tasks with good quality and professionalism.',
+      lorPerformance: enrollment.lorPerformance || 'Excellent',
+      lorHighlights: enrollment.lorHighlights || 'Demonstrated strong technical skills, a proactive learning attitude, and the ability to complete assigned tasks effectively. Consistently showed dedication, adaptability, and professionalism while delivering quality work within deadlines.',
+    });
+
+    // Auto-generate certificate if not exists
+    const existingCert = await InternshipCertificate.findOne({ where: { enrollmentId: enrollment.id } });
+    if (!existingCert) {
+      const uniqueCertNo = 'HRX-' + crypto.randomBytes(4).toString('hex').toUpperCase();
+      await InternshipCertificate.create({
+        enrollmentId: enrollment.id,
+        studentName: enrollment.studentName,
+        domainName: enrollment.domain?.name,
+        certificateNo: uniqueCertNo,
+      });
+    }
+
+    // Reload with certificate
+    await enrollment.reload({
+      include: [{ model: Domain, as: 'domain' }, { model: InternshipCertificate, as: 'certificate' }],
+    });
+  }
+
+  return enrollment;
+}
 
 const getMyApplication = asyncHandler(async (req, res) => {
   const application = await InternshipApplication.findOne({
@@ -158,6 +221,11 @@ const getMyApplication = asyncHandler(async (req, res) => {
       where: { applicationId: application.id },
       include: [{ model: Domain, as: 'domain' }, { model: InternshipCertificate, as: 'certificate' }],
     });
+
+    // Auto-complete if end date passed
+    if (enrollment) {
+      enrollment = await autoCompleteIfEnded(enrollment, application);
+    }
   }
 
   res.json({ success: true, data: { application, enrollment } });
@@ -269,7 +337,7 @@ const deleteResource = asyncHandler(async (req, res) => {
 // ────────────────────────────────────────────────────────────────────
 
 const getMyProgress = asyncHandler(async (req, res) => {
-  const enrollment = await InternshipEnrollment.findOne({
+  let enrollment = await InternshipEnrollment.findOne({
     where: { userId: req.user.id },
     include: [
       { model: Domain, as: 'domain' },
@@ -277,6 +345,12 @@ const getMyProgress = asyncHandler(async (req, res) => {
     ],
     order: [['createdAt', 'DESC']],
   });
+
+  // Auto-complete if end date passed
+  if (enrollment && enrollment.status !== 'Completed') {
+    const app = await InternshipApplication.findOne({ where: { id: enrollment.applicationId } });
+    enrollment = await autoCompleteIfEnded(enrollment, app);
+  }
   if (!enrollment) { return res.json({ success: true, data: { enrollment: null, resources: [] } }); }
 
   const resources = await InternshipResource.findAll({ where: { domainId: enrollment.domainId }, order: [['week', 'ASC']] });
