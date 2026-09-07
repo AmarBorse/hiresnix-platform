@@ -436,16 +436,35 @@ const DEFAULT_FRONTEND_URL = 'https://hiresnix.co.in';
 const getFrontendUrl = () =>
   (process.env.CLIENT_URL || process.env.FRONTEND_URL || process.env.VITE_FRONTEND_URL || DEFAULT_FRONTEND_URL).replace(/\/$/, '');
 
+// All Hiresnix domains — default 6 months duration
 const DOMAIN_DURATION_MONTHS = {
-  'ui/ux design': 1,
-  'frontend development': 2,
-  'backend development': 2,
-  'full stack development': 3,
-  'python development': 2,
-  'data science': 3,
-  'digital marketing': 1,
-  'qa testing': 1,
+  'data science': 6,
+  'machine learning': 6,
+  'machine learning (ml)': 6,
+  'artificial intelligence': 6,
+  'full stack development': 6,
+  'data analyst': 6,
+  'front end developer': 6,
+  'front end development': 6,
+  'frontend development': 6,
+  'backend development': 6,
+  'cloud computing': 6,
+  'cyber security': 6,
+  'software testing (qa)': 6,
+  'software testing': 6,
+  'qa testing': 6,
+  'app development': 6,
+  'ui/ux design': 6,
+  'devops': 6,
+  'blockchain development': 6,
+  'blockchain': 6,
+  'hr assistant': 6,
+  'python development': 6,
+  'digital marketing': 6,
 };
+
+// Default duration if domain not found in map
+const DEFAULT_DURATION_MONTHS = 6;
 
 function parseDateOnly(value) {
   if (!value) return null;
@@ -485,7 +504,7 @@ function normalizeDomainName(value) {
 
 function getDomainDurationMonths(domainName) {
   const normalized = normalizeDomainName(domainName);
-  return DOMAIN_DURATION_MONTHS[normalized] || null;
+  return DOMAIN_DURATION_MONTHS[normalized] || DEFAULT_DURATION_MONTHS;
 }
 
 let offerDateColumnsReady = false;
@@ -532,6 +551,22 @@ async function ensureOfferDateColumns() {
 function calculateDurationLabel(startDate, endDate) {
   if (!startDate || !endDate) return 'the stipulated duration';
 
+  // Total days between start and end
+  const totalDays = Math.round((endDate - startDate) / (24 * 60 * 60 * 1000));
+
+  // Same day or 1 day
+  if (totalDays <= 1) return totalDays === 0 ? '1 Day' : '1 Day';
+
+  // Less than 7 days → show in days
+  if (totalDays < 7) return `${totalDays} Days`;
+
+  // Less than 30 days → show in weeks
+  if (totalDays < 30) {
+    const weeks = Math.round(totalDays / 7);
+    return `${weeks} Week${weeks === 1 ? '' : 's'}`;
+  }
+
+  // 30+ days → show in months
   let months = (endDate.getFullYear() - startDate.getFullYear()) * 12 + (endDate.getMonth() - startDate.getMonth());
   let anchor = addMonths(startDate, months);
   if (anchor > endDate) {
@@ -539,8 +574,8 @@ function calculateDurationLabel(startDate, endDate) {
     anchor = addMonths(startDate, months);
   }
 
-  const days = Math.max(0, Math.round((endDate - anchor) / (24 * 60 * 60 * 1000)));
-  const roundedMonths = Math.max(1, months + (days >= 15 ? 1 : 0));
+  const remainingDays = Math.max(0, Math.round((endDate - anchor) / (24 * 60 * 60 * 1000)));
+  const roundedMonths = Math.max(1, months + (remainingDays >= 15 ? 1 : 0));
   return `${roundedMonths} Month${roundedMonths === 1 ? '' : 's'}`;
 }
 
@@ -1048,9 +1083,11 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
     throw new Error('End Date cannot be before Joining Date');
   }
   const domainName = cleanInternDomain(application?.domain?.name || role || 'Technology');
+  // Priority: explicit duration from request > domain mapping > default 6 months
+  const requestedMonths = durationMonthsFromLabel(duration);
   const mappedMonths = getDomainDurationMonths(domainName);
-  const durationMonths = mappedMonths || durationMonthsFromLabel(duration || application?.domain?.duration);
-  const endDateObj = manualEndDateObj || (durationMonths ? addMonths(startDateObj, durationMonths) : null);
+  const durationMonths = requestedMonths || mappedMonths || DEFAULT_DURATION_MONTHS;
+  const endDateObj = manualEndDateObj || addMonths(startDateObj, durationMonths);
   if (!endDateObj) {
     res.status(400);
     throw new Error('End Date is required when domain duration cannot be determined');
@@ -1274,7 +1311,7 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
   doc.moveTo(left, signBlockY).lineTo(left + bodyWidth, signBlockY).lineWidth(0.8).stroke('#cbd5e1');
   doc.fillColor('#1e293b').fontSize(10).font('Helvetica-Bold').text('Regards,', left, signBlockY + 14);
 
-  const sigY = signBlockY + 22;
+  const sigY = signBlockY + 32;
   const founderTextY = sigY + 34;
   const pageW = doc.page.width;
 
