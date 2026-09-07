@@ -277,7 +277,7 @@ function Faq() {
 /* ══════════════════════════════════════════════════════════════
    PAGE
    ══════════════════════════════════════════════════════════════ */
-export default function LandingPage() {
+export function LandingPage() {
   const [navSolid, setNavSolid] = useState(false);
   const [menu, setMenu] = useState(false);
 
@@ -591,6 +591,7 @@ export default function LandingPage() {
             <h4>Organisations</h4>
             <a href="#partners">Colleges</a>
             <a href="#partners">Companies</a>
+            <Link to="/careers">Careers</Link>
             <Link to="/verification">Verify a document</Link>
           </div>
 
@@ -924,3 +925,8 @@ const CSS = `
   .hx *{animation:none !important;transition:none !important;}
 }
 `;
+
+/* Works with either import style:
+   import LandingPage from './LandingPage'
+   import { LandingPage } from './LandingPage'  */
+export default LandingPage;

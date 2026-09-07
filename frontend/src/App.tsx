@@ -20,6 +20,7 @@ import { InstStudentLayout } from './components/layout/InstStudentLayout';
 import { LandingPage }      from './pages/LandingPage';
 import { AuthPage }         from './pages/auth/AuthPage';
 import { InstStudentLogin } from './pages/instStudent/InstStudentLogin';
+import CareersPage from './pages/CareersPage';
 
 // ── Lazy load everything else ─────────────────────────────────────
 const InstStudentDashboard    = lazy(() => import('./pages/instStudent/InstStudentDashboard').then(m => ({ default: m.InstStudentDashboard })));
@@ -131,6 +132,7 @@ export default function App() {
         <Routes>
           {/* Landing */}
           <Route path="/" element={isAuthenticated && user ? <AuthRedirect /> : <LandingPage />} />
+          <Route path="/careers" element={<CareersPage />} />
 
           {/* Legal */}
           <Route path="/about-us"             element={<AboutUs />} />
