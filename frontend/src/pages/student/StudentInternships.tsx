@@ -93,6 +93,26 @@ function IPlatformPanel() {
         setApplying(false);
         return;
       }
+      // Validate custom end date
+      if (form.duration === 'custom' && !form.endDate) {
+        toast.error('Please select a custom end date');
+        setApplying(false);
+        return;
+      }
+      // Validate custom end date
+      if (form.duration === 'custom') {
+        if (!form.endDate) {
+          toast.error('Please select your custom end date');
+          setApplying(false);
+          return;
+        }
+        const startISO = form.startDate || new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10);
+        if (new Date(form.endDate) <= new Date(startISO)) {
+          toast.error('End date must be after the start date');
+          setApplying(false);
+          return;
+        }
+      }
       const instToken = localStorage.getItem('hx_inst_student_token');
       const studentToken = localStorage.getItem('hx_student_token') || localStorage.getItem('hirenix_token');
       const isInstStudent = !!instToken && !studentToken;
@@ -106,8 +126,9 @@ function IPlatformPanel() {
         ...(form.institutionName && { institutionName: form.institutionName }),
         ...(form.careerId && { careerId: form.careerId }),
         ...(form.startDate && { startDate: form.startDate }),
-        duration: form.duration !== 'custom' ? form.duration : undefined,
-        ...(form.duration === 'custom' && form.endDate && { endDate: form.endDate }),
+        ...(form.duration === 'custom'
+          ? { endDate: form.endDate }
+          : { duration: form.duration }),
       };
       if (isInstStudent) {
         await instInternshipClient.post('/iplatform/apply', payload);
@@ -454,21 +475,49 @@ function IPlatformPanel() {
           </div>
           {form.duration === 'custom' && (
             <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Custom End Date</label>
-              <input type="date" min={form.startDate || new Date().toISOString().slice(0,10)}
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
+                Custom End Date <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="date"
+                required
+                min={form.startDate || new Date().toISOString().slice(0, 10)}
                 className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 bg-white"
-                value={form.endDate} onChange={e => setForm(p => ({ ...p, endDate: e.target.value }))} />
+                value={form.endDate}
+                onChange={e => setForm(p => ({ ...p, endDate: e.target.value }))}
+              />
             </div>
           )}
           <p className="text-xs text-gray-400">
-            {form.duration === 'custom'
-              ? form.endDate ? `End Date: ${new Date(form.endDate).toLocaleDateString('en-IN', {day:'2-digit', month:'short', year:'numeric'})}` : 'Please select end date'
-              : (() => {
-                  const sd = form.startDate ? new Date(form.startDate) : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-                  const ed = new Date(sd); ed.setMonth(ed.getMonth() + parseInt(form.duration || '6'));
-                  return `End Date: ${ed.toLocaleDateString('en-IN', {day:'2-digit', month:'short', year:'numeric'})}`;
-                })()
-            }
+            {(() => {
+              const startISO = form.startDate || new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10);
+              const sd = new Date(startISO + 'T00:00:00');
+
+              // Custom mode
+              if (form.duration === 'custom') {
+                if (!form.endDate) return 'Please select your end date';
+                const ed = new Date(form.endDate + 'T00:00:00');
+                if (ed <= sd) return 'End date must be after start date';
+                const days = Math.round((ed.getTime() - sd.getTime()) / 86400000);
+                let label = '';
+                if (days === 1) label = '1 Day';
+                else if (days < 7) label = `${days} Days`;
+                else if (days < 30) { const w = Math.round(days / 7); label = `${w} Week${w === 1 ? '' : 's'}`; }
+                else {
+                  let m = (ed.getFullYear() - sd.getFullYear()) * 12 + (ed.getMonth() - sd.getMonth());
+                  const anchor = new Date(sd); anchor.setMonth(anchor.getMonth() + m);
+                  if (anchor > ed) m -= 1;
+                  const rm = Math.max(1, m);
+                  label = `${rm} Month${rm === 1 ? '' : 's'}`;
+                }
+                return `End Date: ${ed.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}  •  Duration: ${label}`;
+              }
+
+              // Preset months mode
+              const ed = new Date(sd);
+              ed.setMonth(ed.getMonth() + parseInt(form.duration || '6'));
+              return `End Date: ${ed.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}`;
+            })()}
           </p>
         </div>
         <button type="submit" disabled={applying}
@@ -2481,8 +2530,11 @@ function AssignedProject({ enrollment }: { enrollment: any }) {
   const studentEmail = (enrollment.email || '').toLowerCase().trim();
   const studentName = (enrollment.studentName || '').toLowerCase().trim();
 
+  // 0. DB-stored assignment (new students enrolled via portal — fixed once assigned)
+  const dbAssignment = (enrollment.completedTasks || []).find((t: any) => t._type === 'project_assignment');
+
   // 1. Email match from batch files (July + August)
-  const emailMatch = studentEmail ? (STUDENT_AUG_PROJECTS[studentEmail] || STUDENT_EMAIL_PROJECTS[studentEmail]) : null;
+  const emailMatch = !dbAssignment && studentEmail ? (STUDENT_AUG_PROJECTS[studentEmail] || STUDENT_EMAIL_PROJECTS[studentEmail]) : null;
   
   // 2. Name match from assignment sheet
   const nameMatch = !emailMatch ? Object.values(STUDENT_PROJECTS).find((s: any) => {
@@ -2494,10 +2546,30 @@ function AssignedProject({ enrollment }: { enrollment: any }) {
   }) as any : null;
 
   const projectData = emailMatch || nameMatch || null;
-  const projects = projectData?.projects?.length 
-    ? projectData.projects 
-    : (DOMAIN_PROJECTS[domainKey] || DOMAIN_PROJECTS['default']).projects;
-  const title = projectData
+
+  // For new students — shuffle domain projects using email as seed
+  const getShuffledProjects = () => {
+    const pool = (DOMAIN_PROJECTS[domainKey] || DOMAIN_PROJECTS['default']).projects;
+    if (!pool?.length) return pool;
+    const simple = pool.filter((p: any) => p.stage?.includes('Simple'));
+    const medium = pool.filter((p: any) => p.stage?.includes('Medium'));
+    const hard   = pool.filter((p: any) => p.stage?.includes('Hard'));
+    // Use email chars as seed for consistent but unique selection
+    const seed = (enrollment.email || enrollment.studentName || '').split('').reduce((acc: number, c: string) => acc + c.charCodeAt(0), 0);
+    const pick = (arr: any[]) => arr[seed % arr.length];
+    return [
+      pick(simple) || simple[0],
+      pick(medium) || medium[0],
+      pick(hard)   || hard[0],
+    ].filter(Boolean);
+  };
+
+  const projects = dbAssignment?.projects?.length
+    ? dbAssignment.projects
+    : projectData?.projects?.length
+    ? projectData.projects
+    : getShuffledProjects();
+  const title = (dbAssignment || projectData)
     ? `Assigned Projects — ${enrollment.studentName}`
     : (DOMAIN_PROJECTS[domainKey] || DOMAIN_PROJECTS['default']).title;
 

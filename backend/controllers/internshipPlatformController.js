@@ -86,16 +86,20 @@ const applyInternship = asyncHandler(async (req, res) => {
     batchStart = new Date(today.getFullYear(), today.getMonth(), 1);
   }
 
-  // Duration: student chosen months or custom end date, default 6 months
+  // Duration: custom end date has HIGHEST priority, then preset months, then default 6
   const endDate = new Date(batchStart);
-  if (req.body.endDate && req.body.duration === 'custom') {
-    const customEnd = new Date(req.body.endDate);
+  const customEndRaw = req.body.endDate;
+  let customEndApplied = false;
+
+  if (customEndRaw) {
+    const customEnd = new Date(customEndRaw);
     if (!isNaN(customEnd.getTime()) && customEnd > batchStart) {
       endDate.setTime(customEnd.getTime());
-    } else {
-      endDate.setMonth(endDate.getMonth() + 6);
+      customEndApplied = true;
     }
-  } else {
+  }
+
+  if (!customEndApplied) {
     const durationMonths = parseInt(req.body.duration) || 6;
     endDate.setMonth(endDate.getMonth() + durationMonths);
   }
