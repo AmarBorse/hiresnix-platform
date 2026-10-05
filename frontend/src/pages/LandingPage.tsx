@@ -105,7 +105,7 @@ const STRUCTURED_DATA = {
       legalName: 'SR Patil Infrastructure Private Limited', url: 'https://hiresnix.co.in', logo: 'https://hiresnix.co.in/hiresnix-logo.png',
       contactPoint: { '@type': 'ContactPoint', telephone: '+91-9529120977', contactType: 'customer service', email: 'hr@hiresnix.co.in', areaServed: 'IN', availableLanguage: ['English', 'Hindi'] },
       address: { '@type': 'PostalAddress', addressLocality: 'Shirpur', addressRegion: 'Maharashtra', postalCode: '425405', addressCountry: 'IN' },
-      sameAs: [],
+      sameAs: ['https://www.instagram.com/hiresnix/', 'https://www.linkedin.com/company/hiresnix/'],
     },
     { '@type': 'WebSite', '@id': 'https://hiresnix.co.in/#website', url: 'https://hiresnix.co.in', name: 'Hiresnix',
       description: 'AI-powered software development company building web, mobile and AI products for businesses', publisher: { '@id': 'https://hiresnix.co.in/#organization' } },
@@ -132,6 +132,42 @@ function BrandMark() {
       </svg>
       <span className="hx-brand-word">HIRESNIX</span>
     </span>
+  );
+}
+
+// ── Social links ───────────────────────────────────────────────────
+const SOCIAL = [
+  {
+    name: 'Instagram', href: 'https://www.instagram.com/hiresnix/',
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <rect x="3" y="3" width="18" height="18" rx="5" />
+        <circle cx="12" cy="12" r="4" />
+        <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" />
+      </svg>
+    ),
+  },
+  {
+    name: 'LinkedIn', href: 'https://www.linkedin.com/company/hiresnix/',
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zM3 9.75h4v11.25H3zM9.5 9.75h3.83v1.54h.05c.53-1 1.84-2.06 3.79-2.06 4.05 0 4.8 2.67 4.8 6.13V21h-4v-4.98c0-1.19-.02-2.72-1.66-2.72-1.66 0-1.92 1.3-1.92 2.63V21h-4z" />
+      </svg>
+    ),
+  },
+];
+
+function SocialLinks() {
+  return (
+    <ul className="hx-social" aria-label="Hiresnix on social media">
+      {SOCIAL.map(s => (
+        <li key={s.name}>
+          <a href={s.href} target="_blank" rel="noopener noreferrer" aria-label={`Hiresnix on ${s.name}`} title={s.name}>
+            {s.icon}
+          </a>
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -630,6 +666,10 @@ export function LandingPage() {
                 Prefer email? Write to <a className="hx-link" href="mailto:hr@hiresnix.co.in">hr@hiresnix.co.in</a> or call{' '}
                 <a className="hx-link" href="tel:+919529120977">+91 95291 20977</a>.
               </p>
+              <div className="hx-contact-social">
+                <span className="hx-muted">Follow us</span>
+                <SocialLinks />
+              </div>
             </div>
             <EnquiryForm presetInterest={presetInterest} />
           </div>
@@ -642,7 +682,7 @@ export function LandingPage() {
           <div>
             <BrandMark />
             <p className="hx-muted hx-footer-blurb">AI-powered software development for startups, businesses and institutions.</p>
-            <a className="hx-link" href="https://www.linkedin.com/company/hiresnix/" target="_blank" rel="noopener noreferrer">Hiresnix on LinkedIn</a>
+            <SocialLinks />
           </div>
           <div>
             <h4>Services</h4>
@@ -878,6 +918,14 @@ html{scroll-padding-top:84px;}
 .hx-field input::placeholder,.hx-field textarea::placeholder{color:#9A9EA5;}
 .hx-field input:focus,.hx-field select:focus,.hx-field textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(11,122,85,.15);}
 .hx-contact-alt{margin-top:20px;}
+
+/* Social */
+.hx-social{list-style:none;margin:0;padding:0;display:flex;gap:10px;}
+.hx-social a{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:50%;border:1px solid #CFD2CC;color:var(--ink);background:var(--paper);text-decoration:none;transition:border-color .15s ease,color .15s ease,background-color .15s ease;}
+.hx-social a:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-soft);}
+.hx-contact-social{display:flex;align-items:center;gap:14px;margin-top:24px;}
+.hx-footer .hx-social{flex-direction:row;gap:10px;}
+.hx-footer .hx-social a{color:var(--ink);}
 
 /* Footer */
 .hx-footer{border-top:1px solid var(--line);padding:60px 0 32px;background:var(--paper);}
