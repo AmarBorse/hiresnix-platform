@@ -1,18 +1,81 @@
 // src/pages/auth/AuthPage.tsx
+// Login / register — white, clean design matching the landing page.
+// All authentication logic is unchanged from the previous version.
 import React, { useEffect, useState } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 import { authApi } from '../../api/auth';
 import { useAuthStore } from '../../store/useAuthStore';
 import { Role } from '../../types';
-import { Eye, EyeOff, Loader2, ArrowLeft, GraduationCap } from 'lucide-react';
+import { Eye, EyeOff, Loader2, ArrowLeft, Check } from 'lucide-react';
 
 type Tab = 'login' | 'register';
 type RegisterRole = 'student' | 'company' | 'institution';
 
-const inputStyle = (err?: string) =>
-  `w-full border ${err ? 'border-red-500' : 'border-white/10'} rounded-xl px-4 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-blue-500 transition auth-input`;
-const bg07 = { background: 'rgba(13,18,30,0.6)' };
+const ROLE_OPTIONS: { role: RegisterRole; label: string }[] = [
+  { role: 'student', label: 'Student' },
+  { role: 'company', label: 'Company' },
+  { role: 'institution', label: 'Institution' },
+];
+const INDUSTRIES = ['IT/Software', 'Finance', 'Healthcare', 'E-commerce', 'Manufacturing', 'Consulting', 'Media', 'Education', 'Other'];
+const INSTITUTION_TYPES = ['University', 'College', 'Institute', 'Training Center', 'School', 'Other'];
+
+// Brand mark: arrow rising to a dot (same as the landing page)
+function BrandMark() {
+  return (
+    <span className="au-brand" aria-label="Hiresnix">
+      <svg width="30" height="24" viewBox="0 0 30 24" aria-hidden="true">
+        <path d="M1 22 C 10 21, 17 16, 21 7" fill="none" stroke="var(--ink)" strokeWidth="3" strokeLinecap="round" />
+        <path d="M15 8 L22 4.5 L23.5 12.5" fill="none" stroke="var(--ink)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+        <circle cx="27" cy="3" r="2.6" fill="var(--accent)" />
+      </svg>
+      <span className="au-brand-word">HIRESNIX</span>
+    </span>
+  );
+}
+
+// Page frame: left info panel (desktop) + right content
+function Shell({ title, intro, points, children }: { title: string; intro: string; points: string[]; children: React.ReactNode }) {
+  // Turn off the app-wide tinted background while this page is open
+  useEffect(() => {
+    document.body.classList.add('au-light');
+    return () => document.body.classList.remove('au-light');
+  }, []);
+
+  return (
+    <div className="au-root">
+      <style>{AUTH_CSS}</style>
+      <aside className="au-side">
+        <Link to="/" className="au-home-link"><BrandMark /></Link>
+        <div className="au-side-body">
+          <h1 className="au-side-title">{title}</h1>
+          <p className="au-side-intro">{intro}</p>
+          <ul className="au-points">
+            {points.map(p => (
+              <li key={p}><span className="au-check" aria-hidden="true"><Check size={13} strokeWidth={3} /></span>{p}</li>
+            ))}
+          </ul>
+        </div>
+        <p className="au-side-foot">Hiresnix · Shirpur, Maharashtra</p>
+      </aside>
+      <main className="au-main">
+        <div className="au-mobile-brand"><Link to="/" className="au-home-link"><BrandMark /></Link></div>
+        <div className="au-card">{children}</div>
+        <Link to="/" className="au-back"><ArrowLeft size={14} /> Back to home</Link>
+      </main>
+    </div>
+  );
+}
+
+function Field({ label, error, children, hint }: { label: string; error?: string; hint?: string; children: React.ReactNode }) {
+  return (
+    <label className="au-field">
+      <span className="au-label">{label}{hint && <em> {hint}</em>}</span>
+      {children}
+      {error && <span className="au-error" role="alert">{error}</span>}
+    </label>
+  );
+}
 
 export function AuthPage() {
   const navigate    = useNavigate();
@@ -104,272 +167,276 @@ export function AuthPage() {
     finally { setForgotLoading(false); }
   };
 
+  const sideCopy = tab === 'login'
+    ? { title: 'Welcome back', intro: 'Log in to continue your internship, courses and applications.',
+        points: ['Your internship tasks and daily logs', 'Offer letter, certificate and LOR downloads', 'AI Academy courses and progress'] }
+    : { title: 'Start with Hiresnix', intro: 'One account for internships, AI Academy courses and job applications.',
+        points: ['Internships in 8 domains, 1 to 6 months', 'Three real projects, starter to advanced', 'QR-verifiable certificate and LOR'] };
+
+  // ── Forgot password ──
   if (showForgot) return (
-    <div className="min-h-screen flex items-center justify-center px-4" style={{ background: 'linear-gradient(135deg,#060910,#0f172a,#060910)' }}>
-      <div className="w-full max-w-md">
-        <div className="text-center mb-7">
-          <Link to="/"><img src="/hiresnix-logo.png" alt="Hiresnix" style={{ height: 80, objectFit: 'contain', margin: '0 auto 0.75rem', filter: 'drop-shadow(0 0 20px rgba(59,130,246,0.5))', display: 'block' }} /></Link>
-        </div>
-        <div style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(24px)', borderRadius: 20, border: '1px solid rgba(255,255,255,0.09)', padding: '2rem', boxShadow: '0 25px 60px rgba(0,0,0,0.5)' }}>
-          <div className="space-y-5">
-            <div className="text-center">
-              <div className="w-14 h-14 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
-                <span className="text-2xl">🔐</span>
-              </div>
-              <h2 className="text-white font-bold text-lg">Forgot Password?</h2>
-              <p className="text-gray-400 text-sm mt-1">Password reset ke liye Hiresnix admin se contact karo.</p>
-            </div>
-            <div style={{ background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.2)', borderRadius: 12, padding: '1rem' }}>
-              <p className="text-blue-300 text-sm font-semibold mb-2">📞 Kaise reset hoga?</p>
-              <p className="text-gray-400 text-xs leading-relaxed">
-                1. Hiresnix admin se contact karo<br/>
-                2. Admin temporary password set karega<br/>
-                3. Login karo → <strong className="text-white">Profile → Change Password</strong><br/>
-                4. Apna naya password set karo ✅
-              </p>
-            </div>
-            <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 10, padding: '0.75rem' }} className="text-center">
-              <p className="text-gray-400 text-xs mb-1">Contact us at</p>
-              <a href="mailto:hr@hiresnix.co.in" className="text-blue-400 hover:text-blue-300 text-sm font-semibold">hr@hiresnix.co.in</a>
-            </div>
-            <button type="button" onClick={() => setShowForgot(false)} className="w-full text-gray-500 hover:text-gray-300 text-sm transition flex items-center justify-center gap-1">
-              <ArrowLeft size={12} /> Back to Login
-            </button>
-          </div>
-        </div>
+    <Shell title="Reset your password" intro="Password resets are handled by the Hiresnix team." points={['Contact the admin', 'Get a temporary password', 'Set a new one from your profile']}>
+      <h2 className="au-title">Forgot password?</h2>
+      <p className="au-sub">Password reset ke liye Hiresnix admin se contact karo.</p>
+      <ol className="au-steps">
+        <li>Hiresnix admin se contact karo</li>
+        <li>Admin temporary password set karega</li>
+        <li>Login karo, phir <strong>Profile → Change Password</strong></li>
+        <li>Apna naya password set karo</li>
+      </ol>
+      <div className="au-note">
+        Contact us at <a href="mailto:hr@hiresnix.co.in" className="au-link">hr@hiresnix.co.in</a>
       </div>
-    </div>
+      <button type="button" onClick={() => setShowForgot(false)} className="au-btn au-btn-ghost au-btn-block">
+        <ArrowLeft size={14} /> Back to log in
+      </button>
+    </Shell>
   );
 
-  // Pending approval screen for institution
+  // ── Institution registration pending approval ──
   if (pendingApproval) return (
-    <div className="min-h-screen flex items-center justify-center px-4" style={{ background: 'linear-gradient(135deg,#060910,#0f172a,#060910)' }}>
-      <div className="w-full max-w-md text-center space-y-6">
-        <img src="/hiresnix-logo.png" alt="Hiresnix" style={{ height: 80, objectFit: 'contain', margin: '0 auto', filter: 'drop-shadow(0 0 20px rgba(99,102,241,0.5))' }} />
-        <div style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(24px)', borderRadius: 20, border: '1px solid rgba(255,255,255,0.09)', padding: '2.5rem', boxShadow: '0 25px 60px rgba(0,0,0,0.5)' }}>
-          <div className="w-16 h-16 bg-indigo-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-            <GraduationCap size={28} className="text-indigo-400" />
-          </div>
-          <h2 className="text-white font-bold text-xl mb-2">Registration Submitted!</h2>
-          <p className="text-gray-400 text-sm mb-4">Your institution registration is pending admin approval. You will be able to log in once your account has been reviewed and approved.</p>
-          <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-4 mb-5">
-            <p className="text-indigo-300 text-xs">✓ Registration received<br />⏳ Waiting for admin review<br />📧 You'll be notified on approval</p>
-          </div>
-          <button onClick={() => { setPendingApproval(false); setTab('login'); setRegisterRole('student'); }}
-            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl text-sm transition">
-            Back to Login
-          </button>
-        </div>
-      </div>
-    </div>
+    <Shell title="Almost there" intro="Institution accounts are reviewed before they go live." points={['Registration received', 'Waiting for admin review', "You'll be notified on approval"]}>
+      <h2 className="au-title">Registration submitted</h2>
+      <p className="au-sub">
+        Your institution registration is pending admin approval. You will be able to log in once your account has been reviewed and approved.
+      </p>
+      <button type="button" onClick={() => { setPendingApproval(false); setTab('login'); setRegisterRole('student'); }} className="au-btn au-btn-primary au-btn-block">
+        Back to log in
+      </button>
+    </Shell>
   );
+
+  const submitLabel = registerRole === 'company' ? 'Register company' : registerRole === 'institution' ? 'Register institution' : 'Create student account';
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-8" style={{ background: 'linear-gradient(135deg,#020617,#0f172a,#020617)', position: 'relative', overflow: 'hidden' }}>
-      <style>{`
-        body { margin: 0; background-color: #020617; }
-        @keyframes float { 0%,100%{transform:translateY(0) rotate(0deg);opacity:0.6} 50%{transform:translateY(-30px) rotate(180deg);opacity:0.2} }
-        @keyframes pulse-glow { 0%,100%{opacity:0.3;transform:scale(1)} 50%{opacity:0.7;transform:scale(1.1)} }
-        @keyframes drift { 0%{transform:translate(0,0)} 25%{transform:translate(30px,-20px)} 50%{transform:translate(-10px,40px)} 75%{transform:translate(-30px,-10px)} 100%{transform:translate(0,0)} }
-        @keyframes shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
-        @keyframes card-in { from{opacity:0;transform:translateY(28px)} to{opacity:1;transform:translateY(0)} }
-        @keyframes logo-pulse { 0%,100%{filter:drop-shadow(0 0 20px rgba(59,130,246,0.5))} 50%{filter:drop-shadow(0 0 35px rgba(59,130,246,0.9)) drop-shadow(0 0 60px rgba(139,92,246,0.4))} }
-        .auth-input { transition: border-color 0.2s, box-shadow 0.2s !important; }
-        .auth-input:focus { border-color: rgba(59,130,246,0.6) !important; box-shadow: 0 0 0 3px rgba(59,130,246,0.12), 0 0 16px rgba(59,130,246,0.1) !important; outline: none !important; }
-        .auth-btn { transition: all 0.2s !important; }
-        .auth-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(59,130,246,0.4) !important; }
-        .auth-btn:active { transform: translateY(0); }
-        .role-btn { transition: all 0.2s !important; }
-        .role-btn:hover { transform: translateY(-1px); }
-      `}</style>
-
-      {/* Animated gradient orbs */}
-      <div style={{ position:'absolute', top:'-10%', right:'-5%', width:500, height:500, borderRadius:'50%', background:'radial-gradient(circle,rgba(59,130,246,0.15),transparent 70%)', filter:'blur(40px)', animation:'drift 12s ease-in-out infinite' }} />
-      <div style={{ position:'absolute', bottom:'-10%', left:'-5%', width:450, height:450, borderRadius:'50%', background:'radial-gradient(circle,rgba(139,92,246,0.12),transparent 70%)', filter:'blur(40px)', animation:'drift 15s ease-in-out infinite reverse' }} />
-      <div style={{ position:'absolute', top:'40%', left:'20%', width:300, height:300, borderRadius:'50%', background:'radial-gradient(circle,rgba(16,185,129,0.08),transparent 70%)', filter:'blur(60px)', animation:'pulse-glow 6s ease-in-out infinite' }} />
-
-      {/* Grid pattern */}
-      <div style={{ position:'absolute', inset:0, backgroundImage:'radial-gradient(circle,rgba(59,130,246,0.08) 1px,transparent 1px)', backgroundSize:'28px 28px', opacity:0.6 }} />
-
-      {/* Floating particles */}
-      {[
-        {top:'10%',left:'15%',size:6,delay:'0s',color:'rgba(59,130,246,0.5)'},
-        {top:'20%',left:'80%',size:4,delay:'1s',color:'rgba(139,92,246,0.5)'},
-        {top:'60%',left:'10%',size:5,delay:'2s',color:'rgba(16,185,129,0.4)'},
-        {top:'75%',left:'85%',size:7,delay:'0.5s',color:'rgba(59,130,246,0.4)'},
-        {top:'40%',left:'90%',size:4,delay:'3s',color:'rgba(245,158,11,0.4)'},
-        {top:'85%',left:'40%',size:5,delay:'1.5s',color:'rgba(139,92,246,0.4)'},
-        {top:'5%',left:'50%',size:3,delay:'2.5s',color:'rgba(59,130,246,0.6)'},
-        {top:'50%',left:'5%',size:6,delay:'0.8s',color:'rgba(16,185,129,0.3)'},
-      ].map((p,i)=>(
-        <div key={i} style={{
-          position:'absolute', top:p.top, left:p.left,
-          width:p.size, height:p.size, borderRadius:'50%',
-          background:p.color, filter:'blur(1px)',
-          animation:`float ${4+i*0.5}s ease-in-out ${p.delay} infinite`
-        }}/>
-      ))}
-
-      {/* Top shimmer line */}
-      <div style={{ position:'absolute', top:0, left:0, right:0, height:2, background:'linear-gradient(90deg,transparent,rgba(59,130,246,0.6),rgba(139,92,246,0.6),transparent)', animation:'shimmer 3s linear infinite', backgroundSize:'200% 100%' }} />
-
-      <div className="relative z-10 w-full max-w-md">
-        <div className="text-center mb-7" style={{animation:'card-in 0.6s ease both'}}>
-          <Link to="/"><img src="/hiresnix-logo.png" alt="Hiresnix" style={{ height: 100, objectFit: 'contain', margin: '0 auto 0.75rem', filter: 'drop-shadow(0 0 25px rgba(59,130,246,0.6))', display: 'block', cursor: 'pointer', animation:'logo-pulse 3s ease-in-out infinite' }} /></Link>
-          <p className="text-gray-500 text-sm" style={{ fontFamily: "'JetBrains Mono',monospace", letterSpacing: '0.05em' }}>Elevating Talent. Empowering Futures.</p>
-        </div>
-
-        <div style={{ background: 'rgba(13,18,30,0.85)', backdropFilter: 'blur(24px)', borderRadius: 20, border: '1px solid rgba(59,130,246,0.2)', overflow: 'hidden', boxShadow: '0 25px 60px rgba(0,0,0,0.6), 0 0 40px rgba(59,130,246,0.08)', animation:'card-in 0.7s ease both', position:'relative' }}>
-          {/* Card top glow line */}
-          <div style={{position:'absolute',top:0,left:0,right:0,height:1,background:'linear-gradient(90deg,transparent,rgba(59,130,246,0.8),rgba(139,92,246,0.8),transparent)',animation:'shimmer 2.5s linear infinite',backgroundSize:'200% 100%'}}/>
-          {/* Tabs */}
-          <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-            {(['login', 'register'] as Tab[]).map(t => (
-              <button key={t} onClick={() => setTab(t)}
-                style={{ flex: 1, padding: '1rem', fontSize: '0.88rem', fontWeight: 700, textTransform: 'capitalize', transition: 'all 0.2s', cursor: 'pointer', border: 'none', background: tab === t ? 'rgba(59,130,246,0.15)' : 'transparent', color: tab === t ? '#60a5fa' : '#6b7a99', borderBottom: tab === t ? '2px solid #3b82f6' : '2px solid transparent' }}>
-                {t === 'login' ? '🔐 Login' : '✨ Register'}
-              </button>
-            ))}
-          </div>
-
-          <div style={{ padding: '1.5rem' }}>
-            {/* LOGIN */}
-            {tab === 'login' && (
-              <form onSubmit={handleLogin} noValidate className="space-y-4">
-                <div>
-                  <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Email</label>
-                  <input type="email" required value={loginForm.email} onChange={e => { setLoginForm(p => ({ ...p, email: e.target.value })); if (loginErrors.email) setLoginErrors(p => ({ ...p, email: '' })); }}
-                    style={bg07} className={inputStyle(loginErrors.email)} placeholder="you@example.com" />
-                  {loginErrors.email && <p className="text-red-400 text-xs mt-1.5">{loginErrors.email}</p>}
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Password</label>
-                  <div className="relative">
-                    <input type={showPass ? 'text' : 'password'} required value={loginForm.password} onChange={e => { setLoginForm(p => ({ ...p, password: e.target.value })); if (loginErrors.password) setLoginErrors(p => ({ ...p, password: '' })); }}
-                      style={bg07} className={inputStyle(loginErrors.password) + ' pr-10'} placeholder="••••••••" />
-                    <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300">
-                      {showPass ? <EyeOff size={15} /> : <Eye size={15} />}
-                    </button>
-                  </div>
-                  {loginErrors.password && <p className="text-red-400 text-xs mt-1.5">{loginErrors.password}</p>}
-                </div>
-                <div className="flex justify-end">
-  <button type="button" onClick={() => setShowForgot(true)} className="text-blue-400 hover:text-blue-300 text-xs font-medium">
-    Forgot password?
-  </button>
-</div>
-                <button type="submit" disabled={loading} className="w-full bg-blue-500 hover:bg-blue-600 disabled:opacity-60 text-white font-bold py-2.5 rounded-xl text-sm transition flex items-center justify-center gap-2 auth-btn">
-                  {loading && <Loader2 size={14} className="animate-spin" />} Sign In
-                </button>
-                <p className="text-center text-xs text-gray-600">
-                  Don't have an account?{' '}
-                  <button type="button" onClick={() => setTab('register')} className="text-blue-400 hover:text-blue-300 font-semibold">Register here</button>
-                </p>
-              </form>
-            )}
-
-            {/* REGISTER */}
-            {tab === 'register' && (
-              <form onSubmit={handleRegister} noValidate className="space-y-3.5">
-                {/* Role switcher */}
-                <div>
-                  <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">I am a</label>
-                  <div className="flex gap-2">
-                    {([
-                      { role: 'student', label: '🎓 Student' },
-                      { role: 'company', label: '🏢 Company' },
-                      { role: 'institution', label: '🏫 Institution' },
-                    ] as { role: RegisterRole; label: string }[]).map(({ role: r, label }) => (
-                      <button key={r} type="button" onClick={() => setRegisterRole(r)}
-                        style={{ flex: 1, padding: '0.5rem 0.3rem', borderRadius: 10, fontSize: '0.78rem', fontWeight: 700, border: '1px solid', cursor: 'pointer', transition: 'all 0.2s', background: registerRole === r ? '#3b82f6' : 'transparent', borderColor: registerRole === r ? '#3b82f6' : 'rgba(255,255,255,0.1)', color: registerRole === r ? '#fff' : '#6b7a99' }}>
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Common fields */}
-                {(['name', 'email', 'password'] as const).map(k => (
-                  <div key={k}>
-                    <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">{k === 'name' ? 'Full Name' : k.charAt(0).toUpperCase() + k.slice(1)}</label>
-                    <div className="relative">
-                      <input type={k === 'password' ? (showPass ? 'text' : 'password') : k === 'email' ? 'email' : 'text'}
-                        required value={(registerForm as any)[k]}
-                        onChange={e => { setRegisterForm(p => ({ ...p, [k]: e.target.value })); if ((registerErrors as any)[k]) setRegisterErrors(p => ({ ...p, [k]: '' })); }}
-                        style={bg07} className={inputStyle((registerErrors as any)[k]) + (k === 'password' ? ' pr-10' : '')}
-                        placeholder={k === 'name' ? 'Your full name' : k === 'email' ? 'you@example.com' : 'Min 6 characters'} />
-                      {k === 'password' && (
-                        <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300">
-                          {showPass ? <EyeOff size={15} /> : <Eye size={15} />}
-                        </button>
-                      )}
-                    </div>
-                    {(registerErrors as any)[k] && <p className="text-red-400 text-xs mt-1.5">{(registerErrors as any)[k]}</p>}
-                  </div>
-                ))}
-
-                {/* Company-specific */}
-                {registerRole === 'company' && (
-                  <>
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Company Name</label>
-                      <input type="text" required value={registerForm.companyName} onChange={e => { setRegisterForm(p => ({ ...p, companyName: e.target.value })); if (registerErrors.companyName) setRegisterErrors(p => ({ ...p, companyName: '' })); }}
-                        style={bg07} className={inputStyle(registerErrors.companyName)} placeholder="Your company name" />
-                      {registerErrors.companyName && <p className="text-red-400 text-xs mt-1.5">{registerErrors.companyName}</p>}
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Industry</label>
-                      <select value={registerForm.industry} onChange={e => setRegisterForm(p => ({ ...p, industry: e.target.value }))} style={{ background: '#1e293b' }}
-                        className="w-full border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-blue-500">
-                        <option value="">Select industry</option>
-                        {['IT/Software','Finance','Healthcare','E-commerce','Manufacturing','Consulting','Media','Education','Other'].map(i => <option key={i}>{i}</option>)}
-                      </select>
-                    </div>
-                  </>
-                )}
-
-                {/* Institution-specific */}
-                {registerRole === 'institution' && (
-                  <>
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Institution Name</label>
-                      <input type="text" required value={registerForm.institutionName} onChange={e => { setRegisterForm(p => ({ ...p, institutionName: e.target.value })); if (registerErrors.institutionName) setRegisterErrors(p => ({ ...p, institutionName: '' })); }}
-                        style={bg07} className={inputStyle(registerErrors.institutionName)} placeholder="e.g. ABC Institute of Technology" />
-                      {registerErrors.institutionName && <p className="text-red-400 text-xs mt-1.5">{registerErrors.institutionName}</p>}
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Institution Type</label>
-                      <select value={registerForm.institutionType} onChange={e => setRegisterForm(p => ({ ...p, institutionType: e.target.value }))} style={{ background: '#1e293b' }}
-                        className="w-full border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-blue-500">
-                        <option value="">Select type</option>
-                        {['University','College','Institute','Training Center','School','Other'].map(t => <option key={t}>{t}</option>)}
-                      </select>
-                    </div>
-                    <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-3">
-                      <p className="text-indigo-300 text-xs">🏫 Institution accounts require admin approval before you can log in. You'll be notified once reviewed.</p>
-                    </div>
-                  </>
-                )}
-
-                <button type="submit" disabled={loading}
-                  className="w-full bg-blue-500 hover:bg-blue-600 disabled:opacity-60 text-white font-bold py-2.5 rounded-xl text-sm transition flex items-center justify-center gap-2 mt-1 auth-btn">
-                  {loading && <Loader2 size={14} className="animate-spin" />}
-                  {registerRole === 'company' ? '🏢 Register Company' : registerRole === 'institution' ? '🏫 Register Institution' : '🎓 Create Account'}
-                </button>
-                <p className="text-center text-xs text-gray-600">
-                  Already have an account?{' '}
-                  <button type="button" onClick={() => setTab('login')} className="text-blue-400 hover:text-blue-300 font-semibold">Login here</button>
-                </p>
-              </form>
-            )}
-          </div>
-        </div>
-        <p className="text-center mt-5">
-          <Link to="/" className="text-gray-600 hover:text-gray-400 text-xs transition-colors flex items-center justify-center gap-1">
-            <ArrowLeft size={12} /> Back to Home
-          </Link>
-        </p>
+    <Shell title={sideCopy.title} intro={sideCopy.intro} points={sideCopy.points}>
+      <div className="au-tabs" role="tablist" aria-label="Log in or create an account">
+        {(['login', 'register'] as Tab[]).map(t => (
+          <button key={t} type="button" role="tab" aria-selected={tab === t} onClick={() => setTab(t)} className="au-tab">
+            {t === 'login' ? 'Log in' : 'Create account'}
+          </button>
+        ))}
       </div>
-    </div>
+
+      {/* LOGIN */}
+      {tab === 'login' && (
+        <form onSubmit={handleLogin} noValidate className="au-form">
+          <h2 className="au-title">Log in to your account</h2>
+          <Field label="Email" error={loginErrors.email}>
+            <input type="email" required autoComplete="email" value={loginForm.email}
+              onChange={e => { setLoginForm(p => ({ ...p, email: e.target.value })); if (loginErrors.email) setLoginErrors(p => ({ ...p, email: '' })); }}
+              className={`au-input${loginErrors.email ? ' au-input-err' : ''}`} placeholder="you@example.com" />
+          </Field>
+          <Field label="Password" error={loginErrors.password}>
+            <span className="au-pass">
+              <input type={showPass ? 'text' : 'password'} required autoComplete="current-password" value={loginForm.password}
+                onChange={e => { setLoginForm(p => ({ ...p, password: e.target.value })); if (loginErrors.password) setLoginErrors(p => ({ ...p, password: '' })); }}
+                className={`au-input${loginErrors.password ? ' au-input-err' : ''}`} placeholder="Your password" />
+              <button type="button" className="au-eye" onClick={() => setShowPass(!showPass)} aria-label={showPass ? 'Hide password' : 'Show password'}>
+                {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </span>
+          </Field>
+          <div className="au-row-end">
+            <button type="button" onClick={() => setShowForgot(true)} className="au-link au-link-btn">Forgot password?</button>
+          </div>
+          <button type="submit" disabled={loading} className="au-btn au-btn-primary au-btn-block">
+            {loading && <Loader2 size={15} className="au-spin" />} Log in
+          </button>
+          <p className="au-switch">
+            New to Hiresnix?{' '}
+            <button type="button" onClick={() => setTab('register')} className="au-link au-link-btn">Create an account</button>
+          </p>
+          <p className="au-alt">
+            Institution student? <Link to="/inst-login" className="au-link">Log in with your Career ID</Link>
+          </p>
+        </form>
+      )}
+
+      {/* REGISTER */}
+      {tab === 'register' && (
+        <form onSubmit={handleRegister} noValidate className="au-form">
+          <h2 className="au-title">Create your account</h2>
+          <div className="au-field">
+            <span className="au-label" id="au-role-label">I am a</span>
+            <div className="au-roles" role="radiogroup" aria-labelledby="au-role-label">
+              {ROLE_OPTIONS.map(({ role: r, label }) => (
+                <button key={r} type="button" role="radio" aria-checked={registerRole === r} onClick={() => setRegisterRole(r)} className="au-role">
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <Field label="Full name" error={registerErrors.name}>
+            <input type="text" required autoComplete="name" value={registerForm.name}
+              onChange={e => { setRegisterForm(p => ({ ...p, name: e.target.value })); if (registerErrors.name) setRegisterErrors(p => ({ ...p, name: '' })); }}
+              className={`au-input${registerErrors.name ? ' au-input-err' : ''}`} placeholder="Your full name" />
+          </Field>
+          <Field label="Email" error={registerErrors.email}>
+            <input type="email" required autoComplete="email" value={registerForm.email}
+              onChange={e => { setRegisterForm(p => ({ ...p, email: e.target.value })); if (registerErrors.email) setRegisterErrors(p => ({ ...p, email: '' })); }}
+              className={`au-input${registerErrors.email ? ' au-input-err' : ''}`} placeholder="you@example.com" />
+          </Field>
+          <Field label="Password" error={registerErrors.password}>
+            <span className="au-pass">
+              <input type={showPass ? 'text' : 'password'} required autoComplete="new-password" value={registerForm.password}
+                onChange={e => { setRegisterForm(p => ({ ...p, password: e.target.value })); if (registerErrors.password) setRegisterErrors(p => ({ ...p, password: '' })); }}
+                className={`au-input${registerErrors.password ? ' au-input-err' : ''}`} placeholder="At least 6 characters" />
+              <button type="button" className="au-eye" onClick={() => setShowPass(!showPass)} aria-label={showPass ? 'Hide password' : 'Show password'}>
+                {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </span>
+          </Field>
+
+          {registerRole === 'company' && (
+            <>
+              <Field label="Company name" error={registerErrors.companyName}>
+                <input type="text" required value={registerForm.companyName}
+                  onChange={e => { setRegisterForm(p => ({ ...p, companyName: e.target.value })); if (registerErrors.companyName) setRegisterErrors(p => ({ ...p, companyName: '' })); }}
+                  className={`au-input${registerErrors.companyName ? ' au-input-err' : ''}`} placeholder="Your company name" />
+              </Field>
+              <Field label="Industry">
+                <select value={registerForm.industry} onChange={e => setRegisterForm(p => ({ ...p, industry: e.target.value }))} className="au-input">
+                  <option value="">Select industry</option>
+                  {INDUSTRIES.map(i => <option key={i}>{i}</option>)}
+                </select>
+              </Field>
+            </>
+          )}
+
+          {registerRole === 'institution' && (
+            <>
+              <Field label="Institution name" error={registerErrors.institutionName}>
+                <input type="text" required value={registerForm.institutionName}
+                  onChange={e => { setRegisterForm(p => ({ ...p, institutionName: e.target.value })); if (registerErrors.institutionName) setRegisterErrors(p => ({ ...p, institutionName: '' })); }}
+                  className={`au-input${registerErrors.institutionName ? ' au-input-err' : ''}`} placeholder="e.g. ABC Institute of Technology" />
+              </Field>
+              <Field label="Institution type">
+                <select value={registerForm.institutionType} onChange={e => setRegisterForm(p => ({ ...p, institutionType: e.target.value }))} className="au-input">
+                  <option value="">Select type</option>
+                  {INSTITUTION_TYPES.map(t => <option key={t}>{t}</option>)}
+                </select>
+              </Field>
+              <p className="au-note">Institution accounts need admin approval before you can log in. We'll notify you once it's reviewed.</p>
+            </>
+          )}
+
+          <button type="submit" disabled={loading} className="au-btn au-btn-primary au-btn-block">
+            {loading && <Loader2 size={15} className="au-spin" />} {submitLabel}
+          </button>
+          <p className="au-switch">
+            Already have an account?{' '}
+            <button type="button" onClick={() => setTab('login')} className="au-link au-link-btn">Log in</button>
+          </p>
+        </form>
+      )}
+    </Shell>
   );
 }
+
+const AUTH_CSS = `
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Figtree:wght@400;500;600;700&display=swap');
+
+body.au-light{background:#FFFFFF !important;}
+body.au-light::before{display:none !important;}
+
+.au-root{
+  --paper:#FFFFFF; --mist:#F6F7F5; --line:#E4E6E2; --field:#CFD2CC;
+  --ink:#15171A; --text:#2B2E33; --muted:#62666D;
+  --accent:#0B7A55; --accent-press:#08613F; --accent-soft:#E8F4EE; --danger:#C2362B;
+  --display:'Bricolage Grotesque','Helvetica Neue',Arial,sans-serif;
+  --body:'Figtree',system-ui,-apple-system,'Segoe UI',sans-serif;
+  min-height:100vh; display:grid; grid-template-columns:minmax(0,5fr) minmax(0,7fr);
+  background:var(--paper); color:var(--text); font-family:var(--body); font-size:16px; line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+.au-root *{box-sizing:border-box;}
+.au-root :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:8px;}
+
+/* Brand */
+.au-home-link{text-decoration:none;display:inline-flex;}
+.au-brand{display:inline-flex;align-items:center;gap:10px;}
+.au-brand-word{font-family:var(--display);font-weight:700;font-size:1rem;letter-spacing:0.16em;color:var(--ink);}
+
+/* Left panel */
+.au-side{background:var(--mist);border-right:1px solid var(--line);padding:40px 48px;display:flex;flex-direction:column;}
+.au-side-body{margin:auto 0;padding:40px 0;max-width:420px;}
+.au-side-title{font-family:var(--display);font-weight:700;color:var(--ink);font-size:clamp(2rem,3.4vw,2.8rem);line-height:1.05;letter-spacing:-0.03em;margin:0 0 14px;}
+.au-side-intro{font-size:1.08rem;margin:0 0 28px;color:var(--text);}
+.au-points{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:14px;}
+.au-points li{display:flex;align-items:center;gap:12px;color:var(--ink);font-weight:500;}
+.au-check{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;flex-shrink:0;}
+.au-side-foot{color:var(--muted);font-size:0.88rem;margin:0;}
+
+/* Right side */
+.au-main{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 24px;}
+.au-mobile-brand{display:none;}
+.au-card{width:100%;max-width:420px;}
+.au-back{display:inline-flex;align-items:center;gap:6px;margin-top:28px;color:var(--muted);font-size:0.9rem;text-decoration:none;}
+.au-back:hover{color:var(--ink);}
+
+/* Tabs */
+.au-tabs{display:grid;grid-template-columns:1fr 1fr;background:var(--mist);border:1px solid var(--line);border-radius:999px;padding:4px;margin-bottom:32px;}
+.au-tab{all:unset;text-align:center;cursor:pointer;padding:9px 12px;border-radius:999px;font-weight:600;font-size:0.94rem;color:var(--muted);}
+.au-tab:hover{color:var(--ink);}
+.au-tab[aria-selected="true"]{background:var(--paper);color:var(--ink);box-shadow:0 1px 2px rgba(21,23,26,.08),0 0 0 1px var(--line);}
+.au-tab:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+
+/* Form */
+.au-title{font-family:var(--display);font-weight:700;color:var(--ink);font-size:1.6rem;letter-spacing:-0.02em;line-height:1.15;margin:0 0 22px;}
+.au-sub{color:var(--text);margin:-10px 0 20px;}
+.au-form{display:flex;flex-direction:column;}
+.au-field{display:flex;flex-direction:column;gap:6px;margin-bottom:16px;}
+.au-label{font-size:0.9rem;font-weight:600;color:var(--ink);}
+.au-label em{font-style:normal;font-weight:400;color:var(--muted);}
+.au-input{font:inherit;font-size:0.97rem;color:var(--ink);background:var(--paper);border:1px solid var(--field);border-radius:12px;padding:11px 14px;min-height:46px;width:100%;outline:none;transition:border-color .15s ease,box-shadow .15s ease;}
+.au-input::placeholder{color:#9A9EA5;}
+.au-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(11,122,85,.15);}
+.au-input-err{border-color:var(--danger);}
+.au-input-err:focus{box-shadow:0 0 0 3px rgba(194,54,43,.15);border-color:var(--danger);}
+.au-error{color:var(--danger);font-size:0.86rem;}
+.au-pass{position:relative;display:block;}
+.au-pass .au-input{padding-right:44px;}
+.au-eye{all:unset;cursor:pointer;position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--muted);display:flex;padding:4px;border-radius:6px;}
+.au-eye:hover{color:var(--ink);}
+.au-row-end{display:flex;justify-content:flex-end;margin:-6px 0 20px;}
+
+.au-roles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.au-role{all:unset;text-align:center;cursor:pointer;padding:10px 6px;border:1px solid var(--field);border-radius:12px;font-weight:600;font-size:0.93rem;color:var(--text);}
+.au-role:hover{border-color:var(--ink);}
+.au-role[aria-checked="true"]{border-color:var(--accent);background:var(--accent-soft);color:var(--accent-press);}
+.au-role:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+
+/* Buttons & links */
+.au-btn{font-family:var(--body);font-weight:600;font-size:0.98rem;border-radius:999px;padding:13px 22px;cursor:pointer;border:1px solid transparent;display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:background-color .15s ease,border-color .15s ease;}
+.au-btn-block{width:100%;}
+.au-btn-primary{background:var(--accent);color:#fff;}
+.au-btn-primary:hover{background:var(--accent-press);}
+.au-btn-primary:disabled{opacity:.6;cursor:progress;}
+.au-btn-ghost{background:var(--paper);color:var(--ink);border-color:var(--field);}
+.au-btn-ghost:hover{border-color:var(--ink);}
+.au-link{color:var(--accent);font-weight:600;text-decoration:none;}
+.au-link:hover{color:var(--accent-press);text-decoration:underline;text-underline-offset:3px;}
+.au-link-btn{all:unset;cursor:pointer;color:var(--accent);font-weight:600;}
+.au-link-btn:hover{color:var(--accent-press);text-decoration:underline;text-underline-offset:3px;}
+.au-switch{text-align:center;color:var(--muted);font-size:0.94rem;margin:22px 0 0;}
+.au-alt{text-align:center;color:var(--muted);font-size:0.9rem;margin:10px 0 0;padding-top:18px;border-top:1px solid var(--line);margin-top:20px;}
+.au-note{background:var(--mist);border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:0.9rem;color:var(--text);margin:0 0 18px;}
+.au-steps{list-style:decimal;margin:0 0 20px;padding-left:20px;color:var(--text);display:flex;flex-direction:column;gap:6px;}
+.au-steps strong{color:var(--ink);}
+.au-spin{animation:auSpin 1s linear infinite;}
+@keyframes auSpin{to{transform:rotate(360deg);}}
+
+/* Responsive */
+@media (max-width: 900px){
+  .au-root{grid-template-columns:1fr;}
+  .au-side{display:none;}
+  .au-main{justify-content:flex-start;padding:28px 20px 40px;}
+  .au-mobile-brand{display:block;width:100%;max-width:420px;margin-bottom:32px;}
+}
+@media (prefers-reduced-motion: reduce){
+  .au-btn,.au-input{transition:none;}
+  .au-spin{animation-duration:2s;}
+}
+`;
