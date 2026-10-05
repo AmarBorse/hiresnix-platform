@@ -18,6 +18,13 @@ export function AuthPage() {
   const navigate    = useNavigate();
   const location    = useLocation();
   const routeState  = location.state as { message?: string } | null;
+
+  // Shown after the 3-day inactivity auto-logout
+  useEffect(() => {
+    if (new URLSearchParams(location.search).get('reason') === 'inactive') {
+      toast.info('You were logged out after 3 days of inactivity. Please log in again.');
+    }
+  }, [location.search]);
   const { setAuth } = useAuthStore();
   const [tab, setTab]           = useState<Tab>('login');
   const [loading, setLoading]   = useState(false);

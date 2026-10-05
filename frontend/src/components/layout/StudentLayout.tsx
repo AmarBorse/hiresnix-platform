@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router';
 import { LayoutDashboard, Briefcase, BookOpen, Award, FileText, User, Menu, X, LogOut,
-  BotMessageSquare, Send, BarChart2, Map, CalendarCheck, Lock, Clock, Info } from 'lucide-react';
+  BotMessageSquare, Send, BarChart2, Map, CalendarCheck, Lock, Clock, Info, Sparkles } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
 import { PORTAL_STYLES, PORTAL_COLORS } from './PortalTheme';
 import axios from 'axios';
@@ -28,6 +28,7 @@ const NAV = [
   { to: '/student/resources',      icon: BookOpen,         label: 'Resources'          },
   { to: '/student/mock-interview', icon: BotMessageSquare, label: 'Mock Interview',  lockable: true },
   { to: '/student/resume-builder', icon: FileText,         label: 'Resume AI 🆕',   lockable: true },
+  { to: '/student/academy',        icon: Sparkles,         label: '🎓 AI Academy 🆕'  },
   { to: '/student/projects',       icon: Briefcase,        label: 'My Projects 🆕'    },
   { to: '/student/mock-dashboard', icon: BarChart2,        label: 'Interview Stats', lockable: true },
   { to: '/student/roadmap',        icon: Map,              label: 'Career Roadmap 🗺️', lockable: true },

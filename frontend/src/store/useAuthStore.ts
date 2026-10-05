@@ -30,6 +30,7 @@ export const useAuthStore = create<AuthState>()(
         if (user.role === 'institution') localStorage.setItem('hx_institution_token', token);
         if (user.role === 'company')     localStorage.setItem('hx_company_token', token);
         if (user.role === 'sub-admin')   localStorage.setItem('hx_sub_admin_token', token);
+        localStorage.setItem('hx_last_active', String(Date.now())); // fresh login resets the inactivity clock
         set({ user, token, isAuthenticated: true });
       },
 
@@ -41,6 +42,7 @@ export const useAuthStore = create<AuthState>()(
         localStorage.removeItem('hx_institution_token');
         localStorage.removeItem('hx_company_token');
         localStorage.removeItem('hx_sub_admin_token');
+        localStorage.removeItem('hx_last_active');
         set({ user: null, token: null, isAuthenticated: false });
       },
 

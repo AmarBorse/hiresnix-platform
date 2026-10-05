@@ -7,6 +7,7 @@ import { Suspense, lazy } from 'react';
 import { useAuthStore } from './store/useAuthStore';
 import { useInstStudentStore } from './store/useInstStudentStore';
 import { ProtectedRoute } from './components/common/ProtectedRoute';
+import { useInactivityLogout } from './hooks/useInactivityLogout';
 import { Role } from './types';
 
 // ── Layouts (small, load eagerly) ────────────────────────────────
@@ -31,7 +32,7 @@ const InstStudentCertificates = lazy(() => import('./pages/instStudent/InstStude
 const InstStudentInternship   = lazy(() => import('./pages/instStudent/InstStudentInternship').then(m => ({ default: m.InstStudentInternship })));
 
 // AI Academy — single page module
-const AcademyPage = lazy(() => import('./pages/instStudent/AcademyPage').then(m => ({ default: m.AcademyPage })));
+const AcademyPage = lazy(() => import('./pages/student/AcademyPage').then(m => ({ default: m.AcademyPage })));
 
 const StudentDashboard    = lazy(() => import('./pages/student/StudentDashboard').then(m => ({ default: m.StudentDashboard })));
 const StudentAttendance   = lazy(() => import('./pages/student/StudentAttendance'));  // NEW
@@ -124,6 +125,7 @@ function InstStudentRoute({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   const { isAuthenticated, user } = useAuthStore();
+  useInactivityLogout(); // auto-logout students after 3 days without using the site
   return (
     <BrowserRouter>
       <Toaster richColors position="top-right" closeButton />
@@ -171,7 +173,9 @@ export default function App() {
             <Route path="internship"   element={<InstStudentInternship />} />
           </Route>
           {/* AI Academy - full screen, outside layout */}
-          <Route path="/inst-student/academy" element={<InstStudentRoute><AcademyPage /></InstStudentRoute>} />
+          {/* AI Academy moved to the student portal — old institution-student link goes to their dashboard */}
+          <Route path="/inst-student/academy" element={<Navigate to="/inst-student/dashboard" replace />} />
+          <Route path="/student/academy" element={<ProtectedRoute allowedRoles={['student']}><AcademyPage /></ProtectedRoute>} />
 
           {/* Student */}
           <Route path="/student" element={<ProtectedRoute allowedRoles={['student']}><StudentLayout /></ProtectedRoute>}>

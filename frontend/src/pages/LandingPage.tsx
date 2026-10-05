@@ -259,7 +259,7 @@ export function LandingPage() {
       title: 'Institution Portal',
       subtitle: 'Institution Management',
       desc: 'Complete college and training institute management — student batches, course tracking, certificate issuance, and career IDs.',
-      features: ['Batch Management', 'Bulk CSV Import', 'Certificate PDF', 'Academy Access'],
+      features: ['Batch Management', 'Bulk CSV Import', 'Certificate PDF', 'Career ID Login'],
       gradient: 'linear-gradient(135deg,rgba(16,185,129,0.12),rgba(5,150,105,0.06))',
       border: 'rgba(16,185,129,0.3)',
       accent: '#34d399',

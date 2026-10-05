@@ -79,9 +79,9 @@ export function AboutUs() {
                 },
                 {
                   icon: Brain, color: 'text-cyan-400', bg: 'border-cyan-400/20 bg-cyan-500/5',
-                  title: 'AI Academy', path: '/inst-student/*',
-                  desc: 'Institution students get a dedicated portal with Career ID login, access to 16 AI-powered courses, progress tracking, and verified certificates.',
-                  features: ['16 Tech Courses', 'AI Teacher for Every Topic', 'Career ID Login', 'Progress Tracking', 'Batch-wise Certificates', 'Code Editor + Sandbox'],
+                  title: 'AI Academy', path: '/student/academy',
+                  desc: 'Every Hiresnix student gets 16 AI-powered courses inside the student portal, with progress tracking and verified certificates.',
+                  features: ['16 Tech Courses', 'AI Teacher for Every Topic', 'Free for Students', 'Progress Tracking', 'Verified Certificates', 'Code Editor + Sandbox'],
                 },
                 {
                   icon: Briefcase, color: 'text-emerald-400', bg: 'border-emerald-400/20 bg-emerald-500/5',

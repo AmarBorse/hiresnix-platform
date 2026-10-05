@@ -495,7 +495,29 @@ const verifyAcademyCertificate = asyncHandler(async (req, res) => {
       }
     }
 
-    const row = rows[0];
+    let row = rows[0];
+
+    // Not an institution certificate → check main-portal student academy certificates
+    if (!row) {
+      const { findStudentAcademyCert, studentIdLabel } = require('./studentAcademyController');
+      const { ACADEMY_COURSES } = require('../utils/academyCourses');
+      const s = await findStudentAcademyCert(raw);
+      if (s) {
+        return res.json({
+          success: true, valid: true,
+          data: {
+            documentType: 'Hiresnix AI Academy Certificate',
+            documentId: raw,
+            studentName: s.name,
+            careerId: studentIdLabel(s.user_id).replace('Hiresnix Student ID: ', ''),
+            course: ACADEMY_COURSES[s.course_id]?.title || s.course_id,
+            xp: s.xp || 0,
+            issueDate: s.last_active || new Date().toISOString(),
+          }
+        });
+      }
+    }
+
     if (!row) return res.json({ success:true, valid:false });
 
     return res.json({
