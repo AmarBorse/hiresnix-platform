@@ -26,7 +26,8 @@ export function AuthPage() {
     }
   }, [location.search]);
   const { setAuth } = useAuthStore();
-  const [tab, setTab]           = useState<Tab>('login');
+  // ?tab=register (e.g. from the landing page "Apply for an internship" button) opens the sign-up form
+  const [tab, setTab]           = useState<Tab>(() => new URLSearchParams(location.search).get('tab') === 'register' ? 'register' : 'login');
   const [loading, setLoading]   = useState(false);
   const [showPass, setShowPass] = useState(false);
   const [registerRole, setRegisterRole] = useState<RegisterRole>('student');

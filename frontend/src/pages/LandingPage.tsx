@@ -1,19 +1,216 @@
 // src/pages/LandingPage.tsx
-import FloatingDots from '../components/FloatingDots';
-import { HiresnixChatbot } from '../components/HiresnixChatbot';
-import React, { useEffect, useRef, useState } from 'react';
+// Public landing page — two audiences: students (internships, AI Academy) and businesses (software services).
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import client from '../api/client';
+import { HiresnixChatbot } from '../components/HiresnixChatbot';
 
-// ── Enquiry Form (preserved from original) ────────────────────────
 const ENQUIRY_RESPONSE_TIMEOUT_MS = 8000;
+const INTEREST_OPTIONS = ['Software Development', 'AI Solutions', 'SaaS Product', 'Web Development', 'Mobile App', 'UI/UX Design', 'Internship Platform', 'Partnership', 'Other'];
 
-function EnquiryForm() {
-  const [form, setForm] = useState({ name: '', email: '', phone: '', interest: 'Software Development', message: '' });
+// ── Content ─────────────────────────────────────────────────────────
+// Project paths are the real three-stage projects interns build on the platform.
+const DOMAINS = [
+  { id: 'fullstack', name: 'Full stack development', blurb: 'Build complete web apps with React, Node.js and PostgreSQL.',
+    projects: [
+      ['Personal Task Manager App', 'React.js, Node.js, MySQL, JWT'],
+      ['Job Application Tracker', 'React.js, Node.js, PostgreSQL, Chart.js'],
+      ['Multi-Tenant Project Management SaaS', 'React.js, Node.js, PostgreSQL, Socket.io, Stripe'],
+    ] },
+  { id: 'frontend', name: 'Front end development', blurb: 'Build fast, responsive interfaces in React.',
+    projects: [
+      ['Personal Portfolio Website', 'React.js, CSS3, EmailJS'],
+      ['Job Board UI with Filters', 'React.js, Tailwind CSS, Context API'],
+      ['Real-Time Collaborative Notes App', 'React.js, Socket.io, Tailwind, Quill.js'],
+    ] },
+  { id: 'datascience', name: 'Data science', blurb: 'Clean real datasets, find patterns and forecast what comes next.',
+    projects: [
+      ['COVID-19 India State Analysis', 'Python, Pandas, Plotly, Geopandas'],
+      ['Indian Stock Market EDA & Forecast', 'Python, Pandas, yfinance, Prophet'],
+      ['Social Mobility & Income Inequality Study', 'Python, Pandas, Geopandas, Scikit-learn'],
+    ] },
+  { id: 'analytics', name: 'Data analytics', blurb: 'Turn business data into reports and dashboards people use.',
+    projects: [
+      ['Superstore Sales Performance Report', 'Python, Pandas, Plotly, Power BI'],
+      ['Retail Store Footfall Insights', 'Python, Pandas, Plotly, Power BI'],
+      ['Real-Time Sales Command Center', 'Python, Streamlit, Plotly, SQL'],
+    ] },
+  { id: 'ml', name: 'Machine learning', blurb: 'Train models, measure them and ship them as working apps.',
+    projects: [
+      ['Iris Flower Species Classifier', 'Python, Scikit-learn, Pandas'],
+      ['Crop Yield Prediction System', 'Python, XGBoost, Pandas, Streamlit'],
+      ['Real-Time Pose Estimation Trainer', 'Python, MediaPipe, TensorFlow, Flask'],
+    ] },
+  { id: 'ai', name: 'Artificial intelligence', blurb: 'Build products on top of LLMs, agents and retrieval.',
+    projects: [
+      ['AI Recipe Generator from Ingredients', 'Python, Gemini API, Streamlit'],
+      ['Agentic Research Assistant', 'Python, LangChain, Streamlit'],
+      ['RAG Chatbot on Custom Knowledge Base', 'Python, LangChain, ChromaDB, Gemini API'],
+    ] },
+  { id: 'security', name: 'Cyber security', blurb: 'Scan, test and write up real security findings.',
+    projects: [
+      ['Network Vulnerability Scanner', 'Python, Nmap, Flask'],
+      ['Password Strength Analyzer & Generator', 'Python, Flask, zxcvbn, React'],
+      ['Web Application Penetration Testing Report', 'OWASP ZAP, Burp Suite'],
+    ] },
+  { id: 'cloud', name: 'Cloud & DevOps', blurb: 'Deploy, scale and recover applications on AWS.',
+    projects: [
+      ['Static Site Hosting with CDN on AWS', 'AWS S3, CloudFront, Route53'],
+      ['Containerized Microservices on AWS', 'Docker, AWS ECS, ECR, ALB'],
+      ['Multi-Region Disaster Recovery Setup', 'AWS Route53, RDS, S3, CloudFormation'],
+    ] },
+];
+const LEVELS = ['Starter', 'Intermediate', 'Advanced'];
+
+const INTERN_STEPS = [
+  ['Apply', 'Create a student account, pick a domain and choose 1 to 6 months.'],
+  ['Get your offer letter', 'Download it from your dashboard once you are enrolled.'],
+  ['Build and log your work', 'Complete your three projects and submit a short daily log.'],
+  ['Finish with proof', 'Download your certificate and letter of recommendation. Each has a QR code that opens our verification page.'],
+];
+
+const ACADEMY_COURSES = ['Python Programming', 'JavaScript', 'Java', 'C++', 'C Programming', 'DSA', 'SQL & Databases', 'Full Stack Web Dev', 'React.js', 'Node.js & Express', 'Data Science', 'Machine Learning', 'Git & GitHub', 'Docker & DevOps', 'Cybersecurity', 'Flutter & Dart'];
+
+const SERVICES = [
+  ['Custom software', 'End-to-end software built for your exact business needs, from architecture to deployment.'],
+  ['Web development', 'Fast, responsive and scalable web applications on modern frameworks.'],
+  ['Mobile apps', 'Cross-platform apps that work smoothly on iOS and Android.'],
+  ['AI & machine learning', 'NLP, predictive models and AI features built into your product.'],
+  ['SaaS platforms', 'Multi-tenant products with subscriptions, dashboards and room to scale.'],
+  ['UI/UX design', 'Wireframes, prototypes and interfaces designed to convert.'],
+  ['APIs & integrations', 'REST and GraphQL APIs built for performance, security and third-party use.'],
+  ['Cloud & DevOps', 'Cloud architecture, migration and deployment pipelines you can rely on.'],
+  ['Maintenance & support', 'Monitoring, fixes and new features after launch.'],
+];
+
+const PROCESS = ['Requirements', 'Planning', 'Design', 'Development', 'Testing', 'Deployment', 'Support'];
+
+const NDA_CLIENTS = ['Digital marketing agency', 'E-commerce platform', 'HR tech startup', 'Mobile app company', 'EdTech platform'];
+
+// SEO structured data (unchanged business details)
+const STRUCTURED_DATA = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'Organization', '@id': 'https://hiresnix.co.in/#organization', name: 'Hiresnix',
+      legalName: 'SR Patil Infrastructure Private Limited', url: 'https://hiresnix.co.in', logo: 'https://hiresnix.co.in/hiresnix-logo.png',
+      contactPoint: { '@type': 'ContactPoint', telephone: '+91-9529120977', contactType: 'customer service', email: 'hr@hiresnix.co.in', areaServed: 'IN', availableLanguage: ['English', 'Hindi'] },
+      address: { '@type': 'PostalAddress', addressLocality: 'Shirpur', addressRegion: 'Maharashtra', postalCode: '425405', addressCountry: 'IN' },
+      sameAs: [],
+    },
+    { '@type': 'WebSite', '@id': 'https://hiresnix.co.in/#website', url: 'https://hiresnix.co.in', name: 'Hiresnix',
+      description: 'AI-powered EdTech & HR-Tech platform for students, institutions and companies', publisher: { '@id': 'https://hiresnix.co.in/#organization' } },
+    { '@type': 'SoftwareApplication', name: 'Hiresnix Platform', applicationCategory: 'EducationApplication', operatingSystem: 'Web', url: 'https://hiresnix.co.in',
+      description: 'AI-powered career platform offering internships, mock interviews, resume builder and AI academy for students',
+      offers: { '@type': 'Offer', price: '0', priceCurrency: 'INR' }, provider: { '@id': 'https://hiresnix.co.in/#organization' } },
+  ],
+};
+
+const parseList = (v: any): any[] => {
+  if (Array.isArray(v)) return v;
+  if (typeof v !== 'string' || !v.trim()) return [];
+  try { const p = JSON.parse(v); return Array.isArray(p) ? p : []; } catch { return []; }
+};
+
+// ── Brand mark (arrow rising to a dot, as in the logo) ──────────────
+function BrandMark() {
+  return (
+    <span className="hx-brand" aria-label="Hiresnix">
+      <svg width="30" height="24" viewBox="0 0 30 24" aria-hidden="true">
+        <path d="M1 22 C 10 21, 17 16, 21 7" fill="none" stroke="var(--ink)" strokeWidth="3" strokeLinecap="round" />
+        <path d="M15 8 L22 4.5 L23.5 12.5" fill="none" stroke="var(--ink)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+        <circle cx="27" cy="3" r="2.6" fill="var(--accent)" />
+      </svg>
+      <span className="hx-brand-word">HIRESNIX</span>
+    </span>
+  );
+}
+
+// ── Hero trajectory ────────────────────────────────────────────────
+function Trajectory() {
+  const milestones = [
+    { x: 88.7, y: 385.2, label: 'Apply', sub: 'Pick a domain', lx: 70, ly: 350, anchor: 'start' as const },
+    { x: 257, y: 329, label: 'Offer letter', sub: 'Day one', lx: 232, ly: 296, anchor: 'end' as const },
+    { x: 373.4, y: 233.9, label: 'Three projects', sub: 'Starter to advanced', lx: 350, ly: 200, anchor: 'end' as const },
+    { x: 442.4, y: 128.4, label: 'Certificate + LOR', sub: 'QR-verifiable', lx: 420, ly: 96, anchor: 'end' as const },
+  ];
+  return (
+    <svg className="hx-traj" viewBox="0 0 500 420" role="img" aria-label="An intern's path: apply, receive an offer letter, build three projects, earn a certificate and letter of recommendation">
+      <defs>
+        <pattern id="hx-dots" width="22" height="22" patternUnits="userSpaceOnUse">
+          <circle cx="1" cy="1" r="1.1" fill="var(--dots)" />
+        </pattern>
+      </defs>
+      <rect x="0" y="0" width="500" height="420" fill="url(#hx-dots)" />
+      <path className="hx-traj-path" pathLength={1} d="M30 390 C 230 385, 390 270, 458 92" fill="none" stroke="var(--ink)" strokeWidth="5" strokeLinecap="round" />
+      <path className="hx-traj-head" d="M430 108 L462 84 L466 124" fill="none" stroke="var(--ink)" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
+      <circle className="hx-traj-dot" cx="482" cy="58" r="11" fill="var(--accent)" />
+      {milestones.map((m, i) => (
+        <g key={m.label} className="hx-traj-stop" style={{ animationDelay: `${0.35 + i * 0.3}s` }}>
+          <circle cx={m.x} cy={m.y} r="7" fill="var(--paper)" stroke="var(--accent)" strokeWidth="3" />
+          <text x={m.lx} y={m.ly} textAnchor={m.anchor} className="hx-traj-label">{m.label}</text>
+          <text x={m.lx} y={m.ly} dy="1.4em" textAnchor={m.anchor} className="hx-traj-sub">{m.sub}</text>
+        </g>
+      ))}
+    </svg>
+  );
+}
+
+// ── Domain explorer ────────────────────────────────────────────────
+function DomainExplorer({ onApply }: { onApply: () => void }) {
+  const [active, setActive] = useState(DOMAINS[0].id);
+  const domain = DOMAINS.find(d => d.id === active) || DOMAINS[0];
+
+  const onKey = (e: React.KeyboardEvent, idx: number) => {
+    if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp' && e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+    e.preventDefault();
+    const dir = e.key === 'ArrowDown' || e.key === 'ArrowRight' ? 1 : -1;
+    const next = DOMAINS[(idx + dir + DOMAINS.length) % DOMAINS.length];
+    setActive(next.id);
+    document.getElementById(`hx-tab-${next.id}`)?.focus();
+  };
+
+  return (
+    <div className="hx-explorer">
+      <div className="hx-tabs" role="tablist" aria-label="Internship domains" aria-orientation="vertical">
+        {DOMAINS.map((d, i) => (
+          <button
+            key={d.id} id={`hx-tab-${d.id}`} role="tab" type="button"
+            aria-selected={d.id === active} aria-controls="hx-domain-panel" tabIndex={d.id === active ? 0 : -1}
+            className="hx-tab" onClick={() => setActive(d.id)} onKeyDown={e => onKey(e, i)}
+          >
+            {d.name}
+          </button>
+        ))}
+      </div>
+      <div className="hx-panel" id="hx-domain-panel" role="tabpanel" aria-labelledby={`hx-tab-${domain.id}`}>
+        <h3 className="hx-panel-title">{domain.name}</h3>
+        <p className="hx-panel-blurb">{domain.blurb}</p>
+        <p className="hx-panel-note">Projects interns in this domain have built:</p>
+        <ol className="hx-ladder">
+          {domain.projects.map(([title, tech], i) => (
+            <li key={title} className="hx-rung">
+              <span className="hx-rung-level">{LEVELS[i]}</span>
+              <span className="hx-rung-title">{title}</span>
+              <span className="hx-rung-tech">{tech}</span>
+            </li>
+          ))}
+        </ol>
+        <button className="hx-btn hx-btn-primary" type="button" onClick={onApply}>Apply for {domain.name.toLowerCase()}</button>
+      </div>
+    </div>
+  );
+}
+
+// ── Enquiry form (same submission behaviour as before) ─────────────
+function EnquiryForm({ presetInterest }: { presetInterest: string }) {
+  const empty = { name: '', email: '', phone: '', interest: 'Software Development', message: '' };
+  const [form, setForm] = useState(empty);
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => { if (presetInterest) setForm(p => ({ ...p, interest: presetInterest })); }, [presetInterest]);
   const set = (k: keyof typeof form, v: string) => setForm(p => ({ ...p, [k]: v }));
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -40,71 +237,54 @@ function EnquiryForm() {
   };
 
   if (submitted) return (
-    <div style={{ maxWidth: 560, margin: '0 auto', textAlign: 'center', background: 'linear-gradient(135deg,rgba(59,130,246,0.08),rgba(139,92,246,0.08))', border: '1px solid rgba(59,130,246,0.2)', borderRadius: 24, padding: '3rem 2rem' }}>
-      <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🎉</div>
-      <h3 className="lp-font-d" style={{ fontSize: '1.5rem', fontWeight: 800, color: '#e8edf5', marginBottom: '0.75rem' }}>Message Received!</h3>
-      <p style={{ color: '#6b7a99', marginBottom: '1.5rem' }}>Thank you! Our team will get back to you within 24 hours.</p>
-      <button className="lp-btn-outline" style={{ fontSize: '0.85rem' }} onClick={() => { setSubmitted(false); setForm({ name: '', email: '', phone: '', interest: 'Software Development', message: '' }); }}>
-        Send Another
-      </button>
+    <div className="hx-form hx-form-done" role="status">
+      <h3 className="hx-h3">Message received</h3>
+      <p className="hx-muted">Thank you. Our team will get back to you within 24 hours.</p>
+      <button className="hx-btn hx-btn-ghost" type="button" onClick={() => { setSubmitted(false); setForm(empty); }}>Send another message</button>
     </div>
   );
 
   return (
-    <div style={{ maxWidth: 760, margin: '0 auto' }}>
-      <div style={{ background: 'rgba(255,255,255,0.03)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 24, padding: '2.5rem', boxShadow: '0 25px 60px rgba(0,0,0,0.4)' }}>
-        <form onSubmit={handleSubmit}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }} className="lp-grid-1">
-            <div>
-              <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, color: '#6b7a99', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 6 }}>Full Name *</label>
-              <input required value={form.name} onChange={e => set('name', e.target.value)}
-                style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '0.75rem 1rem', color: '#e8edf5', fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box' }}
-                placeholder="Your full name" />
-            </div>
-            <div>
-              <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, color: '#6b7a99', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 6 }}>Email *</label>
-              <input required type="email" value={form.email} onChange={e => set('email', e.target.value)}
-                style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '0.75rem 1rem', color: '#e8edf5', fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box' }}
-                placeholder="you@example.com" />
-            </div>
-            <div>
-              <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, color: '#6b7a99', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 6 }}>Phone</label>
-              <input type="tel" value={form.phone} onChange={e => set('phone', e.target.value)}
-                style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '0.75rem 1rem', color: '#e8edf5', fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box' }}
-                placeholder="Mobile Number" />
-            </div>
-            <div>
-              <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, color: '#6b7a99', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 6 }}>Interested In</label>
-              <select value={form.interest} onChange={e => set('interest', e.target.value)}
-                style={{ width: '100%', background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '0.75rem 1rem', color: '#e8edf5', fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box' }}>
-                {['Software Development','AI Solutions','SaaS Product','Web Development','Mobile App','UI/UX Design','Internship Platform','Partnership','Other'].map(o => <option key={o} value={o}>{o}</option>)}
-              </select>
-            </div>
-          </div>
-          <div style={{ marginBottom: '1.5rem' }}>
-            <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, color: '#6b7a99', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 6 }}>Message *</label>
-            <textarea required rows={4} value={form.message} onChange={e => set('message', e.target.value)}
-              style={{ width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '0.75rem 1rem', color: '#e8edf5', fontSize: '0.9rem', outline: 'none', resize: 'none', boxSizing: 'border-box' }}
-              placeholder="Tell us about your project or requirement..." />
-          </div>
-          <button type="submit" disabled={loading} className="lp-btn-glow" style={{ width: '100%', justifyContent: 'center', opacity: loading ? 0.7 : 1 }}>
-            {loading ? '⏳ Sending...' : '🚀 Send Message'}
-          </button>
-        </form>
+    <form className="hx-form" onSubmit={handleSubmit}>
+      <div className="hx-form-grid">
+        <label className="hx-field">
+          <span>Full name</span>
+          <input required value={form.name} onChange={e => set('name', e.target.value)} placeholder="Your full name" autoComplete="name" />
+        </label>
+        <label className="hx-field">
+          <span>Email</span>
+          <input required type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="you@example.com" autoComplete="email" />
+        </label>
+        <label className="hx-field">
+          <span>Phone <em>(optional)</em></span>
+          <input type="tel" value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="Mobile number" autoComplete="tel" />
+        </label>
+        <label className="hx-field">
+          <span>Interested in</span>
+          <select value={form.interest} onChange={e => set('interest', e.target.value)}>
+            {INTEREST_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+          </select>
+        </label>
       </div>
-    </div>
+      <label className="hx-field">
+        <span>Message</span>
+        <textarea required rows={4} value={form.message} onChange={e => set('message', e.target.value)} placeholder="Tell us about your project or requirement" />
+      </label>
+      <button type="submit" disabled={loading} className="hx-btn hx-btn-primary hx-btn-block">
+        {loading ? 'Sending…' : 'Send message'}
+      </button>
+    </form>
   );
 }
 
-// ── Main Landing Page ─────────────────────────────────────────────
+// ── Page ───────────────────────────────────────────────────────────
 export function LandingPage() {
   const navigate = useNavigate();
-  const countersRef = useRef<HTMLDivElement>(null);
-  const countersAnimated = useRef(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [showEnquiry, setShowEnquiry] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [landingClients, setLandingClients] = useState<any[]>([]);
+  const [presetInterest, setPresetInterest] = useState('');
 
+  // Keep the existing copy/right-click protection on the marketing page
   useEffect(() => {
     const preventDefault = (event: Event) => event.preventDefault();
     const preventCopyShortcuts = (event: KeyboardEvent) => {
@@ -127,821 +307,511 @@ export function LandingPage() {
     };
   }, []);
 
+  // Client case studies managed from the admin panel
   useEffect(() => {
-    fetch('https://hirenix-backend.onrender.com/api/clients')
-      .then(r => r.json())
-      .then(d => setLandingClients(d.data || []))
+    client.get('/clients')
+      .then(r => setLandingClients(Array.isArray(r.data?.data) ? r.data.data : []))
       .catch(() => {});
   }, []);
 
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      entries => entries.forEach(e => {
-        if (e.isIntersecting) {
-          e.target.classList.add('lp-visible');
-        } else {
-          // Remove class so animation re-triggers on scroll back up
-          e.target.classList.remove('lp-visible');
-        }
-      }),
-      { threshold: 0.08 }
-    );
-    document.querySelectorAll('.lp-reveal, .lp-slide-left, .lp-slide-right, .lp-scale-in, .lp-flip, .lp-glow-in').forEach(el => observer.observe(el));
-    return () => observer.disconnect();
-  }, []);
-
-  useEffect(() => {
-    const el = countersRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(entries => {
-      if (entries[0].isIntersecting && !countersAnimated.current) {
-        countersAnimated.current = true;
-        el.querySelectorAll('[data-count]').forEach(node => {
-          const counter = node as HTMLElement;
-          const target = parseInt(counter.dataset.count || '0');
-          const suffix = counter.dataset.suffix || '';
-          let current = 0;
-          const step = target / 60;
-          const timer = setInterval(() => {
-            current += step;
-            if (current >= target) { current = target; clearInterval(timer); }
-            counter.textContent = Math.floor(current) + suffix;
-          }, 20);
-        });
-      }
-    }, { threshold: 0.5 });
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-
-  const TECH_STACK = ['React', 'Next.js', 'Node.js', 'Python', 'Java', 'Supabase', 'PostgreSQL', 'AWS', 'Docker', 'OpenAI', 'Gemini'];
-
-  // Structured Data for SEO
-  const structuredData = {
-    "@context": "https://schema.org",
-    "@graph": [
-      {
-        "@type": "Organization",
-        "@id": "https://hiresnix.co.in/#organization",
-        "name": "Hiresnix",
-        "legalName": "SR Patil Infrastructure Private Limited",
-        "url": "https://hiresnix.co.in",
-        "logo": "https://hiresnix.co.in/hiresnix-logo.png",
-        "contactPoint": {
-          "@type": "ContactPoint",
-          "telephone": "+91-9529120977",
-          "contactType": "customer service",
-          "email": "hr@hiresnix.co.in",
-          "areaServed": "IN",
-          "availableLanguage": ["English", "Hindi"]
-        },
-        "address": {
-          "@type": "PostalAddress",
-          "addressLocality": "Shirpur",
-          "addressRegion": "Maharashtra",
-          "postalCode": "425405",
-          "addressCountry": "IN"
-        },
-        "sameAs": []
-      },
-      {
-        "@type": "WebSite",
-        "@id": "https://hiresnix.co.in/#website",
-        "url": "https://hiresnix.co.in",
-        "name": "Hiresnix",
-        "description": "AI-powered EdTech & HR-Tech platform for students, institutions and companies",
-        "publisher": { "@id": "https://hiresnix.co.in/#organization" }
-      },
-      {
-        "@type": "SoftwareApplication",
-        "name": "Hiresnix Platform",
-        "applicationCategory": "EducationApplication",
-        "operatingSystem": "Web",
-        "url": "https://hiresnix.co.in",
-        "description": "AI-powered career platform offering mock interviews, resume builder, internships, and AI academy for students",
-        "offers": {
-          "@type": "Offer",
-          "price": "0",
-          "priceCurrency": "INR"
-        },
-        "provider": { "@id": "https://hiresnix.co.in/#organization" }
-      }
-    ]
+  const goTo = (id: string) => {
+    setMenuOpen(false);
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    document.getElementById(id)?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
   };
+  const applyNow = () => navigate('/auth?tab=register');
+  const contactFor = (interest: string) => { setPresetInterest(interest); goTo('contact'); };
 
-  const SERVICES = [
-    { icon: '⚡', title: 'Custom Software Development', desc: 'End-to-end software built for your exact business needs — from architecture to deployment.' },
-    { icon: '🌐', title: 'Web Development', desc: 'Fast, responsive, and scalable web applications using modern frameworks and best practices.' },
-    { icon: '📱', title: 'Mobile App Development', desc: 'Cross-platform mobile apps that deliver seamless user experiences on iOS and Android.' },
-    { icon: '🤖', title: 'AI & Machine Learning', desc: 'Intelligent systems, NLP solutions, predictive models, and AI integrations for your product.' },
-    { icon: '☁️', title: 'SaaS Development', desc: 'Multi-tenant SaaS platforms with subscription management, dashboards, and scalable infrastructure.' },
-    { icon: '🎨', title: 'UI/UX Design', desc: 'Design-first approach — wireframes, prototypes, and pixel-perfect interfaces that convert.' },
-    { icon: '🔗', title: 'API Development', desc: 'RESTful and GraphQL APIs built for performance, security, and third-party integrations.' },
-    { icon: '🛡️', title: 'Cloud Solutions', desc: 'Cloud architecture, migration, and DevOps pipelines for reliable, scalable deployments.' },
-    { icon: '🔧', title: 'Maintenance & Support', desc: 'Ongoing technical support, performance monitoring, and product iteration after launch.' },
-  ];
+  const publicClients = landingClients.filter((c: any) => !c.nda_protected);
+  const ndaClients = [...NDA_CLIENTS, ...landingClients.filter((c: any) => c.nda_protected).map((c: any) => c.industry || 'NDA client')];
 
-  const PRODUCTS = [
-    {
-      icon: '🧠',
-      tag: 'AI Product',
-      title: 'AI Academy',
-      subtitle: 'Hiresnix AI Academy',
-      desc: 'AI-powered learning platform with voice mentor, live code execution, quizzes, and personalized AI teacher for each course.',
-      features: ['AI Teacher (Groq)', 'Voice Mentor', 'Live Code Runner', 'AI Mentor Chat'],
-      gradient: 'linear-gradient(135deg,rgba(139,92,246,0.15),rgba(168,85,247,0.08))',
-      border: 'rgba(139,92,246,0.3)',
-      accent: '#a78bfa',
-    },
-    {
-      icon: '🏫',
-      tag: 'B2B SaaS',
-      title: 'Institution Portal',
-      subtitle: 'Institution Management',
-      desc: 'Complete college and training institute management — student batches, course tracking, certificate issuance, and career IDs.',
-      features: ['Batch Management', 'Bulk CSV Import', 'Certificate PDF', 'Career ID Login'],
-      gradient: 'linear-gradient(135deg,rgba(16,185,129,0.12),rgba(5,150,105,0.06))',
-      border: 'rgba(16,185,129,0.3)',
-      accent: '#34d399',
-    },
-  ];
-
-  const INDUSTRIES = [
-    { icon: '🎓', name: 'Education' },
-    { icon: '🏥', name: 'Healthcare' },
-    { icon: '🛍️', name: 'Retail' },
-    { icon: '🏭', name: 'Manufacturing' },
-    { icon: '💰', name: 'Finance' },
-    { icon: '🚀', name: 'Startups' },
-    { icon: '🛒', name: 'E-Commerce' },
-  ];
-
-  const WHY_US = [
-    { icon: '🤖', title: 'AI-Powered Solutions', desc: 'We integrate AI at the core — not as an afterthought.' },
-    { icon: '👥', title: 'Experienced Team', desc: 'Senior engineers and designers with proven delivery track records.' },
-    { icon: '📐', title: 'Scalable Architecture', desc: 'Systems built to grow with your business from day one.' },
-    { icon: '⚡', title: 'Modern Technologies', desc: 'React, Node.js, Python, PostgreSQL, Docker, and more.' },
-    { icon: '🚀', title: 'Fast Delivery', desc: 'Agile sprints with regular demos and transparent updates.' },
-    { icon: '🛡️', title: 'Long-Term Support', desc: 'We stay engaged post-launch for maintenance and improvements.' },
-  ];
-
-  const WORKFLOW = [
-    { num: '01', title: 'Requirement Discussion', desc: 'Deep-dive into your goals, constraints, and vision.' },
-    { num: '02', title: 'Planning', desc: 'Architecture, timeline, and technology stack finalized.' },
-    { num: '03', title: 'Design', desc: 'Wireframes and UI prototypes reviewed and approved.' },
-    { num: '04', title: 'Development', desc: 'Agile sprints with weekly demos and code reviews.' },
-    { num: '05', title: 'Testing', desc: 'QA, performance, and security testing before launch.' },
-    { num: '06', title: 'Deployment', desc: 'CI/CD pipeline setup with cloud infrastructure.' },
-    { num: '07', title: 'Support', desc: 'Ongoing monitoring, updates, and feature additions.' },
-  ];
-
-  const MARQUEE_ITEMS = ['⚡ Custom Software', '🤖 AI Solutions', '☁️ SaaS Products', '🌐 Web Development', '📱 Mobile Apps', '🎨 UI/UX Design', '🔗 API Development', '🛡️ Cloud & DevOps'];
+  const NAV: [string, string][] = [['internships', 'Internships'], ['academy', 'AI Academy'], ['services', 'Services'], ['work', 'Work'], ['contact', 'Contact']];
 
   return (
-    <div style={{ fontFamily: "'DM Sans', system-ui, sans-serif", background: '#060910', color: '#e8edf5', overflowX: 'hidden' }}>
-      {/* Structured Data for SEO */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
-      />
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=JetBrains+Mono:wght@400;500&display=swap');
-        body { margin: 0; background-color: #060910; }
-        .lp-readonly, .lp-readonly * { -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
-        .lp-readonly input, .lp-readonly textarea, .lp-readonly select { -webkit-user-select:auto; user-select:auto; }
-        /* ── Scroll Reveal ── */
+    <div className="hx-root">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(STRUCTURED_DATA) }} />
+      <style>{CSS}</style>
 
-
-        /* ── Dramatic entrance animations ── */
-        @keyframes swoopUp { 0% { opacity:0; transform: translateY(80px) scale(0.9); } 100% { opacity:1; transform: translateY(0) scale(1); } }
-        @keyframes swoopLeft { 0% { opacity:0; transform: translateX(-100px) rotate(-3deg); } 100% { opacity:1; transform: translateX(0) rotate(0); } }
-        @keyframes swoopRight { 0% { opacity:0; transform: translateX(100px) rotate(3deg); } 100% { opacity:1; transform: translateX(0) rotate(0); } }
-        @keyframes zoomIn { 0% { opacity:0; transform: scale(0.7); } 100% { opacity:1; transform: scale(1); } }
-        @keyframes flipIn { 0% { opacity:0; transform: perspective(800px) rotateX(30deg) translateY(40px); } 100% { opacity:1; transform: perspective(800px) rotateX(0) translateY(0); } }
-        @keyframes glowReveal { 0% { opacity:0; transform: translateY(30px); filter: blur(8px); } 100% { opacity:1; transform: translateY(0); filter: blur(0); } }
-
-        .lp-reveal { opacity:0; transform:translateY(80px) scale(0.95); transition: opacity 0.7s cubic-bezier(.16,1,.3,1), transform 0.7s cubic-bezier(.16,1,.3,1); }
-        .lp-reveal.lp-visible { opacity:1; transform:translateY(0) scale(1); }
-
-        .lp-slide-left { opacity:0; transform:translateX(-100px) rotate(-2deg); transition: opacity 0.75s cubic-bezier(.16,1,.3,1), transform 0.75s cubic-bezier(.16,1,.3,1); }
-        .lp-slide-left.lp-visible { opacity:1; transform:translateX(0) rotate(0); }
-
-        .lp-slide-right { opacity:0; transform:translateX(100px) rotate(2deg); transition: opacity 0.75s cubic-bezier(.16,1,.3,1), transform 0.75s cubic-bezier(.16,1,.3,1); }
-        .lp-slide-right.lp-visible { opacity:1; transform:translateX(0) rotate(0); }
-
-        .lp-scale-in { opacity:0; transform:scale(0.75); transition: opacity 0.7s cubic-bezier(.16,1,.3,1), transform 0.7s cubic-bezier(.16,1,.3,1); }
-        .lp-scale-in.lp-visible { opacity:1; transform:scale(1); }
-
-        .lp-flip { opacity:0; transform:perspective(800px) rotateX(25deg) translateY(50px); transition: opacity 0.75s cubic-bezier(.16,1,.3,1), transform 0.75s cubic-bezier(.16,1,.3,1); }
-        .lp-flip.lp-visible { opacity:1; transform:perspective(800px) rotateX(0) translateY(0); }
-
-        .lp-glow-in { opacity:0; transform:translateY(30px); filter:blur(6px); transition: opacity 0.8s ease, transform 0.8s ease, filter 0.8s ease; }
-        .lp-glow-in.lp-visible { opacity:1; transform:translateY(0); filter:blur(0); }
-
-        .lp-d1 { transition-delay:0.05s; } .lp-d2 { transition-delay:0.15s; }
-        .lp-d3 { transition-delay:0.25s; } .lp-d4 { transition-delay:0.35s; }
-
-        /* ── Floating animation ── */
-        @keyframes float { 0%,100% { transform: translateY(0px); } 50% { transform: translateY(-10px); } }
-        @keyframes floatSlow { 0%,100% { transform: translateY(0px) rotate(0deg); } 50% { transform: translateY(-15px) rotate(3deg); } }
-        @keyframes shimmer { 0% { background-position: -200% center; } 100% { background-position: 200% center; } }
-        @keyframes borderGlow { 0%,100% { border-color: rgba(59,130,246,0.2); box-shadow: 0 0 20px rgba(59,130,246,0.05); } 50% { border-color: rgba(59,130,246,0.5); box-shadow: 0 0 40px rgba(59,130,246,0.15); } }
-        @keyframes gradientShift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
-        @keyframes scanline { 0% { transform: translateY(-100%); } 100% { transform: translateY(100vh); } }
-
-        .lp-float { animation: float 4s ease-in-out infinite; }
-        .lp-float-slow { animation: floatSlow 6s ease-in-out infinite; }
-        .lp-border-glow { animation: borderGlow 3s ease-in-out infinite; }
-
-        /* ── Hero title shimmer ── */
-        .lp-hero-shimmer {
-          background: linear-gradient(90deg, #e2e8f0 0%, #ffffff 40%, #93c5fd 60%, #e2e8f0 100%);
-          background-size: 200% auto;
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-          animation: shimmer 4s linear infinite;
-        }
-
-        /* ── Section title gradient animate ── */
-        .lp-section-title {
-          font-family: 'Sora', system-ui, sans-serif;
-          font-size: clamp(1.9rem, 4.5vw, 3rem);
-          font-weight: 800;
-          color: #e2e8f0;
-          line-height: 1.15;
-          margin: 0 0 1rem;
-        }
-
-        /* ── Card hover lift ── */
-        .lp-service-card, .lp-why-card, .lp-product-card {
-          transition: transform 0.3s cubic-bezier(.16,1,.3,1), box-shadow 0.3s ease, border-color 0.3s ease !important;
-        }
-        .lp-service-card:hover, .lp-why-card:hover {
-          transform: translateY(-6px) !important;
-          box-shadow: 0 20px 60px rgba(0,0,0,0.4) !important;
-        }
-        .lp-font-d { font-family: 'Sora', system-ui, sans-serif; }
-        .lp-font-m { font-family: 'JetBrains Mono', monospace; }
-        .lp-btn-glow { display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#2563eb,#3b82f6);color:#ffffff;padding:1rem 2rem;border-radius:14px;font-weight:800;font-size:1rem;text-decoration:none;border:2px solid rgba(255,255,255,0.2);cursor:pointer;transition:all 0.3s;box-shadow:0 0 40px rgba(59,130,246,0.5),0 4px 20px rgba(0,0,0,0.3);letter-spacing:0.01em; }
-        .lp-btn-glow:hover { background:linear-gradient(135deg,#1d4ed8,#2563eb);transform:translateY(-3px);box-shadow:0 0 60px rgba(59,130,246,0.7),0 8px 30px rgba(0,0,0,0.4); }
-        .lp-btn-outline { display:inline-flex;align-items:center;gap:8px;border:1.5px solid rgba(255,255,255,0.3);color:#f1f5f9;padding:1rem 2rem;border-radius:14px;font-weight:700;font-size:1rem;text-decoration:none;background:rgba(255,255,255,0.05);cursor:pointer;transition:all 0.3s;backdrop-filter:blur(4px); }
-        .lp-btn-outline:hover { background:rgba(255,255,255,0.06);border-color:#3b82f6;color:#60a5fa; }
-        .lp-glass-card { background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:20px;backdrop-filter:blur(12px);transition:all 0.4s; }
-        .lp-glass-card:hover { border-color:rgba(59,130,246,0.35);transform:translateY(-6px);box-shadow:0 24px 60px rgba(0,0,0,0.4),0 0 0 1px rgba(59,130,246,0.1); }
-        .lp-service-card { background:#0d1524;border:1px solid rgba(255,255,255,0.07);border-radius:18px;padding:1.75rem;transition:all 0.35s;position:relative;overflow:hidden; }
-        .lp-service-card::before { content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(59,130,246,0.06),transparent 60%);opacity:0;transition:opacity 0.4s; }
-        .lp-service-card:hover { border-color:rgba(59,130,246,0.3);transform:translateY(-5px);box-shadow:0 20px 50px rgba(0,0,0,0.45); }
-        .lp-service-card:hover::before { opacity:1; }
-        .lp-orb { position:absolute;border-radius:50%;filter:blur(100px);opacity:0.1;animation:lpOrbFloat 10s ease-in-out infinite; }
-        @keyframes lpOrbFloat { 0%,100%{transform:translateY(0) scale(1);}50%{transform:translateY(-25px) scale(1.04);} }
-        @keyframes lpPulse { 0%,100%{opacity:1;}50%{opacity:0.5;} }
-        .lp-marquee-track { display:flex;gap:3rem;animation:lpMarquee 30s linear infinite;width:max-content; }
-        .lp-marquee-track:hover { animation-play-state:paused; }
-        @keyframes lpMarquee { from{transform:translateX(0);}to{transform:translateX(-50%);} }
-        .lp-navbar { position:fixed;top:0;left:0;right:0;z-index:1000;display:flex;align-items:center;justify-content:space-between;padding:0 5%;height:68px;background:rgba(6,9,16,0.85);backdrop-filter:blur(24px);border-bottom:1px solid rgba(255,255,255,0.06);transition:all 0.3s; }
-        .lp-nav-link { color:#a8b4c4;text-decoration:none;font-size:0.875rem;font-weight:600;transition:color 0.2s;letter-spacing:0.01em; }
-        .lp-nav-link:hover { color:#e8edf5; }
-        @keyframes clientScroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
-        .lp-section-label { font-family:'JetBrains Mono',monospace;font-size:0.7rem;color:#3b82f6;letter-spacing:0.18em;text-transform:uppercase;margin-bottom:0.7rem; }
-        .lp-section-title { font-family:'Sora',sans-serif;font-size:clamp(1.8rem,3.5vw,2.9rem);font-weight:800;letter-spacing:-0.025em;line-height:1.12;margin-bottom:1rem; }
-        .lp-tech-pill { background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:100px;padding:0.5rem 1.1rem;font-size:0.82rem;color:#8892a4;font-family:'JetBrains Mono',monospace;transition:all 0.25s;cursor:default; }
-        .lp-tech-pill:hover { background:rgba(59,130,246,0.1);border-color:rgba(59,130,246,0.4);color:#60a5fa; }
-        .lp-workflow-step { position:relative;display:flex;flex-direction:column;align-items:center;gap:0.5rem; }
-        .lp-workflow-step::after { content:'';position:absolute;top:18px;left:calc(50% + 22px);width:calc(100% - 44px);height:1px;background:linear-gradient(to right,rgba(59,130,246,0.4),rgba(59,130,246,0.1));z-index:0; }
-        .lp-workflow-step:last-child::after { display:none; }
-        .lp-industry-chip { background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:16px;padding:1.25rem;text-align:center;transition:all 0.3s;cursor:default; }
-        .lp-industry-chip:hover { background:rgba(59,130,246,0.07);border-color:rgba(59,130,246,0.25);transform:translateY(-3px); }
-        .lp-product-card { border-radius:24px;padding:2rem;transition:all 0.4s;position:relative;overflow:hidden; }
-        .lp-product-card:hover { transform:translateY(-8px);box-shadow:0 30px 70px rgba(0,0,0,0.5); }
-        .lp-feature-tag { font-family:'JetBrains Mono',monospace;font-size:0.68rem;padding:3px 10px;border-radius:6px;background:rgba(255,255,255,0.06);color:#6b7a99;border:1px solid rgba(255,255,255,0.08); }
-        .lp-why-card { background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.07);border-radius:18px;padding:1.6rem;transition:all 0.35s; }
-        .lp-why-card:hover { background:rgba(59,130,246,0.06);border-color:rgba(59,130,246,0.25);transform:translateY(-4px); }
-        @keyframes lpGridShift { 0%,100%{opacity:0.4;}50%{opacity:0.7;} }
-        .lp-grid-bg { animation:lpGridShift 8s ease-in-out infinite; }
-        @media(max-width:768px){
-          .lp-hide-mobile{display:none!important;}
-          .lp-stack{flex-direction:column!important;}
-          .lp-grid-1{grid-template-columns:1fr!important;}
-          .lp-grid-2{grid-template-columns:1fr!important;}
-          .lp-workflow-step::after{display:none;}
-          .lp-btn-glow,.lp-btn-outline{width:100%;justify-content:center;font-size:0.95rem!important;}
-          p{font-size:0.95rem;line-height:1.7;}
-          h1,h2{letter-spacing:-0.02em;}
-        }
-        @media(max-width:480px){
-          .lp-grid-3{grid-template-columns:1fr 1fr!important;}
-        }
-      `}</style>
-
-      {/* ── NAVBAR ── */}
-      <nav className="lp-navbar">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <img src="/hiresnix-logo.png" alt="Hiresnix" style={{ height: 40, width: 'auto', objectFit: 'contain', filter: 'drop-shadow(0 0 10px rgba(59,130,246,0.5))' }} />
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }} className="lp-hide-mobile">
-          {[['#services', 'Services'], ['#products', 'Products'], ['#industries', 'Industries'], ['#about', 'About'], ['#contact', 'Contact']].map(([href, label]) => (
-            <a key={href} href={href} className="lp-nav-link">{label}</a>
-          ))}
-        </div>
-        <div style={{ display: 'flex', gap: '0.65rem', alignItems: 'center' }}>
-          <button className="lp-btn-outline lp-hide-mobile" style={{ padding: '0.45rem 1.1rem', fontSize: '0.83rem' }} onClick={() => navigate('/auth')}>Login</button>
-          <button className="lp-btn-glow" style={{ padding: '0.5rem 1.2rem', fontSize: '0.85rem' }} onClick={() => navigate('/auth')}>Get Started →</button>
-        </div>
-      </nav>
-
-      {/* ── HERO ── */}
-      <section style={{ position: 'relative', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '120px 5% 80px', overflow: 'hidden' }}>
-        {/* Orbs */}
-        <div className="lp-orb" style={{ width: 700, height: 700, background: '#3b82f6', top: -250, right: -150, animationDelay: '0s' }} />
-        <div className="lp-orb" style={{ width: 500, height: 500, background: '#7c3aed', bottom: -150, left: -150, animationDelay: '-4s' }} />
-        <div className="lp-orb" style={{ width: 350, height: 350, background: '#0ea5e9', top: '35%', left: '45%', animationDelay: '-7s' }} />
-        {/* Grid */}
-        <div className="lp-grid-bg" style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(255,255,255,0.028) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.028) 1px,transparent 1px)', backgroundSize: '64px 64px', maskImage: 'radial-gradient(ellipse 80% 70% at 50% 50%,black 0%,transparent 100%)' }} />
-
-        <div style={{ position: 'relative', zIndex: 2, maxWidth: 900, textAlign: 'center', width: '100%' }}>
-          {/* Logo */}
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.75rem', animation: 'lpOrbFloat 7s ease-in-out infinite' }}>
-            <img src="/hiresnix-logo.png" alt="Hiresnix" style={{ height: 130, width: 'auto', objectFit: 'contain', filter: 'drop-shadow(0 0 60px rgba(59,130,246,0.6)) drop-shadow(0 0 120px rgba(59,130,246,0.15))' }} />
-          </div>
-
-          {/* Badge */}
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.25)', padding: '6px 18px', borderRadius: 100, fontSize: '0.75rem', fontFamily: "'JetBrains Mono',monospace", color: '#60a5fa', marginBottom: '2rem', letterSpacing: '0.06em' }}>
-            <span style={{ animation: 'lpPulse 2s ease-in-out infinite', display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: '#60a5fa', flexShrink: 0 }} />
-            AI-Powered Technology Company · Shirpur, Maharashtra
-          </div>
-
-          {/* Title */}
-          <h1 className="lp-font-d" style={{ fontWeight: 800, fontSize: 'clamp(2.4rem,6.5vw,4.5rem)', lineHeight: 1.08, letterSpacing: '-0.03em', marginBottom: '1.5rem' }}>
-            <span style={{ display: 'block', color: '#e8edf5' }}>AI-Powered Software</span>
-            <span style={{ display: 'block', background: 'linear-gradient(135deg,#60a5fa 0%,#a78bfa 50%,#38bdf8 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
-              Development &
-            </span>
-            <span style={{ display: 'block', color: '#e8edf5' }}>Technology Solutions</span>
-          </h1>
-
-          {/* Tagline */}
-          <p className="lp-font-d" style={{ fontSize: '0.95rem', color: '#60a5fa', fontWeight: 600, letterSpacing: '0.06em', marginBottom: '1.25rem', opacity: 0.85 }}>
-            Building Intelligent Software. Developing Future Talent.
-          </p>
-
-          <p style={{ fontSize: 'clamp(0.95rem,2vw,1.1rem)', color: '#94a3b8', lineHeight: 1.75, maxWidth: 620, margin: '0 auto 2.75rem', fontWeight: 400 }}>
-            We build scalable software, AI solutions and digital products for startups, businesses and educational institutions — while empowering future professionals through our technology ecosystem.
-          </p>
-
-          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-            <button className="lp-btn-glow" style={{ fontSize: '1.05rem', padding: '1rem 2.2rem' }} onClick={() => { document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' }); }}>🚀 Get Free Consultation</button>
-            <button className="lp-btn-outline" style={{ fontSize: '1.05rem', padding: '1rem 2.2rem' }} onClick={() => { document.getElementById('products')?.scrollIntoView({ behavior: 'smooth' }); }}>Explore Products →</button>
-          </div>
-
-          {/* Stats */}
-          <div ref={countersRef} style={{ display: 'flex', justifyContent: 'center', gap: '3.5rem', marginTop: '4.5rem', flexWrap: 'wrap' }}>
-            {[['500', '+', 'Students Trained'], ['50', '+', 'Clients Served'], ['16', '+', 'Tech Domains'], ['95', '%', 'Client Satisfaction']].map(([count, suffix, label]) => (
-              <div key={label} style={{ textAlign: 'center' }}>
-                <div className="lp-font-d" style={{ fontSize: '2.1rem', fontWeight: 800, background: 'linear-gradient(135deg,#e8edf5,#60a5fa)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}
-                  data-count={count} data-suffix={suffix}>0{suffix}</div>
-                <div style={{ color: '#6b7a99', fontSize: '0.72rem', marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</div>
-              </div>
+      {/* ── Navigation ── */}
+      <header className="hx-nav">
+        <div className="hx-wrap hx-nav-inner">
+          <a href="#top" className="hx-nav-brand" onClick={e => { e.preventDefault(); window.scrollTo({ top: 0 }); }}><BrandMark /></a>
+          <nav className="hx-nav-links" aria-label="Main">
+            {NAV.map(([id, label]) => (
+              <a key={id} href={`#${id}`} onClick={e => { e.preventDefault(); goTo(id); }}>{label}</a>
             ))}
+          </nav>
+          <div className="hx-nav-actions">
+            <button className="hx-btn hx-btn-ghost hx-hide-sm" type="button" onClick={() => navigate('/auth')}>Log in</button>
+            <button className="hx-btn hx-btn-primary" type="button" onClick={() => goTo('internships')}>Explore internships</button>
+            <button className="hx-menu-btn" type="button" aria-expanded={menuOpen} aria-controls="hx-mobile-menu" aria-label={menuOpen ? 'Close menu' : 'Open menu'} onClick={() => setMenuOpen(o => !o)}>
+              <span /><span /><span />
+            </button>
           </div>
         </div>
-      </section>
+        {menuOpen && (
+          <nav id="hx-mobile-menu" className="hx-mobile-menu" aria-label="Mobile">
+            {NAV.map(([id, label]) => (
+              <a key={id} href={`#${id}`} onClick={e => { e.preventDefault(); goTo(id); }}>{label}</a>
+            ))}
+            <button className="hx-btn hx-btn-ghost hx-btn-block" type="button" onClick={() => navigate('/auth')}>Log in</button>
+          </nav>
+        )}
+      </header>
 
-      {/* ── TECH MARQUEE ── */}
-      <div style={{ overflow: 'hidden', padding: '1.1rem 0', borderTop: '1px solid rgba(255,255,255,0.06)', borderBottom: '1px solid rgba(255,255,255,0.06)', background: '#080d18' }}>
-        <div className="lp-marquee-track">
-          {[...MARQUEE_ITEMS, ...MARQUEE_ITEMS].map((item, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.78rem', color: '#4a5568', whiteSpace: 'nowrap', fontFamily: "'JetBrains Mono',monospace", letterSpacing: '0.06em' }}>
-              <span style={{ color: '#3b82f6', opacity: 0.7 }}>{item}</span>
+      <main id="top">
+        {/* ── Hero ── */}
+        <section className="hx-hero">
+          <div className="hx-wrap hx-hero-grid">
+            <div className="hx-hero-copy">
+              <h1 className="hx-h1">Software for businesses. Internships for students.</h1>
+              <p className="hx-lead">
+                Hiresnix is a technology company in Shirpur, Maharashtra. We build web, mobile and AI products for clients,
+                and we train students on real projects in eight domains.
+              </p>
+              <div className="hx-hero-ctas">
+                <button className="hx-btn hx-btn-primary hx-btn-lg" type="button" onClick={() => goTo('internships')}>Explore internships</button>
+                <button className="hx-btn hx-btn-ghost hx-btn-lg" type="button" onClick={() => contactFor('Software Development')}>Start a project</button>
+              </div>
+              <p className="hx-hero-login">Already an intern? <a href="/auth" onClick={e => { e.preventDefault(); navigate('/auth'); }}>Log in to your dashboard</a></p>
             </div>
-          ))}
-        </div>
-      </div>
+            <div className="hx-hero-visual"><Trajectory /></div>
+          </div>
+          <div className="hx-wrap">
+            <dl className="hx-facts">
+              <div><dt>Students trained</dt><dd>500+</dd></div>
+              <div><dt>Internship domains</dt><dd>8</dd></div>
+              <div><dt>AI Academy courses</dt><dd>16</dd></div>
+              <div><dt>Clients served</dt><dd>50+</dd></div>
+            </dl>
+          </div>
+        </section>
 
-      {/* ── SERVICES ── */}
-      <section id="services" style={{ padding: '8rem 5%', background: '#0a0f1e' }}>
-        <div style={{ maxWidth: 1140, margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
-            <div className="lp-section-label lp-reveal">What We Build</div>
-            <h2 className="lp-section-title lp-reveal lp-d1">Our Services</h2>
-            <p className="lp-reveal lp-d2" style={{ color: '#6b7a99', fontSize: '1rem', maxWidth: 500, margin: '0 auto' }}>End-to-end technology services from ideation to deployment and beyond.</p>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(300px,1fr))', gap: '1.25rem' }}>
-            {SERVICES.map((s, i) => (
-              <div key={s.title} className={`lp-service-card lp-flip lp-d${Math.min((i % 4) + 1, 4)}`}>
-                <div style={{ width: 46, height: 46, borderRadius: 14, background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.3rem', marginBottom: '1.1rem', position: 'relative', zIndex: 1 }}>{s.icon}</div>
-                <h3 className="lp-font-d" style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '0.5rem', position: 'relative', zIndex: 1 }}>{s.title}</h3>
-                <p style={{ color: '#6b7a99', fontSize: '0.83rem', lineHeight: 1.65, position: 'relative', zIndex: 1 }}>{s.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+        {/* ── Internships ── */}
+        <section id="internships" className="hx-section hx-section-panel">
+          <div className="hx-wrap">
+            <div className="hx-section-head">
+              <h2 className="hx-h2">Internships</h2>
+              <p className="hx-lead">
+                Choose a domain and a duration from 1 to 6 months. You build three projects that get harder as you go,
+                log your daily work, and finish with documents anyone can verify.
+              </p>
+            </div>
 
-      {/* ── WHY HIRESNIX ── */}
-      <section id="about" style={{ padding: '7rem 5%', background: '#060910' }}>
-        <div style={{ maxWidth: 1140, margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: '3.5rem' }}>
-            <div className="lp-section-label lp-reveal">Why Us</div>
-            <h2 className="lp-section-title lp-reveal lp-d1">Why Choose Hiresnix</h2>
-            <p className="lp-reveal lp-d2" style={{ color: '#6b7a99', fontSize: '1rem', maxWidth: 480, margin: '0 auto' }}>We combine deep technical expertise with a product mindset to deliver lasting value.</p>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: '1.1rem' }}>
-            {WHY_US.map((w, i) => (
-              <div key={w.title} className={`lp-why-card lp-scale-in lp-d${Math.min((i % 3) + 1, 4)}`}>
-                <div style={{ fontSize: '1.75rem', marginBottom: '0.85rem' }}>{w.icon}</div>
-                <h3 className="lp-font-d" style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: '0.4rem' }}>{w.title}</h3>
-                <p style={{ color: '#6b7a99', fontSize: '0.82rem', lineHeight: 1.6 }}>{w.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+            <DomainExplorer onApply={applyNow} />
 
-      {/* ── PRODUCTS ── */}
-      <section id="products" style={{ padding: '8rem 5%', background: '#0a0f1e' }}>
-        <div style={{ maxWidth: 1140, margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
-            <div className="lp-section-label lp-reveal">Built by Hiresnix</div>
-            <h2 className="lp-section-title lp-reveal lp-d1">Our Products</h2>
-            <p className="lp-reveal lp-d2" style={{ color: '#6b7a99', fontSize: '1rem', maxWidth: 520, margin: '0 auto' }}>A suite of AI-powered platforms and tools built on our own technology — available for institutions, students, and businesses.</p>
+            <h3 className="hx-h3 hx-steps-title">How the internship works</h3>
+            <ol className="hx-steps">
+              {INTERN_STEPS.map(([title, desc], i) => (
+                <li key={title}>
+                  <span className="hx-step-n" aria-hidden="true">{i + 1}</span>
+                  <strong>{title}</strong>
+                  <p>{desc}</p>
+                </li>
+              ))}
+            </ol>
+
+            <div className="hx-cta-row">
+              <button className="hx-btn hx-btn-primary hx-btn-lg" type="button" onClick={applyNow}>Apply for an internship</button>
+              <a className="hx-link" href="/verify" onClick={e => { e.preventDefault(); navigate('/verify'); }}>Verify a certificate</a>
+            </div>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,minmax(0,420px))', gap: '1.5rem', justifyContent: 'center' }}>
-            {PRODUCTS.map((p, i) => (
-              <div key={p.title} className={`lp-product-card lp-slide-right lp-d${Math.min(i + 1, 4)}`} style={{ background: p.gradient, border: `1px solid ${p.border}` }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
-                  <div style={{ fontSize: '2rem' }}>{p.icon}</div>
-                  <span className="lp-font-m" style={{ fontSize: '0.65rem', padding: '4px 10px', borderRadius: 8, background: 'rgba(255,255,255,0.07)', color: p.accent, border: `1px solid ${p.border}` }}>{p.tag}</span>
+        </section>
+
+        {/* ── AI Academy + Institution portal ── */}
+        <section id="academy" className="hx-section">
+          <div className="hx-wrap hx-split">
+            <div>
+              <h2 className="hx-h2">AI Academy</h2>
+              <p className="hx-lead">
+                Sixteen self-paced courses with an AI teacher that explains every lesson, a code runner in the browser and a quiz at the end.
+                It is free for every Hiresnix student, and each finished course comes with a certificate.
+              </p>
+              <ul className="hx-courses" aria-label="Courses">
+                {ACADEMY_COURSES.map(c => <li key={c}>{c}</li>)}
+              </ul>
+              <button className="hx-btn hx-btn-primary" type="button" onClick={() => navigate('/auth')}>Open AI Academy</button>
+            </div>
+            <aside className="hx-aside">
+              <h3 className="hx-h3">For colleges and institutes</h3>
+              <p className="hx-muted">
+                The institution portal lets you manage batches, import students from a CSV file, track attendance and
+                issue certificates your students can verify online. Each student gets a Career ID to log in with.
+              </p>
+              <button className="hx-btn hx-btn-ghost" type="button" onClick={() => contactFor('Partnership')}>Talk to us about your institute</button>
+            </aside>
+          </div>
+        </section>
+
+        {/* ── Services ── */}
+        <section id="services" className="hx-section hx-section-panel">
+          <div className="hx-wrap">
+            <div className="hx-section-head">
+              <h2 className="hx-h2">Software development</h2>
+              <p className="hx-lead">
+                We design, build and maintain software for startups, businesses and institutions, with AI built in where it helps.
+              </p>
+            </div>
+            <dl className="hx-services">
+              {SERVICES.map(([t, d]) => (
+                <div key={t}><dt>{t}</dt><dd>{d}</dd></div>
+              ))}
+            </dl>
+            <p className="hx-industries">
+              Industries we have worked in: education, healthcare, retail, manufacturing, finance, e-commerce and startups.
+            </p>
+
+            <h3 className="hx-h3 hx-steps-title">How a project runs</h3>
+            <ol className="hx-process">
+              {PROCESS.map((p, i) => (
+                <li key={p}><span className="hx-step-n" aria-hidden="true">{i + 1}</span>{p}</li>
+              ))}
+            </ol>
+          </div>
+        </section>
+
+        {/* ── Client work ── */}
+        <section id="work" className="hx-section">
+          <div className="hx-wrap">
+            <div className="hx-section-head">
+              <h2 className="hx-h2">Client work</h2>
+              <p className="hx-lead">Software we have delivered for growing businesses across India.</p>
+            </div>
+
+            <article className="hx-case">
+              <header className="hx-case-head">
+                <div>
+                  <h3 className="hx-h3">Focktix Limited</h3>
+                  <p className="hx-muted">Digital marketing agency, Maharashtra</p>
                 </div>
-                <div className="lp-section-label" style={{ color: p.accent, marginBottom: '0.3rem' }}>{p.subtitle}</div>
-                <h3 className="lp-font-d" style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '0.75rem' }}>{p.title}</h3>
-                <p style={{ color: '#8892a4', fontSize: '0.84rem', lineHeight: 1.65, marginBottom: '1.25rem' }}>{p.desc}</p>
-                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                  {p.features.map(f => (
-                    <span key={f} className="lp-feature-tag" style={{ borderColor: `${p.border}`, color: p.accent }}>{f}</span>
-                  ))}
-                </div>
+                <span className="hx-badge">Delivered</span>
+              </header>
+              <div className="hx-case-built">
+                <div><strong>Custom CRM system</strong><p>Client and lead management built around the agency's workflow.</p></div>
+                <div><strong>Campaign dashboard</strong><p>Live analytics for ad performance across platforms.</p></div>
+                <div><strong>AI lead scoring</strong><p>Machine learning that ranks leads so the team calls the best ones first.</p></div>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
+              <p className="hx-case-stack">Built with React.js, Node.js, PostgreSQL, Groq AI, REST APIs and Vercel.</p>
+              <dl className="hx-case-results">
+                <div><dd>3×</dd><dt>lead conversion</dt></div>
+                <div><dd>60%</dd><dt>less manual work</dt></div>
+                <div><dd>99.9%</dd><dt>uptime</dt></div>
+              </dl>
+            </article>
 
-      {/* ── INDUSTRIES ── */}
-      <section id="industries" style={{ padding: '7rem 5%', background: '#060910' }}>
-        <div style={{ maxWidth: 1140, margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: '3.5rem' }}>
-            <div className="lp-section-label lp-reveal">Who We Serve</div>
-            <h2 className="lp-section-title lp-reveal lp-d1">Industries We Work In</h2>
-            <p className="lp-reveal lp-d2" style={{ color: '#6b7a99', fontSize: '1rem', maxWidth: 450, margin: '0 auto' }}>We build solutions for diverse industries with tailored approaches and domain expertise.</p>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(150px,1fr))', gap: '1rem' }} className="lp-grid-3">
-            {INDUSTRIES.map((ind, i) => (
-              <div key={ind.name} className={`lp-industry-chip lp-reveal lp-d${Math.min((i % 4) + 1, 4)}`}>
-                <div style={{ fontSize: '2rem', marginBottom: '0.6rem' }}>{ind.icon}</div>
-                <div className="lp-font-d" style={{ fontWeight: 700, fontSize: '0.88rem' }}>{ind.name}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── TECH STACK ── */}
-      <section style={{ padding: '6rem 5%', background: '#0a0f1e', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-        <div style={{ maxWidth: 900, margin: '0 auto', textAlign: 'center' }}>
-          <div className="lp-section-label lp-reveal">Technology</div>
-          <h2 className="lp-section-title lp-reveal lp-d1" style={{ fontSize: 'clamp(1.5rem,3vw,2.2rem)' }}>Our Tech Stack</h2>
-          <p className="lp-reveal lp-d2" style={{ color: '#6b7a99', fontSize: '0.95rem', marginBottom: '2.5rem' }}>Modern, battle-tested technologies for every layer of your product.</p>
-          <div className="lp-reveal lp-d3" style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', justifyContent: 'center' }}>
-            {TECH_STACK.map(tech => (
-              <span key={tech} className="lp-tech-pill">{tech}</span>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── WORKFLOW ── */}
-      <section style={{ padding: '8rem 5%', background: '#060910' }}>
-        <div style={{ maxWidth: 1140, margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
-            <div className="lp-section-label lp-reveal">Process</div>
-            <h2 className="lp-section-title lp-reveal lp-d1">How We Work</h2>
-            <p className="lp-reveal lp-d2" style={{ color: '#6b7a99', fontSize: '1rem', maxWidth: 460, margin: '0 auto' }}>A clear, structured process from the first call to post-launch support.</p>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.5rem' }} className="lp-reveal lp-d2">
-            {WORKFLOW.map((step, i) => (
-              <div key={step.num} className="lp-workflow-step" style={{ minWidth: 120 }}>
-                <div style={{ width: 44, height: 44, borderRadius: '50%', background: i === 0 ? 'rgba(59,130,246,0.2)' : 'rgba(255,255,255,0.04)', border: `1px solid ${i === 0 ? 'rgba(59,130,246,0.5)' : 'rgba(255,255,255,0.1)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', zIndex: 1 }}>
-                  <span className="lp-font-m" style={{ fontSize: '0.7rem', color: i === 0 ? '#60a5fa' : '#6b7a99' }}>{step.num}</span>
-                </div>
-                <div className="lp-font-d" style={{ fontWeight: 700, fontSize: '0.78rem', textAlign: 'center', lineHeight: 1.3, color: '#c8d1e0' }}>{step.title}</div>
-                <div style={{ color: '#4a5568', fontSize: '0.7rem', textAlign: 'center', lineHeight: 1.5 }}>{step.desc}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── WHY CLIENTS CHOOSE US ── */}
-      <section style={{ padding: '7rem 5%', background: '#0a0f1e' }}>
-        <div style={{ maxWidth: 1140, margin: '0 auto' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '5rem', alignItems: 'center' }} className="lp-grid-1">
-            <div className="lp-slide-left">
-              <div className="lp-section-label lp-reveal">Client Trust</div>
-              <h2 className="lp-section-title lp-reveal lp-d1">Why Clients<br />Choose Us</h2>
-              <p className="lp-reveal lp-d2" style={{ color: '#6b7a99', fontSize: '1rem', marginBottom: '2rem' }}>We're not just a vendor — we're a technology partner invested in your success.</p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-                {[
-                  ['✦', 'High Quality Code', 'Clean, documented, and maintainable codebases built to last.'],
-                  ['✦', 'Scalable Solutions', 'Architecture designed to scale from MVP to enterprise.'],
-                  ['✦', 'Transparent Communication', 'Regular updates, demos, and honest timelines — always.'],
-                  ['✦', 'Dedicated Support', 'A real team that responds fast and actually cares.'],
-                  ['✦', 'Modern Tech Stack', 'We use the right tools — not the easiest or cheapest ones.'],
-                ].map(([icon, title, desc], i) => (
-                  <div key={title} className={`lp-reveal lp-d${Math.min(i + 1, 4)}`} style={{ display: 'flex', gap: '1rem', padding: '1rem 1.25rem', background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 14, alignItems: 'flex-start', transition: 'all 0.3s' }}
-                    onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(59,130,246,0.25)'; (e.currentTarget as HTMLDivElement).style.background = 'rgba(59,130,246,0.04)'; }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(255,255,255,0.07)'; (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.025)'; }}>
-                    <span style={{ color: '#3b82f6', fontSize: '0.8rem', marginTop: 2 }}>{icon}</span>
+            {publicClients.map((c: any) => {
+              const built = parseList(c.what_we_built);
+              const stack = parseList(c.tech_stack).filter(Boolean);
+              const results = parseList(c.results);
+              return (
+                <article key={c.id} className="hx-case">
+                  <header className="hx-case-head">
                     <div>
-                      <div className="lp-font-d" style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: '0.2rem' }}>{title}</div>
-                      <div style={{ color: '#6b7a99', fontSize: '0.8rem', lineHeight: 1.55 }}>{desc}</div>
+                      <h3 className="hx-h3">{c.name}</h3>
+                      <p className="hx-muted">{[c.industry, c.location].filter(Boolean).join(', ')}</p>
                     </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-            {/* Visual card */}
-            <div className="lp-reveal lp-d2">
-              <div style={{ background: 'linear-gradient(135deg,#0f172a,#1e1b4b)', border: '1px solid rgba(59,130,246,0.2)', borderRadius: 24, padding: '2.5rem', position: 'relative', overflow: 'hidden', boxShadow: '0 40px 100px rgba(0,0,0,0.6)' }}>
-                <div style={{ position: 'absolute', top: -100, right: -100, width: 300, height: 300, background: 'radial-gradient(circle,rgba(59,130,246,0.12),transparent 70%)', borderRadius: '50%' }} />
-                <div style={{ position: 'absolute', bottom: -80, left: -80, width: 250, height: 250, background: 'radial-gradient(circle,rgba(139,92,246,0.1),transparent 70%)', borderRadius: '50%' }} />
-                {/* Mock project card */}
-                <div style={{ background: '#111827', borderRadius: 16, padding: '1.25rem', marginBottom: '1rem', border: '1px solid rgba(255,255,255,0.06)', position: 'relative', zIndex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', marginBottom: '0.85rem' }}>
-                    <div style={{ width: 32, height: 32, borderRadius: 10, background: 'rgba(59,130,246,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem' }}>🚀</div>
-                    <div>
-                      <div className="lp-font-d" style={{ fontWeight: 700, fontSize: '0.85rem' }}>Project: EduTech SaaS</div>
-                      <div style={{ fontSize: '0.68rem', color: '#6b7a99' }}>React + Node.js + Supabase</div>
-                    </div>
-                    <span className="lp-font-m" style={{ marginLeft: 'auto', fontSize: '0.62rem', padding: '3px 9px', borderRadius: 6, background: 'rgba(16,185,129,0.12)', color: '#34d399', border: '1px solid rgba(16,185,129,0.2)' }}>Live</span>
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '0.6rem' }}>
-                    {[['98%', '#10b981', 'Uptime'], ['1.2s', '#60a5fa', 'Load Time'], ['A+', '#f59e0b', 'Lighthouse']].map(([val, color, label]) => (
-                      <div key={label} style={{ background: '#0d1420', borderRadius: 10, padding: '0.65rem', textAlign: 'center', border: '1px solid rgba(255,255,255,0.05)' }}>
-                        <div className="lp-font-d" style={{ fontSize: '1.2rem', fontWeight: 800, color }}>{val}</div>
-                        <div style={{ fontSize: '0.6rem', color: '#6b7a99', marginTop: 2 }}>{label}</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <div style={{ display: 'flex', gap: '0.75rem', position: 'relative', zIndex: 1 }}>
-                  {['AI Integration ✓', 'Cloud Deploy ✓', 'API Docs ✓'].map(item => (
-                    <span key={item} style={{ fontSize: '0.65rem', padding: '4px 10px', borderRadius: 8, background: 'rgba(59,130,246,0.08)', color: '#60a5fa', border: '1px solid rgba(59,130,246,0.15)', fontFamily: "'JetBrains Mono',monospace" }}>{item}</span>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── TRUSTED BY ── */}
-      <section style={{ padding: '5rem 5%', background: '#060b18', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
-        <div style={{ maxWidth: 1140, margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
-            <div className="lp-section-label lp-reveal">Trusted By</div>
-            <h2 className="lp-section-title lp-reveal lp-d1" style={{ fontSize: 'clamp(1.6rem,4vw,2.4rem)' }}>Companies That Trust<br />Hiresnix Tech</h2>
-            <p className="lp-reveal lp-d2" style={{ color: '#6b7a99', maxWidth: 480, margin: '0 auto' }}>We've delivered real technology solutions for growing businesses across India.</p>
-          </div>
-
-          {/* ── Focktix Hardcoded Card ── */}
-          <div className="lp-scale-in" style={{ maxWidth: 820, margin: '0 auto 1.5rem' }}>
-            <div style={{ background: 'linear-gradient(135deg,#0f172a 0%,#0d1929 60%,#0f0d2a 100%)', border: '1px solid rgba(99,102,241,0.25)', borderRadius: 24, padding: 'clamp(1.5rem,4vw,2.5rem)', position: 'relative', overflow: 'hidden', boxShadow: '0 30px 80px rgba(0,0,0,0.5)' }}>
-              <div style={{ position: 'absolute', top: -80, right: -80, width: 280, height: 280, background: 'radial-gradient(circle,rgba(99,102,241,0.1),transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }} />
-              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                  <div style={{ width: 52, height: 52, borderRadius: 14, background: 'linear-gradient(135deg,#6366f1,#4f46e5)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem', fontWeight: 900, color: '#fff', flexShrink: 0, boxShadow: '0 0 20px rgba(99,102,241,0.4)' }}>F</div>
-                  <div>
-                    <div style={{ fontWeight: 800, fontSize: '1.1rem', color: '#e2e8f0' }}>Focktix Limited</div>
-                    <div style={{ fontSize: '0.72rem', color: '#6366f1', fontWeight: 600 }}>Digital Marketing Agency · Maharashtra, India</div>
-                  </div>
-                </div>
-                <span style={{ fontSize: '0.65rem', padding: '4px 12px', borderRadius: 8, background: 'rgba(16,185,129,0.12)', color: '#34d399', border: '1px solid rgba(16,185,129,0.2)', fontWeight: 700, whiteSpace: 'nowrap', alignSelf: 'center' }}>✓ Delivered</span>
-              </div>
-              <div style={{ marginBottom: '1.5rem' }}>
-                <div style={{ fontSize: '0.65rem', letterSpacing: '0.2em', color: '#4a5568', fontWeight: 700, marginBottom: '0.6rem', textTransform: 'uppercase' }}>What We Built</div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', gap: '0.75rem' }}>
-                  {[
-                    { icon: '⚙️', title: 'Custom CRM System', desc: 'Client & lead management platform tailored for their agency workflow' },
-                    { icon: '📊', title: 'Campaign Dashboard', desc: 'Real-time analytics dashboard for tracking ad performance across platforms' },
-                    { icon: '🤖', title: 'AI Lead Scoring', desc: 'Automated lead qualification using ML to prioritize high-value clients' },
-                  ].map(({ icon, title, desc }) => (
-                    <div key={title} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 14, padding: '1rem' }}>
-                      <div style={{ fontSize: '1.2rem', marginBottom: '0.4rem' }}>{icon}</div>
-                      <div style={{ fontWeight: 700, fontSize: '0.82rem', color: '#e2e8f0', marginBottom: '0.25rem' }}>{title}</div>
-                      <div style={{ fontSize: '0.72rem', color: '#4a5568', lineHeight: 1.5 }}>{desc}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
-                <span style={{ fontSize: '0.65rem', color: '#4a5568', fontWeight: 700, letterSpacing: '0.1em' }}>TECH STACK:</span>
-                {['React.js', 'Node.js', 'PostgreSQL', 'Groq AI', 'REST API', 'Vercel'].map(t => (
-                  <span key={t} style={{ fontSize: '0.65rem', padding: '3px 10px', borderRadius: 6, background: 'rgba(99,102,241,0.08)', color: '#818cf8', border: '1px solid rgba(99,102,241,0.15)', fontFamily: "'JetBrains Mono',monospace" }}>{t}</span>
-                ))}
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '0.75rem', paddingTop: '1.25rem', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-                {[['3x', '#6366f1', 'Lead conversion improvement'], ['60%', '#34d399', 'Reduction in manual work'], ['99.9%', '#f59e0b', 'System uptime']].map(([val, color, label]) => (
-                  <div key={label} style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: 'clamp(1.4rem,3vw,2rem)', fontWeight: 900, color }}>{val}</div>
-                    <div style={{ fontSize: '0.68rem', color: '#4a5568', lineHeight: 1.4, marginTop: 2 }}>{label}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* ── Dynamic clients from Admin ── */}
-          {landingClients.filter((c: any) => !c.nda_protected).map((c: any) => {
-            const wwb = typeof c.what_we_built === 'string' ? JSON.parse(c.what_we_built || '[]') : (c.what_we_built || []);
-            const stack = typeof c.tech_stack === 'string' ? JSON.parse(c.tech_stack || '[]') : (c.tech_stack || []);
-            const results = typeof c.results === 'string' ? JSON.parse(c.results || '[]') : (c.results || []);
-            return (
-              <div key={c.id} className="lp-scale-in" style={{ maxWidth: 820, margin: '0 auto 1.5rem' }}>
-                <div style={{ background: 'linear-gradient(135deg,#0f172a 0%,#0d1929 60%,#0f0d2a 100%)', border: '1px solid rgba(99,102,241,0.25)', borderRadius: 24, padding: 'clamp(1.5rem,4vw,2.5rem)', position: 'relative', overflow: 'hidden', boxShadow: '0 30px 80px rgba(0,0,0,0.5)' }}>
-                  <div style={{ position: 'absolute', top: -80, right: -80, width: 280, height: 280, background: 'radial-gradient(circle,rgba(99,102,241,0.1),transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }} />
-                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                      <div style={{ width: 52, height: 52, borderRadius: 14, background: 'linear-gradient(135deg,#6366f1,#4f46e5)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem', fontWeight: 900, color: '#fff', flexShrink: 0, boxShadow: '0 0 20px rgba(99,102,241,0.4)' }}>{c.name?.[0]?.toUpperCase()}</div>
-                      <div>
-                        <div style={{ fontWeight: 800, fontSize: '1.1rem', color: '#e2e8f0' }}>{c.name}</div>
-                        <div style={{ fontSize: '0.72rem', color: '#6366f1', fontWeight: 600 }}>{c.industry}{c.location ? ` · ${c.location}` : ''}</div>
-                      </div>
-                    </div>
-                    <span style={{ fontSize: '0.65rem', padding: '4px 12px', borderRadius: 8, background: 'rgba(16,185,129,0.12)', color: '#34d399', border: '1px solid rgba(16,185,129,0.2)', fontWeight: 700, whiteSpace: 'nowrap', alignSelf: 'center' }}>✓ Delivered</span>
-                  </div>
-                  {wwb.length > 0 && (
-                    <div style={{ marginBottom: '1.5rem' }}>
-                      <div style={{ fontSize: '0.65rem', letterSpacing: '0.2em', color: '#4a5568', fontWeight: 700, marginBottom: '0.6rem', textTransform: 'uppercase' }}>What We Built</div>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', gap: '0.75rem' }}>
-                        {wwb.map((w: any, i: number) => (
-                          <div key={i} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 14, padding: '1rem' }}>
-                            <div style={{ fontSize: '1.2rem', marginBottom: '0.4rem' }}>{w.icon}</div>
-                            <div style={{ fontWeight: 700, fontSize: '0.82rem', color: '#e2e8f0', marginBottom: '0.25rem' }}>{w.title}</div>
-                            <div style={{ fontSize: '0.72rem', color: '#4a5568', lineHeight: 1.5 }}>{w.desc}</div>
-                          </div>
-                        ))}
-                      </div>
+                    <span className="hx-badge">Delivered</span>
+                  </header>
+                  {built.length > 0 && (
+                    <div className="hx-case-built">
+                      {built.map((w: any, i: number) => <div key={i}><strong>{w.title}</strong><p>{w.desc}</p></div>)}
                     </div>
                   )}
-                  {stack.length > 0 && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
-                      <span style={{ fontSize: '0.65rem', color: '#4a5568', fontWeight: 700, letterSpacing: '0.1em' }}>TECH STACK:</span>
-                      {stack.filter(Boolean).map((t: string, i: number) => (
-                        <span key={i} style={{ fontSize: '0.65rem', padding: '3px 10px', borderRadius: 6, background: 'rgba(99,102,241,0.08)', color: '#818cf8', border: '1px solid rgba(99,102,241,0.15)', fontFamily: "'JetBrains Mono',monospace" }}>{t}</span>
-                      ))}
-                    </div>
-                  )}
+                  {stack.length > 0 && <p className="hx-case-stack">Built with {stack.join(', ')}.</p>}
                   {results.length > 0 && (
-                    <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(results.length, 3)},1fr)`, gap: '0.75rem', paddingTop: '1.25rem', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-                      {results.map((res: any, i: number) => (
-                        <div key={i} style={{ textAlign: 'center' }}>
-                          <div style={{ fontSize: 'clamp(1.4rem,3vw,2rem)', fontWeight: 900, color: res.color }}>{res.value}</div>
-                          <div style={{ fontSize: '0.68rem', color: '#4a5568', lineHeight: 1.4, marginTop: 2 }}>{res.label}</div>
-                        </div>
-                      ))}
-                    </div>
+                    <dl className="hx-case-results">
+                      {results.map((r: any, i: number) => <div key={i}><dd>{r.value}</dd><dt>{r.label}</dt></div>)}
+                    </dl>
                   )}
-                </div>
-              </div>
-            );
-          })}
+                </article>
+              );
+            })}
 
-          {/* Auto-scrolling strip — Focktix + NDA + new clients */}
-          <div style={{ position: 'relative', marginTop: '2.5rem', overflow: 'hidden' }}>
-            <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 80, background: 'linear-gradient(to right, #060b18, transparent)', zIndex: 2, pointerEvents: 'none' }} />
-            <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 80, background: 'linear-gradient(to left, #060b18, transparent)', zIndex: 2, pointerEvents: 'none' }} />
-            <div style={{ display: 'flex', gap: '1.25rem', animation: 'clientScroll 28s linear infinite', width: 'max-content' }}>
-              {[
-                { name: 'Focktix Limited', nda: false, industry: 'Digital Marketing Agency' },
-                { name: 'Digital Marketing Agency', nda: true, industry: 'Digital Marketing' },
-                { name: 'E-commerce Platform', nda: true, industry: 'E-commerce' },
-                { name: 'HR Tech Startup', nda: true, industry: 'HR Tech' },
-                { name: 'Mobile App Company', nda: true, industry: 'Mobile Apps' },
-                { name: 'EdTech Platform', nda: true, industry: 'EdTech' },
-                ...landingClients,
-                // Duplicate for seamless loop
-                { name: 'Focktix Limited', nda: false, industry: 'Digital Marketing Agency' },
-                { name: 'Digital Marketing Agency', nda: true, industry: 'Digital Marketing' },
-                { name: 'E-commerce Platform', nda: true, industry: 'E-commerce' },
-                { name: 'HR Tech Startup', nda: true, industry: 'HR Tech' },
-                { name: 'Mobile App Company', nda: true, industry: 'Mobile Apps' },
-                { name: 'EdTech Platform', nda: true, industry: 'EdTech' },
-                ...landingClients,
-              ].map((c: any, i: number) => (
-                <div key={i} style={{ flexShrink: 0, background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 16, padding: '1rem 1.5rem', display: 'flex', alignItems: 'center', gap: '0.9rem', minWidth: 220 }}>
-                  <div style={{ width: 42, height: 42, borderRadius: 12, background: c.nda || c.nda_protected ? 'rgba(255,255,255,0.06)' : 'linear-gradient(135deg,#6366f1,#4f46e5)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem', fontWeight: 900, color: '#fff', flexShrink: 0 }}>
-                    {c.nda || c.nda_protected ? '🔒' : c.name?.[0]?.toUpperCase()}
-                  </div>
-                  <div>
-                    <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#cbd5e1', marginBottom: '0.2rem' }}>{c.nda || c.nda_protected ? (c.industry || 'NDA Client') : c.name}</div>
-                    <span style={{ fontSize: '0.62rem', padding: '2px 8px', borderRadius: 6, background: c.nda || c.nda_protected ? 'rgba(99,102,241,0.06)' : 'rgba(16,185,129,0.1)', color: c.nda || c.nda_protected ? '#475569' : '#34d399', border: c.nda || c.nda_protected ? '1px solid rgba(99,102,241,0.1)' : '1px solid rgba(16,185,129,0.2)', fontWeight: 700 }}>
-                      {c.nda || c.nda_protected ? 'NDA Protected' : '✓ Client'}
-                    </span>
-                  </div>
-                </div>
-              ))}
+            <p className="hx-nda">
+              <strong>Other clients, under NDA:</strong> {ndaClients.join(', ')}.
+            </p>
+          </div>
+        </section>
+
+        {/* ── Contact ── */}
+        <section id="contact" className="hx-section hx-section-panel">
+          <div className="hx-wrap hx-split">
+            <div>
+              <h2 className="hx-h2">Start a project</h2>
+              <p className="hx-lead">Tell us what you need built. We reply within 24 hours.</p>
+              <p className="hx-muted hx-contact-alt">
+                Prefer email? Write to <a className="hx-link" href="mailto:hr@hiresnix.co.in">hr@hiresnix.co.in</a> or call{' '}
+                <a className="hx-link" href="tel:+919529120977">+91 95291 20977</a>.
+              </p>
             </div>
+            <EnquiryForm presetInterest={presetInterest} />
           </div>
+        </section>
+      </main>
 
-        </div>
-      </section>
-
-                  {/* ── CONTACT / CTA ── */}
-      <section id="contact" style={{ padding: '8rem 5%', background: '#060910' }}>
-        <div style={{ maxWidth: 1140, margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: '3.5rem' }}>
-            <div className="lp-section-label lp-reveal">Get In Touch</div>
-            <h2 className="lp-section-title lp-reveal lp-d1">Ready to Build Your<br /><span style={{ background: 'linear-gradient(135deg,#60a5fa,#a78bfa)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>Next Software Product?</span></h2>
-            <p className="lp-reveal lp-d2" style={{ color: '#6b7a99', fontSize: '1rem', maxWidth: 480, margin: '0 auto 3rem' }}>Tell us about your project and let's figure out the best way to bring it to life.</p>
-          </div>
-          <EnquiryForm />
-        </div>
-      </section>
-
-      {/* ── FINAL CTA ── */}
-      <section style={{ padding: '7rem 5%', background: '#0a0f1e', textAlign: 'center' }}>
-        <div className="lp-reveal" style={{ maxWidth: 760, margin: '0 auto', background: 'linear-gradient(135deg,rgba(59,130,246,0.07),rgba(139,92,246,0.07))', border: '1px solid rgba(59,130,246,0.18)', borderRadius: 28, padding: '4.5rem 2.5rem', position: 'relative', overflow: 'hidden' }}>
-          <div style={{ position: 'absolute', top: -100, right: -100, width: 300, height: 300, background: 'radial-gradient(circle,rgba(59,130,246,0.1),transparent 70%)', borderRadius: '50%' }} />
-          <div style={{ position: 'absolute', bottom: -100, left: -100, width: 280, height: 280, background: 'radial-gradient(circle,rgba(139,92,246,0.1),transparent 70%)', borderRadius: '50%' }} />
-          <img src="/hiresnix-logo.png" alt="Hiresnix" style={{ height: 72, objectFit: 'contain', marginBottom: '1.25rem', filter: 'drop-shadow(0 0 20px rgba(59,130,246,0.4))', position: 'relative', zIndex: 1 }} />
-          <h2 className="lp-font-d" style={{ fontSize: 'clamp(1.7rem,4vw,2.7rem)', fontWeight: 800, marginBottom: '0.85rem', lineHeight: 1.2, position: 'relative', zIndex: 1 }}>
-            Let's Build Together.
-          </h2>
-          <p style={{ color: '#6b7a99', fontSize: '1rem', marginBottom: '2.25rem', position: 'relative', zIndex: 1 }}>From MVP to enterprise — we have the team, tools and experience to deliver.</p>
-          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap', position: 'relative', zIndex: 1 }}>
-            <button className="lp-btn-glow" style={{ fontSize: '1rem', padding: '0.9rem 2rem' }} onClick={() => { document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' }); }}>Book Consultation</button>
-            <button className="lp-btn-outline" style={{ fontSize: '1rem', padding: '0.9rem 2rem' }} onClick={() => navigate('/auth')}>Login to Portal</button>
-          </div>
-        </div>
-      </section>
-
-      {/* ── FOOTER ── */}
-      <footer style={{ background: '#060910', borderTop: '1px solid rgba(255,255,255,0.06)', padding: '4rem 5% 2rem' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: '2.5rem', marginBottom: '3rem', maxWidth: 1100, margin: '0 auto 3rem' }} className="lp-grid-1">
+      {/* ── Footer ── */}
+      <footer className="hx-footer">
+        <div className="hx-wrap hx-footer-grid">
           <div>
-            <img src="/hiresnix-logo.png" alt="Hiresnix" style={{ height: 52, objectFit: 'contain', marginBottom: '1rem', filter: 'drop-shadow(0 0 12px rgba(59,130,246,0.4))' }} />
-            <p style={{ color: '#6b7a99', fontSize: '0.84rem', lineHeight: 1.75, marginBottom: '1.25rem', maxWidth: 300 }}>Building intelligent software and developing future-ready talent. AI-powered technology solutions for businesses and institutions across India.</p>
-            <div style={{ display: 'flex', gap: '0.75rem' }}>
-              <a href="https://hiresnix.co.in" target="_blank" rel="noopener noreferrer" style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6b7a99', textDecoration: 'none', fontSize: '0.9rem', transition: 'all 0.2s' }}
-                onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.borderColor = '#3b82f6'; (e.currentTarget as HTMLAnchorElement).style.color = '#60a5fa'; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(255,255,255,0.1)'; (e.currentTarget as HTMLAnchorElement).style.color = '#6b7a99'; }}>🌐</a>
-              <a href="https://www.linkedin.com/company/hiresnix/" target="_blank" rel="noopener noreferrer" style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6b7a99', textDecoration: 'none', fontSize: '0.75rem', fontWeight: 700, fontFamily: 'sans-serif', transition: 'all 0.2s' }}
-                onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.borderColor = '#3b82f6'; (e.currentTarget as HTMLAnchorElement).style.color = '#60a5fa'; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(255,255,255,0.1)'; (e.currentTarget as HTMLAnchorElement).style.color = '#6b7a99'; }}>in</a>
-            </div>
+            <BrandMark />
+            <p className="hx-muted hx-footer-blurb">Building software for businesses and real-project experience for students.</p>
+            <a className="hx-link" href="https://www.linkedin.com/company/hiresnix/" target="_blank" rel="noopener noreferrer">Hiresnix on LinkedIn</a>
           </div>
           <div>
-            <h4 className="lp-font-d" style={{ fontWeight: 700, fontSize: '0.85rem', marginBottom: '1.1rem', color: '#e8edf5' }}>Services</h4>
-            <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-              {['Custom Software', 'Web Development', 'Mobile Apps', 'AI & ML', 'SaaS Products', 'UI/UX Design'].map(l => (
-                <li key={l}><a href="#services" style={{ color: '#6b7a99', textDecoration: 'none', fontSize: '0.82rem', transition: 'color 0.2s' }} onMouseEnter={e => (e.currentTarget.style.color = '#e8edf5')} onMouseLeave={e => (e.currentTarget.style.color = '#6b7a99')}>{l}</a></li>
-              ))}
+            <h4>Students</h4>
+            <ul>
+              <li><a href="#internships" onClick={e => { e.preventDefault(); goTo('internships'); }}>Internships</a></li>
+              <li><a href="#academy" onClick={e => { e.preventDefault(); goTo('academy'); }}>AI Academy</a></li>
+              <li><a href="/verify">Verify a certificate</a></li>
+              <li><a href="/internship-policy">Internship policy</a></li>
+              <li><a href="/auth">Log in</a></li>
             </ul>
           </div>
           <div>
-            <h4 className="lp-font-d" style={{ fontWeight: 700, fontSize: '0.85rem', marginBottom: '1.1rem', color: '#e8edf5' }}>Products</h4>
-            <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-              {['AI Academy', 'Institution Portal'].map(l => (
-                <li key={l}><a href="#products" style={{ color: '#6b7a99', textDecoration: 'none', fontSize: '0.82rem', transition: 'color 0.2s' }} onMouseEnter={e => (e.currentTarget.style.color = '#e8edf5')} onMouseLeave={e => (e.currentTarget.style.color = '#6b7a99')}>{l}</a></li>
-              ))}
+            <h4>Company</h4>
+            <ul>
+              <li><a href="/about-us">About us</a></li>
+              <li><a href="/careers">Careers</a></li>
+              <li><a href="/blog">Blog</a></li>
+              <li><a href="/contact-us">Contact us</a></li>
+              <li><a href="/company-information">Company information</a></li>
             </ul>
           </div>
           <div>
-            <h4 className="lp-font-d" style={{ fontWeight: 700, fontSize: '0.85rem', marginBottom: '1.1rem', color: '#e8edf5' }}>Company</h4>
-            <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-              {[
-                ['About Us', '/about-us'],
-                ['Contact Us', '/contact-us'],
-                ['Verify Certificate', '/verify'],
-                ['Privacy Policy', '/privacy-policy'],
-                ['Terms', '/terms-and-conditions'],
-                ['Refund Policy', '/refund-policy'],
-                ['Internship Policy', '/internship-policy'],
-              ].map(([label, href]) => (
-                <li key={href}><a href={href} style={{ color: '#6b7a99', textDecoration: 'none', fontSize: '0.82rem', transition: 'color 0.2s' }} onMouseEnter={e => (e.currentTarget.style.color = '#e8edf5')} onMouseLeave={e => (e.currentTarget.style.color = '#6b7a99')}>{label}</a></li>
-              ))}
+            <h4>Legal</h4>
+            <ul>
+              <li><a href="/privacy-policy">Privacy policy</a></li>
+              <li><a href="/terms-and-conditions">Terms</a></li>
+              <li><a href="/refund-policy">Refund policy</a></li>
+              <li><a href="/disclaimer">Disclaimer</a></li>
             </ul>
           </div>
         </div>
-        <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', maxWidth: 1100, margin: '0 auto' }}>
-          <p style={{ color: '#4a5568', fontSize: '0.78rem', lineHeight: 1.7 }}>© 2020 <span style={{ color: '#60a5fa' }}>Hiresnix</span>. A Brand Operated by SR PATIL INFRASTRUCTURE PRIVATE LIMITED. CIN: U42909MH2024PTC429260. All Rights Reserved.</p>
-          <p className="lp-font-m" style={{ fontSize: '0.68rem', color: '#4a5568' }}>v2.0.0</p>
+        <div className="hx-wrap hx-footer-legal">
+          © 2020 Hiresnix. A brand operated by SR PATIL INFRASTRUCTURE PRIVATE LIMITED. CIN: U42909MH2024PTC429260. All rights reserved.
         </div>
       </footer>
 
-      <FloatingDots />
       <HiresnixChatbot />
     </div>
   );
 }
+
+// ── Styles ─────────────────────────────────────────────────────────
+const CSS = `
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Figtree:wght@400;500;600;700&display=swap');
+
+.hx-root{
+  --paper:#FFFFFF; --mist:#F6F7F5; --line:#E4E6E2; --dots:#D9DCD6;
+  --ink:#15171A; --text:#2B2E33; --muted:#62666D;
+  --accent:#0B7A55; --accent-press:#08613F; --accent-soft:#E8F4EE;
+  --display:'Bricolage Grotesque', 'Helvetica Neue', Arial, sans-serif;
+  --body:'Figtree', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  background:var(--paper); color:var(--text); font-family:var(--body); font-size:17px; line-height:1.6;
+  overflow-x:clip; -webkit-font-smoothing:antialiased;
+}
+body{margin:0;background:#FFFFFF;}
+/* The app adds a tinted mesh behind every page (GlobalAnimations); keep the landing page pure white */
+body.lp-readonly{background:#FFFFFF !important;}
+body.lp-readonly::before{display:none !important;}
+.lp-readonly, .lp-readonly *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;}
+.lp-readonly input, .lp-readonly textarea, .lp-readonly select{-webkit-user-select:auto;user-select:auto;}
+.hx-root *{box-sizing:border-box;}
+.hx-root a{color:inherit;}
+.hx-root :focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:6px;}
+html{scroll-padding-top:84px;}
+
+.hx-wrap{width:100%;max-width:1160px;margin:0 auto;padding:0 24px;}
+
+/* Type */
+.hx-h1{font-family:var(--display);font-weight:700;color:var(--ink);font-size:clamp(2.4rem,5.6vw,4.3rem);line-height:1.02;letter-spacing:-0.035em;margin:0 0 24px;max-width:12ch;}
+.hx-h2{font-family:var(--display);font-weight:700;color:var(--ink);font-size:clamp(1.9rem,3.6vw,2.7rem);line-height:1.1;letter-spacing:-0.025em;margin:0 0 14px;}
+.hx-h3{font-family:var(--display);font-weight:600;color:var(--ink);font-size:1.2rem;line-height:1.3;letter-spacing:-0.01em;margin:0 0 8px;}
+.hx-lead{font-size:clamp(1.03rem,1.6vw,1.16rem);color:var(--text);max-width:62ch;margin:0;}
+.hx-muted{color:var(--muted);margin:0;}
+.hx-link{color:var(--accent);font-weight:600;text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px;}
+.hx-link:hover{color:var(--accent-press);text-decoration-thickness:2px;}
+
+/* Buttons */
+.hx-btn{font-family:var(--body);font-weight:600;font-size:0.95rem;border-radius:999px;padding:10px 20px;cursor:pointer;border:1px solid transparent;line-height:1.2;transition:background-color .15s ease,border-color .15s ease,color .15s ease;white-space:nowrap;}
+.hx-btn-lg{font-size:1.02rem;padding:14px 26px;}
+.hx-btn-block{width:100%;}
+.hx-btn-primary{background:var(--accent);color:#fff;}
+.hx-btn-primary:hover{background:var(--accent-press);}
+.hx-btn-primary:disabled{opacity:.6;cursor:progress;}
+.hx-btn-ghost{background:var(--paper);color:var(--ink);border-color:#CFD2CC;}
+.hx-btn-ghost:hover{border-color:var(--ink);}
+
+/* Nav */
+.hx-nav{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.94);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--line);}
+.hx-nav-inner{display:flex;align-items:center;gap:28px;height:68px;}
+.hx-nav-brand{text-decoration:none;display:flex;}
+.hx-brand{display:inline-flex;align-items:center;gap:10px;}
+.hx-brand-word{font-family:var(--display);font-weight:700;font-size:1rem;letter-spacing:0.16em;color:var(--ink);}
+.hx-nav-links{display:flex;gap:26px;margin-left:8px;}
+.hx-nav-links a{text-decoration:none;color:var(--muted);font-size:0.95rem;font-weight:500;}
+.hx-nav-links a:hover{color:var(--ink);}
+.hx-nav-actions{display:flex;gap:10px;align-items:center;margin-left:auto;}
+.hx-menu-btn{display:none;width:42px;height:42px;border-radius:999px;border:1px solid #CFD2CC;background:var(--paper);cursor:pointer;flex-direction:column;align-items:center;justify-content:center;gap:4px;}
+.hx-menu-btn span{display:block;width:16px;height:2px;background:var(--ink);border-radius:2px;}
+.hx-mobile-menu{display:flex;flex-direction:column;gap:2px;padding:12px 24px 20px;border-top:1px solid var(--line);background:var(--paper);}
+.hx-mobile-menu a{text-decoration:none;padding:10px 0;font-weight:500;color:var(--ink);}
+.hx-mobile-menu .hx-btn{margin-top:8px;}
+
+/* Hero */
+.hx-hero{padding:80px 0 0;}
+.hx-hero-grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:40px;align-items:center;}
+.hx-hero-ctas{display:flex;gap:12px;flex-wrap:wrap;margin-top:32px;}
+.hx-hero-login{margin:20px 0 0;color:var(--muted);font-size:0.95rem;}
+.hx-hero-login a{color:var(--accent);font-weight:600;}
+.hx-traj{width:100%;height:auto;display:block;}
+.hx-traj-label{font-family:var(--body);font-weight:700;font-size:16px;fill:var(--ink);}
+.hx-traj-sub{font-family:var(--body);font-size:13px;fill:var(--muted);}
+.hx-traj-path{stroke-dasharray:1;stroke-dashoffset:1;animation:hxDraw 1.5s cubic-bezier(.45,.05,.25,1) .15s forwards;}
+.hx-traj-head,.hx-traj-dot{opacity:0;animation:hxFade .4s ease 1.55s forwards;}
+.hx-traj-stop{opacity:0;animation:hxFade .45s ease forwards;}
+@keyframes hxDraw{to{stroke-dashoffset:0;}}
+@keyframes hxFade{to{opacity:1;}}
+
+.hx-facts{display:grid;grid-template-columns:repeat(4,1fr);margin:64px 0 0;border-top:1px solid var(--line);}
+.hx-facts > div{padding:26px 0 34px;display:flex;flex-direction:column-reverse;gap:2px;}
+.hx-facts > div + div{padding-left:24px;border-left:1px solid var(--line);}
+.hx-facts dd{margin:0;font-family:var(--display);font-weight:700;font-size:clamp(1.7rem,2.8vw,2.3rem);letter-spacing:-0.02em;color:var(--ink);}
+.hx-facts dt{color:var(--muted);font-size:0.93rem;}
+
+/* Sections */
+.hx-section{padding:100px 0;}
+.hx-section-panel{background:var(--mist);border-top:1px solid var(--line);border-bottom:1px solid var(--line);}
+.hx-section-head{margin-bottom:44px;}
+.hx-split{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:56px;align-items:start;}
+
+/* Domain explorer */
+.hx-explorer{display:grid;grid-template-columns:260px minmax(0,1fr);border:1px solid var(--line);border-radius:20px;background:var(--paper);overflow:hidden;}
+.hx-tabs{display:flex;flex-direction:column;border-right:1px solid var(--line);padding:10px;}
+.hx-tab{all:unset;cursor:pointer;padding:11px 14px;border-radius:12px;color:var(--muted);font-weight:500;font-size:0.96rem;}
+.hx-tab:hover{color:var(--ink);}
+.hx-tab[aria-selected="true"]{color:var(--accent-press);background:var(--accent-soft);font-weight:600;}
+.hx-tab:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;}
+.hx-panel{padding:34px 38px;}
+.hx-panel-title{font-family:var(--display);font-weight:700;color:var(--ink);font-size:1.6rem;letter-spacing:-0.02em;margin:0 0 6px;}
+.hx-panel-blurb{color:var(--text);margin:0 0 24px;}
+.hx-panel-note{color:var(--muted);font-size:0.92rem;margin:0 0 10px;}
+.hx-ladder{list-style:none;margin:0 0 28px;padding:0;position:relative;}
+.hx-ladder::before{content:"";position:absolute;left:7px;top:20px;bottom:20px;width:2px;background:var(--line);}
+.hx-rung{position:relative;padding:12px 0 12px 32px;display:grid;grid-template-columns:120px minmax(0,1fr);column-gap:16px;row-gap:2px;}
+.hx-rung::before{content:"";position:absolute;left:1px;top:19px;width:14px;height:14px;border-radius:50%;background:var(--paper);border:3px solid #B9BDB5;}
+.hx-rung:last-child::before{border-color:var(--accent);background:var(--accent);}
+.hx-rung-level{color:var(--muted);font-size:0.9rem;grid-row:span 2;padding-top:2px;}
+.hx-rung-title{font-weight:700;color:var(--ink);}
+.hx-rung-tech{color:var(--muted);font-size:0.9rem;}
+
+.hx-steps-title{margin-top:68px;margin-bottom:20px;}
+.hx-steps{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(4,1fr);gap:28px;}
+.hx-steps li{border-top:1px solid #CFD2CC;padding-top:18px;}
+.hx-steps strong{display:block;margin:12px 0 6px;font-size:1.03rem;color:var(--ink);}
+.hx-steps p{margin:0;color:var(--muted);font-size:0.95rem;}
+.hx-step-n{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:var(--ink);color:#fff;font-weight:700;font-size:0.82rem;}
+.hx-cta-row{display:flex;align-items:center;gap:24px;flex-wrap:wrap;margin-top:44px;}
+
+/* Academy */
+.hx-courses{list-style:none;padding:0;margin:28px 0 32px;display:flex;flex-wrap:wrap;gap:8px;}
+.hx-courses li{border:1px solid var(--line);background:var(--paper);border-radius:999px;padding:6px 14px;font-size:0.9rem;color:var(--text);}
+.hx-aside{border:1px solid var(--line);border-radius:20px;padding:30px;background:var(--mist);}
+.hx-aside .hx-muted{margin:0 0 22px;}
+
+/* Services */
+.hx-services{display:grid;grid-template-columns:repeat(3,1fr);gap:0;margin:0;border-top:1px solid var(--line);}
+.hx-services > div{padding:26px 28px 26px 0;border-bottom:1px solid var(--line);}
+.hx-services > div:not(:nth-child(3n+1)){padding-left:28px;border-left:1px solid var(--line);}
+.hx-services dt{font-weight:700;color:var(--ink);margin-bottom:6px;}
+.hx-services dd{margin:0;color:var(--muted);font-size:0.95rem;}
+.hx-industries{color:var(--text);margin:28px 0 0;}
+.hx-process{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:14px 30px;}
+.hx-process li{display:flex;align-items:center;gap:10px;font-weight:600;color:var(--ink);}
+
+/* Client work */
+.hx-case{border:1px solid var(--line);border-radius:20px;padding:34px;margin-bottom:20px;background:var(--paper);}
+.hx-case-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:24px;}
+.hx-badge{font-size:0.82rem;font-weight:600;color:var(--accent-press);background:var(--accent-soft);border-radius:999px;padding:5px 12px;white-space:nowrap;}
+.hx-case-built{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:24px;margin-bottom:20px;}
+.hx-case-built strong{display:block;margin-bottom:4px;color:var(--ink);}
+.hx-case-built p{margin:0;color:var(--muted);font-size:0.94rem;}
+.hx-case-stack{color:var(--muted);font-size:0.94rem;margin:0 0 20px;}
+.hx-case-results{display:flex;flex-wrap:wrap;gap:44px;margin:0;padding-top:22px;border-top:1px solid var(--line);}
+.hx-case-results > div{display:flex;flex-direction:column;}
+.hx-case-results dd{margin:0;font-family:var(--display);font-weight:700;font-size:1.8rem;letter-spacing:-0.02em;color:var(--ink);}
+.hx-case-results dt{color:var(--muted);font-size:0.9rem;}
+.hx-nda{color:var(--muted);margin:28px 0 0;max-width:80ch;}
+.hx-nda strong{color:var(--ink);font-weight:600;}
+
+/* Form */
+.hx-form{border:1px solid var(--line);border-radius:20px;padding:30px;background:var(--paper);}
+.hx-form-done .hx-muted{margin:0 0 20px;}
+.hx-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
+.hx-field{display:flex;flex-direction:column;gap:6px;margin-bottom:16px;}
+.hx-form-grid .hx-field{margin-bottom:0;}
+.hx-field > span{font-size:0.9rem;font-weight:600;color:var(--ink);}
+.hx-field em{font-style:normal;color:var(--muted);font-weight:400;}
+.hx-field input,.hx-field select,.hx-field textarea{font:inherit;font-size:0.96rem;color:var(--ink);background:var(--paper);border:1px solid #CFD2CC;border-radius:12px;padding:11px 13px;outline:none;width:100%;}
+.hx-field input,.hx-field select{min-height:46px;}
+.hx-field textarea{resize:vertical;}
+.hx-field input::placeholder,.hx-field textarea::placeholder{color:#9A9EA5;}
+.hx-field input:focus,.hx-field select:focus,.hx-field textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(11,122,85,.15);}
+.hx-contact-alt{margin-top:20px;}
+
+/* Footer */
+.hx-footer{border-top:1px solid var(--line);padding:60px 0 32px;background:var(--paper);}
+.hx-footer-grid{display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr;gap:32px;}
+.hx-footer-blurb{margin:14px 0 12px;max-width:34ch;font-size:0.95rem;}
+.hx-footer h4{font-size:0.95rem;font-weight:700;color:var(--ink);margin:0 0 12px;}
+.hx-footer ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;}
+.hx-footer ul a{text-decoration:none;color:var(--muted);font-size:0.94rem;}
+.hx-footer ul a:hover{color:var(--ink);}
+.hx-footer-legal{margin-top:40px;padding-top:24px;border-top:1px solid var(--line);color:var(--muted);font-size:0.85rem;}
+
+/* Responsive */
+@media (max-width: 960px){
+  .hx-nav-links{display:none;}
+  .hx-menu-btn{display:inline-flex;}
+  .hx-hero-grid{grid-template-columns:1fr;}
+  .hx-hero-visual{max-width:520px;}
+  .hx-split{grid-template-columns:1fr;gap:40px;}
+  .hx-steps{grid-template-columns:1fr 1fr;}
+  .hx-services{grid-template-columns:1fr 1fr;}
+  .hx-services > div{padding:22px 20px 22px 0 !important;border-left:none !important;}
+  .hx-services > div:nth-child(2n){padding-left:20px !important;border-left:1px solid var(--line) !important;}
+  .hx-footer-grid{grid-template-columns:1fr 1fr;}
+}
+@media (max-width: 720px){
+  .hx-root{font-size:16px;}
+  .hx-hide-sm{display:none;}
+  .hx-traj-label{font-size:21px;}
+  .hx-traj-sub{font-size:17px;}
+  .hx-hero{padding-top:44px;}
+  .hx-section{padding:72px 0;}
+  .hx-facts{grid-template-columns:1fr 1fr;}
+  .hx-facts > div:nth-child(3){padding-left:0;border-left:none;}
+  .hx-facts > div:nth-child(n+3){border-top:1px solid var(--line);}
+  .hx-explorer{grid-template-columns:1fr;}
+  .hx-tabs{flex-direction:row;overflow-x:auto;border-right:none;border-bottom:1px solid var(--line);scrollbar-width:none;}
+  .hx-tab{white-space:nowrap;}
+  .hx-panel{padding:24px 20px;}
+  .hx-rung{grid-template-columns:1fr;}
+  .hx-rung-level{grid-row:auto;}
+  .hx-steps{grid-template-columns:1fr;}
+  .hx-services{grid-template-columns:1fr;}
+  .hx-services > div,.hx-services > div:nth-child(2n){padding:20px 0 !important;border-left:none !important;}
+  .hx-form-grid{grid-template-columns:1fr;}
+  .hx-case{padding:24px 20px;}
+  .hx-footer-grid{grid-template-columns:1fr;}
+}
+@media (max-width: 420px){
+  .hx-nav-actions .hx-btn-primary{padding:9px 14px;font-size:0.88rem;}
+  .hx-brand-word{display:none;}
+}
+@media (prefers-reduced-motion: reduce){
+  .hx-traj-path{animation:none;stroke-dashoffset:0;}
+  .hx-traj-head,.hx-traj-dot,.hx-traj-stop{animation:none;opacity:1;}
+  .hx-btn{transition:none;}
+}
+`;
