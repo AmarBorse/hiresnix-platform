@@ -121,6 +121,66 @@ const parseList = (v: any): any[] => {
   try { const p = JSON.parse(v); return Array.isArray(p) ? p : []; } catch { return []; }
 };
 
+// ── Motion helpers ─────────────────────────────────────────────────
+const prefersReducedMotion = () =>
+  typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+
+/** Reveals every [data-reveal] element once, the first time it scrolls into view. */
+function useScrollReveal(deps: any[] = []) {
+  useEffect(() => {
+    const els = Array.from(document.querySelectorAll<HTMLElement>('.hx-root [data-reveal]:not(.is-in)'));
+    if (prefersReducedMotion() || typeof IntersectionObserver === 'undefined') {
+      els.forEach(el => el.classList.add('is-in'));
+      return;
+    }
+    const io = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (e.isIntersecting) { e.target.classList.add('is-in'); io.unobserve(e.target); }
+      });
+    }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+    els.forEach(el => io.observe(el));
+    return () => io.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, deps);
+}
+
+/** Counts a figure like "50+" or "500+" up from zero when it first becomes visible. */
+function CountUp({ value }: { value: string }) {
+  const match = value.match(/^(\d+)(.*)$/);
+  const target = match ? parseInt(match[1], 10) : 0;
+  const suffix = match ? match[2] : '';
+  const ref = React.useRef<HTMLSpanElement>(null);
+  const [shown, setShown] = useState<number | null>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || !match || prefersReducedMotion() || typeof IntersectionObserver === 'undefined') return;
+    setShown(0);
+    let raf = 0;
+    const io = new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting) return;
+      io.disconnect();
+      const start = performance.now();
+      const duration = 1200;
+      const tick = (now: number) => {
+        const t = Math.min(1, (now - start) / duration);
+        setShown(Math.round(target * (1 - Math.pow(1 - t, 3))));
+        if (t < 1) raf = requestAnimationFrame(tick);
+      };
+      raf = requestAnimationFrame(tick);
+    }, { threshold: 0.6 });
+    io.observe(el);
+    return () => { io.disconnect(); cancelAnimationFrame(raf); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
+
+  return (
+    <span ref={ref} aria-label={value}>
+      <span aria-hidden="true">{shown === null ? value : `${shown}${suffix}`}</span>
+    </span>
+  );
+}
+
 // ── Brand mark (arrow rising to a dot, as in the logo) ──────────────
 function BrandMark() {
   return (
@@ -228,13 +288,13 @@ function DomainExplorer({ onApply }: { onApply: () => void }) {
           </button>
         ))}
       </div>
-      <div className="hx-panel" id="hx-domain-panel" role="tabpanel" aria-labelledby={`hx-tab-${domain.id}`}>
+      <div className="hx-panel" id="hx-domain-panel" role="tabpanel" aria-labelledby={`hx-tab-${domain.id}`} key={domain.id}>
         <h3 className="hx-panel-title">{domain.name}</h3>
         <p className="hx-panel-blurb">{domain.blurb}</p>
         <p className="hx-panel-note">Projects interns in this domain have built:</p>
         <ol className="hx-ladder">
           {domain.projects.map(([title, tech], i) => (
-            <li key={title} className="hx-rung">
+            <li key={title} className="hx-rung" style={{ ['--i' as any]: i }}>
               <span className="hx-rung-level">{LEVELS[i]}</span>
               <span className="hx-rung-title">{title}</span>
               <span className="hx-rung-tech">{tech}</span>
@@ -392,6 +452,8 @@ export function LandingPage() {
       .catch(() => {});
   }, []);
 
+  useScrollReveal([landingClients.length]);
+
   const goTo = (id: string) => {
     setMenuOpen(false);
     const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
@@ -465,14 +527,14 @@ export function LandingPage() {
           </div>
           <div className="hx-wrap">
             <dl className="hx-facts">
-              <div><dt>Clients served</dt><dd>50+</dd></div>
-              <div><dt>Services, design to support</dt><dd>9</dd></div>
-              <div><dt>Industries</dt><dd>7</dd></div>
-              <div><dt>Developers trained</dt><dd>500+</dd></div>
+              <div><dt>Clients served</dt><dd><CountUp value="50+" /></dd></div>
+              <div><dt>Services, design to support</dt><dd><CountUp value="9" /></dd></div>
+              <div><dt>Industries</dt><dd><CountUp value="7" /></dd></div>
+              <div><dt>Developers trained</dt><dd><CountUp value="500+" /></dd></div>
             </dl>
           </div>
           <div className="hx-clients-band">
-            <div className="hx-wrap"><p className="hx-clients-title">Businesses we have built software for</p></div>
+            <div className="hx-wrap"><p className="hx-clients-title" data-reveal>Businesses we have built software for</p></div>
             <ClientMarquee clients={allClients} />
           </div>
         </section>
@@ -480,18 +542,18 @@ export function LandingPage() {
         {/* ── Services ── */}
         <section id="services" className="hx-section hx-section-panel">
           <div className="hx-wrap">
-            <div className="hx-section-head">
+            <div className="hx-section-head" data-reveal>
               <h2 className="hx-h2">What we build</h2>
               <p className="hx-lead">
                 One team for the whole job: product design, engineering, AI and the support that keeps it running.
               </p>
             </div>
             <dl className="hx-services">
-              {SERVICES.map(([t, d]) => (
-                <div key={t}><dt>{t}</dt><dd>{d}</dd></div>
+              {SERVICES.map(([t, d], i) => (
+                <div key={t} data-reveal style={{ ['--d' as any]: `${(i % 3) * 80 + Math.floor(i / 3) * 60}ms` }}><dt>{t}</dt><dd>{d}</dd></div>
               ))}
             </dl>
-            <p className="hx-industries">
+            <p className="hx-industries" data-reveal>
               Industries we have worked in: education, healthcare, retail, manufacturing, finance, e-commerce and startups.
             </p>
           </div>
@@ -500,15 +562,15 @@ export function LandingPage() {
         {/* ── AI solutions ── */}
         <section id="ai" className="hx-section">
           <div className="hx-wrap">
-            <div className="hx-section-head">
+            <div className="hx-section-head" data-reveal>
               <h2 className="hx-h2">AI that does real work</h2>
               <p className="hx-lead">
                 We add AI where it saves your team time or makes you money, and we tell you plainly when it won't.
               </p>
             </div>
             <div className="hx-ai">
-              {AI_CAPABILITIES.map(([title, desc, proof]) => (
-                <div key={title} className="hx-ai-item">
+              {AI_CAPABILITIES.map(([title, desc, proof], i) => (
+                <div key={title} className="hx-ai-item" data-reveal style={{ ['--d' as any]: `${i * 90}ms` }}>
                   <h3 className="hx-h3">{title}</h3>
                   <p className="hx-muted">{desc}</p>
                   <p className="hx-ai-proof">{proof}</p>
@@ -527,7 +589,7 @@ export function LandingPage() {
             <h2 className="hx-h3">How a project runs</h2>
             <ol className="hx-process">
               {PROCESS.map((p, i) => (
-                <li key={p}><span className="hx-step-n" aria-hidden="true">{i + 1}</span>{p}</li>
+                <li key={p} data-reveal style={{ ['--d' as any]: `${i * 70}ms` }}><span className="hx-step-n" aria-hidden="true">{i + 1}</span>{p}</li>
               ))}
             </ol>
           </div>
@@ -536,12 +598,12 @@ export function LandingPage() {
         {/* ── Client work ── */}
         <section id="work" className="hx-section">
           <div className="hx-wrap">
-            <div className="hx-section-head">
+            <div className="hx-section-head" data-reveal>
               <h2 className="hx-h2">Client work</h2>
               <p className="hx-lead">Software we have delivered for growing businesses across India.</p>
             </div>
 
-            <article className="hx-case">
+            <article className="hx-case" data-reveal>
               <header className="hx-case-head">
                 <div>
                   <h3 className="hx-h3">Focktix Limited</h3>
@@ -567,7 +629,7 @@ export function LandingPage() {
               const stack = parseList(c.tech_stack).filter(Boolean);
               const results = parseList(c.results);
               return (
-                <article key={c.id} className="hx-case">
+                <article key={c.id} className="hx-case" data-reveal>
                   <header className="hx-case-head">
                     <div>
                       <h3 className="hx-h3">{c.name}</h3>
@@ -590,7 +652,7 @@ export function LandingPage() {
               );
             })}
 
-            <p className="hx-nda">
+            <p className="hx-nda" data-reveal>
               <strong>Other clients, under NDA:</strong> {ndaClients.join(', ')}.
             </p>
           </div>
@@ -599,12 +661,12 @@ export function LandingPage() {
         {/* ── Our own products ── */}
         <section id="products" className="hx-section hx-section-panel">
           <div className="hx-wrap">
-            <div className="hx-section-head">
+            <div className="hx-section-head" data-reveal>
               <h2 className="hx-h2">Products we run</h2>
               <p className="hx-lead">We build and operate our own AI products too, so the tools we recommend are ones we use every day.</p>
             </div>
             <div className="hx-split hx-split-even">
-              <article className="hx-product">
+              <article className="hx-product" data-reveal>
                 <h3 className="hx-h3">AI Academy</h3>
                 <p className="hx-muted">
                   Sixteen self-paced programming courses with an AI teacher for every lesson, a code runner in the browser and quizzes.
@@ -613,7 +675,7 @@ export function LandingPage() {
                   {ACADEMY_COURSES.map(c => <li key={c}>{c}</li>)}
                 </ul>
               </article>
-              <article className="hx-product">
+              <article className="hx-product" data-reveal style={{ ['--d' as any]: `120ms` }}>
                 <h3 className="hx-h3">Institution portal</h3>
                 <p className="hx-muted">
                   Colleges and training institutes manage batches, import students from a CSV file, track attendance and
@@ -628,7 +690,7 @@ export function LandingPage() {
         {/* ── Internships (kept lower on the page) ── */}
         <section id="internships" className="hx-section">
           <div className="hx-wrap">
-            <div className="hx-section-head">
+            <div className="hx-section-head" data-reveal>
               <h2 className="hx-h2">Internships</h2>
               <p className="hx-lead">
                 We train developers on the same kind of work we ship for clients. Choose a domain and a duration from
@@ -636,12 +698,12 @@ export function LandingPage() {
               </p>
             </div>
 
-            <DomainExplorer onApply={applyNow} />
+            <div data-reveal><DomainExplorer onApply={applyNow} /></div>
 
             <h3 className="hx-h3 hx-steps-title">How the internship works</h3>
             <ol className="hx-steps">
               {INTERN_STEPS.map(([title, desc], i) => (
-                <li key={title}>
+                <li key={title} data-reveal style={{ ['--d' as any]: `${i * 90}ms` }}>
                   <span className="hx-step-n" aria-hidden="true">{i + 1}</span>
                   <strong>{title}</strong>
                   <p>{desc}</p>
@@ -659,7 +721,7 @@ export function LandingPage() {
         {/* ── Contact ── */}
         <section id="contact" className="hx-section hx-section-panel">
           <div className="hx-wrap hx-split">
-            <div>
+            <div data-reveal>
               <h2 className="hx-h2">Start a project</h2>
               <p className="hx-lead">Tell us what you need built. We reply within 24 hours.</p>
               <p className="hx-muted hx-contact-alt">
@@ -671,7 +733,7 @@ export function LandingPage() {
                 <SocialLinks />
               </div>
             </div>
-            <EnquiryForm presetInterest={presetInterest} />
+            <div data-reveal style={{ ['--d' as any]: `120ms` }}><EnquiryForm presetInterest={presetInterest} /></div>
           </div>
         </section>
       </main>
@@ -844,6 +906,48 @@ html{scroll-padding-top:84px;}
 .hx-step-n{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:var(--ink);color:#fff;font-weight:700;font-size:0.82rem;}
 .hx-cta-row{display:flex;align-items:center;gap:24px;flex-wrap:wrap;margin-top:44px;}
 
+/* ── Motion ──
+   Hero: copy rises in on load, alongside the curve drawing itself.
+   Sections: [data-reveal] elements rise in once as they scroll into view (see useScrollReveal). */
+.hx-hero-copy > *{animation:hxRise .7s cubic-bezier(.2,.7,.2,1) both;}
+.hx-hero-copy > :nth-child(1){animation-delay:.05s;}
+.hx-hero-copy > :nth-child(2){animation-delay:.18s;}
+.hx-hero-copy > :nth-child(3){animation-delay:.3s;}
+.hx-hero-copy > :nth-child(4){animation-delay:.42s;}
+.hx-facts{animation:hxRise .7s cubic-bezier(.2,.7,.2,1) .55s both;}
+@keyframes hxRise{from{opacity:0;transform:translateY(22px);}to{opacity:1;transform:none;}}
+
+/* Uses the separate 'translate' property so hover effects that use 'transform' still work */
+[data-reveal]{opacity:0;}
+[data-reveal].is-in{animation:hxReveal .75s cubic-bezier(.2,.7,.2,1) both;animation-delay:var(--d,0ms);}
+@keyframes hxReveal{from{opacity:0;translate:0 26px;}to{opacity:1;translate:0 0;}}
+
+/* Hover lift on cards and buttons */
+.hx-btn{transition:background-color .15s ease,border-color .15s ease,color .15s ease,transform .2s ease,box-shadow .2s ease;}
+.hx-btn:hover{transform:translateY(-1px);}
+.hx-btn-primary:hover{box-shadow:0 8px 20px -8px rgba(11,122,85,.55);}
+.hx-btn:active{transform:translateY(0);}
+.hx-case,.hx-product{transition:transform .25s ease,box-shadow .25s ease,border-color .25s ease;}
+.hx-case:hover,.hx-product:hover{transform:translateY(-3px);box-shadow:0 18px 40px -24px rgba(21,23,26,.28);border-color:#D3D6D0;}
+.hx-chip{transition:border-color .2s ease,transform .2s ease;}
+.hx-chip:hover{border-color:var(--accent);transform:translateY(-2px);}
+.hx-services > div{transition:background-color .2s ease;}
+.hx-services > div dt{transition:color .2s ease;}
+.hx-services > div:hover dt{color:var(--accent-press);}
+.hx-nav-links a{position:relative;}
+.hx-nav-links a::after{content:"";position:absolute;left:0;right:0;bottom:-6px;height:2px;background:var(--accent);transform:scaleX(0);transform-origin:left;transition:transform .25s ease;}
+.hx-nav-links a:hover::after{transform:scaleX(1);}
+
+/* Domain switcher: content slides in, project steps appear one after another */
+.hx-panel{animation:hxPanelIn .35s ease both;}
+@keyframes hxPanelIn{from{opacity:0;transform:translateX(10px);}to{opacity:1;transform:none;}}
+.hx-rung{animation:hxRise .45s cubic-bezier(.2,.7,.2,1) both;animation-delay:calc(var(--i,0) * 110ms + 120ms);}
+.hx-tab{transition:background-color .2s ease,color .2s ease;}
+
+/* Mobile menu */
+.hx-mobile-menu{animation:hxMenu .22s ease both;}
+@keyframes hxMenu{from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:none;}}
+
 /* Client marquee */
 .hx-clients-band{border-top:1px solid var(--line);padding:28px 0 32px;}
 .hx-clients-title{margin:0 0 16px;color:var(--muted);font-size:0.95rem;font-weight:500;}
@@ -984,6 +1088,9 @@ html{scroll-padding-top:84px;}
   .hx-brand-word{display:none;}
 }
 @media (prefers-reduced-motion: reduce){
+  .hx-hero-copy > *,.hx-facts,.hx-panel,.hx-rung,.hx-mobile-menu{animation:none !important;}
+  [data-reveal],[data-reveal].is-in{opacity:1 !important;animation:none !important;}
+  .hx-btn:hover,.hx-case:hover,.hx-product:hover,.hx-chip:hover{transform:none;}
   .hx-marquee{-webkit-mask-image:none;mask-image:none;}
   .hx-marquee-track{animation:none;width:auto;padding:0 24px;}
   .hx-marquee-list{flex-wrap:wrap;}
