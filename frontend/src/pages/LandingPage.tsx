@@ -211,6 +211,40 @@ function DomainExplorer({ onApply }: { onApply: () => void }) {
   );
 }
 
+// ── Client marquee ─────────────────────────────────────────────────
+type ClientChip = { name: string; industry: string; nda: boolean };
+
+function ClientMarquee({ clients }: { clients: ClientChip[] }) {
+  if (!clients.length) return null;
+  // Repeat the list until one copy is wide enough to fill the screen, then render it twice for a seamless loop
+  let row = [...clients];
+  while (row.length < 10) row = [...row, ...clients];
+  const seconds = Math.max(30, row.length * 4);
+
+  const chip = (c: ClientChip, i: number) => (
+    <li key={i} className={`hx-chip${c.nda ? ' hx-chip-nda' : ''}${i >= clients.length ? ' hx-chip-repeat' : ''}`}>
+      <span className="hx-chip-mark" aria-hidden="true">
+        {c.nda
+          ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="11" width="16" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></svg>
+          : c.name.trim().charAt(0).toUpperCase()}
+      </span>
+      <span className="hx-chip-text">
+        <span className="hx-chip-name">{c.nda ? c.industry : c.name}</span>
+        <span className="hx-chip-meta">{c.nda ? 'Under NDA' : c.industry}</span>
+      </span>
+    </li>
+  );
+
+  return (
+    <div className="hx-marquee" style={{ ['--hx-marquee-time' as any]: `${seconds}s` }}>
+      <div className="hx-marquee-track">
+        <ul className="hx-marquee-list">{row.map(chip)}</ul>
+        <ul className="hx-marquee-list" aria-hidden="true">{row.map(chip)}</ul>
+      </div>
+    </div>
+  );
+}
+
 // ── Enquiry form (same submission behaviour as before) ─────────────
 function EnquiryForm({ presetInterest }: { presetInterest: string }) {
   const empty = { name: '', email: '', phone: '', interest: 'Software Development', message: '' };
@@ -332,6 +366,12 @@ export function LandingPage() {
 
   const publicClients = landingClients.filter((c: any) => !c.nda_protected);
   const ndaClients = [...NDA_CLIENTS, ...landingClients.filter((c: any) => c.nda_protected).map((c: any) => c.industry || 'NDA client')];
+  // Every client for the scrolling strip: Focktix, clients added in the admin panel, then NDA clients
+  const allClients: ClientChip[] = [
+    { name: 'Focktix Limited', industry: 'Digital marketing', nda: false },
+    ...publicClients.filter((c: any) => c?.name).map((c: any) => ({ name: String(c.name), industry: c.industry || 'Client', nda: false })),
+    ...ndaClients.map(industry => ({ name: industry, industry, nda: true })),
+  ];
 
   const NAV: [string, string][] = [['services', 'Services'], ['ai', 'AI solutions'], ['work', 'Work'], ['products', 'Products'], ['internships', 'Internships'], ['contact', 'Contact']];
 
@@ -394,6 +434,10 @@ export function LandingPage() {
               <div><dt>Industries</dt><dd>7</dd></div>
               <div><dt>Developers trained</dt><dd>500+</dd></div>
             </dl>
+          </div>
+          <div className="hx-clients-band">
+            <div className="hx-wrap"><p className="hx-clients-title">Businesses we have built software for</p></div>
+            <ClientMarquee clients={allClients} />
           </div>
         </section>
 
@@ -760,6 +804,22 @@ html{scroll-padding-top:84px;}
 .hx-step-n{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:var(--ink);color:#fff;font-weight:700;font-size:0.82rem;}
 .hx-cta-row{display:flex;align-items:center;gap:24px;flex-wrap:wrap;margin-top:44px;}
 
+/* Client marquee */
+.hx-clients-band{border-top:1px solid var(--line);padding:28px 0 32px;}
+.hx-clients-title{margin:0 0 16px;color:var(--muted);font-size:0.95rem;font-weight:500;}
+.hx-marquee{overflow:hidden;-webkit-mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);}
+.hx-marquee-track{display:flex;width:max-content;animation:hxMarquee var(--hx-marquee-time,40s) linear infinite;}
+.hx-marquee:hover .hx-marquee-track,.hx-marquee:focus-within .hx-marquee-track{animation-play-state:paused;}
+.hx-marquee-list{display:flex;gap:12px;list-style:none;margin:0;padding:0 12px 0 0;}
+@keyframes hxMarquee{from{transform:translateX(0);}to{transform:translateX(-50%);}}
+.hx-chip{display:flex;align-items:center;gap:12px;padding:10px 18px 10px 10px;border:1px solid var(--line);border-radius:999px;background:var(--paper);white-space:nowrap;}
+.hx-chip-mark{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;background:var(--ink);color:#fff;font-family:var(--display);font-weight:700;font-size:1rem;flex-shrink:0;}
+.hx-chip-nda .hx-chip-mark{background:var(--mist);color:var(--muted);border:1px solid var(--line);}
+.hx-chip-text{display:flex;flex-direction:column;line-height:1.2;}
+.hx-chip-name{font-weight:700;color:var(--ink);font-size:0.95rem;}
+.hx-chip-meta{color:var(--muted);font-size:0.82rem;}
+.hx-chip:not(.hx-chip-nda) .hx-chip-meta{color:var(--accent-press);}
+
 /* AI solutions */
 .hx-ai{display:grid;grid-template-columns:repeat(2,1fr);gap:0;border-top:1px solid var(--line);}
 .hx-ai-item{padding:30px 32px 30px 0;border-bottom:1px solid var(--line);}
@@ -876,6 +936,11 @@ html{scroll-padding-top:84px;}
   .hx-brand-word{display:none;}
 }
 @media (prefers-reduced-motion: reduce){
+  .hx-marquee{-webkit-mask-image:none;mask-image:none;}
+  .hx-marquee-track{animation:none;width:auto;padding:0 24px;}
+  .hx-marquee-list{flex-wrap:wrap;}
+  .hx-marquee-list[aria-hidden="true"]{display:none;}
+  .hx-chip-repeat{display:none;}
   .hx-traj-path{animation:none;stroke-dashoffset:0;}
   .hx-traj-head,.hx-traj-dot,.hx-traj-stop{animation:none;opacity:1;}
   .hx-btn{transition:none;}
