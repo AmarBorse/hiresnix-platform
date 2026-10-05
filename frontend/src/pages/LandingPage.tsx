@@ -1,5 +1,6 @@
 // src/pages/LandingPage.tsx
-// Public landing page — two audiences: students (internships, AI Academy) and businesses (software services).
+// Public landing page — Hiresnix as an AI-powered software development company.
+// Business services come first; internships and the AI Academy sit lower on the page.
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -84,6 +85,13 @@ const SERVICES = [
   ['Maintenance & support', 'Monitoring, fixes and new features after launch.'],
 ];
 
+const AI_CAPABILITIES = [
+  ['Assistants on your own data', 'Chatbots that answer from your documents, policies and product data instead of guessing.', 'We run AI teachers and interview coaches in our own products.'],
+  ['Scoring and prediction', 'Models that rank leads, forecast demand or flag risk, built into the tools your team already uses.', 'AI lead scoring for Focktix tripled lead conversion.'],
+  ['Document and resume processing', 'Read, classify and extract data from PDFs, forms and resumes automatically.', 'Resume parsing and ranking for hiring workflows.'],
+  ['Workflow automation', 'Agents that take repetitive multi-step work off your team, with a human approving what matters.', 'Built on LangChain, Groq and Gemini.'],
+];
+
 const PROCESS = ['Requirements', 'Planning', 'Design', 'Development', 'Testing', 'Deployment', 'Support'];
 
 const NDA_CLIENTS = ['Digital marketing agency', 'E-commerce platform', 'HR tech startup', 'Mobile app company', 'EdTech platform'];
@@ -100,7 +108,7 @@ const STRUCTURED_DATA = {
       sameAs: [],
     },
     { '@type': 'WebSite', '@id': 'https://hiresnix.co.in/#website', url: 'https://hiresnix.co.in', name: 'Hiresnix',
-      description: 'AI-powered EdTech & HR-Tech platform for students, institutions and companies', publisher: { '@id': 'https://hiresnix.co.in/#organization' } },
+      description: 'AI-powered software development company building web, mobile and AI products for businesses', publisher: { '@id': 'https://hiresnix.co.in/#organization' } },
     { '@type': 'SoftwareApplication', name: 'Hiresnix Platform', applicationCategory: 'EducationApplication', operatingSystem: 'Web', url: 'https://hiresnix.co.in',
       description: 'AI-powered career platform offering internships, mock interviews, resume builder and AI academy for students',
       offers: { '@type': 'Offer', price: '0', priceCurrency: 'INR' }, provider: { '@id': 'https://hiresnix.co.in/#organization' } },
@@ -130,13 +138,13 @@ function BrandMark() {
 // ── Hero trajectory ────────────────────────────────────────────────
 function Trajectory() {
   const milestones = [
-    { x: 88.7, y: 385.2, label: 'Apply', sub: 'Pick a domain', lx: 70, ly: 350, anchor: 'start' as const },
-    { x: 257, y: 329, label: 'Offer letter', sub: 'Day one', lx: 232, ly: 296, anchor: 'end' as const },
-    { x: 373.4, y: 233.9, label: 'Three projects', sub: 'Starter to advanced', lx: 350, ly: 200, anchor: 'end' as const },
-    { x: 442.4, y: 128.4, label: 'Certificate + LOR', sub: 'QR-verifiable', lx: 420, ly: 96, anchor: 'end' as const },
+    { x: 88.7, y: 385.2, label: 'Discovery', sub: 'Goals and scope', lx: 70, ly: 350, anchor: 'start' as const },
+    { x: 257, y: 329, label: 'Design', sub: 'Screens you approve', lx: 232, ly: 296, anchor: 'end' as const },
+    { x: 373.4, y: 233.9, label: 'Build', sub: 'AI where it helps', lx: 350, ly: 200, anchor: 'end' as const },
+    { x: 442.4, y: 128.4, label: 'Launch', sub: 'Then ongoing support', lx: 420, ly: 96, anchor: 'end' as const },
   ];
   return (
-    <svg className="hx-traj" viewBox="0 0 500 420" role="img" aria-label="An intern's path: apply, receive an offer letter, build three projects, earn a certificate and letter of recommendation">
+    <svg className="hx-traj" viewBox="0 0 500 420" role="img" aria-label="How a project moves: discovery, design, build, launch and support">
       <defs>
         <pattern id="hx-dots" width="22" height="22" patternUnits="userSpaceOnUse">
           <circle cx="1" cy="1" r="1.1" fill="var(--dots)" />
@@ -325,7 +333,7 @@ export function LandingPage() {
   const publicClients = landingClients.filter((c: any) => !c.nda_protected);
   const ndaClients = [...NDA_CLIENTS, ...landingClients.filter((c: any) => c.nda_protected).map((c: any) => c.industry || 'NDA client')];
 
-  const NAV: [string, string][] = [['internships', 'Internships'], ['academy', 'AI Academy'], ['services', 'Services'], ['work', 'Work'], ['contact', 'Contact']];
+  const NAV: [string, string][] = [['services', 'Services'], ['ai', 'AI solutions'], ['work', 'Work'], ['products', 'Products'], ['internships', 'Internships'], ['contact', 'Contact']];
 
   return (
     <div className="hx-root">
@@ -343,7 +351,7 @@ export function LandingPage() {
           </nav>
           <div className="hx-nav-actions">
             <button className="hx-btn hx-btn-ghost hx-hide-sm" type="button" onClick={() => navigate('/auth')}>Log in</button>
-            <button className="hx-btn hx-btn-primary" type="button" onClick={() => goTo('internships')}>Explore internships</button>
+            <button className="hx-btn hx-btn-primary" type="button" onClick={() => contactFor('Software Development')}>Start a project</button>
             <button className="hx-menu-btn" type="button" aria-expanded={menuOpen} aria-controls="hx-mobile-menu" aria-label={menuOpen ? 'Close menu' : 'Open menu'} onClick={() => setMenuOpen(o => !o)}>
               <span /><span /><span />
             </button>
@@ -364,82 +372,28 @@ export function LandingPage() {
         <section className="hx-hero">
           <div className="hx-wrap hx-hero-grid">
             <div className="hx-hero-copy">
-              <h1 className="hx-h1">Software for businesses. Internships for students.</h1>
+              <h1 className="hx-h1">AI-powered software development for growing businesses.</h1>
               <p className="hx-lead">
-                Hiresnix is a technology company in Shirpur, Maharashtra. We build web, mobile and AI products for clients,
-                and we train students on real projects in eight domains.
+                Hiresnix designs, builds and maintains web apps, mobile apps and AI products for startups, businesses
+                and institutions across India, from the first sketch to support after launch.
               </p>
               <div className="hx-hero-ctas">
-                <button className="hx-btn hx-btn-primary hx-btn-lg" type="button" onClick={() => goTo('internships')}>Explore internships</button>
-                <button className="hx-btn hx-btn-ghost hx-btn-lg" type="button" onClick={() => contactFor('Software Development')}>Start a project</button>
+                <button className="hx-btn hx-btn-primary hx-btn-lg" type="button" onClick={() => contactFor('Software Development')}>Start a project</button>
+                <button className="hx-btn hx-btn-ghost hx-btn-lg" type="button" onClick={() => goTo('services')}>See our services</button>
               </div>
-              <p className="hx-hero-login">Already an intern? <a href="/auth" onClick={e => { e.preventDefault(); navigate('/auth'); }}>Log in to your dashboard</a></p>
+              <p className="hx-hero-login">
+                Looking for an internship? <a href="#internships" onClick={e => { e.preventDefault(); goTo('internships'); }}>Explore internships</a>
+              </p>
             </div>
             <div className="hx-hero-visual"><Trajectory /></div>
           </div>
           <div className="hx-wrap">
             <dl className="hx-facts">
-              <div><dt>Students trained</dt><dd>500+</dd></div>
-              <div><dt>Internship domains</dt><dd>8</dd></div>
-              <div><dt>AI Academy courses</dt><dd>16</dd></div>
               <div><dt>Clients served</dt><dd>50+</dd></div>
+              <div><dt>Services, design to support</dt><dd>9</dd></div>
+              <div><dt>Industries</dt><dd>7</dd></div>
+              <div><dt>Developers trained</dt><dd>500+</dd></div>
             </dl>
-          </div>
-        </section>
-
-        {/* ── Internships ── */}
-        <section id="internships" className="hx-section hx-section-panel">
-          <div className="hx-wrap">
-            <div className="hx-section-head">
-              <h2 className="hx-h2">Internships</h2>
-              <p className="hx-lead">
-                Choose a domain and a duration from 1 to 6 months. You build three projects that get harder as you go,
-                log your daily work, and finish with documents anyone can verify.
-              </p>
-            </div>
-
-            <DomainExplorer onApply={applyNow} />
-
-            <h3 className="hx-h3 hx-steps-title">How the internship works</h3>
-            <ol className="hx-steps">
-              {INTERN_STEPS.map(([title, desc], i) => (
-                <li key={title}>
-                  <span className="hx-step-n" aria-hidden="true">{i + 1}</span>
-                  <strong>{title}</strong>
-                  <p>{desc}</p>
-                </li>
-              ))}
-            </ol>
-
-            <div className="hx-cta-row">
-              <button className="hx-btn hx-btn-primary hx-btn-lg" type="button" onClick={applyNow}>Apply for an internship</button>
-              <a className="hx-link" href="/verify" onClick={e => { e.preventDefault(); navigate('/verify'); }}>Verify a certificate</a>
-            </div>
-          </div>
-        </section>
-
-        {/* ── AI Academy + Institution portal ── */}
-        <section id="academy" className="hx-section">
-          <div className="hx-wrap hx-split">
-            <div>
-              <h2 className="hx-h2">AI Academy</h2>
-              <p className="hx-lead">
-                Sixteen self-paced courses with an AI teacher that explains every lesson, a code runner in the browser and a quiz at the end.
-                It is free for every Hiresnix student, and each finished course comes with a certificate.
-              </p>
-              <ul className="hx-courses" aria-label="Courses">
-                {ACADEMY_COURSES.map(c => <li key={c}>{c}</li>)}
-              </ul>
-              <button className="hx-btn hx-btn-primary" type="button" onClick={() => navigate('/auth')}>Open AI Academy</button>
-            </div>
-            <aside className="hx-aside">
-              <h3 className="hx-h3">For colleges and institutes</h3>
-              <p className="hx-muted">
-                The institution portal lets you manage batches, import students from a CSV file, track attendance and
-                issue certificates your students can verify online. Each student gets a Career ID to log in with.
-              </p>
-              <button className="hx-btn hx-btn-ghost" type="button" onClick={() => contactFor('Partnership')}>Talk to us about your institute</button>
-            </aside>
           </div>
         </section>
 
@@ -447,9 +401,9 @@ export function LandingPage() {
         <section id="services" className="hx-section hx-section-panel">
           <div className="hx-wrap">
             <div className="hx-section-head">
-              <h2 className="hx-h2">Software development</h2>
+              <h2 className="hx-h2">What we build</h2>
               <p className="hx-lead">
-                We design, build and maintain software for startups, businesses and institutions, with AI built in where it helps.
+                One team for the whole job: product design, engineering, AI and the support that keeps it running.
               </p>
             </div>
             <dl className="hx-services">
@@ -460,8 +414,37 @@ export function LandingPage() {
             <p className="hx-industries">
               Industries we have worked in: education, healthcare, retail, manufacturing, finance, e-commerce and startups.
             </p>
+          </div>
+        </section>
 
-            <h3 className="hx-h3 hx-steps-title">How a project runs</h3>
+        {/* ── AI solutions ── */}
+        <section id="ai" className="hx-section">
+          <div className="hx-wrap">
+            <div className="hx-section-head">
+              <h2 className="hx-h2">AI that does real work</h2>
+              <p className="hx-lead">
+                We add AI where it saves your team time or makes you money, and we tell you plainly when it won't.
+              </p>
+            </div>
+            <div className="hx-ai">
+              {AI_CAPABILITIES.map(([title, desc, proof]) => (
+                <div key={title} className="hx-ai-item">
+                  <h3 className="hx-h3">{title}</h3>
+                  <p className="hx-muted">{desc}</p>
+                  <p className="hx-ai-proof">{proof}</p>
+                </div>
+              ))}
+            </div>
+            <div className="hx-cta-row">
+              <button className="hx-btn hx-btn-primary" type="button" onClick={() => contactFor('AI Solutions')}>Discuss an AI project</button>
+            </div>
+          </div>
+        </section>
+
+        {/* ── Process ── */}
+        <section className="hx-section hx-section-panel hx-section-tight">
+          <div className="hx-wrap">
+            <h2 className="hx-h3">How a project runs</h2>
             <ol className="hx-process">
               {PROCESS.map((p, i) => (
                 <li key={p}><span className="hx-step-n" aria-hidden="true">{i + 1}</span>{p}</li>
@@ -533,6 +516,66 @@ export function LandingPage() {
           </div>
         </section>
 
+        {/* ── Our own products ── */}
+        <section id="products" className="hx-section hx-section-panel">
+          <div className="hx-wrap">
+            <div className="hx-section-head">
+              <h2 className="hx-h2">Products we run</h2>
+              <p className="hx-lead">We build and operate our own AI products too, so the tools we recommend are ones we use every day.</p>
+            </div>
+            <div className="hx-split hx-split-even">
+              <article className="hx-product">
+                <h3 className="hx-h3">AI Academy</h3>
+                <p className="hx-muted">
+                  Sixteen self-paced programming courses with an AI teacher for every lesson, a code runner in the browser and quizzes.
+                </p>
+                <ul className="hx-courses" aria-label="Courses">
+                  {ACADEMY_COURSES.map(c => <li key={c}>{c}</li>)}
+                </ul>
+              </article>
+              <article className="hx-product">
+                <h3 className="hx-h3">Institution portal</h3>
+                <p className="hx-muted">
+                  Colleges and training institutes manage batches, import students from a CSV file, track attendance and
+                  issue certificates their students can verify online.
+                </p>
+                <button className="hx-btn hx-btn-ghost" type="button" onClick={() => contactFor('Partnership')}>Talk to us about your institute</button>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        {/* ── Internships (kept lower on the page) ── */}
+        <section id="internships" className="hx-section">
+          <div className="hx-wrap">
+            <div className="hx-section-head">
+              <h2 className="hx-h2">Internships</h2>
+              <p className="hx-lead">
+                We train developers on the same kind of work we ship for clients. Choose a domain and a duration from
+                1 to 6 months, build three projects that get harder as you go, and finish with documents anyone can verify.
+              </p>
+            </div>
+
+            <DomainExplorer onApply={applyNow} />
+
+            <h3 className="hx-h3 hx-steps-title">How the internship works</h3>
+            <ol className="hx-steps">
+              {INTERN_STEPS.map(([title, desc], i) => (
+                <li key={title}>
+                  <span className="hx-step-n" aria-hidden="true">{i + 1}</span>
+                  <strong>{title}</strong>
+                  <p>{desc}</p>
+                </li>
+              ))}
+            </ol>
+
+            <div className="hx-cta-row">
+              <button className="hx-btn hx-btn-primary hx-btn-lg" type="button" onClick={applyNow}>Apply for an internship</button>
+              <a className="hx-link" href="/verify" onClick={e => { e.preventDefault(); navigate('/verify'); }}>Verify a certificate</a>
+            </div>
+          </div>
+        </section>
+
         {/* ── Contact ── */}
         <section id="contact" className="hx-section hx-section-panel">
           <div className="hx-wrap hx-split">
@@ -554,14 +597,23 @@ export function LandingPage() {
         <div className="hx-wrap hx-footer-grid">
           <div>
             <BrandMark />
-            <p className="hx-muted hx-footer-blurb">Building software for businesses and real-project experience for students.</p>
+            <p className="hx-muted hx-footer-blurb">AI-powered software development for startups, businesses and institutions.</p>
             <a className="hx-link" href="https://www.linkedin.com/company/hiresnix/" target="_blank" rel="noopener noreferrer">Hiresnix on LinkedIn</a>
+          </div>
+          <div>
+            <h4>Services</h4>
+            <ul>
+              <li><a href="#services" onClick={e => { e.preventDefault(); goTo('services'); }}>What we build</a></li>
+              <li><a href="#ai" onClick={e => { e.preventDefault(); goTo('ai'); }}>AI solutions</a></li>
+              <li><a href="#work" onClick={e => { e.preventDefault(); goTo('work'); }}>Client work</a></li>
+              <li><a href="#contact" onClick={e => { e.preventDefault(); contactFor('Software Development'); }}>Start a project</a></li>
+            </ul>
           </div>
           <div>
             <h4>Students</h4>
             <ul>
               <li><a href="#internships" onClick={e => { e.preventDefault(); goTo('internships'); }}>Internships</a></li>
-              <li><a href="#academy" onClick={e => { e.preventDefault(); goTo('academy'); }}>AI Academy</a></li>
+              <li><a href="#products" onClick={e => { e.preventDefault(); goTo('products'); }}>AI Academy</a></li>
               <li><a href="/verify">Verify a certificate</a></li>
               <li><a href="/internship-policy">Internship policy</a></li>
               <li><a href="/auth">Log in</a></li>
@@ -575,11 +627,6 @@ export function LandingPage() {
               <li><a href="/blog">Blog</a></li>
               <li><a href="/contact-us">Contact us</a></li>
               <li><a href="/company-information">Company information</a></li>
-            </ul>
-          </div>
-          <div>
-            <h4>Legal</h4>
-            <ul>
               <li><a href="/privacy-policy">Privacy policy</a></li>
               <li><a href="/terms-and-conditions">Terms</a></li>
               <li><a href="/refund-policy">Refund policy</a></li>
@@ -624,7 +671,7 @@ html{scroll-padding-top:84px;}
 .hx-wrap{width:100%;max-width:1160px;margin:0 auto;padding:0 24px;}
 
 /* Type */
-.hx-h1{font-family:var(--display);font-weight:700;color:var(--ink);font-size:clamp(2.4rem,5.6vw,4.3rem);line-height:1.02;letter-spacing:-0.035em;margin:0 0 24px;max-width:12ch;}
+.hx-h1{font-family:var(--display);font-weight:700;color:var(--ink);font-size:clamp(2.2rem,4.4vw,3.55rem);line-height:1.04;letter-spacing:-0.035em;margin:0 0 24px;max-width:17ch;}
 .hx-h2{font-family:var(--display);font-weight:700;color:var(--ink);font-size:clamp(1.9rem,3.6vw,2.7rem);line-height:1.1;letter-spacing:-0.025em;margin:0 0 14px;}
 .hx-h3{font-family:var(--display);font-weight:600;color:var(--ink);font-size:1.2rem;line-height:1.3;letter-spacing:-0.01em;margin:0 0 8px;}
 .hx-lead{font-size:clamp(1.03rem,1.6vw,1.16rem);color:var(--text);max-width:62ch;margin:0;}
@@ -713,6 +760,19 @@ html{scroll-padding-top:84px;}
 .hx-step-n{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:var(--ink);color:#fff;font-weight:700;font-size:0.82rem;}
 .hx-cta-row{display:flex;align-items:center;gap:24px;flex-wrap:wrap;margin-top:44px;}
 
+/* AI solutions */
+.hx-ai{display:grid;grid-template-columns:repeat(2,1fr);gap:0;border-top:1px solid var(--line);}
+.hx-ai-item{padding:30px 32px 30px 0;border-bottom:1px solid var(--line);}
+.hx-ai-item:nth-child(2n){padding-left:32px;padding-right:0;border-left:1px solid var(--line);}
+.hx-ai-item .hx-muted{margin:0 0 12px;max-width:52ch;}
+.hx-ai-proof{margin:0;font-size:0.92rem;font-weight:600;color:var(--accent-press);}
+.hx-section-tight{padding:56px 0;}
+.hx-section-tight .hx-h3{margin-bottom:20px;}
+.hx-split-even{grid-template-columns:1fr 1fr;gap:24px;}
+.hx-product{border:1px solid var(--line);border-radius:20px;padding:30px;background:var(--paper);}
+.hx-product .hx-muted{margin:0 0 20px;}
+.hx-product .hx-courses{margin:0;}
+
 /* Academy */
 .hx-courses{list-style:none;padding:0;margin:28px 0 32px;display:flex;flex-wrap:wrap;gap:8px;}
 .hx-courses li{border:1px solid var(--line);background:var(--paper);border-radius:999px;padding:6px 14px;font-size:0.9rem;color:var(--text);}
@@ -770,12 +830,16 @@ html{scroll-padding-top:84px;}
 .hx-footer-legal{margin-top:40px;padding-top:24px;border-top:1px solid var(--line);color:var(--muted);font-size:0.85rem;}
 
 /* Responsive */
-@media (max-width: 960px){
+@media (max-width: 1100px){
   .hx-nav-links{display:none;}
+  .hx-menu-btn{display:inline-flex;}
+}
+@media (max-width: 960px){
   .hx-menu-btn{display:inline-flex;}
   .hx-hero-grid{grid-template-columns:1fr;}
   .hx-hero-visual{max-width:520px;}
   .hx-split{grid-template-columns:1fr;gap:40px;}
+  .hx-split-even{grid-template-columns:1fr;gap:20px;}
   .hx-steps{grid-template-columns:1fr 1fr;}
   .hx-services{grid-template-columns:1fr 1fr;}
   .hx-services > div{padding:22px 20px 22px 0 !important;border-left:none !important;}
@@ -800,6 +864,8 @@ html{scroll-padding-top:84px;}
   .hx-rung-level{grid-row:auto;}
   .hx-steps{grid-template-columns:1fr;}
   .hx-services{grid-template-columns:1fr;}
+  .hx-ai{grid-template-columns:1fr;}
+  .hx-ai-item,.hx-ai-item:nth-child(2n){padding:24px 0;border-left:none;}
   .hx-services > div,.hx-services > div:nth-child(2n){padding:20px 0 !important;border-left:none !important;}
   .hx-form-grid{grid-template-columns:1fr;}
   .hx-case{padding:24px 20px;}
