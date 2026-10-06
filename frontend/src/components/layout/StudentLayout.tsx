@@ -1,13 +1,14 @@
 // src/components/layout/StudentLayout.tsx
+// Student portal shell — white, clean design matching the landing page.
 import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router';
 import { LayoutDashboard, Briefcase, BookOpen, Award, FileText, User, Menu, X, LogOut,
-  BotMessageSquare, Send, BarChart2, Map, CalendarCheck, Lock, Clock, Info, Sparkles } from 'lucide-react';
+  BotMessageSquare, Send, BarChart2, Map, CalendarCheck, Lock, Clock, Info, Sparkles, FolderGit2 } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
-import { PORTAL_STYLES, PORTAL_COLORS } from './PortalTheme';
+import { PORTAL_STYLES } from './PortalTheme';
+import { PORTAL_LIGHT_CSS } from './PortalLight';
 import axios from 'axios';
 
-const C = PORTAL_COLORS.student;
 const API = (import.meta as any).env.VITE_API_URL || 'https://hirenix-backend.onrender.com/api';
 
 // Features that get locked after 1 year
@@ -18,343 +19,259 @@ const LOCKED_AFTER_1_YEAR = [
   '/student/roadmap',
 ];
 
-const NAV = [
-  { to: '/student/overview',       icon: Info,             label: 'Portal Guide 📖'    },
-  { to: '/student/dashboard',      icon: LayoutDashboard,  label: 'Dashboard'         },
-  { to: '/student/attendance',     icon: CalendarCheck,    label: 'Attendance 🆕'     },
-  { to: '/student/internships',    icon: Briefcase,        label: 'Internships'        },
-  { to: '/student/jobs',           icon: Send,             label: 'Jobs'               },
-  { to: '/student/applications',   icon: FileText,         label: 'Applications'       },
-  { to: '/student/resources',      icon: BookOpen,         label: 'Resources'          },
-  { to: '/student/mock-interview', icon: BotMessageSquare, label: 'Mock Interview',  lockable: true },
-  { to: '/student/resume-builder', icon: FileText,         label: 'Resume AI 🆕',   lockable: true },
-  { to: '/student/academy',        icon: Sparkles,         label: '🎓 AI Academy 🆕'  },
-  { to: '/student/projects',       icon: Briefcase,        label: 'My Projects 🆕'    },
-  { to: '/student/mock-dashboard', icon: BarChart2,        label: 'Interview Stats', lockable: true },
-  { to: '/student/roadmap',        icon: Map,              label: 'Career Roadmap 🗺️', lockable: true },
-  { to: '/student/certificates',   icon: Award,            label: 'Certificates'       },
-  { to: '/student/profile',        icon: User,             label: 'Profile'            },
+// Pages originally built for a dark background: the light adapter re-colours them
+const ADAPTED_PAGES = [
+  '/student/attendance',
+  '/student/mock-interview',
+  '/student/resume-builder',
+  '/student/projects',
+  '/student/mock-dashboard',
+  '/student/roadmap',
 ];
 
-/* ── Countdown Hook ──────────────────────────────────────────────── */
+type NavEntry = { to: string; icon: any; label: string; badge?: string; lockable?: boolean };
+const NAV_GROUPS: { title: string; items: NavEntry[] }[] = [
+  { title: 'Overview', items: [
+    { to: '/student/dashboard',      icon: LayoutDashboard,  label: 'Dashboard' },
+    { to: '/student/overview',       icon: Info,             label: 'Portal guide' },
+  ] },
+  { title: 'Internship', items: [
+    { to: '/student/internships',    icon: Briefcase,        label: 'Internships' },
+    { to: '/student/attendance',     icon: CalendarCheck,    label: 'Attendance',      badge: 'New' },
+    { to: '/student/projects',       icon: FolderGit2,       label: 'My projects',     badge: 'New' },
+    { to: '/student/certificates',   icon: Award,            label: 'Certificates' },
+  ] },
+  { title: 'Career', items: [
+    { to: '/student/jobs',           icon: Send,             label: 'Jobs' },
+    { to: '/student/applications',   icon: FileText,         label: 'Applications' },
+    { to: '/student/resume-builder', icon: FileText,         label: 'Resume AI',       badge: 'New', lockable: true },
+    { to: '/student/mock-interview', icon: BotMessageSquare, label: 'Mock interview',  lockable: true },
+    { to: '/student/mock-dashboard', icon: BarChart2,        label: 'Interview stats', lockable: true },
+    { to: '/student/roadmap',        icon: Map,              label: 'Career roadmap',  lockable: true },
+  ] },
+  { title: 'Learn', items: [
+    { to: '/student/academy',        icon: Sparkles,         label: 'AI Academy',      badge: 'New' },
+    { to: '/student/resources',      icon: BookOpen,         label: 'Resources' },
+  ] },
+  { title: 'Account', items: [
+    { to: '/student/profile',        icon: User,             label: 'Profile' },
+  ] },
+];
+const PAGE_TITLES: Record<string, string> = Object.fromEntries(
+  NAV_GROUPS.flatMap(g => g.items.map(i => [i.to, i.label]))
+);
+
+/* ── Countdown hook (unchanged logic) ── */
 function useCountdown(startDate: string | null) {
   const [timeLeft, setTimeLeft] = useState<{ days: number; hours: number; mins: number; secs: number; expired: boolean } | null>(null);
-
   useEffect(() => {
     if (!startDate) return;
-
     const calc = () => {
-      const start  = new Date(startDate);
+      const start = new Date(startDate);
       const expiry = new Date(start);
       expiry.setFullYear(expiry.getFullYear() + 1);
-
-      const now  = new Date();
-      const diff = expiry.getTime() - now.getTime();
-
-      if (diff <= 0) {
-        setTimeLeft({ days: 0, hours: 0, mins: 0, secs: 0, expired: true });
-        return;
-      }
-
-      const days  = Math.floor(diff / (1000 * 60 * 60 * 24));
-      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-      const mins  = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-      const secs  = Math.floor((diff % (1000 * 60)) / 1000);
-      setTimeLeft({ days, hours, mins, secs, expired: false });
+      const diff = expiry.getTime() - Date.now();
+      if (diff <= 0) { setTimeLeft({ days: 0, hours: 0, mins: 0, secs: 0, expired: true }); return; }
+      setTimeLeft({
+        days: Math.floor(diff / 86400000),
+        hours: Math.floor((diff % 86400000) / 3600000),
+        mins: Math.floor((diff % 3600000) / 60000),
+        secs: Math.floor((diff % 60000) / 1000),
+        expired: false,
+      });
     };
-
     calc();
-    const interval = setInterval(calc, 1000);
-    return () => clearInterval(interval);
+    const t = setInterval(calc, 1000);
+    return () => clearInterval(t);
   }, [startDate]);
-
   return timeLeft;
 }
 
-/* ── Nav Item ────────────────────────────────────────────────────── */
-function NavItem({ to, icon: Icon, label, onClick, locked }: any) {
+/* ── Brand mark (same as landing page) ── */
+function BrandMark() {
+  return (
+    <span className="stu-brand" aria-label="Hiresnix">
+      <svg width="28" height="22" viewBox="0 0 30 24" aria-hidden="true">
+        <path d="M1 22 C 10 21, 17 16, 21 7" fill="none" stroke="#15171A" strokeWidth="3" strokeLinecap="round" />
+        <path d="M15 8 L22 4.5 L23.5 12.5" fill="none" stroke="#15171A" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+        <circle cx="27" cy="3" r="2.6" fill="#0B7A55" />
+      </svg>
+      <span className="stu-brand-word">HIRESNIX</span>
+    </span>
+  );
+}
+
+function NavItem({ to, icon: Icon, label, badge, locked, onClick }: NavEntry & { locked?: boolean; onClick: () => void }) {
   const { pathname } = useLocation();
   const active = pathname === to || pathname.startsWith(to + '/');
-
   if (locked) {
     return (
-      <div className="nav-item opacity-40 cursor-not-allowed select-none"
-        style={{ pointerEvents: 'none' }}
-        title="Access expired after 1 year">
-        <div className="flex items-center gap-2.5">
-          <Lock size={13} style={{ color: '#EF4444' }} />
-          <span style={{ textDecoration: 'line-through', color: '#475569' }}>{label}</span>
-        </div>
-        <Lock size={11} style={{ color: '#EF4444' }} />
-      </div>
+      <span className="stu-nav-item is-locked" title="Access expired after 1 year" aria-disabled="true">
+        <Lock size={15} aria-hidden="true" />
+        <span className="stu-nav-label">{label}</span>
+      </span>
     );
   }
-
   return (
-    <Link to={to} onClick={onClick} className="nav-item"
-      style={active ? {
-        background: `linear-gradient(135deg,${C.glow},rgba(255,255,255,0.03))`,
-        color: C.accent, borderLeft: `2px solid ${C.accent}`, paddingLeft: '10px',
-      } : {}}>
-      <div className="flex items-center gap-2.5">
-        <Icon size={15} style={active ? { color: C.accent } : {}} />
-        {label}
-      </div>
+    <Link to={to} onClick={onClick} className={`stu-nav-item${active ? ' is-active' : ''}`} aria-current={active ? 'page' : undefined}>
+      <Icon size={16} aria-hidden="true" />
+      <span className="stu-nav-label">{label}</span>
+      {badge && <span className="stu-badge">{badge}</span>}
     </Link>
   );
 }
 
-/* ── Countdown Bar ───────────────────────────────────────────────── */
-function CountdownBar({ timeLeft, startDate }: { timeLeft: any; startDate: string }) {
-  const start  = new Date(startDate);
-  const expiry = new Date(start);
-  expiry.setFullYear(expiry.getFullYear() + 1);
-  const total   = expiry.getTime() - start.getTime();
-  const elapsed = Date.now() - start.getTime();
-  const pct     = Math.min(100, Math.max(0, (elapsed / total) * 100));
-  const urgent  = timeLeft?.days < 30;
-  const color   = urgent ? '#EF4444' : timeLeft?.days < 90 ? '#F59E0B' : '#10B981';
-
+/* ── Access countdown (sidebar) ── */
+function AccessCard({ timeLeft, startDate }: { timeLeft: any; startDate: string }) {
   if (timeLeft?.expired) {
     return (
-      <div style={{
-        margin: '0 12px 8px',
-        background: 'rgba(239,68,68,0.1)',
-        border: '1px solid rgba(239,68,68,0.3)',
-        borderRadius: '10px',
-        padding: '8px 12px',
-        textAlign: 'center',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-          <Lock size={12} style={{ color: '#EF4444' }} />
-          <span style={{ color: '#EF4444', fontSize: '11px', fontWeight: 800 }}>Access Expired</span>
-        </div>
-        <p style={{ color: '#64748B', fontSize: '10px', marginTop: '2px' }}>1 year internship period ended</p>
+      <div className="stu-access is-expired">
+        <div className="stu-access-head"><Lock size={13} aria-hidden="true" /> Access expired</div>
+        <p className="stu-access-note">Your 1-year internship period has ended.</p>
       </div>
     );
   }
-
+  const start = new Date(startDate);
+  const expiry = new Date(start); expiry.setFullYear(expiry.getFullYear() + 1);
+  const pctLeft = Math.max(0, Math.min(100, ((expiry.getTime() - Date.now()) / (expiry.getTime() - start.getTime())) * 100));
+  const tone = timeLeft.days < 30 ? 'is-urgent' : timeLeft.days < 90 ? 'is-warn' : '';
   return (
-    <div style={{
-      margin: '0 12px 8px',
-      background: `${color}10`,
-      border: `1px solid ${color}30`,
-      borderRadius: '10px',
-      padding: '8px 12px',
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-          <Clock size={11} style={{ color }} />
-          <span style={{ color, fontSize: '10px', fontWeight: 700 }}>Access Expires In</span>
-        </div>
-        <span style={{ color: '#64748B', fontSize: '9px' }}>{Math.round(100 - pct)}% left</span>
+    <div className={`stu-access ${tone}`}>
+      <div className="stu-access-head"><Clock size={13} aria-hidden="true" /> Access ends in</div>
+      <p className="stu-access-time">
+        <strong>{timeLeft.days}</strong> days <span>{String(timeLeft.hours).padStart(2, '0')}:{String(timeLeft.mins).padStart(2, '0')}:{String(timeLeft.secs).padStart(2, '0')}</span>
+      </p>
+      <div className="stu-access-bar" role="progressbar" aria-valuenow={Math.round(pctLeft)} aria-valuemin={0} aria-valuemax={100} aria-label="Access time left">
+        <span style={{ width: `${pctLeft}%` }} />
       </div>
-
-      {/* Countdown digits */}
-      <div style={{ display: 'flex', gap: '4px', justifyContent: 'center', marginBottom: '6px' }}>
-        {[
-          { val: timeLeft?.days, label: 'D' },
-          { val: timeLeft?.hours, label: 'H' },
-          { val: timeLeft?.mins, label: 'M' },
-          { val: timeLeft?.secs, label: 'S' },
-        ].map(({ val, label }) => (
-          <div key={label} style={{ textAlign: 'center' }}>
-            <div style={{
-              background: `${color}20`,
-              border: `1px solid ${color}40`,
-              borderRadius: '6px',
-              padding: '3px 6px',
-              minWidth: '28px',
-            }}>
-              <span style={{ color, fontSize: '13px', fontWeight: 900, fontFamily: 'monospace' }}>
-                {String(val ?? 0).padStart(2, '0')}
-              </span>
-            </div>
-            <span style={{ color: '#475569', fontSize: '8px', fontWeight: 600 }}>{label}</span>
-          </div>
-        ))}
-      </div>
-
-      {/* Progress bar */}
-      <div style={{ background: 'rgba(255,255,255,0.06)', borderRadius: '4px', height: '3px' }}>
-        <div style={{
-          width: `${pct}%`,
-          height: '3px',
-          borderRadius: '4px',
-          background: `linear-gradient(90deg, #10B981, ${color})`,
-          transition: 'width 1s linear',
-        }} />
-      </div>
-      <p style={{ color: '#475569', fontSize: '9px', marginTop: '4px', textAlign: 'center' }}>
-        Started {new Date(startDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+      <p className="stu-access-note">
+        Started {start.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
       </p>
     </div>
   );
 }
 
-/* ── Main Layout ─────────────────────────────────────────────────── */
+/* ── Main layout ── */
 export function StudentLayout() {
-  const [open, setOpen]           = useState(false);
+  const [open, setOpen] = useState(false);
   const [startDate, setStartDate] = useState<string | null>(null);
-  const { user, logout }          = useAuthStore();
-  const navigate  = useNavigate();
+  const { user, logout } = useAuthStore();
+  const navigate = useNavigate();
   const { pathname } = useLocation();
-  const initials  = user?.name?.charAt(0)?.toUpperCase() || 'S';
-  const timeLeft  = useCountdown(startDate);
+  const initials = user?.name?.charAt(0)?.toUpperCase() || 'S';
+  const timeLeft = useCountdown(startDate);
   const isExpired = timeLeft?.expired ?? false;
+  const adapted = ADAPTED_PAGES.some(p => pathname === p || pathname.startsWith(p + '/'));
+  const title = PAGE_TITLES[pathname] || 'Student portal';
 
-  // Fetch internship start date from offer letter
+  // Internship start date (offer letter) drives the 1-year access countdown
   useEffect(() => {
     const token = localStorage.getItem('hx_student_token') || localStorage.getItem('hirenix_token');
     if (!token) return;
-
-    axios.get(`${API}/iplatform/my-application`, {
-      headers: { Authorization: `Bearer ${token}` }
-    }).then(r => {
-      const data = r.data?.data;
-      // Try offerJoiningDate first, then enrollment startDate
-      const date = data?.application?.offerJoiningDate
-        || data?.enrollment?.startDate
-        || data?.application?.createdAt;
-      if (date) setStartDate(date);
-    }).catch(() => {});
+    axios.get(`${API}/iplatform/my-application`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => {
+        const data = r.data?.data;
+        const date = data?.application?.offerJoiningDate || data?.enrollment?.startDate || data?.application?.createdAt;
+        if (date) setStartDate(date);
+      })
+      .catch(() => {});
   }, []);
 
+  // The portal is always light now: turn off the old dark page tint while it's open
+  // Also neutralise the old global light/dark toggle in index.html: its blanket overrides
+  // (e.g. turning every .text-white dark) fight this design. Restored when leaving the portal.
+  useEffect(() => {
+    document.body.classList.add('stu-light-body');
+    const html = document.documentElement;
+    const prevTheme = html.getAttribute('data-theme');
+    html.setAttribute('data-theme', 'dark');
+    return () => {
+      document.body.classList.remove('stu-light-body');
+      if (prevTheme) html.setAttribute('data-theme', prevTheme); else html.removeAttribute('data-theme');
+    };
+  }, []);
+
+  useEffect(() => { setOpen(false); }, [pathname]);
+
   return (
-    <div className="flex min-h-screen font-sans" style={{ background: '#0D1117' }}>
+    <div className="stu-root">
       <style>{PORTAL_STYLES}</style>
-      {open && <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden" onClick={() => setOpen(false)} />}
+      <style>{PORTAL_LIGHT_CSS}</style>
 
-      <aside className={`fixed inset-y-0 left-0 z-50 w-60 flex flex-col transform transition-transform duration-300 md:static md:translate-x-0 ${open ? 'translate-x-0' : '-translate-x-full'}`}
-        style={{ background: 'linear-gradient(180deg,#0B0F1A 0%,#0D1117 100%)', borderRight: '1px solid rgba(255,255,255,0.06)' }}>
+      {open && <div className="stu-scrim" onClick={() => setOpen(false)} aria-hidden="true" />}
 
-        {/* Logo */}
-        <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-          <img src="/hiresnix-logo.png" alt="Hiresnix" style={{ height: 32, objectFit: 'contain', filter: `drop-shadow(0 0 10px ${C.ring})` }} />
-          <button className="md:hidden p-1 rounded-lg hover:bg-white/10" onClick={() => setOpen(false)}><X size={16} className="text-gray-400" /></button>
+      {/* Sidebar (div, not <aside>, so the old global dark/light overrides don't touch it) */}
+      <div className={`stu-sidebar${open ? ' is-open' : ''}`} role="navigation" aria-label="Student portal">
+        <div className="stu-sidebar-top">
+          <Link to="/student/dashboard" className="stu-home"><BrandMark /></Link>
+          <button className="stu-icon-btn stu-only-mobile" onClick={() => setOpen(false)} aria-label="Close menu"><X size={18} /></button>
         </div>
 
-        {/* User card */}
-        <div className="mx-3 my-3 p-3 rounded-xl" style={{ background: `linear-gradient(135deg,${C.glow},rgba(255,255,255,0.03))`, border: `1px solid ${C.ring}` }}>
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0 text-white"
-              style={{ background: `linear-gradient(135deg,${C.accent},${C.accent}99)` }}>
-              {initials}
-            </div>
-            <div className="min-w-0">
-              <p className="text-white text-xs font-semibold truncate">{user?.name}</p>
-              <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: C.accent }}>Student</p>
-            </div>
-          </div>
+        <div className="stu-user">
+          <span className="stu-avatar" aria-hidden="true">{initials}</span>
+          <span className="stu-user-text">
+            <span className="stu-user-name">{user?.name}</span>
+            <span className="stu-user-role">Student</span>
+          </span>
         </div>
 
-        {/* Countdown bar — show only if internship started */}
-        {startDate && timeLeft && (
-          <CountdownBar timeLeft={timeLeft} startDate={startDate} />
-        )}
+        {startDate && timeLeft && <AccessCard timeLeft={timeLeft} startDate={startDate} />}
 
-        {/* Nav */}
-        <nav className="flex-1 px-2 py-2 space-y-0.5 overflow-y-auto">
-          {NAV.map(item => (
-            <NavItem
-              key={item.to}
-              {...item}
-              onClick={() => setOpen(false)}
-              locked={item.lockable && isExpired}
-            />
+        <nav className="stu-nav">
+          {NAV_GROUPS.map(group => (
+            <div key={group.title} className="stu-nav-group">
+              <p className="stu-nav-title">{group.title}</p>
+              {group.items.map(item => (
+                <NavItem key={item.to} {...item} locked={item.lockable && isExpired} onClick={() => setOpen(false)} />
+              ))}
+            </div>
           ))}
         </nav>
 
-        {/* Logout */}
-        <div className="px-3 py-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-          <button onClick={() => { logout(); navigate('/auth'); }}
-            className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition text-xs font-medium">
-            <LogOut size={14} /> Sign Out
+        <div className="stu-sidebar-foot">
+          <button className="stu-signout" onClick={() => { logout(); navigate('/auth'); }}>
+            <LogOut size={15} aria-hidden="true" /> Sign out
           </button>
         </div>
-      </aside>
+      </div>
 
-      {/* Main content */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Mobile header */}
-        <header className="md:hidden flex items-center justify-between px-4 py-3" style={{ background: '#0B0F1A', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-          <img src="/hiresnix-logo.png" alt="Hiresnix" style={{ height: 26, objectFit: 'contain' }} />
-          <button onClick={() => setOpen(true)} className="p-2 rounded-lg" style={{ background: 'rgba(255,255,255,0.06)' }}>
-            <Menu size={18} className="text-gray-300" />
-          </button>
-        </header>
-
-        {/* Desktop header with countdown */}
-        <header className="hidden md:flex h-12 items-center justify-between px-6 sticky top-0 z-10"
-          style={{ background: 'rgba(13,17,23,0.8)', borderBottom: '1px solid rgba(255,255,255,0.06)', backdropFilter: 'blur(12px)' }}>
-          <div className="flex items-center gap-2">
-            <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: C.accent }} />
-            <span className="text-xs font-semibold text-gray-400">Student Portal</span>
-          </div>
-
-          {/* Top bar countdown */}
-          {startDate && timeLeft && !timeLeft.expired && (
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: '8px',
-              background: timeLeft.days < 30 ? 'rgba(239,68,68,0.1)' : 'rgba(16,185,129,0.1)',
-              border: `1px solid ${timeLeft.days < 30 ? 'rgba(239,68,68,0.3)' : 'rgba(16,185,129,0.2)'}`,
-              borderRadius: '8px', padding: '4px 12px',
-            }}>
-              <Clock size={11} style={{ color: timeLeft.days < 30 ? '#EF4444' : '#10B981' }} />
-              <span style={{ color: timeLeft.days < 30 ? '#EF4444' : '#10B981', fontSize: '11px', fontWeight: 700 }}>
-                Access: {String(timeLeft.days).padStart(3,'0')}d {String(timeLeft.hours).padStart(2,'0')}h {String(timeLeft.mins).padStart(2,'0')}m {String(timeLeft.secs).padStart(2,'0')}s
+      {/* Main column */}
+      <div className="stu-col">
+        <div className="stu-topbar" role="banner">
+          <button className="stu-icon-btn stu-only-mobile" onClick={() => setOpen(true)} aria-label="Open menu"><Menu size={18} /></button>
+          <h1 className="stu-page-title">{title}</h1>
+          <div className="stu-topbar-right">
+            {startDate && timeLeft && !timeLeft.expired && (
+              <span className={`stu-chip${timeLeft.days < 30 ? ' is-urgent' : ''}`}>
+                <Clock size={12} aria-hidden="true" />
+                {timeLeft.days}d {String(timeLeft.hours).padStart(2, '0')}h {String(timeLeft.mins).padStart(2, '0')}m left
               </span>
-            </div>
-          )}
-          {startDate && timeLeft?.expired && (
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: '6px',
-              background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)',
-              borderRadius: '8px', padding: '4px 12px',
-            }}>
-              <Lock size={11} style={{ color: '#EF4444' }} />
-              <span style={{ color: '#EF4444', fontSize: '11px', fontWeight: 700 }}>Access Expired</span>
-            </div>
-          )}
+            )}
+            {startDate && timeLeft?.expired && (
+              <span className="stu-chip is-urgent"><Lock size={12} aria-hidden="true" /> Access expired</span>
+            )}
+            <Link to="/student/profile" className="stu-top-user" title={user?.email || ''}>
+              <span className="stu-avatar stu-avatar-sm" aria-hidden="true">{initials}</span>
+              <span className="stu-top-email">{user?.email}</span>
+            </Link>
+          </div>
+        </div>
 
-          <span className="text-xs text-gray-600">{user?.email}</span>
-        </header>
-
-        <main key={pathname} className="flex-1 p-4 sm:p-6 animate-page" style={{ overflowY: 'auto' }}>
-          {/* Show locked overlay if expired and on a locked route */}
+        <div key={pathname} role="main" className={`stu-main animate-page${adapted ? ' stu-adapt' : ''}`}>
           {isExpired && LOCKED_AFTER_1_YEAR.includes(pathname) ? (
-            <div style={{
-              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-              minHeight: '60vh', gap: '16px', textAlign: 'center',
-            }}>
-              <div style={{
-                width: '80px', height: '80px', borderRadius: '50%',
-                background: 'rgba(239,68,68,0.1)', border: '2px solid rgba(239,68,68,0.3)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                <Lock size={32} style={{ color: '#EF4444' }} />
-              </div>
-              <h2 style={{ color: '#EF4444', fontSize: '22px', fontWeight: 900 }}>Feature Locked</h2>
-              <p style={{ color: '#64748B', fontSize: '14px', maxWidth: '360px', lineHeight: 1.6 }}>
-                Your 1-year internship access period has ended. This feature is no longer available.
-              </p>
-              <p style={{ color: '#334155', fontSize: '12px' }}>
+            <div className="stu-locked">
+              <span className="stu-locked-icon"><Lock size={28} aria-hidden="true" /></span>
+              <h2>Feature locked</h2>
+              <p>Your 1-year internship access period has ended. This feature is no longer available.</p>
+              <p className="stu-locked-date">
                 Started: {startDate ? new Date(startDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' }) : '—'}
               </p>
-              <button
-                onClick={() => navigate('/student/dashboard')}
-                style={{
-                  background: 'linear-gradient(135deg,#3B82F6,#2563EB)',
-                  color: '#fff', border: 'none', borderRadius: '10px',
-                  padding: '10px 24px', fontWeight: 700, fontSize: '13px', cursor: 'pointer',
-                }}>
-                Go to Dashboard
-              </button>
+              <button className="stu-btn stu-btn-primary" onClick={() => navigate('/student/dashboard')}>Go to dashboard</button>
             </div>
           ) : (
             <Outlet />
           )}
-        </main>
+        </div>
       </div>
     </div>
   );
