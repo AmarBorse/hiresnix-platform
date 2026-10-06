@@ -140,6 +140,9 @@ body.stu-light-body #root{background:#F6F7F5 !important;}
 .stu-adapt .text-gray-300,.stu-adapt .text-gray-400{
   color:var(--muted) !important;
 }
+.stu-adapt [style*="color: rgba(255, 255, 255, 0.2"],.stu-adapt [style*="color: rgba(255, 255, 255, 0.1"]{color:#8A8E94 !important;}
+.stu-main [style*="color: rgb(16, 185, 129)"],.stu-main [style*="color: rgb(6, 182, 212)"],.stu-main [style*="color: rgb(34, 197, 94)"],
+.stu-main .text-emerald-500,.stu-main .text-green-500,.stu-main .text-cyan-500{color:var(--accent-press) !important;}
 .stu-adapt [style*="color: rgb(51, 65, 85)"],.stu-adapt [style*="color: rgb(71, 85, 105)"]{color:#8A8E94 !important;}
 /* Pastel accents (made for dark) → deeper versions readable on white */
 .stu-adapt [style*="color: rgb(52, 211, 153)"],.stu-adapt [style*="color: rgb(74, 222, 128)"],.stu-adapt .text-green-400,.stu-adapt .text-emerald-400{color:#047857 !important;}
@@ -147,12 +150,125 @@ body.stu-light-body #root{background:#F6F7F5 !important;}
 .stu-adapt [style*="color: rgb(248, 113, 113)"],.stu-adapt .text-red-400{color:#B91C1C !important;}
 .stu-adapt [style*="color: rgb(251, 146, 60)"],.stu-adapt .text-orange-400{color:#C2410C !important;}
 .stu-adapt [style*="color: rgb(167, 139, 250)"],.stu-adapt .text-purple-400,.stu-adapt .text-violet-400{color:#6D28D9 !important;}
+/* More pastel tints used as text on dark backgrounds */
+.stu-adapt [style*="color: rgb(110, 231, 183)"],.stu-adapt [style*="color: rgb(167, 243, 208)"],.stu-adapt [style*="color: rgb(134, 239, 172)"],
+.stu-adapt .text-green-300,.stu-adapt .text-emerald-300{color:#047857 !important;}
+.stu-adapt [style*="color: rgb(252, 211, 77)"],.stu-adapt [style*="color: rgb(253, 230, 138)"],.stu-adapt .text-yellow-300,.stu-adapt .text-amber-300{color:#B45309 !important;}
+.stu-adapt [style*="color: rgb(252, 165, 165)"],.stu-adapt .text-red-300{color:#B91C1C !important;}
+.stu-adapt [style*="color: rgb(196, 181, 253)"],.stu-adapt .text-purple-300,.stu-adapt .text-violet-300{color:#6D28D9 !important;}
+.stu-adapt [style*="color: rgb(147, 197, 253)"],.stu-adapt [style*="color: rgb(103, 232, 249)"],.stu-adapt .text-cyan-300,.stu-adapt .text-sky-300{color:var(--accent-press) !important;}
+.stu-adapt [style*="color: rgb(249, 168, 212)"],.stu-adapt .text-pink-300{color:#BE185D !important;}
+.stu-adapt [style*="color: rgb(230, 237, 243)"],.stu-adapt [style*="color: rgb(203, 213, 225)"],.stu-adapt [style*="color: rgb(209, 213, 219)"]{color:var(--ink) !important;}
+.stu-adapt [style*="color: rgb(139, 148, 158)"]{color:var(--muted) !important;}
+
 /* Keep white text white on solid coloured buttons and badges ("rgb(" = solid colour, not a pale "rgba(" tint) */
 .stu-adapt [style*="linear-gradient(135deg, rgb("],.stu-adapt [style*="linear-gradient(135deg, rgb("] *,
 .stu-adapt .bg-blue-500,.stu-adapt .bg-blue-600,.stu-adapt .bg-indigo-500,.stu-adapt .bg-indigo-600,
 .stu-adapt .bg-green-500,.stu-adapt .bg-green-600,.stu-adapt .bg-red-500,.stu-adapt .bg-red-600,
 .stu-adapt .bg-purple-600,.stu-adapt .bg-violet-600,.stu-adapt .bg-emerald-600,
 .stu-adapt .bg-blue-600 *,.stu-adapt .bg-indigo-600 *,.stu-adapt .bg-green-600 *,.stu-adapt .bg-purple-600 *,
+.stu-adapt .bg-blue-500,
+.stu-adapt .bg-blue-600,
+.stu-adapt .bg-blue-700,
+.stu-adapt .bg-indigo-500,
+.stu-adapt .bg-indigo-600,
+.stu-adapt .bg-indigo-700,
+.stu-adapt .bg-violet-500,
+.stu-adapt .bg-violet-600,
+.stu-adapt .bg-violet-700,
+.stu-adapt .bg-purple-500,
+.stu-adapt .bg-purple-600,
+.stu-adapt .bg-purple-700,
+.stu-adapt .bg-green-500,
+.stu-adapt .bg-green-600,
+.stu-adapt .bg-green-700,
+.stu-adapt .bg-emerald-500,
+.stu-adapt .bg-emerald-600,
+.stu-adapt .bg-emerald-700,
+.stu-adapt .bg-teal-500,
+.stu-adapt .bg-teal-600,
+.stu-adapt .bg-teal-700,
+.stu-adapt .bg-red-500,
+.stu-adapt .bg-red-600,
+.stu-adapt .bg-red-700,
+.stu-adapt .bg-rose-500,
+.stu-adapt .bg-rose-600,
+.stu-adapt .bg-rose-700,
+.stu-adapt .bg-orange-500,
+.stu-adapt .bg-orange-600,
+.stu-adapt .bg-orange-700,
+.stu-adapt .bg-amber-500,
+.stu-adapt .bg-amber-600,
+.stu-adapt .bg-amber-700,
+.stu-adapt .bg-yellow-500,
+.stu-adapt .bg-yellow-600,
+.stu-adapt .bg-yellow-700,
+.stu-adapt .bg-pink-500,
+.stu-adapt .bg-pink-600,
+.stu-adapt .bg-pink-700,
+.stu-adapt .bg-sky-500,
+.stu-adapt .bg-sky-600,
+.stu-adapt .bg-sky-700,
+.stu-adapt .bg-cyan-500,
+.stu-adapt .bg-cyan-600,
+.stu-adapt .bg-cyan-700,
+.stu-adapt .bg-fuchsia-500,
+.stu-adapt .bg-fuchsia-600,
+.stu-adapt .bg-fuchsia-700,
+.stu-adapt .bg-lime-500,
+.stu-adapt .bg-lime-600,
+.stu-adapt .bg-lime-700,
+.stu-adapt .bg-blue-500 *,
+.stu-adapt .bg-blue-600 *,
+.stu-adapt .bg-blue-700 *,
+.stu-adapt .bg-indigo-500 *,
+.stu-adapt .bg-indigo-600 *,
+.stu-adapt .bg-indigo-700 *,
+.stu-adapt .bg-violet-500 *,
+.stu-adapt .bg-violet-600 *,
+.stu-adapt .bg-violet-700 *,
+.stu-adapt .bg-purple-500 *,
+.stu-adapt .bg-purple-600 *,
+.stu-adapt .bg-purple-700 *,
+.stu-adapt .bg-green-500 *,
+.stu-adapt .bg-green-600 *,
+.stu-adapt .bg-green-700 *,
+.stu-adapt .bg-emerald-500 *,
+.stu-adapt .bg-emerald-600 *,
+.stu-adapt .bg-emerald-700 *,
+.stu-adapt .bg-teal-500 *,
+.stu-adapt .bg-teal-600 *,
+.stu-adapt .bg-teal-700 *,
+.stu-adapt .bg-red-500 *,
+.stu-adapt .bg-red-600 *,
+.stu-adapt .bg-red-700 *,
+.stu-adapt .bg-rose-500 *,
+.stu-adapt .bg-rose-600 *,
+.stu-adapt .bg-rose-700 *,
+.stu-adapt .bg-orange-500 *,
+.stu-adapt .bg-orange-600 *,
+.stu-adapt .bg-orange-700 *,
+.stu-adapt .bg-amber-500 *,
+.stu-adapt .bg-amber-600 *,
+.stu-adapt .bg-amber-700 *,
+.stu-adapt .bg-yellow-500 *,
+.stu-adapt .bg-yellow-600 *,
+.stu-adapt .bg-yellow-700 *,
+.stu-adapt .bg-pink-500 *,
+.stu-adapt .bg-pink-600 *,
+.stu-adapt .bg-pink-700 *,
+.stu-adapt .bg-sky-500 *,
+.stu-adapt .bg-sky-600 *,
+.stu-adapt .bg-sky-700 *,
+.stu-adapt .bg-cyan-500 *,
+.stu-adapt .bg-cyan-600 *,
+.stu-adapt .bg-cyan-700 *,
+.stu-adapt .bg-fuchsia-500 *,
+.stu-adapt .bg-fuchsia-600 *,
+.stu-adapt .bg-fuchsia-700 *,
+.stu-adapt .bg-lime-500 *,
+.stu-adapt .bg-lime-600 *,
+.stu-adapt .bg-lime-700 *,
 .stu-adapt [class*="bg-gradient-to"].text-white,.stu-adapt [class*="bg-gradient-to"] .text-white{
   color:#fff !important;
 }
@@ -171,6 +287,10 @@ body.stu-light-body #root{background:#F6F7F5 !important;}
 .stu-main [class*="from-blue-6"],.stu-main [class*="from-indigo-6"],.stu-main [class*="from-violet-6"],.stu-main [class*="from-purple-6"]{
   background:var(--accent) !important;color:#fff;
 }
+.stu-main .bg-green-500,.stu-main .bg-emerald-500,.stu-main .bg-teal-500,
+.stu-main [style*="background: rgb(16, 185, 129)"],.stu-main [style*="background: rgb(34, 197, 94)"],
+.stu-main [style*="linear-gradient(135deg, rgb(16, 185, 129)"]{background:var(--accent) !important;}
+.stu-main .hover\\:bg-green-600:hover,.stu-main .hover\\:bg-emerald-600:hover{background:var(--accent-press) !important;}
 .stu-main .hover\\:bg-blue-600:hover,.stu-main .hover\\:bg-blue-700:hover,.stu-main .hover\\:bg-indigo-700:hover{background:var(--accent-press) !important;}
 .stu-main [style*="linear-gradient(135deg, rgba(99, 102, 241"],
 .stu-main [style*="linear-gradient(135deg, rgba(59, 130, 246"],

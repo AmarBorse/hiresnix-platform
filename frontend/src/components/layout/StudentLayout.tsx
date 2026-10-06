@@ -19,15 +19,8 @@ const LOCKED_AFTER_1_YEAR = [
   '/student/roadmap',
 ];
 
-// Pages originally built for a dark background: the light adapter re-colours them
-const ADAPTED_PAGES = [
-  '/student/attendance',
-  '/student/mock-interview',
-  '/student/resume-builder',
-  '/student/projects',
-  '/student/mock-dashboard',
-  '/student/roadmap',
-];
+// Every page gets the light adapter (.stu-adapt): it only re-colours dark-theme styles
+// (white text, translucent white panels, dark backgrounds), so light pages are unaffected.
 
 type NavEntry = { to: string; icon: any; label: string; badge?: string; lockable?: boolean };
 const NAV_GROUPS: { title: string; items: NavEntry[] }[] = [
@@ -161,7 +154,6 @@ export function StudentLayout() {
   const initials = user?.name?.charAt(0)?.toUpperCase() || 'S';
   const timeLeft = useCountdown(startDate);
   const isExpired = timeLeft?.expired ?? false;
-  const adapted = ADAPTED_PAGES.some(p => pathname === p || pathname.startsWith(p + '/'));
   const title = PAGE_TITLES[pathname] || 'Student portal';
 
   // Internship start date (offer letter) drives the 1-year access countdown
@@ -257,7 +249,7 @@ export function StudentLayout() {
           </div>
         </div>
 
-        <div key={pathname} role="main" className={`stu-main animate-page${adapted ? ' stu-adapt' : ''}`}>
+        <div key={pathname} role="main" className="stu-main stu-adapt animate-page">
           {isExpired && LOCKED_AFTER_1_YEAR.includes(pathname) ? (
             <div className="stu-locked">
               <span className="stu-locked-icon"><Lock size={28} aria-hidden="true" /></span>
