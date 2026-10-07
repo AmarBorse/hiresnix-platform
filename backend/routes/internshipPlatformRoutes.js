@@ -60,6 +60,9 @@ r.post('/daily-logs',                protect, authorize('student'), dailyLogCtrl
 r.get('/cert-payment-status',        protect, authorize('student'), dailyLogCtrl.checkCertPaymentStatus);
 r.post('/cert-payment-order',        protect, authorize('student'), dailyLogCtrl.createCertPaymentOrder);
 r.post('/cert-payment-verify',       protect, authorize('student'), dailyLogCtrl.verifyCertPayment);
+r.post('/cert-payment-sync',         protect, authorize('student'), dailyLogCtrl.syncCertPayment);
+r.get('/admin/cert-payment',         protect, authorize('admin'),   dailyLogCtrl.adminCertPaymentLookup);
+r.post('/admin/cert-unlock',         protect, authorize('admin'),   dailyLogCtrl.adminCertUnlock);
 
 // ── CERTIFICATES / LETTERS (PDF) ──────────────────────────────────
 r.get('/verify/:certId',             ctrl.verifyCertificate);

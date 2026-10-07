@@ -53,6 +53,9 @@ const authLimiter = rateLimit({
 app.set('trust proxy', 1);
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
+// Razorpay webhook needs the raw body for signature checks: mount before express.json()
+app.post('/api/payments/razorpay-webhook', express.raw({ type: 'application/json', limit: '1mb' }),
+  require('./controllers/internshipDailyLog').razorpayWebhook);
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 if (process.env.NODE_ENV === 'development') app.use(morgan('dev'));
@@ -88,6 +91,7 @@ app.use('/api/chatbot',        require('./routes/chatbotRoutes'));
 app.use('/api/attendance',     require('./routes/attendanceRoutes'));  // NEW
 app.use('/api/logic-builder', require('./routes/logicBuilderRoutes'));
 app.use('/api/student-academy', require('./routes/studentAcademyRoutes'));
+app.use('/api/tts', require('./routes/ttsRoutes'));
 
 app.get('/api/health', (req, res) => res.json({ status: 'OK', db: 'MySQL/PostgreSQL (Sequelize)', timestamp: new Date() }));
 

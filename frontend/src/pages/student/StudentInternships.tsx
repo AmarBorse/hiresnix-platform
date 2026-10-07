@@ -74,7 +74,12 @@ function IPlatformPanel() {
       // Check payment status
       try {
         const ps = await client.get('/iplatform/cert-payment-status');
-        setCertPaid(ps.data?.paid || false);
+        let isPaid = !!ps.data?.paid;
+        // Paid but the checkout callback was lost (e.g. UPI app switch)? Confirm with Razorpay.
+        if (!isPaid && ps.data?.isLegacy === false) {
+          try { isPaid = !!(await client.post('/iplatform/cert-payment-sync', {})).data?.paid; } catch {}
+        }
+        setCertPaid(isPaid);
       } catch { setCertPaid(false); }
     } catch {}
     finally { setLoading(false); }
@@ -172,6 +177,7 @@ function IPlatformPanel() {
     setPaymentLoading(true);
     try {
       const res = await client.post('/iplatform/cert-payment-order');
+      if (res.data?.alreadyPaid) { setCertPaid(true); triggerDownload(type, enrollId, name); return; }
       const { orderId, keyId, amount } = res.data?.data || {};
       if (!orderId || !keyId) { toast.error('Payment service unavailable. Contact hr@hiresnix.co.in'); return; }
       await new Promise<void>((resolve, reject) => {
@@ -192,11 +198,19 @@ function IPlatformPanel() {
             toast.success('Payment successful! Downloading...');
             setCertPaid(true);
             setTimeout(() => triggerDownload(type, enrollId, name), 500);
-          } catch { toast.error('Payment verification failed. Contact support.'); }
+          } catch {
+            // Fall back to asking the server to confirm the payment with Razorpay
+            try {
+              const sync = await client.post('/iplatform/cert-payment-sync', {});
+              if (sync.data?.paid) { toast.success('Payment confirmed! Downloading...'); setCertPaid(true); setTimeout(() => triggerDownload(type, enrollId, name), 500); return; }
+            } catch {}
+            toast.error('Payment received but not confirmed yet. Use "Already paid? Check payment status" or contact hr@hiresnix.co.in');
+          }
         },
         prefill: { name },
-        theme: { color: '#3b82f6' },
+        theme: { color: '#0B7A55' },
       });
+      rzp.on?.('payment.failed', (r: any) => toast.error(r?.error?.description || 'Payment failed. No money was taken; please try again.'));
       rzp.open();
     } catch (err: any) {
       toast.error(err.message || 'Failed to load payment gateway');
@@ -2839,13 +2853,19 @@ function CertificatePaymentSection({ enrollment }: { enrollment: any }) {
   const [paid, setPaid] = useState(false);
   const [isLegacy, setIsLegacy] = useState(false);
   const [processingPayment, setProcessingPayment] = useState(false);
+  const [syncing, setSyncing] = useState(false);
 
   useEffect(() => {
     if (enrollment.status !== 'Completed') return;
     client.get('/iplatform/cert-payment-status')
-      .then(r => {
-        setPaid(r.data?.paid || false);
+      .then(async r => {
+        let isPaid = !!r.data?.paid;
         setIsLegacy(r.data?.isLegacy || false);
+        // Paid but the checkout callback was lost (e.g. UPI app switch)? Confirm with Razorpay.
+        if (!isPaid && !r.data?.isLegacy) {
+          try { isPaid = !!(await client.post('/iplatform/cert-payment-sync', {})).data?.paid; } catch {}
+        }
+        setPaid(isPaid);
       })
       .catch(() => {})
       .finally(() => setChecking(false));
@@ -2862,6 +2882,7 @@ function CertificatePaymentSection({ enrollment }: { enrollment: any }) {
     setProcessingPayment(true);
     try {
       const res = await client.post('/iplatform/cert-payment-order');
+      if (res.data?.alreadyPaid) { setPaid(true); toast.success('Your certificates are already unlocked'); return; }
       const { orderId, keyId, amount } = res.data?.data || {};
       if (!orderId || !keyId) {
         toast.error('Payment service unavailable. Contact hr@hiresnix.co.in');
@@ -2879,10 +2900,17 @@ function CertificatePaymentSection({ enrollment }: { enrollment: any }) {
             await client.post('/iplatform/cert-payment-verify', response);
             toast.success('🎉 Payment successful! Certificates unlocked!');
             setPaid(true);
-          } catch { toast.error('Payment verification failed. Contact support.'); }
+          } catch {
+            // Fall back to asking the server to confirm the payment with Razorpay
+            try {
+              const sync = await client.post('/iplatform/cert-payment-sync', {});
+              if (sync.data?.paid) { toast.success('🎉 Payment confirmed! Certificates unlocked!'); setPaid(true); return; }
+            } catch {}
+            toast.error('Payment received but not confirmed yet. Tap "Already paid? Check payment status" below.');
+          }
         },
         prefill: { name: enrollment.studentName, email: enrollment.email || '' },
-        theme: { color: '#3b82f6' },
+        theme: { color: '#0B7A55' },
       };
       const Razorpay = (window as any).Razorpay;
       if (!Razorpay) {
@@ -2896,10 +2924,23 @@ function CertificatePaymentSection({ enrollment }: { enrollment: any }) {
         });
       }
       const rzp = new (window as any).Razorpay(options);
+      rzp.on?.('payment.failed', (r: any) => toast.error(r?.error?.description || 'Payment failed. No money was taken; please try again.'));
       rzp.open();
     } catch (err: any) {
       toast.error(err.message || 'Payment initialization failed');
     } finally { setProcessingPayment(false); }
+  };
+
+  // "Already paid?" — deep check with Razorpay for any paid certificate order on this account
+  const checkPaymentStatus = async () => {
+    setSyncing(true);
+    try {
+      const r = await client.post('/iplatform/cert-payment-sync', { deep: true });
+      if (r.data?.paid) { setPaid(true); toast.success('🎉 Payment confirmed! Certificates unlocked!'); }
+      else toast.info(r.data?.message || 'No completed payment found yet. If money was debited, send your UTR to hr@hiresnix.co.in.');
+    } catch (e: any) {
+      toast.error(e?.response?.data?.message || 'Could not check right now. Please try again in a minute.');
+    } finally { setSyncing(false); }
   };
 
   return sectionCard('Internship Certificates', <Award size={17} className="text-yellow-500" />,
@@ -2962,6 +3003,14 @@ function CertificatePaymentSection({ enrollment }: { enrollment: any }) {
             {processingPayment ? 'Opening Payment...' : 'Unlock All Certificates — ₹100'}
           </button>
           <p className="text-xs text-gray-400 dark:text-gray-500 text-center mt-2">One-time payment • Unlimited downloads • QR Verification activated</p>
+          <div className="mt-4 pt-4 border-t border-gray-100 text-center">
+            <button onClick={checkPaymentStatus} disabled={syncing}
+              className="text-sm font-semibold text-emerald-700 hover:underline disabled:opacity-60 inline-flex items-center gap-1.5">
+              {syncing ? <Loader2 size={14} className="animate-spin" /> : null}
+              {syncing ? 'Checking with Razorpay…' : 'Already paid? Check payment status'}
+            </button>
+            <p className="text-xs text-gray-400 mt-1">Still locked after paying? Email your UTR / transaction ID to hr@hiresnix.co.in</p>
+          </div>
         </div>
       )}
     </div>

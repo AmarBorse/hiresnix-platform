@@ -96,7 +96,7 @@ function Badge({ status }: { status: string }) {
 }
 
 // ── TABS ──────────────────────────────────────────────────────────
-type Tab = 'applications' | 'institution' | 'students' | 'domains' | 'resources' | 'attendance';
+type Tab = 'applications' | 'institution' | 'students' | 'domains' | 'resources' | 'attendance' | 'payments';
 
 export function AdminIPlatform() {
   const [tab, setTab] = useState<Tab>('applications');
@@ -250,6 +250,7 @@ export function AdminIPlatform() {
     { id: 'domains'      as Tab, label: '🗂 Domains',      count: null },
     { id: 'resources'    as Tab, label: '📚 Resources',    count: null },
     { id: 'attendance'   as Tab, label: '📅 Attendance',   count: null },
+    { id: 'payments'     as Tab, label: '💳 Certificate payments', count: null },
   ];
 
   return (
@@ -1338,6 +1339,8 @@ export function AdminIPlatform() {
       )}
 
       {/* ── ATTENDANCE TAB ──────────────────────────────────── */}
+      {!loading && tab === 'payments' && <CertPaymentsTab />}
+
       {!loading && tab === 'attendance' && (
         <AttendanceTab />
       )}
@@ -1346,6 +1349,94 @@ export function AdminIPlatform() {
 }
 
 // ── Helper: format time 12hr ──────────────────────────────────────
+// ── Certificate payments: find a student and unlock their certificates ──
+function CertPaymentsTab() {
+  const [email, setEmail] = useState('');
+  const [info, setInfo] = useState<any>(null);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [utr, setUtr] = useState('');
+  const [note, setNote] = useState('');
+
+  const lookup = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (!email.trim()) return;
+    setBusy('lookup'); setInfo(null);
+    try { setInfo((await client.get('/iplatform/admin/cert-payment', { params: { email: email.trim() } })).data?.data); }
+    catch (err: any) { toast.error(err?.response?.data?.message || 'Student not found'); }
+    finally { setBusy(null); }
+  };
+  const unlock = async (mode: 'razorpay' | 'utr' | 'manual') => {
+    if (mode === 'manual' && !window.confirm('Unlock without a verified payment? Only do this if the student paid outside Razorpay.')) return;
+    setBusy(mode);
+    try {
+      const r = await client.post('/iplatform/admin/cert-unlock', { email: email.trim(), mode, utr, note });
+      toast.success(r.data?.message || (r.data?.alreadyPaid ? 'Already unlocked' : 'Unlocked'));
+      await lookup();
+    } catch (err: any) { toast.error(err?.response?.data?.message || 'Could not unlock'); }
+    finally { setBusy(null); }
+  };
+
+  const box = 'bg-gray-900 border border-gray-800 rounded-2xl p-5';
+  const input = 'w-full bg-gray-950 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500';
+  const btn = 'px-4 py-2 rounded-xl text-sm font-bold disabled:opacity-50';
+  const payment = info?.payment;
+
+  return (
+    <div className="space-y-5 max-w-3xl">
+      <div className={box}>
+        <h3 className="text-white font-bold mb-1">Unlock a student's certificates</h3>
+        <p className="text-gray-400 text-sm mb-4">Use this when a student paid ₹100 but their certificates are still locked.</p>
+        <form onSubmit={lookup} className="flex gap-2">
+          <input className={input} type="email" placeholder="Student's email (as registered)" value={email} onChange={e => setEmail(e.target.value)} />
+          <button type="submit" disabled={busy !== null} className={`${btn} bg-emerald-600 hover:bg-emerald-700 text-white`}>{busy === 'lookup' ? 'Searching…' : 'Find'}</button>
+        </form>
+      </div>
+
+      {info && (
+        <div className={box}>
+          <p className="text-white font-bold">{info.name} <span className="text-gray-400 font-normal">· {info.email}</span></p>
+          {!info.completed && <p className="text-amber-400 text-sm mt-2">This student hasn't completed an internship yet, so there is nothing to unlock.</p>}
+          {info.completed && info.isLegacy && <p className="text-emerald-400 text-sm mt-2">Enrolled before the payment cutoff: certificates are free and already unlocked.</p>}
+          {info.completed && !info.isLegacy && payment && (
+            <div className="mt-3 text-sm text-emerald-400">
+              ✅ Unlocked on {new Date(payment.paidAt).toLocaleString('en-IN')} via <b>{payment.method}</b>
+              {payment.paymentId && <span className="text-gray-400"> · Razorpay {payment.paymentId}</span>}
+              {payment.utr && <span className="text-gray-400"> · UTR {payment.utr}</span>}
+              {payment.note && <span className="text-gray-400"> · “{payment.note}”</span>}
+            </div>
+          )}
+          {info.completed && !info.isLegacy && !payment && (
+            <div className="mt-4 space-y-5">
+              <p className="text-amber-400 text-sm">🔒 Certificates are locked. Try these in order:</p>
+              <div>
+                <p className="text-gray-300 text-sm font-semibold mb-1">1. Check Razorpay for this student's payment</p>
+                <p className="text-gray-500 text-xs mb-2">Finds any paid certificate order made from this student's account.</p>
+                <button onClick={() => unlock('razorpay')} disabled={busy !== null} className={`${btn} bg-emerald-600 hover:bg-emerald-700 text-white`}>{busy === 'razorpay' ? 'Checking Razorpay…' : 'Check Razorpay & unlock'}</button>
+              </div>
+              <div>
+                <p className="text-gray-300 text-sm font-semibold mb-1">2. Verify the UTR from their receipt</p>
+                <p className="text-gray-500 text-xs mb-2">The 12-digit UTR shown in PhonePe / GPay. It is checked against Razorpay, and can't be used twice.</p>
+                <div className="flex gap-2">
+                  <input className={input} placeholder="e.g. 650980052998" value={utr} onChange={e => setUtr(e.target.value)} />
+                  <button onClick={() => unlock('utr')} disabled={busy !== null || !utr.trim()} className={`${btn} bg-emerald-600 hover:bg-emerald-700 text-white whitespace-nowrap`}>{busy === 'utr' ? 'Verifying…' : 'Verify UTR & unlock'}</button>
+                </div>
+              </div>
+              <div>
+                <p className="text-gray-300 text-sm font-semibold mb-1">3. Unlock manually (paid outside Razorpay)</p>
+                <p className="text-gray-500 text-xs mb-2">For cash or direct bank transfers. Your note is saved with the record.</p>
+                <div className="flex gap-2">
+                  <input className={input} placeholder="Note, e.g. paid cash at office, receipt #12" value={note} onChange={e => setNote(e.target.value)} />
+                  <button onClick={() => unlock('manual')} disabled={busy !== null || note.trim().length < 4} className={`${btn} bg-gray-700 hover:bg-gray-600 text-white whitespace-nowrap`}>{busy === 'manual' ? 'Unlocking…' : 'Unlock manually'}</button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function formatTime12(time: string) {
   if (!time) return '--';
   const [h, m] = time.split(':');
