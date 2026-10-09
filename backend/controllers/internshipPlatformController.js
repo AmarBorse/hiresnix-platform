@@ -77,31 +77,16 @@ const applyInternship = asyncHandler(async (req, res) => {
   // ── AUTO-APPROVE & AUTO-ENROLL ──────────────────────────────────
   const today = new Date();
 
-  // Student can choose start date; default = 1st of current month
-  let batchStart;
-  if (req.body.startDate) {
-    batchStart = new Date(req.body.startDate);
-    if (isNaN(batchStart.getTime())) batchStart = new Date(today.getFullYear(), today.getMonth(), 1);
-  } else {
-    batchStart = new Date(today.getFullYear(), today.getMonth(), 1);
-  }
-
-  // Duration: custom end date has HIGHEST priority, then preset months, then default 6
+  // Dates are set by Hiresnix, not the student (any startDate/endDate/duration sent is ignored).
+  // Start = today; end = start + the domain's duration (e.g. "8 Weeks", "3 Months").
+  // The admin can change both later from the Offer form.
+  const batchStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
   const endDate = new Date(batchStart);
-  const customEndRaw = req.body.endDate;
-  let customEndApplied = false;
-
-  if (customEndRaw) {
-    const customEnd = new Date(customEndRaw);
-    if (!isNaN(customEnd.getTime()) && customEnd > batchStart) {
-      endDate.setTime(customEnd.getTime());
-      customEndApplied = true;
-    }
-  }
-
-  if (!customEndApplied) {
-    const durationMonths = parseInt(req.body.duration) || 6;
-    endDate.setMonth(endDate.getMonth() + durationMonths);
+  {
+    const durationStr = String(domain.duration || '6 Months');
+    const num = parseInt((durationStr.match(/(\d+)/) || [])[1], 10) || 6;
+    if (/week/i.test(durationStr)) endDate.setDate(endDate.getDate() + num * 7);
+    else endDate.setMonth(endDate.getMonth() + num);
   }
 
   // Generate unique internship offer letter ID
@@ -1046,6 +1031,8 @@ const downloadLOR = asyncHandler(async (req, res) => {
 const generateOfferLetter = asyncHandler(async (req, res) => {
   const { applicationId, candidateName, role, duration, joiningDate, endDate, offerLetterDate, salary, stipend, mode } = req.body;
   const internshipMode = mode || 'Remote';
+  // Only the admin can change offer details. A student's own download re-uses what was saved.
+  const isAdmin = req.user?.role === 'admin' || req.user?.role === 'sub-admin';
   const safeCandidateName = String(candidateName || 'Candidate').trim() || 'Candidate';
   const fileCandidateName = safeCandidateName.replace(/[^a-z0-9_-]+/gi, '-').replace(/^-+|-+$/g, '') || 'candidate';
 
@@ -1059,8 +1046,8 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
   }
 
   const todayIso = new Date().toISOString().slice(0, 10);
-  const stableOfferDate = application?.offerLetterDate || offerLetterDate || todayIso;
-  const stableJoiningDate = application?.offerJoiningDate || joiningDate;
+  const stableOfferDate = (isAdmin && offerLetterDate) || application?.offerLetterDate || offerLetterDate || todayIso;
+  const stableJoiningDate = (isAdmin && joiningDate) || application?.offerJoiningDate || joiningDate;
   if (!stableJoiningDate) {
     res.status(400);
     throw new Error('Joining Date is required');
@@ -1076,7 +1063,7 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
     res.status(400);
     throw new Error('Joining Date is invalid');
   }
-  const stableEndDate = application?.offerEndDate || endDate;
+  const stableEndDate = (isAdmin && endDate) || application?.offerEndDate || endDate;
   const manualEndDateObj = parseDateOnly(stableEndDate);
   if (stableEndDate && !manualEndDateObj) {
     res.status(400);
@@ -1101,20 +1088,39 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
     : (durationMonths ? `${durationMonths} Month${durationMonths === 1 ? '' : 's'}` : (duration || 'the stipulated duration'));
   const joinDateStr = formatDateOnly(startDateObj);
   const endDateStr = formatDateOnly(endDateObj);
-  const stipendValue = String(stipend || salary || '').trim();
-  const stipendText = stipendValue && !/^unpaid/i.test(stipendValue)
-    ? `Rs. ${stipendValue.replace(/[RS]/g, '').trim()} per month, payable on or before the 5th day of each month`
-    : 'Unpaid';
+  // Stipend: accepts "5000", "5,000", "Rs 5000", "₹5k", "5k" … or "Unpaid"
+  const stipendRaw = String(stipend || salary || '').trim();
+  const kMatch = stipendRaw.match(/^[^0-9]*([0-9]+(?:\.[0-9]+)?)\s*k\b/i);
+  const stipendAmount = /^unpaid/i.test(stipendRaw) ? 0
+    : kMatch ? Math.round(parseFloat(kMatch[1]) * 1000)
+    : Number(stipendRaw.replace(/[^0-9.]/g, '')) || 0;
+  const paidNoAmount = stipendAmount === 0 && /\bpaid\b/i.test(stipendRaw) && !/unpaid/i.test(stipendRaw);
+  const stipendStored = stipendAmount > 0 ? String(stipendAmount) : paidNoAmount ? 'Paid' : 'Unpaid';
+  const stipendText = stipendAmount > 0
+    ? `Rs. ${stipendAmount.toLocaleString('en-IN')} per month, payable on or before the 5th day of each month`
+    : paidNoAmount ? 'Paid internship (stipend as per agreement)' : 'Unpaid';
 
   if (application) {
     const offerUpdate = {};
-    if (!application.offerLetterDate) offerUpdate.offerLetterDate = stableOfferDate;
-    if (!application.offerJoiningDate) offerUpdate.offerJoiningDate = stableJoiningDate;
+    const endIso = toIsoDateOnly(endDateObj);
+    const startIso = toIsoDateOnly(startDateObj);
+    const offerIso = toIsoDateOnly(offerDateObj);
+    // Dates, stipend and mode: the admin can change them any time; a student's download keeps what was saved
+    if ((isAdmin || !application.offerLetterDate) && application.offerLetterDate !== offerIso) offerUpdate.offerLetterDate = offerIso;
+    if ((isAdmin || !application.offerJoiningDate) && application.offerJoiningDate !== startIso) offerUpdate.offerJoiningDate = startIso;
+    if ((isAdmin || !application.offerEndDate) && application.offerEndDate !== endIso) offerUpdate.offerEndDate = endIso;
     if (!application.offerLetterId) offerUpdate.offerLetterId = stableOfferId;
-    if (!application.offerEndDate) offerUpdate.offerEndDate = toIsoDateOnly(endDateObj);
-    if (!application.offerSalary) offerUpdate.offerSalary = stipendText;
-    if (!application.offerMode) offerUpdate.offerMode = internshipMode;
+    if (isAdmin || !application.offerSalary) {
+      if (application.offerSalary !== stipendStored) offerUpdate.offerSalary = stipendStored;
+    }
+    if (isAdmin || !application.offerMode) {
+      if (application.offerMode !== internshipMode) offerUpdate.offerMode = internshipMode;
+    }
     if (Object.keys(offerUpdate).length > 0) await application.update(offerUpdate);
+    // Keep the internship itself in step with the admin's dates (dashboard start date, auto-completion)
+    if (isAdmin && offerUpdate.offerJoiningDate) {
+      await InternshipEnrollment.update({ startDate: startIso }, { where: { applicationId: application.id } });
+    }
   }
 
   const doc = new PDFDocument({ size: 'A4', margin: 0 });
@@ -2319,6 +2325,7 @@ const downloadOfferLetterByStudent = asyncHandler(async (req, res) => {
     endDate: application.offerEndDate,
     offerLetterDate: application.offerLetterDate,
     mode: application.offerMode || 'Remote',
+    stipend: application.offerSalary || 'Unpaid',
   };
   return generateOfferLetter(req, res);
 });

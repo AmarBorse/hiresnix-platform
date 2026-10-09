@@ -41,6 +41,7 @@ const InternshipApplication = sequelize.define('InternshipApplication', {
   offerJoiningDate: { type: DataTypes.DATEONLY },
   offerEndDate: { type: DataTypes.DATEONLY },
   offerMode:    { type: DataTypes.STRING(20), defaultValue: 'Remote' },
+  offerSalary:  { type: DataTypes.STRING(100) }, // stipend per month in rupees (e.g. "5000") or "Unpaid"
 }, { tableName: 'ip_applications', timestamps: true });
 
 // ── INTERNSHIP ENROLLMENT (after approval) ─────────────────────────

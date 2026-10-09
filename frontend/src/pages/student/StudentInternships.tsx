@@ -98,26 +98,6 @@ function IPlatformPanel() {
         setApplying(false);
         return;
       }
-      // Validate custom end date
-      if (form.duration === 'custom' && !form.endDate) {
-        toast.error('Please select a custom end date');
-        setApplying(false);
-        return;
-      }
-      // Validate custom end date
-      if (form.duration === 'custom') {
-        if (!form.endDate) {
-          toast.error('Please select your custom end date');
-          setApplying(false);
-          return;
-        }
-        const startISO = form.startDate || new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10);
-        if (new Date(form.endDate) <= new Date(startISO)) {
-          toast.error('End date must be after the start date');
-          setApplying(false);
-          return;
-        }
-      }
       const instToken = localStorage.getItem('hx_inst_student_token');
       const studentToken = localStorage.getItem('hx_student_token') || localStorage.getItem('hirenix_token');
       const isInstStudent = !!instToken && !studentToken;
@@ -130,10 +110,6 @@ function IPlatformPanel() {
         whyJoin: form.whyJoin,
         ...(form.institutionName && { institutionName: form.institutionName }),
         ...(form.careerId && { careerId: form.careerId }),
-        ...(form.startDate && { startDate: form.startDate }),
-        ...(form.duration === 'custom'
-          ? { endDate: form.endDate }
-          : { duration: form.duration }),
       };
       if (isInstStudent) {
         await instInternshipClient.post('/iplatform/apply', payload);
@@ -466,72 +442,11 @@ function IPlatformPanel() {
           <textarea required rows={3} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 resize-none"
             placeholder="Tell us about your motivation..." value={form.whyJoin} onChange={e => setForm(p => ({ ...p, whyJoin: e.target.value }))} />
         </div>
-        <div className="rounded-xl border border-blue-100 bg-blue-50 p-3 space-y-3">
-          <p className="text-xs text-blue-600 font-semibold">📅 Internship Schedule <span className="font-normal text-blue-400">(Optional)</span></p>
-          <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Preferred Start Date</label>
-            <input type="date" min={new Date().toISOString().slice(0,10)}
-              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 bg-white"
-              value={form.startDate} onChange={e => setForm(p => ({ ...p, startDate: e.target.value }))} />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Internship Duration</label>
-            <select className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 bg-white"
-              value={form.duration} onChange={e => setForm(p => ({ ...p, duration: e.target.value }))}>
-              <option value="6">6 Months (Recommended)</option>
-              <option value="1">1 Month</option>
-              <option value="2">2 Months</option>
-              <option value="3">3 Months</option>
-              <option value="4">4 Months</option>
-              <option value="5">5 Months</option>
-              <option value="custom">Custom End Date</option>
-            </select>
-          </div>
-          {form.duration === 'custom' && (
-            <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
-                Custom End Date <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="date"
-                required
-                min={form.startDate || new Date().toISOString().slice(0, 10)}
-                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 bg-white"
-                value={form.endDate}
-                onChange={e => setForm(p => ({ ...p, endDate: e.target.value }))}
-              />
-            </div>
-          )}
-          <p className="text-xs text-gray-400">
-            {(() => {
-              const startISO = form.startDate || new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10);
-              const sd = new Date(startISO + 'T00:00:00');
-
-              // Custom mode
-              if (form.duration === 'custom') {
-                if (!form.endDate) return 'Please select your end date';
-                const ed = new Date(form.endDate + 'T00:00:00');
-                if (ed <= sd) return 'End date must be after start date';
-                const days = Math.round((ed.getTime() - sd.getTime()) / 86400000);
-                let label = '';
-                if (days === 1) label = '1 Day';
-                else if (days < 7) label = `${days} Days`;
-                else if (days < 30) { const w = Math.round(days / 7); label = `${w} Week${w === 1 ? '' : 's'}`; }
-                else {
-                  let m = (ed.getFullYear() - sd.getFullYear()) * 12 + (ed.getMonth() - sd.getMonth());
-                  const anchor = new Date(sd); anchor.setMonth(anchor.getMonth() + m);
-                  if (anchor > ed) m -= 1;
-                  const rm = Math.max(1, m);
-                  label = `${rm} Month${rm === 1 ? '' : 's'}`;
-                }
-                return `End Date: ${ed.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}  •  Duration: ${label}`;
-              }
-
-              // Preset months mode
-              const ed = new Date(sd);
-              ed.setMonth(ed.getMonth() + parseInt(form.duration || '6'));
-              return `End Date: ${ed.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}`;
-            })()}
+        <div className="rounded-xl border border-blue-100 bg-blue-50 p-3">
+          <p className="text-xs text-blue-600 font-semibold">📅 Internship schedule</p>
+          <p className="text-xs text-gray-500 mt-1">
+            Your internship starts today and runs for {selected?.duration || 'the programme duration'}.
+            The Hiresnix team confirms your dates, mode and stipend in your offer letter.
           </p>
         </div>
         <button type="submit" disabled={applying}
@@ -2486,7 +2401,8 @@ function InternshipOverview({ enrollment, app }: { enrollment: any; app: any }) 
     { label: 'Duration', value: durationDisplay, icon: '⏱️' },
     { label: 'Start Date', value: startDate, icon: '🗓️' },
     { label: 'End Date', value: endDateDisplay, icon: '🏁' },
-    { label: 'Mode', value: 'Remote', icon: '🌐' },
+    { label: 'Mode', value: app?.offerMode || 'Remote', icon: '🌐' },
+    { label: 'Stipend', value: Number(app?.offerSalary) > 0 ? `₹${Number(app.offerSalary).toLocaleString('en-IN')}/month` : app?.offerSalary === 'Paid' ? 'Paid' : 'Unpaid', icon: '💰' },
     { label: 'Status', value: enrollment.status, icon: enrollment.status === 'Completed' ? '✅' : '🔄' },
   ];
 

@@ -374,7 +374,7 @@ export function AdminIPlatform() {
                       candidateName: app.studentName || '',
                       role: `${app.domain?.name || 'Internship'} Intern`,
                       companyName: 'Hiresnix',
-                      salary: app.offerSalary || app.salary || 'Unpaid Internship',
+                      salary: Number(app.offerSalary) > 0 ? `₹${Number(app.offerSalary).toLocaleString('en-IN')}/month` : app.offerSalary === 'Paid' ? 'Paid Internship' : 'Unpaid Internship',
                       mode: app.offerMode || 'Remote',
                       offerLetterDate: app.offerLetterDate || todayInputValue(),
                       joiningDate: app.offerJoiningDate || '',
@@ -1286,7 +1286,7 @@ export function AdminIPlatform() {
               </div>
               <div>
                 <label className="block text-xs font-semibold mb-1" style={{color:"#64748b"}}>Mode of Internship</label>
-                <select disabled={offerModal.datesLocked} className="w-full rounded-xl px-3 py-2 text-sm focus:outline-none dark-input disabled:opacity-50"
+                <select className="w-full rounded-xl px-3 py-2 text-sm focus:outline-none dark-input disabled:opacity-50"
                   value={offerModal.mode || 'Remote'} onChange={e => setOfferModal({ ...offerModal, mode: e.target.value })}>
                   <option value="Remote">Remote</option>
                   <option value="Hybrid">Hybrid</option>
@@ -1296,7 +1296,7 @@ export function AdminIPlatform() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold mb-1" style={{color:"#64748b"}}>Stipend / Salary</label>
-                  <select required disabled={offerModal.datesLocked} className="w-full rounded-xl px-3 py-2 text-sm focus:outline-none dark-input disabled:opacity-50"
+                  <select required className="w-full rounded-xl px-3 py-2 text-sm focus:outline-none dark-input disabled:opacity-50"
                     value={offerModal.salary} onChange={e => setOfferModal({ ...offerModal, salary: e.target.value })}>
                     <option value="Unpaid Internship">Unpaid Internship</option>
                     <option value="Paid Internship">Paid Internship</option>
@@ -1307,21 +1307,21 @@ export function AdminIPlatform() {
                 </div>
                 <div>
                   <label className="block text-xs font-semibold mb-1" style={{color:"#64748b"}}>Joining Date</label>
-                  <input required type="date" disabled={offerModal.datesLocked} className="w-full rounded-xl px-3 py-2 text-sm focus:outline-none dark-input disabled:opacity-50"
+                  <input required type="date" className="w-full rounded-xl px-3 py-2 text-sm focus:outline-none dark-input disabled:opacity-50"
                     value={offerModal.joiningDate} onChange={e => setOfferModal({ ...offerModal, joiningDate: e.target.value })} />
                 </div>
               </div>
               <div>
                 <label className="block text-xs font-semibold mb-1" style={{color:"#64748b"}}>End Date <span className="font-normal text-gray-400">(optional)</span></label>
-                <input type="date" disabled={offerModal.datesLocked} className="w-full rounded-xl px-3 py-2 text-sm focus:outline-none dark-input disabled:opacity-50"
+                <input type="date" className="w-full rounded-xl px-3 py-2 text-sm focus:outline-none dark-input disabled:opacity-50"
                   value={offerModal.endDate || ''} onChange={e => setOfferModal({ ...offerModal, endDate: e.target.value })} />
-                {offerModal.datesLocked && <p className="text-[11px] mt-1" style={{color:"#64748b"}}>End Date is locked because this offer letter was already generated.</p>}
+
               </div>
               <div>
                 <label className="block text-xs font-semibold mb-1" style={{color:"#64748b"}}>Offer Letter Date</label>
-                <input required type="date" disabled={offerModal.datesLocked} className="w-full rounded-xl px-3 py-2 text-sm focus:outline-none dark-input disabled:opacity-50"
+                <input required type="date" className="w-full rounded-xl px-3 py-2 text-sm focus:outline-none dark-input disabled:opacity-50"
                   value={offerModal.offerLetterDate} onChange={e => setOfferModal({ ...offerModal, offerLetterDate: e.target.value })} />
-                {offerModal.datesLocked && <p className="text-[11px] mt-1" style={{color:"#64748b"}}>Dates are locked because this offer letter was already generated.</p>}
+                {offerModal.datesLocked && <p className="text-[11px] mt-1" style={{color:"#64748b"}}>An offer letter already exists. Saving updates it, and the student's copy and internship dates change to match.</p>}
               </div>
               <div className="flex gap-3 pt-2">
                 <button type="submit" disabled={generatingOffer}
