@@ -117,6 +117,7 @@ export function AdminIPlatform() {
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [completeModal, setCompleteModal] = useState<any>(null);
   const [offerModal, setOfferModal] = useState<any>(null);
+  const [modifyModal, setModifyModal] = useState<any>(null);
   const [generatingOffer, setGeneratingOffer] = useState(false);
   const [appSearch, setAppSearch] = useState('');
   const [appStatusFilter, setAppStatusFilter] = useState<'All' | 'Pending' | 'Approved' | 'Rejected'>('All');
@@ -369,6 +370,10 @@ export function AdminIPlatform() {
                       </button>
                     </>
                   )}
+                  <button onClick={() => setModifyModal(modifyDataFrom(app))}
+                    className="flex items-center gap-1 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1.5 rounded-lg transition">
+                    ✏️ Modify
+                  </button>
                   <button onClick={() => setOfferModal({
                       applicationId: app.id,
                       candidateName: app.studentName || '',
@@ -691,6 +696,11 @@ export function AdminIPlatform() {
                           <p className="text-xs text-gray-400">
                             Started {e.startDate ? new Date(e.startDate).toLocaleDateString() : '—'}
                           </p>
+                          <button
+                            onClick={() => setModifyModal(modifyDataFrom(applications.find((a: any) => a.id === e.applicationId), e))}
+                            className="flex items-center gap-1 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg transition">
+                            ✏️ Modify
+                          </button>
                           {e.status === 'Active' && (
                             <button
                               onClick={() => setCompleteModal({ id: e.id, name: e.studentName, adminRemark: '', lorPerformance: 'Excellent', lorHighlights: '' })}
@@ -980,6 +990,11 @@ export function AdminIPlatform() {
                               <p className="text-xs text-gray-500">
                                 Started {e.startDate ? new Date(e.startDate).toLocaleDateString() : '—'}
                               </p>
+                              <button
+                                onClick={() => setModifyModal(modifyDataFrom(applications.find((a: any) => a.id === e.applicationId), e))}
+                                className="flex items-center gap-1 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg transition">
+                                ✏️ Modify
+                              </button>
                               {e.status === 'Active' && (
                                 <button
                                   onClick={() => setCompleteModal({ id: e.id, name: e.studentName, adminRemark: '', lorPerformance: 'Excellent', lorHighlights: '' })}
@@ -1254,6 +1269,8 @@ export function AdminIPlatform() {
       )}
 
       {/* ── GENERATE OFFER MODAL ───────────────────────────────── */}
+      {modifyModal && <ModifyModal data={modifyModal} onClose={() => setModifyModal(null)} onSaved={load} />}
+
       {offerModal && (
         <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,0.75)",backdropFilter:"blur(4px)",zIndex:9999,display:"flex",alignItems:"flex-start",justifyContent:"center",padding:"16px",overflowY:"auto"}}>
           <div className="rounded-2xl w-full max-w-md shadow-2xl" style={{background:"linear-gradient(135deg,#0f1729,#0d1b35)",border:"1px solid rgba(255,255,255,0.1)",marginTop:"24px",marginBottom:"24px"}}>
@@ -1433,6 +1450,130 @@ function CertPaymentsTab() {
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+// ── Modify a student's internship details (no PDF) ──────────────────
+function modifyDataFrom(app: any, fallback: any = {}) {
+  const sal = app?.offerSalary;
+  const amount = Number(sal) > 0 ? String(Number(sal)) : '';
+  return {
+    applicationId: app?.id || fallback.applicationId,
+    studentName: app?.studentName || fallback.studentName || '',
+    email: app?.email || fallback.email || '',
+    domain: app?.domain?.name || fallback.domain?.name || '',
+    offerLetterDate: (app?.offerLetterDate || '').slice(0, 10),
+    joiningDate: (app?.offerJoiningDate || fallback.startDate || '').slice(0, 10),
+    endDate: (app?.offerEndDate || '').slice(0, 10),
+    mode: app?.offerMode || 'Remote',
+    stipendType: amount ? 'amount' : sal === 'Paid' ? 'paid' : 'unpaid',
+    amount,
+    completed: fallback.status === 'Completed',
+  };
+}
+
+function ModifyModal({ data, onClose, onSaved }: { data: any; onClose: () => void; onSaved: () => void }) {
+  const [f, setF] = useState<any>(data);
+  const [saving, setSaving] = useState(false);
+  const set = (k: string, v: any) => setF((p: any) => ({ ...p, [k]: v }));
+  const input = 'w-full rounded-xl px-3 py-2 text-sm focus:outline-none dark-input';
+  const label = 'block text-xs font-semibold mb-1';
+
+  const save = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!f.applicationId) { toast.error('This student has no application record to modify'); return; }
+    if (f.joiningDate && f.endDate && f.endDate <= f.joiningDate) { toast.error('End date must be after the start date'); return; }
+    if (f.stipendType === 'amount' && !(Number(f.amount) > 0)) { toast.error('Enter the stipend amount'); return; }
+    setSaving(true);
+    try {
+      await client.put(`/iplatform/admin/applications/${f.applicationId}/offer-details`, {
+        studentName: f.studentName,
+        offerLetterDate: f.offerLetterDate || undefined,
+        joiningDate: f.joiningDate || undefined,
+        endDate: f.endDate || undefined,
+        mode: f.mode,
+        stipend: f.stipendType === 'amount' ? String(f.amount) : f.stipendType === 'paid' ? 'Paid' : 'Unpaid',
+      });
+      toast.success(`Details updated for ${f.studentName}`);
+      onSaved();
+      onClose();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Could not save changes');
+    } finally { setSaving(false); }
+  };
+
+  return (
+    <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,0.75)",backdropFilter:"blur(4px)",zIndex:9999,display:"flex",alignItems:"flex-start",justifyContent:"center",padding:"16px",overflowY:"auto"}}
+      onClick={e => { if (e.target === e.currentTarget && !saving) onClose(); }}>
+      <div className="rounded-2xl w-full max-w-md shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="modify-title"
+        style={{background:"linear-gradient(135deg,#0f1729,#0d1b35)",border:"1px solid rgba(255,255,255,0.1)",marginTop:"24px",marginBottom:"24px"}}>
+        <div className="p-5" style={{borderBottom:"1px solid rgba(255,255,255,0.08)"}}>
+          <h3 id="modify-title" className="font-black text-white text-base mb-0.5">Modify internship details</h3>
+          <p className="text-xs" style={{color:"#64748b"}}>{f.email}{f.domain ? ` · ${f.domain}` : ''}</p>
+        </div>
+        <form onSubmit={save} className="p-5 space-y-4">
+          <div>
+            <label className={label} style={{color:"#64748b"}}>Student name (printed on letters and certificates)</label>
+            <input required className={input} value={f.studentName} onChange={e => set('studentName', e.target.value)} />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={label} style={{color:"#64748b"}}>Start date</label>
+              <input type="date" className={input} value={f.joiningDate} onChange={e => set('joiningDate', e.target.value)} />
+            </div>
+            <div>
+              <label className={label} style={{color:"#64748b"}}>End date</label>
+              <input type="date" min={f.joiningDate || undefined} className={input} value={f.endDate} onChange={e => set('endDate', e.target.value)} />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={label} style={{color:"#64748b"}}>Offer letter date</label>
+              <input type="date" className={input} value={f.offerLetterDate} onChange={e => set('offerLetterDate', e.target.value)} />
+            </div>
+            <div>
+              <label className={label} style={{color:"#64748b"}}>Mode</label>
+              <select className={input} value={f.mode} onChange={e => set('mode', e.target.value)}>
+                <option value="Remote">Remote</option>
+                <option value="Hybrid">Hybrid</option>
+                <option value="On-Site">On-Site</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label className={label} style={{color:"#64748b"}}>Stipend</label>
+            <div className="grid grid-cols-3 gap-2 mb-2">
+              {[['unpaid','Unpaid'],['amount','Paid: amount'],['paid','Paid: as agreed']].map(([v, l]) => (
+                <button type="button" key={v} onClick={() => set('stipendType', v)}
+                  className={`text-xs font-bold rounded-xl px-2 py-2 border transition ${f.stipendType === v ? 'bg-emerald-600 border-emerald-600 text-white' : 'border-gray-600 text-gray-300 hover:border-gray-400'}`}>
+                  {l}
+                </button>
+              ))}
+            </div>
+            {f.stipendType === 'amount' && (
+              <div className="flex items-center gap-2">
+                <span className="text-gray-300 text-sm">₹</span>
+                <input type="number" min={1} step={1} inputMode="numeric" placeholder="e.g. 5000" className={input}
+                  value={f.amount} onChange={e => set('amount', e.target.value)} />
+                <span className="text-gray-400 text-xs whitespace-nowrap">per month</span>
+              </div>
+            )}
+          </div>
+          <p className="text-[11px]" style={{color:"#64748b"}}>
+            Saving updates the student's offer letter download and their dashboard straight away.
+            {f.completed ? ' This internship is already completed; changing dates does not reopen it.' : ' The internship completes automatically on the end date.'}
+          </p>
+          <div className="flex gap-2 pt-1">
+            <button type="button" onClick={onClose} disabled={saving}
+              className="flex-1 text-sm font-bold rounded-xl px-4 py-2.5 border border-gray-600 text-gray-300 hover:border-gray-400 disabled:opacity-50">Cancel</button>
+            <button type="submit" disabled={saving}
+              className="flex-1 text-sm font-bold rounded-xl px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white disabled:opacity-60 flex items-center justify-center gap-2">
+              {saving && <Loader2 size={14} className="animate-spin" />} Save changes
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

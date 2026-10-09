@@ -469,6 +469,22 @@ function formatDateOnly(value) {
   return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
 }
 
+// Stipend input → { stored, text }. Accepts "5000", "5,000", "Rs 5000", "₹5k", "5k", "Paid", "Unpaid"
+function normalizeStipend(raw) {
+  const v = String(raw || '').trim();
+  const kMatch = v.match(/^[^0-9]*([0-9]+(?:\.[0-9]+)?)\s*k\b/i);
+  const amount = /^unpaid/i.test(v) ? 0
+    : kMatch ? Math.round(parseFloat(kMatch[1]) * 1000)
+    : Number(v.replace(/[^0-9.]/g, '')) || 0;
+  const paidNoAmount = amount === 0 && /\bpaid\b/i.test(v) && !/unpaid/i.test(v);
+  return {
+    stored: amount > 0 ? String(amount) : paidNoAmount ? 'Paid' : 'Unpaid',
+    text: amount > 0
+      ? `Rs. ${amount.toLocaleString('en-IN')} per month, payable on or before the 5th day of each month`
+      : paidNoAmount ? 'Paid internship (stipend as per agreement)' : 'Unpaid',
+  };
+}
+
 function toIsoDateOnly(value) {
   const date = value instanceof Date ? value : parseDateOnly(value);
   if (!date) return null;
@@ -1088,17 +1104,7 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
     : (durationMonths ? `${durationMonths} Month${durationMonths === 1 ? '' : 's'}` : (duration || 'the stipulated duration'));
   const joinDateStr = formatDateOnly(startDateObj);
   const endDateStr = formatDateOnly(endDateObj);
-  // Stipend: accepts "5000", "5,000", "Rs 5000", "₹5k", "5k" … or "Unpaid"
-  const stipendRaw = String(stipend || salary || '').trim();
-  const kMatch = stipendRaw.match(/^[^0-9]*([0-9]+(?:\.[0-9]+)?)\s*k\b/i);
-  const stipendAmount = /^unpaid/i.test(stipendRaw) ? 0
-    : kMatch ? Math.round(parseFloat(kMatch[1]) * 1000)
-    : Number(stipendRaw.replace(/[^0-9.]/g, '')) || 0;
-  const paidNoAmount = stipendAmount === 0 && /\bpaid\b/i.test(stipendRaw) && !/unpaid/i.test(stipendRaw);
-  const stipendStored = stipendAmount > 0 ? String(stipendAmount) : paidNoAmount ? 'Paid' : 'Unpaid';
-  const stipendText = stipendAmount > 0
-    ? `Rs. ${stipendAmount.toLocaleString('en-IN')} per month, payable on or before the 5th day of each month`
-    : paidNoAmount ? 'Paid internship (stipend as per agreement)' : 'Unpaid';
+  const { stored: stipendStored, text: stipendText } = normalizeStipend(stipend || salary);
 
   if (application) {
     const offerUpdate = {};
@@ -2305,6 +2311,69 @@ const generateStipendSlip = asyncHandler(async (req, res) => {
 });
 
 // ── STUDENT: Download their own offer letter by offerId ───────────
+// ── ADMIN: MODIFY OFFER DETAILS (no PDF) ───────────────────────────
+// PUT /iplatform/admin/applications/:id/offer-details
+// { studentName?, offerLetterDate?, joiningDate?, endDate?, stipend?, mode? }
+const MODES = ['Remote', 'Hybrid', 'On-Site'];
+const updateOfferDetails = asyncHandler(async (req, res) => {
+  await ensureOfferDateColumns();
+  const application = await InternshipApplication.findByPk(req.params.id);
+  if (!application) { res.status(404); throw new Error('Application not found'); }
+  const { studentName, offerLetterDate, joiningDate, endDate, stipend, mode } = req.body || {};
+  const update = {};
+
+  if (studentName !== undefined) {
+    const name = String(studentName).trim();
+    if (name.length < 2) { res.status(400); throw new Error('Enter the student\'s full name'); }
+    update.studentName = name.slice(0, 100);
+  }
+  const dateField = (val, label) => {
+    if (val === undefined || val === '') return undefined;
+    const d = parseDateOnly(val);
+    if (!d) { res.status(400); throw new Error(`${label} is invalid`); }
+    return toIsoDateOnly(d);
+  };
+  const offerIso = dateField(offerLetterDate, 'Offer letter date');
+  const startIso = dateField(joiningDate, 'Start date');
+  const endIso = dateField(endDate, 'End date');
+  if (offerIso) update.offerLetterDate = offerIso;
+  if (startIso) update.offerJoiningDate = startIso;
+  if (endIso) update.offerEndDate = endIso;
+  const finalStart = update.offerJoiningDate || application.offerJoiningDate;
+  const finalEnd = update.offerEndDate || application.offerEndDate;
+  if (finalStart && finalEnd && new Date(finalEnd) <= new Date(finalStart)) {
+    res.status(400); throw new Error('End date must be after the start date');
+  }
+  if (stipend !== undefined) update.offerSalary = normalizeStipend(stipend).stored;
+  if (mode !== undefined) {
+    if (!MODES.includes(mode)) { res.status(400); throw new Error('Mode must be Remote, Hybrid or On-Site'); }
+    update.offerMode = mode;
+  }
+  if (!application.offerLetterId) {
+    update.offerLetterId = `HSH-INT-${new Date().getFullYear()}-${crypto.randomBytes(2).toString('hex').toUpperCase()}`;
+  }
+
+  await application.update(update);
+
+  // Keep the internship in step: start date and the name printed on certificates
+  const enrollmentUpdate = {};
+  if (update.offerJoiningDate) enrollmentUpdate.startDate = update.offerJoiningDate;
+  if (update.studentName) enrollmentUpdate.studentName = update.studentName;
+  if (Object.keys(enrollmentUpdate).length) {
+    await InternshipEnrollment.update(enrollmentUpdate, { where: { applicationId: application.id } });
+    if (update.studentName) {
+      const enr = await InternshipEnrollment.findOne({ where: { applicationId: application.id } });
+      if (enr) await InternshipCertificate.update({ studentName: update.studentName }, { where: { enrollmentId: enr.id } });
+    }
+  }
+
+  res.json({ success: true, message: 'Details updated', data: {
+    studentName: application.studentName, offerLetterDate: application.offerLetterDate,
+    offerJoiningDate: application.offerJoiningDate, offerEndDate: application.offerEndDate,
+    offerSalary: application.offerSalary, offerMode: application.offerMode,
+  } });
+});
+
 const downloadOfferLetterByStudent = asyncHandler(async (req, res) => {
   const offerId = (req.params.offerId || '').trim();
   if (!offerId) { res.status(400); throw new Error('Offer ID required'); }
@@ -2336,7 +2405,7 @@ module.exports = {
   getResources, addResource, deleteResource,
   getMyProgress, submitTask, markComplete,
   getMyCertificates, downloadCertificate, downloadCompletionLetter, downloadLOR,
-  generateOfferLetter, downloadOfferLetterByStudent,
+  generateOfferLetter, downloadOfferLetterByStudent, updateOfferDetails,
   getStats, getEnrolledStudents, getAllEnrollments,
   verifyCertificate, verifyOfferLetter, verifyRecommendationLetter,
   generateAppointmentLetter, generateJoiningLetter, generateStipendSlip,
