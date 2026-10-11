@@ -996,10 +996,9 @@ const downloadCompletionLetter = asyncHandler(async (req, res) => {
   doc.moveDown(2);
   doc.fillColor('#1e293b').fontSize(11).font('Helvetica-Bold').text('Yours sincerely,', 40);
   doc.moveDown(2.5); // Give a bit more space for the signatures
-  const sigY = doc.y;
-  const W = doc.page.width;
-  signatureLine(doc, 'Mr.Jayesh Badgujar', 'Program Director', 40, sigY, getSignaturePath('Director.png'), 1.0);
-  signatureLine(doc, 'Mr.A S Borse' , `Founder & CEO, ${COMPANY.name}`, W - 200, sigY, getSignaturePath('ceo.png'), 1.6);
+  const sigY = doc.y + 30; // room for the larger CEO signature image above the line
+  // Single signatory: Founder & CEO, in the left-hand position
+  signatureLine(doc, 'Mr.A S Borse' , `Founder & CEO, ${COMPANY.name}`, 40, sigY, getSignaturePath('ceo.png'), 1.6);
 
   pdfFooter(doc);
   drawWatermark(doc, 'CONFIDENTIAL');
