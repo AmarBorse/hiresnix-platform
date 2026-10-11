@@ -77,16 +77,36 @@ const applyInternship = asyncHandler(async (req, res) => {
   // ── AUTO-APPROVE & AUTO-ENROLL ──────────────────────────────────
   const today = new Date();
 
-  // Dates are set by Hiresnix, not the student (any startDate/endDate/duration sent is ignored).
-  // Start = today; end = start + the domain's duration (e.g. "8 Weeks", "3 Months").
-  // The admin can change both later from the Offer form.
-  const batchStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  // Student chooses start date and duration (or a custom end date), with safety limits:
+  //  - start date can't be in the past (earlier dates become today)
+  //  - the internship must be at least 1 month and at most 12 months long
+  // The admin can change everything later with the Modify button.
+  const todayDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  let batchStart = todayDate;
+  if (req.body.startDate) {
+    const chosen = new Date(req.body.startDate);
+    if (!isNaN(chosen.getTime())) {
+      const chosenDay = new Date(chosen.getFullYear(), chosen.getMonth(), chosen.getDate());
+      if (chosenDay > todayDate) batchStart = chosenDay;
+    }
+  }
+  const minEnd = new Date(batchStart); minEnd.setMonth(minEnd.getMonth() + 1);
+  const maxEnd = new Date(batchStart); maxEnd.setMonth(maxEnd.getMonth() + 12);
+
   const endDate = new Date(batchStart);
-  {
-    const durationStr = String(domain.duration || '6 Months');
-    const num = parseInt((durationStr.match(/(\d+)/) || [])[1], 10) || 6;
-    if (/week/i.test(durationStr)) endDate.setDate(endDate.getDate() + num * 7);
-    else endDate.setMonth(endDate.getMonth() + num);
+  let customEndApplied = false;
+  if (req.body.endDate) {
+    const customEnd = new Date(req.body.endDate);
+    if (!isNaN(customEnd.getTime())) {
+      if (customEnd < minEnd) { res.status(400); throw new Error('The internship must be at least 1 month long'); }
+      if (customEnd > maxEnd) { res.status(400); throw new Error('The internship can be at most 12 months long'); }
+      endDate.setTime(customEnd.getTime());
+      customEndApplied = true;
+    }
+  }
+  if (!customEndApplied) {
+    const durationMonths = Math.min(12, Math.max(1, parseInt(req.body.duration) || 6));
+    endDate.setMonth(endDate.getMonth() + durationMonths);
   }
 
   // Generate unique internship offer letter ID

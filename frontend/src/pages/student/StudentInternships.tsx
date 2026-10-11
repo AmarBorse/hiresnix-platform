@@ -98,6 +98,32 @@ function IPlatformPanel() {
         setApplying(false);
         return;
       }
+      // Validate custom end date
+      if (form.duration === 'custom' && !form.endDate) {
+        toast.error('Please select a custom end date');
+        setApplying(false);
+        return;
+      }
+      // Validate custom end date
+      if (form.duration === 'custom') {
+        if (!form.endDate) {
+          toast.error('Please select your custom end date');
+          setApplying(false);
+          return;
+        }
+        const startISO = form.startDate || new Date().toISOString().slice(0, 10);
+        if (new Date(form.endDate) <= new Date(startISO)) {
+          toast.error('End date must be after the start date');
+          setApplying(false);
+          return;
+        }
+        const minEnd = new Date(startISO); minEnd.setMonth(minEnd.getMonth() + 1);
+        if (new Date(form.endDate) < minEnd) {
+          toast.error('The internship must be at least 1 month long');
+          setApplying(false);
+          return;
+        }
+      }
       const instToken = localStorage.getItem('hx_inst_student_token');
       const studentToken = localStorage.getItem('hx_student_token') || localStorage.getItem('hirenix_token');
       const isInstStudent = !!instToken && !studentToken;
@@ -110,6 +136,10 @@ function IPlatformPanel() {
         whyJoin: form.whyJoin,
         ...(form.institutionName && { institutionName: form.institutionName }),
         ...(form.careerId && { careerId: form.careerId }),
+        ...(form.startDate && { startDate: form.startDate }),
+        ...(form.duration === 'custom'
+          ? { endDate: form.endDate }
+          : { duration: form.duration }),
       };
       if (isInstStudent) {
         await instInternshipClient.post('/iplatform/apply', payload);
@@ -442,11 +472,72 @@ function IPlatformPanel() {
           <textarea required rows={3} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 resize-none"
             placeholder="Tell us about your motivation..." value={form.whyJoin} onChange={e => setForm(p => ({ ...p, whyJoin: e.target.value }))} />
         </div>
-        <div className="rounded-xl border border-blue-100 bg-blue-50 p-3">
-          <p className="text-xs text-blue-600 font-semibold">📅 Internship schedule</p>
-          <p className="text-xs text-gray-500 mt-1">
-            Your internship starts today and runs for {selected?.duration || 'the programme duration'}.
-            The Hiresnix team confirms your dates, mode and stipend in your offer letter.
+        <div className="rounded-xl border border-blue-100 bg-blue-50 p-3 space-y-3">
+          <p className="text-xs text-blue-600 font-semibold">📅 Internship Schedule <span className="font-normal text-blue-400">(Optional)</span></p>
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Preferred Start Date</label>
+            <input type="date" min={new Date().toISOString().slice(0,10)}
+              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 bg-white"
+              value={form.startDate} onChange={e => setForm(p => ({ ...p, startDate: e.target.value }))} />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Internship Duration</label>
+            <select className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 bg-white"
+              value={form.duration} onChange={e => setForm(p => ({ ...p, duration: e.target.value }))}>
+              <option value="6">6 Months (Recommended)</option>
+              <option value="1">1 Month</option>
+              <option value="2">2 Months</option>
+              <option value="3">3 Months</option>
+              <option value="4">4 Months</option>
+              <option value="5">5 Months</option>
+              <option value="custom">Custom End Date</option>
+            </select>
+          </div>
+          {form.duration === 'custom' && (
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
+                Custom End Date <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="date"
+                required
+                min={form.startDate || new Date().toISOString().slice(0, 10)}
+                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 bg-white"
+                value={form.endDate}
+                onChange={e => setForm(p => ({ ...p, endDate: e.target.value }))}
+              />
+            </div>
+          )}
+          <p className="text-xs text-gray-400">
+            {(() => {
+              const startISO = form.startDate || new Date().toISOString().slice(0, 10);
+              const sd = new Date(startISO + 'T00:00:00');
+
+              // Custom mode
+              if (form.duration === 'custom') {
+                if (!form.endDate) return 'Please select your end date';
+                const ed = new Date(form.endDate + 'T00:00:00');
+                if (ed <= sd) return 'End date must be after start date';
+                const days = Math.round((ed.getTime() - sd.getTime()) / 86400000);
+                let label = '';
+                if (days === 1) label = '1 Day';
+                else if (days < 7) label = `${days} Days`;
+                else if (days < 30) { const w = Math.round(days / 7); label = `${w} Week${w === 1 ? '' : 's'}`; }
+                else {
+                  let m = (ed.getFullYear() - sd.getFullYear()) * 12 + (ed.getMonth() - sd.getMonth());
+                  const anchor = new Date(sd); anchor.setMonth(anchor.getMonth() + m);
+                  if (anchor > ed) m -= 1;
+                  const rm = Math.max(1, m);
+                  label = `${rm} Month${rm === 1 ? '' : 's'}`;
+                }
+                return `End Date: ${ed.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}  •  Duration: ${label}`;
+              }
+
+              // Preset months mode
+              const ed = new Date(sd);
+              ed.setMonth(ed.getMonth() + parseInt(form.duration || '6'));
+              return `End Date: ${ed.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}`;
+            })()}
           </p>
         </div>
         <button type="submit" disabled={applying}
@@ -2534,12 +2625,6 @@ function AssignedProject({ enrollment }: { enrollment: any }) {
         <p className="text-xs font-semibold text-gray-800 dark:text-gray-200">hr@hiresnix.co.in</p>
       </div>
 
-      <div className="p-3 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
-        <p className="text-xs text-green-800 dark:text-green-300 flex items-start gap-1.5">
-          <CheckCircle size={13} className="text-green-600 mt-0.5 flex-shrink-0" />
-          <span><strong>Note:</strong> Project completion is recommended for your portfolio. Whether you submit or not, your Internship Completion Certificate and documents will be generated automatically once internship duration is completed.</span>
-        </p>
-      </div>
     </div>
   );
 }
@@ -2987,6 +3072,41 @@ function ExceptionContact() {
   );
 }
 
+// ── Certificates preview for internships that are still running ──
+function UpcomingCertificates({ enrollment, app }: { enrollment: any; app: any }) {
+  const end = app?.offerEndDate ? new Date(app.offerEndDate) : null;
+  const daysLeft = end ? Math.max(0, Math.ceil((end.getTime() - Date.now()) / 86400000)) : null;
+  const docs = [
+    { icon: '🏆', name: 'Internship Completion Certificate', desc: 'With your name, domain, dates and a QR code anyone can verify' },
+    { icon: '📄', name: 'Completion Letter', desc: 'Official letter confirming you completed the internship' },
+    { icon: '⭐', name: 'Letter of Recommendation (LOR)', desc: 'From the Hiresnix Program Director' },
+  ];
+  return (
+    <div>
+      <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 mb-4">
+        <p className="text-sm font-semibold text-amber-900">
+          🔒 Your certificates will be ready {end ? `on ${end.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}` : 'when your internship ends'}
+        </p>
+        <p className="text-xs text-amber-800 mt-0.5">
+          {daysLeft !== null ? `${daysLeft} day${daysLeft === 1 ? '' : 's'} to go. ` : ''}They are generated automatically when your internship is completed.
+        </p>
+      </div>
+      <ul className="space-y-2">
+        {docs.map(d => (
+          <li key={d.name} className="flex items-start gap-3 p-3 rounded-xl border border-gray-200 bg-white">
+            <span className="text-xl leading-none" aria-hidden="true">{d.icon}</span>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-gray-900">{d.name}</p>
+              <p className="text-xs text-gray-500">{d.desc}</p>
+            </div>
+            <span className="ml-auto text-[11px] font-semibold text-gray-500 bg-gray-100 rounded-full px-2 py-0.5 whitespace-nowrap">Locked</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 // ── Wrapper for all new sections ─────────────────────────────────
 function InternshipExtendedSections({ enrollment, app, onReload }: { enrollment: any; app: any; onReload: () => void }) {
   const [openTab, setOpenTab] = React.useState<string | null>(null);
@@ -2995,14 +3115,23 @@ function InternshipExtendedSections({ enrollment, app, onReload }: { enrollment:
   const tabs = [
     { id: 'overview', label: '📋 Overview', icon: null },
     { id: 'timeline', label: '📈 Timeline', icon: null },
-    { id: 'project', label: '🎯 Project', icon: null },
     { id: 'log', label: '📝 Daily Log', icon: null, hide: enrollment.status === 'Completed' },
     { id: 'progress', label: '📊 Progress', icon: null },
-    { id: 'certificates', label: '🏆 Certificates', icon: null, hide: enrollment.status !== 'Completed' },
+    { id: 'certificates', label: '🏆 Certificates', icon: null },
   ].filter(t => !t.hide);
 
   return (
     <div className="mt-3 space-y-2">
+      {/* Project: always visible, not hidden in a collapsed section */}
+      <div className="bg-white dark:bg-gray-800 rounded-2xl border-2 border-emerald-200 overflow-hidden">
+        <div className="px-5 py-3.5 bg-emerald-50 border-b border-emerald-100 flex items-center justify-between">
+          <span className="text-sm font-bold text-gray-900">🎯 Your project</span>
+          <span className="text-xs font-semibold text-emerald-700">Build these during your internship</span>
+        </div>
+        <div className="px-5 pb-5 pt-4">
+          <AssignedProject enrollment={enrollment} />
+        </div>
+      </div>
       {tabs.map(tab => (
         <div key={tab.id} className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
           <button
@@ -3018,7 +3147,9 @@ function InternshipExtendedSections({ enrollment, app, onReload }: { enrollment:
               {tab.id === 'project' && <AssignedProject enrollment={enrollment} />}
               {tab.id === 'log' && <DailyInternshipLog enrollment={enrollment} />}
               {tab.id === 'progress' && <ProgressTracker enrollment={enrollment} />}
-              {tab.id === 'certificates' && <CertificatePaymentSection enrollment={enrollment} />}
+              {tab.id === 'certificates' && (enrollment.status === 'Completed'
+                ? <CertificatePaymentSection enrollment={enrollment} />
+                : <UpcomingCertificates enrollment={enrollment} app={app} />)}
             </div>
           )}
         </div>
