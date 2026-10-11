@@ -79,7 +79,7 @@ const applyInternship = asyncHandler(async (req, res) => {
 
   // Student chooses start date and duration (or a custom end date), with safety limits:
   //  - start date can't be in the past (earlier dates become today)
-  //  - the internship must be at least 1 month and at most 12 months long
+  //  - the end date must be after the start date (no minimum length), at most 12 months
   // The admin can change everything later with the Modify button.
   const todayDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
   let batchStart = todayDate;
@@ -90,7 +90,6 @@ const applyInternship = asyncHandler(async (req, res) => {
       if (chosenDay > todayDate) batchStart = chosenDay;
     }
   }
-  const minEnd = new Date(batchStart); minEnd.setMonth(minEnd.getMonth() + 1);
   const maxEnd = new Date(batchStart); maxEnd.setMonth(maxEnd.getMonth() + 12);
 
   const endDate = new Date(batchStart);
@@ -98,7 +97,7 @@ const applyInternship = asyncHandler(async (req, res) => {
   if (req.body.endDate) {
     const customEnd = new Date(req.body.endDate);
     if (!isNaN(customEnd.getTime())) {
-      if (customEnd < minEnd) { res.status(400); throw new Error('The internship must be at least 1 month long'); }
+      if (customEnd <= batchStart) { res.status(400); throw new Error('End date must be after the start date'); }
       if (customEnd > maxEnd) { res.status(400); throw new Error('The internship can be at most 12 months long'); }
       endDate.setTime(customEnd.getTime());
       customEndApplied = true;

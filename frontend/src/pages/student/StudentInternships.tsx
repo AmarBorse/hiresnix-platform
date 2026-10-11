@@ -117,12 +117,6 @@ function IPlatformPanel() {
           setApplying(false);
           return;
         }
-        const minEnd = new Date(startISO); minEnd.setMonth(minEnd.getMonth() + 1);
-        if (new Date(form.endDate) < minEnd) {
-          toast.error('The internship must be at least 1 month long');
-          setApplying(false);
-          return;
-        }
       }
       const instToken = localStorage.getItem('hx_inst_student_token');
       const studentToken = localStorage.getItem('hx_student_token') || localStorage.getItem('hirenix_token');
