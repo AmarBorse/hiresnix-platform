@@ -2456,25 +2456,48 @@ function sectionCard(title: string, icon: React.ReactNode, children: React.React
 }
 
 // ── Internship Overview ───────────────────────────────────────────
+// ── Internship period: the SAME dates and duration wording as the offer letter ──
+const parseDay = (v: any): Date | null => {
+  if (!v) return null;
+  const m = String(v).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  const d = m ? new Date(+m[1], +m[2] - 1, +m[3]) : new Date(v);
+  return isNaN(d.getTime()) ? null : d;
+};
+function durationLabel(start: Date, end: Date): string {
+  const totalDays = Math.round((end.getTime() - start.getTime()) / 86400000);
+  if (totalDays <= 1) return '1 Day';
+  if (totalDays < 7) return `${totalDays} Days`;
+  if (totalDays < 30) { const w = Math.round(totalDays / 7); return `${w} Week${w === 1 ? '' : 's'}`; }
+  // Whole months, then round up when 15+ days are left over (same as the offer letter)
+  const addM = (d: Date, m: number) => { const x = new Date(d); const day = x.getDate(); x.setMonth(x.getMonth() + m); if (x.getDate() !== day) x.setDate(0); return x; };
+  let months = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
+  let anchor = addM(start, months);
+  if (anchor > end) { months -= 1; anchor = addM(start, months); }
+  const remainingDays = Math.max(0, Math.round((end.getTime() - anchor.getTime()) / 86400000));
+  const rounded = Math.max(1, months + (remainingDays >= 15 ? 1 : 0));
+  return `${rounded} Month${rounded === 1 ? '' : 's'}`;
+}
+function internshipPeriod(enrollment: any, app: any) {
+  const start = parseDay(app?.offerJoiningDate) || parseDay(enrollment?.startDate);
+  let end = parseDay(app?.offerEndDate);
+  if (start && !end) {
+    // No saved end date: fall back to the domain's duration
+    const dur = String(enrollment?.domain?.duration || app?.domain?.duration || '6 Months');
+    const n = parseInt((dur.match(/(\d+)/) || [])[1], 10) || 6;
+    end = new Date(start);
+    if (/week/i.test(dur)) end.setDate(end.getDate() + n * 7); else end.setMonth(end.getMonth() + n);
+  }
+  const totalDays = start && end ? Math.max(1, Math.round((end.getTime() - start.getTime()) / 86400000)) : 0;
+  return { start, end, totalDays, label: start && end ? durationLabel(start, end) : '—' };
+}
+const fmtDay = (d: Date | null) => d ? d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+
 function InternshipOverview({ enrollment, app }: { enrollment: any; app: any }) {
   const domainName = enrollment.domain?.name || app?.domain?.name || 'Internship';
-  const startDate = enrollment.startDate ? new Date(enrollment.startDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
-
-  // Calculate end date from duration field
-  // Calculate actual duration from startDate + 6 months (or from offerEndDate if available)
-  let endDateDisplay = '—';
-  let durationDisplay = '6 Months';
-  if (enrollment.startDate) {
-    const sd = new Date(enrollment.startDate);
-    // Use offerEndDate from application if available, else startDate + 6 months
-    const appEndDate = app?.offerEndDate;
-    const ed = appEndDate ? new Date(appEndDate) : new Date(sd);
-    if (!appEndDate) ed.setMonth(ed.getMonth() + 6);
-    endDateDisplay = ed.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-    // Calculate actual months difference
-    const months = (ed.getFullYear() - sd.getFullYear()) * 12 + (ed.getMonth() - sd.getMonth());
-    durationDisplay = months > 0 ? `${months} Month${months === 1 ? '' : 's'}` : '6 Months';
-  }
+  const period = internshipPeriod(enrollment, app);
+  const startDate = fmtDay(period.start);
+  const endDateDisplay = fmtDay(period.end);
+  const durationDisplay = period.label;
 
   const internshipId = `HX-INT-${String(enrollment.id).padStart(5, '0')}`;
   const batchId = `HX-BATCH-${new Date(enrollment.createdAt || Date.now()).getFullYear()}-${String(Math.ceil((new Date(enrollment.createdAt || Date.now()).getMonth() + 1) / 1)).padStart(2, '0')}`;
@@ -2777,21 +2800,16 @@ function DailyInternshipLog({ enrollment }: { enrollment: any }) {
 }
 
 // ── Progress Tracker ──────────────────────────────────────────────
-function ProgressTracker({ enrollment }: { enrollment: any }) {
+function ProgressTracker({ enrollment, app }: { enrollment: any; app?: any }) {
   const taskLogs = enrollment.taskLogs || [];
   const progress = enrollment.progress || 0;
 
-  const durationStr: string = enrollment.domain?.duration || '8 Weeks';
-  const durationMatch = durationStr.match(/(\d+)/);
-  const durationNum = durationMatch ? parseInt(durationMatch[1]) : 8;
-  const isMonths = /month/i.test(durationStr);
-  const totalDays = isMonths ? durationNum * 30 : durationNum * 7;
-
+  // Same start/end as the offer letter
+  const period = internshipPeriod(enrollment, app);
+  const totalDays = period.totalDays;
   let daysElapsed = 0;
-  if (enrollment.startDate) {
-    const sd = new Date(enrollment.startDate);
-    const now = new Date();
-    daysElapsed = Math.min(totalDays, Math.max(0, Math.round((now.getTime() - sd.getTime()) / 86400000)));
+  if (period.start) {
+    daysElapsed = Math.min(totalDays, Math.max(0, Math.round((Date.now() - period.start.getTime()) / 86400000)));
   }
   const timeProgress = totalDays > 0 ? Math.round((daysElapsed / totalDays) * 100) : 0;
 
@@ -3140,7 +3158,7 @@ function InternshipExtendedSections({ enrollment, app, onReload }: { enrollment:
               {tab.id === 'timeline' && <InternshipTimeline enrollment={enrollment} />}
               {tab.id === 'project' && <AssignedProject enrollment={enrollment} />}
               {tab.id === 'log' && <DailyInternshipLog enrollment={enrollment} />}
-              {tab.id === 'progress' && <ProgressTracker enrollment={enrollment} />}
+              {tab.id === 'progress' && <ProgressTracker enrollment={enrollment} app={app} />}
               {tab.id === 'certificates' && (enrollment.status === 'Completed'
                 ? <CertificatePaymentSection enrollment={enrollment} />
                 : <UpcomingCertificates enrollment={enrollment} app={app} />)}
