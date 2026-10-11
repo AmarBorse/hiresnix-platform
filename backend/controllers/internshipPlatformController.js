@@ -762,6 +762,20 @@ function signatureLine(doc, name, title, x, y, imagePath = null, sizeMultiplier 
 // ── Issue date for completion documents = the internship END DATE ──
 // (offer end date). If the admin completed the internship early with "Mark Complete",
 // the actual completion day is used instead, so a document is never dated in the future.
+// Large diagonal watermark across the page (e.g. "CONFIDENTIAL"), light enough to read through
+function drawWatermark(doc, text = 'CONFIDENTIAL') {
+  const W = doc.page.width, H = doc.page.height;
+  const fontSize = 92;
+  doc.save();
+  doc.font('Helvetica-Bold').fontSize(fontSize);
+  const textWidth = doc.widthOfString(text);
+  doc.rotate(-55, { origin: [W / 2, H / 2] });
+  doc.fillColor('#64748b').fillOpacity(0.10)
+     .text(text, W / 2 - textWidth / 2, H / 2 - fontSize / 2, { lineBreak: false });
+  doc.restore();
+  doc.fillOpacity(1);
+}
+
 async function internshipIssueDate(enrollment) {
   let end = null;
   if (enrollment?.applicationId) {
@@ -988,6 +1002,7 @@ const downloadCompletionLetter = asyncHandler(async (req, res) => {
   signatureLine(doc, 'Mr.A S Borse' , `Founder & CEO, ${COMPANY.name}`, W - 200, sigY, getSignaturePath('ceo.png'), 1.6);
 
   pdfFooter(doc);
+  drawWatermark(doc, 'CONFIDENTIAL');
   doc.end();
 });
 
