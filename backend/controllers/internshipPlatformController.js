@@ -204,6 +204,7 @@ async function autoCompleteIfEnded(enrollment, application) {
         studentName: enrollment.studentName,
         domainName: enrollment.domain?.name,
         certificateNo: uniqueCertNo,
+        issuedAt: endDate, // issue date = internship end date
       });
     }
 
@@ -758,6 +759,24 @@ function signatureLine(doc, name, title, x, y, imagePath = null, sizeMultiplier 
 }
 
 // Helper to flexibly find an enrollment whether an Enrollment ID, Certificate ID, or Certificate No is passed
+// ── Issue date for completion documents = the internship END DATE ──
+// (offer end date). If the admin completed the internship early with "Mark Complete",
+// the actual completion day is used instead, so a document is never dated in the future.
+async function internshipIssueDate(enrollment) {
+  let end = null;
+  if (enrollment?.applicationId) {
+    const app = await InternshipApplication.findByPk(enrollment.applicationId, { attributes: ['id', 'offerEndDate'] });
+    end = parseDateOnly(app?.offerEndDate);
+  }
+  const completed = enrollment?.completedAt ? new Date(enrollment.completedAt) : null;
+  if (completed && !isNaN(completed.getTime())) {
+    const completedDay = new Date(completed.getFullYear(), completed.getMonth(), completed.getDate());
+    if (!end || completedDay < end) end = completedDay;
+  }
+  return end || new Date();
+}
+const fmtLongDate = (d) => d.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+
 async function resolveEnrollment(identifier, includes = []) {
   let enrollment = null;
   if (!identifier || identifier === 'undefined') return null;
@@ -792,9 +811,12 @@ const downloadCertificate = asyncHandler(async (req, res) => {
 
   const cert = enrollment.certificate;
   const safeStudentName = enrollment.studentName || 'Student';
-  const issueDate = cert?.issuedAt
-    ? new Date(cert.issuedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })
-    : new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+  const issueDateObj = await internshipIssueDate(enrollment);
+  const issueDate = fmtLongDate(issueDateObj);
+  // Keep the stored issue date (shown in lists and verification) equal to the end date
+  if (cert && (!cert.issuedAt || new Date(cert.issuedAt).toDateString() !== issueDateObj.toDateString())) {
+    await cert.update({ issuedAt: issueDateObj }).catch(() => {});
+  }
 
   const doc = new PDFDocument({ size: 'A4', layout: 'landscape', margin: 0 });
   res.setHeader('Content-Type', 'application/pdf');
@@ -850,7 +872,7 @@ const downloadCertificate = asyncHandler(async (req, res) => {
   // Calculate duration from startDate → completedAt
   let duration = enrollment.domain?.duration || '8 Weeks';
   const startD = enrollment.startDate ? new Date(enrollment.startDate) : null;
-  const endD   = enrollment.completedAt ? new Date(enrollment.completedAt) : null;
+  const endD   = issueDateObj;
   if (startD && endD && !isNaN(startD) && !isNaN(endD) && endD > startD) {
     let months = (endD.getFullYear() - startD.getFullYear()) * 12 + (endD.getMonth() - startD.getMonth());
     const dayDiff = endD.getDate() - startD.getDate();
@@ -926,8 +948,7 @@ const downloadCompletionLetter = asyncHandler(async (req, res) => {
     return isNaN(d.getTime()) ? new Date() : d;
   };
 
-  const date = parseDate(enrollment.completedAt || Date.now())
-    .toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+  const date = fmtLongDate(await internshipIssueDate(enrollment));
   const startDate = parseDate(enrollment.startDate || enrollment.createdAt)
     .toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
 
@@ -998,7 +1019,7 @@ const downloadLOR = asyncHandler(async (req, res) => {
 
   pdfHeader(doc, 'LETTER OF RECOMMENDATION');
 
-  const date = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+  const date = fmtLongDate(await internshipIssueDate(enrollment));
   const performance = enrollment.lorPerformance || 'Excellent';
   const highlights = enrollment.lorHighlights || 'demonstrated a strong foundation in their domain, actively participated in assigned projects, and showed commendable dedication throughout the internship. Their ability to adapt, learn quickly, and deliver results made them a valuable contributor to the team';
 
