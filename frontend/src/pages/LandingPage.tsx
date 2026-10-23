@@ -1,6 +1,5 @@
 // src/pages/LandingPage.tsx
 // Public landing page — Hiresnix as an AI-powered software development company.
-// Design: the hero is a "project starter" — visitors pick what they want built and can send a pre-filled enquiry.
 // Business services come first; internships and the AI Academy sit lower on the page.
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -10,28 +9,6 @@ import { HiresnixChatbot } from '../components/HiresnixChatbot';
 
 const ENQUIRY_RESPONSE_TIMEOUT_MS = 8000;
 const INTEREST_OPTIONS = ['Software Development', 'AI Solutions', 'SaaS Product', 'Web Development', 'Mobile App', 'UI/UX Design', 'Internship Platform', 'Partnership', 'Other'];
-
-const AI_MESSAGE = 'We would like to add AI to our business. ';
-
-// ── Project starter (hero) ──────────────────────────────────────────
-// `interest` must be one of INTEREST_OPTIONS so the enquiry form can pre-select it.
-const PROJECT_TYPES = [
-  { id: 'web', label: 'Web app', noun: 'a web app', interest: 'Web Development',
-    gets: ['A fast web app that works on phones, tablets and laptops', 'An admin panel so your team can manage content and users', 'Hosting, domain and launch handled for you'],
-    phases: [['Discovery', 'Goals, users and scope'], ['Design', 'Screens you approve before we code'], ['Build', 'Weekly demos of working software'], ['Launch', 'Go live, then ongoing support']] },
-  { id: 'mobile', label: 'Mobile app', noun: 'a mobile app', interest: 'Mobile App',
-    gets: ['One app for both Android and iOS', 'Play Store and App Store release', 'Push notifications and usage analytics'],
-    phases: [['Discovery', 'Features and target users'], ['Design', 'Clickable prototype on your phone'], ['Build', 'Test builds you can install'], ['Release', 'Store listing, launch and updates']] },
-  { id: 'ai', label: 'AI assistant', noun: 'an AI assistant', interest: 'AI Solutions',
-    gets: ['Answers that come from your own documents and data', 'Works on your website or inside your internal tools', 'You review its answers before customers see them'],
-    phases: [['Collect', 'Your documents, FAQs and data'], ['Build', 'Search, answers and guardrails'], ['Test', 'Your team checks real questions'], ['Launch', 'Go live and track answer quality']] },
-  { id: 'saas', label: 'SaaS product', noun: 'a SaaS product', interest: 'SaaS Product',
-    gets: ['Sign-up, teams and subscription billing', 'Dashboards for your customers', 'Built to add customers without a rewrite'],
-    phases: [['Discovery', 'Pricing, plans and core workflow'], ['Design', 'The product, screen by screen'], ['Build', 'Working releases every sprint'], ['Launch', 'First customers, then growth features']] },
-  { id: 'custom', label: 'Custom software', noun: 'custom software', interest: 'Software Development',
-    gets: ['CRM, ERP or workflow tools built around how you work', 'Connects to the tools you already use', 'Maintenance and new features after launch'],
-    phases: [['Discovery', 'How your team works today'], ['Design', 'The new workflow, on screen'], ['Build', 'Rolled out module by module'], ['Support', 'Training, fixes and improvements']] },
-];
 
 // ── Content ─────────────────────────────────────────────────────────
 // Project paths are the real three-stage projects interns build on the platform.
@@ -144,19 +121,76 @@ const parseList = (v: any): any[] => {
   try { const p = JSON.parse(v); return Array.isArray(p) ? p : []; } catch { return []; }
 };
 
-type Preset = { interest: string; message: string; key: number };
+// ── Motion helpers ─────────────────────────────────────────────────
+const prefersReducedMotion = () =>
+  typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+
+/** Reveals every [data-reveal] element once, the first time it scrolls into view. */
+function useScrollReveal(deps: any[] = []) {
+  useEffect(() => {
+    const els = Array.from(document.querySelectorAll<HTMLElement>('.hx-root [data-reveal]:not(.is-in)'));
+    if (prefersReducedMotion() || typeof IntersectionObserver === 'undefined') {
+      els.forEach(el => el.classList.add('is-in'));
+      return;
+    }
+    const io = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (e.isIntersecting) { e.target.classList.add('is-in'); io.unobserve(e.target); }
+      });
+    }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+    els.forEach(el => io.observe(el));
+    return () => io.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, deps);
+}
+
+/** Counts a figure like "50+" or "500+" up from zero when it first becomes visible. */
+function CountUp({ value }: { value: string }) {
+  const match = value.match(/^(\d+)(.*)$/);
+  const target = match ? parseInt(match[1], 10) : 0;
+  const suffix = match ? match[2] : '';
+  const ref = React.useRef<HTMLSpanElement>(null);
+  const [shown, setShown] = useState<number | null>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || !match || prefersReducedMotion() || typeof IntersectionObserver === 'undefined') return;
+    setShown(0);
+    let raf = 0;
+    const io = new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting) return;
+      io.disconnect();
+      const start = performance.now();
+      const duration = 1200;
+      const tick = (now: number) => {
+        const t = Math.min(1, (now - start) / duration);
+        setShown(Math.round(target * (1 - Math.pow(1 - t, 3))));
+        if (t < 1) raf = requestAnimationFrame(tick);
+      };
+      raf = requestAnimationFrame(tick);
+    }, { threshold: 0.6 });
+    io.observe(el);
+    return () => { io.disconnect(); cancelAnimationFrame(raf); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
+
+  return (
+    <span ref={ref} aria-label={value}>
+      <span aria-hidden="true">{shown === null ? value : `${shown}${suffix}`}</span>
+    </span>
+  );
+}
 
 // ── Brand mark (arrow rising to a dot, as in the logo) ──────────────
-function BrandMark({ light = false }: { light?: boolean }) {
-  const ink = light ? '#FFFFFF' : 'var(--ink)';
+function BrandMark() {
   return (
     <span className="hx-brand" aria-label="Hiresnix">
       <svg width="30" height="24" viewBox="0 0 30 24" aria-hidden="true">
-        <path d="M1 22 C 10 21, 17 16, 21 7" fill="none" stroke={ink} strokeWidth="3" strokeLinecap="round" />
-        <path d="M15 8 L22 4.5 L23.5 12.5" fill="none" stroke={ink} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-        <circle cx="27" cy="3" r="2.6" fill="var(--accent-bright)" />
+        <path d="M1 22 C 10 21, 17 16, 21 7" fill="none" stroke="var(--ink)" strokeWidth="3" strokeLinecap="round" />
+        <path d="M15 8 L22 4.5 L23.5 12.5" fill="none" stroke="var(--ink)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+        <circle cx="27" cy="3" r="2.6" fill="var(--accent)" />
       </svg>
-      <span className="hx-brand-word">Hiresnix</span>
+      <span className="hx-brand-word">HIRESNIX</span>
     </span>
   );
 }
@@ -197,56 +231,33 @@ function SocialLinks() {
   );
 }
 
-// ── Project starter (the hero's interactive panel) ─────────────────
-function ProjectStarter({ onPlan }: { onPlan: (interest: string, message: string) => void }) {
-  const [active, setActive] = useState(PROJECT_TYPES[0].id);
-  const type = PROJECT_TYPES.find(t => t.id === active) || PROJECT_TYPES[0];
-
+// ── Hero trajectory ────────────────────────────────────────────────
+function Trajectory() {
+  const milestones = [
+    { x: 88.7, y: 385.2, label: 'Discovery', sub: 'Goals and scope', lx: 70, ly: 350, anchor: 'start' as const },
+    { x: 257, y: 329, label: 'Design', sub: 'Screens you approve', lx: 232, ly: 296, anchor: 'end' as const },
+    { x: 373.4, y: 233.9, label: 'Build', sub: 'AI where it helps', lx: 350, ly: 200, anchor: 'end' as const },
+    { x: 442.4, y: 128.4, label: 'Launch', sub: 'Then ongoing support', lx: 420, ly: 96, anchor: 'end' as const },
+  ];
   return (
-    <div className="hx-starter">
-      <p className="hx-starter-q" id="hx-starter-q">What do you want to build?</p>
-      <div className="hx-starter-types" role="group" aria-labelledby="hx-starter-q">
-        {PROJECT_TYPES.map(t => (
-          <button
-            key={t.id} type="button" className="hx-type" aria-pressed={t.id === active}
-            onClick={() => setActive(t.id)}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
-
-      <div className="hx-starter-body" key={type.id} aria-live="polite">
-        <div className="hx-starter-gets">
-          <h2 className="hx-starter-h">What you get</h2>
-          <ul>
-            {type.gets.map(g => <li key={g}>{g}</li>)}
-          </ul>
-        </div>
-        <div className="hx-starter-flow">
-          <h2 className="hx-starter-h">How it runs</h2>
-          <ol>
-            {type.phases.map(([name, note], i) => (
-              <li key={name} style={{ ['--i' as any]: i }}>
-                <span className="hx-phase-n" aria-hidden="true">{i + 1}</span>
-                <span className="hx-phase-name">{name}</span>
-                <span className="hx-phase-note">{note}</span>
-              </li>
-            ))}
-          </ol>
-        </div>
-      </div>
-
-      <div className="hx-starter-foot">
-        <button
-          className="hx-btn hx-btn-primary hx-btn-lg" type="button"
-          onClick={() => onPlan(type.interest, `We'd like to build ${type.noun}. `)}
-        >
-          Plan this project
-        </button>
-        <span className="hx-muted">Free first call. We reply within 24 hours.</span>
-      </div>
-    </div>
+    <svg className="hx-traj" viewBox="0 0 500 420" role="img" aria-label="How a project moves: discovery, design, build, launch and support">
+      <defs>
+        <pattern id="hx-dots" width="22" height="22" patternUnits="userSpaceOnUse">
+          <circle cx="1" cy="1" r="1.1" fill="var(--dots)" />
+        </pattern>
+      </defs>
+      <rect x="0" y="0" width="500" height="420" fill="url(#hx-dots)" />
+      <path className="hx-traj-path" pathLength={1} d="M30 390 C 230 385, 390 270, 458 92" fill="none" stroke="var(--ink)" strokeWidth="5" strokeLinecap="round" />
+      <path className="hx-traj-head" d="M430 108 L462 84 L466 124" fill="none" stroke="var(--ink)" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
+      <circle className="hx-traj-dot" cx="482" cy="58" r="11" fill="var(--accent)" />
+      {milestones.map((m, i) => (
+        <g key={m.label} className="hx-traj-stop" style={{ animationDelay: `${0.35 + i * 0.3}s` }}>
+          <circle cx={m.x} cy={m.y} r="7" fill="var(--paper)" stroke="var(--accent)" strokeWidth="3" />
+          <text x={m.lx} y={m.ly} textAnchor={m.anchor} className="hx-traj-label">{m.label}</text>
+          <text x={m.lx} y={m.ly} dy="1.4em" textAnchor={m.anchor} className="hx-traj-sub">{m.sub}</text>
+        </g>
+      ))}
+    </svg>
   );
 }
 
@@ -280,10 +291,10 @@ function DomainExplorer({ onApply }: { onApply: () => void }) {
       <div className="hx-panel" id="hx-domain-panel" role="tabpanel" aria-labelledby={`hx-tab-${domain.id}`} key={domain.id}>
         <h3 className="hx-panel-title">{domain.name}</h3>
         <p className="hx-panel-blurb">{domain.blurb}</p>
-        <p className="hx-panel-note">The three projects you build, from first to last:</p>
+        <p className="hx-panel-note">Projects interns in this domain have built:</p>
         <ol className="hx-ladder">
           {domain.projects.map(([title, tech], i) => (
-            <li key={title} className="hx-rung">
+            <li key={title} className="hx-rung" style={{ ['--i' as any]: i }}>
               <span className="hx-rung-level">{LEVELS[i]}</span>
               <span className="hx-rung-title">{title}</span>
               <span className="hx-rung-tech">{tech}</span>
@@ -296,48 +307,48 @@ function DomainExplorer({ onApply }: { onApply: () => void }) {
   );
 }
 
-// ── Case study ─────────────────────────────────────────────────────
-type CaseData = { name: string; meta: string; built: { title: string; desc: string }[]; stack: string[]; results: { value: string; label: string }[] };
+// ── Client marquee ─────────────────────────────────────────────────
+type ClientChip = { name: string; industry: string; nda: boolean };
 
-function CaseStudy({ c }: { c: CaseData }) {
+function ClientMarquee({ clients }: { clients: ClientChip[] }) {
+  if (!clients.length) return null;
+  // Repeat the list until one copy is wide enough to fill the screen, then render it twice for a seamless loop
+  let row = [...clients];
+  while (row.length < 10) row = [...row, ...clients];
+  const seconds = Math.max(30, row.length * 4);
+
+  const chip = (c: ClientChip, i: number) => (
+    <li key={i} className={`hx-chip${c.nda ? ' hx-chip-nda' : ''}${i >= clients.length ? ' hx-chip-repeat' : ''}`}>
+      <span className="hx-chip-mark" aria-hidden="true">
+        {c.nda
+          ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="11" width="16" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></svg>
+          : c.name.trim().charAt(0).toUpperCase()}
+      </span>
+      <span className="hx-chip-text">
+        <span className="hx-chip-name">{c.nda ? c.industry : c.name}</span>
+        <span className="hx-chip-meta">{c.nda ? 'Under NDA' : c.industry}</span>
+      </span>
+    </li>
+  );
+
   return (
-    <article className="hx-case">
-      <div className="hx-case-main">
-        <h3 className="hx-case-name">{c.name}</h3>
-        {c.meta && <p className="hx-muted">{c.meta}</p>}
-        {c.built.length > 0 && (
-          <dl className="hx-case-built">
-            {c.built.map((w, i) => <div key={i}><dt>{w.title}</dt><dd>{w.desc}</dd></div>)}
-          </dl>
-        )}
-        {c.stack.length > 0 && <p className="hx-case-stack">Built with {c.stack.join(', ')}.</p>}
+    <div className="hx-marquee" style={{ ['--hx-marquee-time' as any]: `${seconds}s` }}>
+      <div className="hx-marquee-track">
+        <ul className="hx-marquee-list">{row.map(chip)}</ul>
+        <ul className="hx-marquee-list" aria-hidden="true">{row.map(chip)}</ul>
       </div>
-      {c.results.length > 0 && (
-        <dl className="hx-case-results">
-          {c.results.map((r, i) => <div key={i}><dt>{r.label}</dt><dd>{r.value}</dd></div>)}
-        </dl>
-      )}
-    </article>
+    </div>
   );
 }
 
 // ── Enquiry form (same submission behaviour as before) ─────────────
-function EnquiryForm({ preset }: { preset: Preset | null }) {
+function EnquiryForm({ presetInterest }: { presetInterest: string }) {
   const empty = { name: '', email: '', phone: '', interest: 'Software Development', message: '' };
   const [form, setForm] = useState(empty);
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    if (!preset) return;
-    setSubmitted(false);
-    setForm(p => ({
-      ...p,
-      interest: preset.interest || p.interest,
-      // Only pre-fill the message if the visitor hasn't started typing their own
-      message: preset.message && (!p.message.trim() || PROJECT_TYPES.some(t => p.message.startsWith(`We'd like to build ${t.noun}.`)) || p.message === AI_MESSAGE) ? preset.message : p.message,
-    }));
-  }, [preset]);
+  useEffect(() => { if (presetInterest) setForm(p => ({ ...p, interest: presetInterest })); }, [presetInterest]);
   const set = (k: keyof typeof form, v: string) => setForm(p => ({ ...p, [k]: v }));
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -395,9 +406,9 @@ function EnquiryForm({ preset }: { preset: Preset | null }) {
       </div>
       <label className="hx-field">
         <span>Message</span>
-        <textarea id="hx-message" required rows={5} value={form.message} onChange={e => set('message', e.target.value)} placeholder="Tell us about your project or requirement" />
+        <textarea required rows={4} value={form.message} onChange={e => set('message', e.target.value)} placeholder="Tell us about your project or requirement" />
       </label>
-      <button type="submit" disabled={loading} className="hx-btn hx-btn-primary hx-btn-lg hx-btn-block">
+      <button type="submit" disabled={loading} className="hx-btn hx-btn-primary hx-btn-block">
         {loading ? 'Sending…' : 'Send message'}
       </button>
     </form>
@@ -409,7 +420,7 @@ export function LandingPage() {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [landingClients, setLandingClients] = useState<any[]>([]);
-  const [preset, setPreset] = useState<Preset | null>(null);
+  const [presetInterest, setPresetInterest] = useState('');
 
   // Keep the existing copy/right-click protection on the marketing page
   useEffect(() => {
@@ -441,47 +452,26 @@ export function LandingPage() {
       .catch(() => {});
   }, []);
 
-  const reduceMotion = () => !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  useScrollReveal([landingClients.length]);
+
   const goTo = (id: string) => {
     setMenuOpen(false);
-    document.getElementById(id)?.scrollIntoView({ behavior: reduceMotion() ? 'auto' : 'smooth', block: 'start' });
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    document.getElementById(id)?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
   };
   const applyNow = () => navigate('/auth?tab=register');
-  const contactFor = (interest: string, message = '') => {
-    setPreset({ interest, message, key: Date.now() });
-    goTo('contact');
-    // Put the cursor in the message box once the scroll has finished
-    if (message) setTimeout(() => document.getElementById('hx-message')?.focus({ preventScroll: true }), reduceMotion() ? 0 : 700);
-  };
+  const contactFor = (interest: string) => { setPresetInterest(interest); goTo('contact'); };
 
-  const publicClients = landingClients.filter((c: any) => !c.nda_protected && c?.name);
+  const publicClients = landingClients.filter((c: any) => !c.nda_protected);
   const ndaClients = [...NDA_CLIENTS, ...landingClients.filter((c: any) => c.nda_protected).map((c: any) => c.industry || 'NDA client')];
-
-  const cases: CaseData[] = [
-    {
-      name: 'Focktix Limited', meta: 'Digital marketing agency, Maharashtra',
-      built: [
-        { title: 'Custom CRM system', desc: "Client and lead management built around the agency's workflow." },
-        { title: 'Campaign dashboard', desc: 'Live analytics for ad performance across platforms.' },
-        { title: 'AI lead scoring', desc: 'Machine learning that ranks leads so the team calls the best ones first.' },
-      ],
-      stack: ['React.js', 'Node.js', 'PostgreSQL', 'Groq AI', 'REST APIs', 'Vercel'],
-      results: [{ value: '3×', label: 'lead conversion' }, { value: '60%', label: 'less manual work' }, { value: '99.9%', label: 'uptime' }],
-    },
-    ...publicClients.map((c: any) => ({
-      name: String(c.name),
-      meta: [c.industry, c.location].filter(Boolean).join(', '),
-      built: parseList(c.what_we_built).filter((w: any) => w?.title).map((w: any) => ({ title: String(w.title), desc: String(w.desc || '') })),
-      stack: parseList(c.tech_stack).filter(Boolean).map(String),
-      results: parseList(c.results).filter((r: any) => r?.value).map((r: any) => ({ value: String(r.value), label: String(r.label || '') })),
-    })),
+  // Every client for the scrolling strip: Focktix, clients added in the admin panel, then NDA clients
+  const allClients: ClientChip[] = [
+    { name: 'Focktix Limited', industry: 'Digital marketing', nda: false },
+    ...publicClients.filter((c: any) => c?.name).map((c: any) => ({ name: String(c.name), industry: c.industry || 'Client', nda: false })),
+    ...ndaClients.map(industry => ({ name: industry, industry, nda: true })),
   ];
-  const clientNames = cases.map(c => c.name);
 
   const NAV: [string, string][] = [['services', 'Services'], ['ai', 'AI solutions'], ['work', 'Work'], ['products', 'Products'], ['internships', 'Internships'], ['contact', 'Contact']];
-  const navLink = (id: string, label: string) => (
-    <a key={id} href={`#${id}`} onClick={e => { e.preventDefault(); goTo(id); }}>{label}</a>
-  );
 
   return (
     <div className="hx-root">
@@ -493,10 +483,12 @@ export function LandingPage() {
         <div className="hx-wrap hx-nav-inner">
           <a href="#top" className="hx-nav-brand" onClick={e => { e.preventDefault(); window.scrollTo({ top: 0 }); }}><BrandMark /></a>
           <nav className="hx-nav-links" aria-label="Main">
-            {NAV.map(([id, label]) => navLink(id, label))}
+            {NAV.map(([id, label]) => (
+              <a key={id} href={`#${id}`} onClick={e => { e.preventDefault(); goTo(id); }}>{label}</a>
+            ))}
           </nav>
           <div className="hx-nav-actions">
-            <button className="hx-btn hx-btn-quiet hx-hide-sm" type="button" onClick={() => navigate('/auth')}>Log in</button>
+            <button className="hx-btn hx-btn-ghost hx-hide-sm" type="button" onClick={() => navigate('/auth')}>Log in</button>
             <button className="hx-btn hx-btn-primary" type="button" onClick={() => contactFor('Software Development')}>Start a project</button>
             <button className="hx-menu-btn" type="button" aria-expanded={menuOpen} aria-controls="hx-mobile-menu" aria-label={menuOpen ? 'Close menu' : 'Open menu'} onClick={() => setMenuOpen(o => !o)}>
               <span /><span /><span />
@@ -505,7 +497,9 @@ export function LandingPage() {
         </div>
         {menuOpen && (
           <nav id="hx-mobile-menu" className="hx-mobile-menu" aria-label="Mobile">
-            {NAV.map(([id, label]) => navLink(id, label))}
+            {NAV.map(([id, label]) => (
+              <a key={id} href={`#${id}`} onClick={e => { e.preventDefault(); goTo(id); }}>{label}</a>
+            ))}
             <button className="hx-btn hx-btn-ghost hx-btn-block" type="button" onClick={() => navigate('/auth')}>Log in</button>
           </nav>
         )}
@@ -514,128 +508,174 @@ export function LandingPage() {
       <main id="top">
         {/* ── Hero ── */}
         <section className="hx-hero">
-          <div className="hx-wrap">
-            <h1 className="hx-h1">
-              <span className="hx-h1-line">We build software</span>{' '}
-              <span className="hx-h1-line">and AI products for</span>{' '}
-              <span className="hx-h1-line">growing businesses.</span>
-            </h1>
-            <div className="hx-hero-sub">
+          <div className="hx-wrap hx-hero-grid">
+            <div className="hx-hero-copy">
+              <h1 className="hx-h1">AI-powered software development for growing businesses.</h1>
               <p className="hx-lead">
-                Hiresnix designs, builds and looks after web apps, mobile apps and AI tools for startups, businesses
+                Hiresnix designs, builds and maintains web apps, mobile apps and AI products for startups, businesses
                 and institutions across India, from the first sketch to support after launch.
               </p>
-              <p className="hx-hero-students">
-                Looking for an internship?{' '}
-                <a href="#internships" className="hx-link" onClick={e => { e.preventDefault(); goTo('internships'); }}>See domains and projects</a>
+              <div className="hx-hero-ctas">
+                <button className="hx-btn hx-btn-primary hx-btn-lg" type="button" onClick={() => contactFor('Software Development')}>Start a project</button>
+                <button className="hx-btn hx-btn-ghost hx-btn-lg" type="button" onClick={() => goTo('services')}>See our services</button>
+              </div>
+              <p className="hx-hero-login">
+                Looking for an internship? <a href="#internships" onClick={e => { e.preventDefault(); goTo('internships'); }}>Explore internships</a>
               </p>
             </div>
-            <ProjectStarter onPlan={contactFor} />
+            <div className="hx-hero-visual"><Trajectory /></div>
           </div>
-        </section>
-
-        {/* ── Proof strip ── */}
-        <section className="hx-proof" aria-label="Hiresnix in numbers">
           <div className="hx-wrap">
             <dl className="hx-facts">
-              <div><dt>clients served</dt><dd>50+</dd></div>
-              <div><dt>services, design to support</dt><dd>9</dd></div>
-              <div><dt>industries</dt><dd>7</dd></div>
-              <div><dt>developers trained</dt><dd>500+</dd></div>
+              <div><dt>Clients served</dt><dd><CountUp value="50+" /></dd></div>
+              <div><dt>Services, design to support</dt><dd><CountUp value="9" /></dd></div>
+              <div><dt>Industries</dt><dd><CountUp value="7" /></dd></div>
+              <div><dt>Developers trained</dt><dd><CountUp value="500+" /></dd></div>
             </dl>
-            <p className="hx-clients-line">
-              <span className="hx-muted">Software we have built for </span>
-              {clientNames.join(', ')}
-              <span className="hx-muted">, and {ndaClients.length} more clients under NDA.</span>
-            </p>
+          </div>
+          <div className="hx-clients-band">
+            <div className="hx-wrap"><p className="hx-clients-title" data-reveal>Businesses we have built software for</p></div>
+            <ClientMarquee clients={allClients} />
           </div>
         </section>
 
         {/* ── Services ── */}
-        <section id="services" className="hx-section">
-          <div className="hx-wrap hx-aside-layout">
-            <div className="hx-aside">
+        <section id="services" className="hx-section hx-section-panel">
+          <div className="hx-wrap">
+            <div className="hx-section-head" data-reveal>
               <h2 className="hx-h2">What we build</h2>
-              <p className="hx-lead">One team for the whole job: product design, engineering, AI and the support that keeps it running.</p>
-              <button className="hx-btn hx-btn-ghost" type="button" onClick={() => contactFor('Software Development')}>Talk to us about your project</button>
-            </div>
-            <div>
-              <dl className="hx-services">
-                {SERVICES.map(([t, d]) => (
-                  <div key={t}><dt>{t}</dt><dd>{d}</dd></div>
-                ))}
-              </dl>
-              <p className="hx-industries">
-                Industries we have worked in: education, healthcare, retail, manufacturing, finance, e-commerce and startups.
+              <p className="hx-lead">
+                One team for the whole job: product design, engineering, AI and the support that keeps it running.
               </p>
             </div>
+            <dl className="hx-services">
+              {SERVICES.map(([t, d], i) => (
+                <div key={t} data-reveal style={{ ['--d' as any]: `${(i % 3) * 80 + Math.floor(i / 3) * 60}ms` }}><dt>{t}</dt><dd>{d}</dd></div>
+              ))}
+            </dl>
+            <p className="hx-industries" data-reveal>
+              Industries we have worked in: education, healthcare, retail, manufacturing, finance, e-commerce and startups.
+            </p>
           </div>
         </section>
 
-        {/* ── AI solutions (forest band) ── */}
-        <section id="ai" className="hx-section hx-forest">
+        {/* ── AI solutions ── */}
+        <section id="ai" className="hx-section">
           <div className="hx-wrap">
-            <div className="hx-section-head">
+            <div className="hx-section-head" data-reveal>
               <h2 className="hx-h2">AI that does real work</h2>
-              <p className="hx-lead">We add AI where it saves your team time or makes you money, and we tell you plainly when it won't.</p>
+              <p className="hx-lead">
+                We add AI where it saves your team time or makes you money, and we tell you plainly when it won't.
+              </p>
             </div>
             <div className="hx-ai">
-              {AI_CAPABILITIES.map(([title, desc, proof]) => (
-                <div key={title} className="hx-ai-item">
+              {AI_CAPABILITIES.map(([title, desc, proof], i) => (
+                <div key={title} className="hx-ai-item" data-reveal style={{ ['--d' as any]: `${i * 90}ms` }}>
                   <h3 className="hx-h3">{title}</h3>
-                  <p>{desc}</p>
+                  <p className="hx-muted">{desc}</p>
                   <p className="hx-ai-proof">{proof}</p>
                 </div>
               ))}
             </div>
             <div className="hx-cta-row">
-              <button className="hx-btn hx-btn-light hx-btn-lg" type="button" onClick={() => contactFor('AI Solutions', AI_MESSAGE)}>Discuss an AI project</button>
+              <button className="hx-btn hx-btn-primary" type="button" onClick={() => contactFor('AI Solutions')}>Discuss an AI project</button>
             </div>
           </div>
         </section>
 
         {/* ── Process ── */}
-        <section className="hx-section hx-section-tight">
+        <section className="hx-section hx-section-panel hx-section-tight">
           <div className="hx-wrap">
-            <h2 className="hx-h3">How every project runs</h2>
+            <h2 className="hx-h3">How a project runs</h2>
             <ol className="hx-process">
               {PROCESS.map((p, i) => (
-                <li key={p}><span className="hx-step-n" aria-hidden="true">{i + 1}</span><span>{p}</span></li>
+                <li key={p} data-reveal style={{ ['--d' as any]: `${i * 70}ms` }}><span className="hx-step-n" aria-hidden="true">{i + 1}</span>{p}</li>
               ))}
             </ol>
           </div>
         </section>
 
         {/* ── Client work ── */}
-        <section id="work" className="hx-section hx-panel-bg">
+        <section id="work" className="hx-section">
           <div className="hx-wrap">
-            <div className="hx-section-head">
+            <div className="hx-section-head" data-reveal>
               <h2 className="hx-h2">Client work</h2>
               <p className="hx-lead">Software we have delivered for growing businesses across India.</p>
             </div>
-            <div className="hx-cases">
-              {cases.map(c => <CaseStudy key={c.name} c={c} />)}
-            </div>
-            <p className="hx-nda"><strong>Other clients, under NDA:</strong> {ndaClients.join(', ')}.</p>
+
+            <article className="hx-case" data-reveal>
+              <header className="hx-case-head">
+                <div>
+                  <h3 className="hx-h3">Focktix Limited</h3>
+                  <p className="hx-muted">Digital marketing agency, Maharashtra</p>
+                </div>
+                <span className="hx-badge">Delivered</span>
+              </header>
+              <div className="hx-case-built">
+                <div><strong>Custom CRM system</strong><p>Client and lead management built around the agency's workflow.</p></div>
+                <div><strong>Campaign dashboard</strong><p>Live analytics for ad performance across platforms.</p></div>
+                <div><strong>AI lead scoring</strong><p>Machine learning that ranks leads so the team calls the best ones first.</p></div>
+              </div>
+              <p className="hx-case-stack">Built with React.js, Node.js, PostgreSQL, Groq AI, REST APIs and Vercel.</p>
+              <dl className="hx-case-results">
+                <div><dd>3×</dd><dt>lead conversion</dt></div>
+                <div><dd>60%</dd><dt>less manual work</dt></div>
+                <div><dd>99.9%</dd><dt>uptime</dt></div>
+              </dl>
+            </article>
+
+            {publicClients.map((c: any) => {
+              const built = parseList(c.what_we_built);
+              const stack = parseList(c.tech_stack).filter(Boolean);
+              const results = parseList(c.results);
+              return (
+                <article key={c.id} className="hx-case" data-reveal>
+                  <header className="hx-case-head">
+                    <div>
+                      <h3 className="hx-h3">{c.name}</h3>
+                      <p className="hx-muted">{[c.industry, c.location].filter(Boolean).join(', ')}</p>
+                    </div>
+                    <span className="hx-badge">Delivered</span>
+                  </header>
+                  {built.length > 0 && (
+                    <div className="hx-case-built">
+                      {built.map((w: any, i: number) => <div key={i}><strong>{w.title}</strong><p>{w.desc}</p></div>)}
+                    </div>
+                  )}
+                  {stack.length > 0 && <p className="hx-case-stack">Built with {stack.join(', ')}.</p>}
+                  {results.length > 0 && (
+                    <dl className="hx-case-results">
+                      {results.map((r: any, i: number) => <div key={i}><dd>{r.value}</dd><dt>{r.label}</dt></div>)}
+                    </dl>
+                  )}
+                </article>
+              );
+            })}
+
+            <p className="hx-nda" data-reveal>
+              <strong>Other clients, under NDA:</strong> {ndaClients.join(', ')}.
+            </p>
           </div>
         </section>
 
         {/* ── Our own products ── */}
-        <section id="products" className="hx-section">
+        <section id="products" className="hx-section hx-section-panel">
           <div className="hx-wrap">
-            <div className="hx-section-head">
+            <div className="hx-section-head" data-reveal>
               <h2 className="hx-h2">Products we run</h2>
               <p className="hx-lead">We build and operate our own AI products too, so the tools we recommend are ones we use every day.</p>
             </div>
-            <div className="hx-products">
-              <article className="hx-product">
+            <div className="hx-split hx-split-even">
+              <article className="hx-product" data-reveal>
                 <h3 className="hx-h3">AI Academy</h3>
-                <p className="hx-muted">Sixteen self-paced programming courses with an AI teacher for every lesson, a code runner in the browser and quizzes.</p>
+                <p className="hx-muted">
+                  Sixteen self-paced programming courses with an AI teacher for every lesson, a code runner in the browser and quizzes.
+                </p>
                 <ul className="hx-courses" aria-label="Courses">
                   {ACADEMY_COURSES.map(c => <li key={c}>{c}</li>)}
                 </ul>
               </article>
-              <article className="hx-product">
+              <article className="hx-product" data-reveal style={{ ['--d' as any]: `120ms` }}>
                 <h3 className="hx-h3">Institution portal</h3>
                 <p className="hx-muted">
                   Colleges and training institutes manage batches, import students from a CSV file, track attendance and
@@ -648,9 +688,9 @@ export function LandingPage() {
         </section>
 
         {/* ── Internships (kept lower on the page) ── */}
-        <section id="internships" className="hx-section hx-panel-bg">
+        <section id="internships" className="hx-section">
           <div className="hx-wrap">
-            <div className="hx-section-head">
+            <div className="hx-section-head" data-reveal>
               <h2 className="hx-h2">Internships</h2>
               <p className="hx-lead">
                 We train developers on the same kind of work we ship for clients. Choose a domain and a duration from
@@ -658,12 +698,12 @@ export function LandingPage() {
               </p>
             </div>
 
-            <DomainExplorer onApply={applyNow} />
+            <div data-reveal><DomainExplorer onApply={applyNow} /></div>
 
             <h3 className="hx-h3 hx-steps-title">How the internship works</h3>
             <ol className="hx-steps">
               {INTERN_STEPS.map(([title, desc], i) => (
-                <li key={title}>
+                <li key={title} data-reveal style={{ ['--d' as any]: `${i * 90}ms` }}>
                   <span className="hx-step-n" aria-hidden="true">{i + 1}</span>
                   <strong>{title}</strong>
                   <p>{desc}</p>
@@ -679,19 +719,21 @@ export function LandingPage() {
         </section>
 
         {/* ── Contact ── */}
-        <section id="contact" className="hx-section">
-          <div className="hx-wrap hx-contact">
-            <div>
+        <section id="contact" className="hx-section hx-section-panel">
+          <div className="hx-wrap hx-split">
+            <div data-reveal>
               <h2 className="hx-h2">Start a project</h2>
               <p className="hx-lead">Tell us what you need built. We reply within 24 hours.</p>
-              <dl className="hx-contact-list">
-                <div><dt>Email</dt><dd><a className="hx-link" href="mailto:hr@hiresnix.co.in">hr@hiresnix.co.in</a></dd></div>
-                <div><dt>Phone</dt><dd><a className="hx-link" href="tel:+919529120977">+91 95291 20977</a></dd></div>
-                <div><dt>Office</dt><dd>Shirpur, Dhule, Maharashtra</dd></div>
-              </dl>
-              <SocialLinks />
+              <p className="hx-muted hx-contact-alt">
+                Prefer email? Write to <a className="hx-link" href="mailto:hr@hiresnix.co.in">hr@hiresnix.co.in</a> or call{' '}
+                <a className="hx-link" href="tel:+919529120977">+91 95291 20977</a>.
+              </p>
+              <div className="hx-contact-social">
+                <span className="hx-muted">Follow us</span>
+                <SocialLinks />
+              </div>
             </div>
-            <EnquiryForm preset={preset} />
+            <div data-reveal style={{ ['--d' as any]: `120ms` }}><EnquiryForm presetInterest={presetInterest} /></div>
           </div>
         </section>
       </main>
@@ -700,8 +742,8 @@ export function LandingPage() {
       <footer className="hx-footer">
         <div className="hx-wrap hx-footer-grid">
           <div>
-            <BrandMark light />
-            <p className="hx-footer-blurb">AI-powered software development for startups, businesses and institutions.</p>
+            <BrandMark />
+            <p className="hx-muted hx-footer-blurb">AI-powered software development for startups, businesses and institutions.</p>
             <SocialLinks />
           </div>
           <div>
@@ -750,299 +792,312 @@ export function LandingPage() {
 
 // ── Styles ─────────────────────────────────────────────────────────
 const CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Figtree:wght@400;500;600;700&display=swap');
 
 .hx-root{
-  --paper:#FBFBF8; --panel:#F1F4EF; --line:#DCE3DE; --line-strong:#C3CEC7;
-  --ink:#102A22; --text:#33403B; --muted:#5C6964;
-  --accent:#0B7A55; --accent-press:#08613F; --accent-soft:#E3F1EA; --accent-bright:#1FA874;
-  --forest:#0E3B2C; --forest-line:rgba(255,255,255,.16); --forest-text:#D5E6DD;
-  --font:'Schibsted Grotesk', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --wrap:1200px; --gutter:clamp(20px,4vw,40px);
-  background:var(--paper); color:var(--text);
-  font-family:var(--font); font-size:17px; line-height:1.6;
-  -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
-  min-height:100vh; position:relative; isolation:isolate;
+  --paper:#FFFFFF; --mist:#F6F7F5; --line:#E4E6E2; --dots:#D9DCD6;
+  --ink:#15171A; --text:#2B2E33; --muted:#62666D;
+  --accent:#0B7A55; --accent-press:#08613F; --accent-soft:#E8F4EE;
+  --display:'Bricolage Grotesque', 'Helvetica Neue', Arial, sans-serif;
+  --body:'Figtree', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  background:var(--paper); color:var(--text); font-family:var(--body); font-size:17px; line-height:1.6;
+  overflow-x:clip; -webkit-font-smoothing:antialiased;
 }
-/* Resets use :where() so they never out-rank the component classes below */
-:where(.hx-root) *, :where(.hx-root) *::before, :where(.hx-root) *::after{ box-sizing:border-box; }
-:where(.hx-root) :where(h1, h2, h3, h4, p, dl, dd, ol, ul){ margin:0; padding:0; }
-:where(.hx-root) :where(ol, ul){ list-style:none; }
-:where(.hx-root) a{ color:inherit; text-decoration:none; }
-:where(.hx-root) button{ font:inherit; cursor:pointer; }
-.hx-root :focus-visible{ outline:3px solid var(--accent); outline-offset:3px; border-radius:6px; }
-.hx-forest :focus-visible, .hx-footer :focus-visible{ outline-color:#8FE0BC; }
+body{margin:0;background:#FFFFFF;}
+/* The app adds a tinted mesh behind every page (GlobalAnimations); keep the landing page pure white */
+body.lp-readonly{background:#FFFFFF !important;}
+body.lp-readonly::before{display:none !important;}
+.lp-readonly, .lp-readonly *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;}
+.lp-readonly input, .lp-readonly textarea, .lp-readonly select{-webkit-user-select:auto;user-select:auto;}
+.hx-root *{box-sizing:border-box;}
+.hx-root a{color:inherit;}
+.hx-root :focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:6px;}
+html{scroll-padding-top:84px;}
 
-.hx-wrap{ width:100%; max-width:var(--wrap); margin:0 auto; padding:0 var(--gutter); }
+.hx-wrap{width:100%;max-width:1160px;margin:0 auto;padding:0 24px;}
 
-/* ── Type ── */
-.hx-h1{
-  color:var(--ink); font-weight:800;
-  font-size:clamp(2.5rem, 6vw, 5.25rem); line-height:.98; letter-spacing:-.045em;
-  max-width:17ch; text-wrap:balance;
-}
-.hx-h1-line{ display:inline; }
-.hx-h2{ color:var(--ink); font-weight:700; font-size:clamp(2rem, 3.6vw, 3rem); line-height:1.04; letter-spacing:-.035em; text-wrap:balance; }
-.hx-h3{ color:var(--ink); font-weight:700; font-size:1.25rem; line-height:1.25; letter-spacing:-.015em; }
-.hx-lead{ font-size:clamp(1.06rem, 1.4vw, 1.2rem); line-height:1.55; color:var(--text); max-width:56ch; }
-.hx-muted{ color:var(--muted); }
-.hx-link{ color:var(--accent); font-weight:600; text-decoration:underline; text-decoration-thickness:1.5px; text-underline-offset:3px; }
-.hx-link:hover{ color:var(--accent-press); }
+/* Type */
+.hx-h1{font-family:var(--display);font-weight:700;color:var(--ink);font-size:clamp(2.2rem,4.4vw,3.55rem);line-height:1.04;letter-spacing:-0.035em;margin:0 0 24px;max-width:17ch;}
+.hx-h2{font-family:var(--display);font-weight:700;color:var(--ink);font-size:clamp(1.9rem,3.6vw,2.7rem);line-height:1.1;letter-spacing:-0.025em;margin:0 0 14px;}
+.hx-h3{font-family:var(--display);font-weight:600;color:var(--ink);font-size:1.2rem;line-height:1.3;letter-spacing:-0.01em;margin:0 0 8px;}
+.hx-lead{font-size:clamp(1.03rem,1.6vw,1.16rem);color:var(--text);max-width:62ch;margin:0;}
+.hx-muted{color:var(--muted);margin:0;}
+.hx-link{color:var(--accent);font-weight:600;text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px;}
+.hx-link:hover{color:var(--accent-press);text-decoration-thickness:2px;}
 
-/* ── Buttons ── */
-.hx-btn{
-  display:inline-flex; align-items:center; justify-content:center; gap:8px;
-  min-height:44px; padding:10px 20px; border-radius:10px; border:1.5px solid transparent;
-  font-weight:600; font-size:.97rem; line-height:1.2; white-space:nowrap;
-  transition:background-color .15s ease, border-color .15s ease, color .15s ease;
-}
-.hx-btn-lg{ min-height:52px; padding:14px 26px; font-size:1.02rem; }
-.hx-btn-block{ width:100%; }
-.hx-btn-primary{ background:var(--accent); color:#fff; }
-.hx-btn-primary:hover{ background:var(--accent-press); }
-.hx-btn-primary:disabled{ opacity:.6; cursor:wait; }
-.hx-btn-ghost{ background:transparent; color:var(--ink); border-color:var(--line-strong); }
-.hx-btn-ghost:hover{ border-color:var(--ink); }
-.hx-btn-quiet{ background:transparent; color:var(--ink); }
-.hx-btn-quiet:hover{ background:var(--panel); }
-.hx-btn-light{ background:#fff; color:var(--forest); }
-.hx-btn-light:hover{ background:var(--accent-soft); }
+/* Buttons */
+.hx-btn{font-family:var(--body);font-weight:600;font-size:0.95rem;border-radius:999px;padding:10px 20px;cursor:pointer;border:1px solid transparent;line-height:1.2;transition:background-color .15s ease,border-color .15s ease,color .15s ease;white-space:nowrap;}
+.hx-btn-lg{font-size:1.02rem;padding:14px 26px;}
+.hx-btn-block{width:100%;}
+.hx-btn-primary{background:var(--accent);color:#fff;}
+.hx-btn-primary:hover{background:var(--accent-press);}
+.hx-btn-primary:disabled{opacity:.6;cursor:progress;}
+.hx-btn-ghost{background:var(--paper);color:var(--ink);border-color:#CFD2CC;}
+.hx-btn-ghost:hover{border-color:var(--ink);}
 
-/* ── Navigation ── */
-.hx-nav{ position:sticky; top:0; z-index:40; background:rgba(251,251,248,.92); backdrop-filter:saturate(1.4) blur(10px); -webkit-backdrop-filter:saturate(1.4) blur(10px); border-bottom:1px solid var(--line); }
-.hx-nav-inner{ display:flex; align-items:center; gap:24px; height:68px; }
-.hx-brand{ display:inline-flex; align-items:center; gap:10px; }
-.hx-brand-word{ font-weight:800; font-size:1.2rem; letter-spacing:-.03em; color:var(--ink); }
-.hx-nav-links{ display:flex; gap:4px; margin:0 auto; }
-.hx-nav-links a{ padding:8px 12px; border-radius:8px; font-weight:500; font-size:.95rem; color:var(--text); }
-.hx-nav-links a:hover{ color:var(--ink); background:var(--panel); }
-.hx-nav-actions{ display:flex; align-items:center; gap:8px; }
-.hx-menu-btn{ display:none; width:44px; height:44px; border:1.5px solid var(--line-strong); border-radius:10px; background:transparent; flex-direction:column; align-items:center; justify-content:center; gap:4px; }
-.hx-menu-btn span{ display:block; width:18px; height:2px; background:var(--ink); border-radius:2px; }
-.hx-mobile-menu{ display:flex; flex-direction:column; gap:2px; padding:12px var(--gutter) 20px; border-top:1px solid var(--line); background:var(--paper); }
-.hx-mobile-menu a{ padding:12px 4px; font-weight:600; color:var(--ink); border-bottom:1px solid var(--line); }
-.hx-mobile-menu .hx-btn{ margin-top:12px; }
+/* Nav */
+.hx-nav{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.94);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--line);}
+.hx-nav-inner{display:flex;align-items:center;gap:28px;height:68px;}
+.hx-nav-brand{text-decoration:none;display:flex;}
+.hx-brand{display:inline-flex;align-items:center;gap:10px;}
+.hx-brand-word{font-family:var(--display);font-weight:700;font-size:1rem;letter-spacing:0.16em;color:var(--ink);}
+.hx-nav-links{display:flex;gap:26px;margin-left:8px;}
+.hx-nav-links a{text-decoration:none;color:var(--muted);font-size:0.95rem;font-weight:500;}
+.hx-nav-links a:hover{color:var(--ink);}
+.hx-nav-actions{display:flex;gap:10px;align-items:center;margin-left:auto;}
+.hx-menu-btn{display:none;width:42px;height:42px;border-radius:999px;border:1px solid #CFD2CC;background:var(--paper);cursor:pointer;flex-direction:column;align-items:center;justify-content:center;gap:4px;}
+.hx-menu-btn span{display:block;width:16px;height:2px;background:var(--ink);border-radius:2px;}
+.hx-mobile-menu{display:flex;flex-direction:column;gap:2px;padding:12px 24px 20px;border-top:1px solid var(--line);background:var(--paper);}
+.hx-mobile-menu a{text-decoration:none;padding:10px 0;font-weight:500;color:var(--ink);}
+.hx-mobile-menu .hx-btn{margin-top:8px;}
 
-/* ── Hero ── */
-.hx-hero{ padding:clamp(48px, 7vw, 88px) 0 clamp(48px, 6vw, 72px); }
-.hx-hero-sub{ display:grid; grid-template-columns:minmax(0, 1fr) auto; align-items:end; gap:24px 48px; margin:clamp(24px, 3vw, 36px) 0 clamp(36px, 5vw, 56px); }
-.hx-hero-students{ font-size:.95rem; color:var(--muted); text-align:right; }
+/* Hero */
+.hx-hero{padding:80px 0 0;}
+.hx-hero-grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:40px;align-items:center;}
+.hx-hero-ctas{display:flex;gap:12px;flex-wrap:wrap;margin-top:32px;}
+.hx-hero-login{margin:20px 0 0;color:var(--muted);font-size:0.95rem;}
+.hx-hero-login a{color:var(--accent);font-weight:600;}
+.hx-traj{width:100%;height:auto;display:block;}
+.hx-traj-label{font-family:var(--body);font-weight:700;font-size:16px;fill:var(--ink);}
+.hx-traj-sub{font-family:var(--body);font-size:13px;fill:var(--muted);}
+.hx-traj-path{stroke-dasharray:1;stroke-dashoffset:1;animation:hxDraw 1.5s cubic-bezier(.45,.05,.25,1) .15s forwards;}
+.hx-traj-head,.hx-traj-dot{opacity:0;animation:hxFade .4s ease 1.55s forwards;}
+.hx-traj-stop{opacity:0;animation:hxFade .45s ease forwards;}
+@keyframes hxDraw{to{stroke-dashoffset:0;}}
+@keyframes hxFade{to{opacity:1;}}
 
-/* Project starter: the one bold element on the page */
-.hx-starter{ background:#fff; border:1.5px solid var(--ink); border-radius:20px; padding:clamp(20px, 3vw, 36px); box-shadow:8px 8px 0 var(--accent-soft); }
-.hx-starter-q{ color:var(--ink); font-weight:700; font-size:1.15rem; letter-spacing:-.01em; margin-bottom:14px; }
-.hx-starter-types{ display:flex; flex-wrap:wrap; gap:8px; padding-bottom:24px; border-bottom:1px solid var(--line); }
-.hx-type{ min-height:44px; padding:9px 18px; border-radius:999px; border:1.5px solid var(--line-strong); background:#fff; color:var(--ink); font-weight:600; font-size:.97rem; transition:background-color .15s ease, border-color .15s ease, color .15s ease; }
-.hx-type:hover{ border-color:var(--ink); }
-.hx-type[aria-pressed="true"]{ background:var(--ink); border-color:var(--ink); color:#fff; }
-.hx-starter-body{ display:grid; grid-template-columns:minmax(0, 5fr) minmax(0, 7fr); gap:clamp(24px, 4vw, 56px); padding:28px 0; }
-.hx-starter-h{ font-size:.92rem; font-weight:600; color:var(--muted); letter-spacing:0; margin-bottom:12px; }
-.hx-starter-gets li{ position:relative; padding:8px 0 8px 30px; color:var(--ink); font-weight:500; line-height:1.4; border-bottom:1px solid var(--line); }
-.hx-starter-gets li:last-child{ border-bottom:0; }
-.hx-starter-gets li::before{ content:''; position:absolute; left:2px; top:13px; width:14px; height:8px; border-left:2.5px solid var(--accent); border-bottom:2.5px solid var(--accent); transform:rotate(-45deg); }
-.hx-starter-flow ol{ display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:12px; position:relative; }
-.hx-starter-flow li{ position:relative; display:flex; flex-direction:column; gap:4px; padding-top:44px; }
-.hx-starter-flow li::before{ content:''; position:absolute; top:15px; left:34px; right:-12px; height:2px; background:var(--line-strong); }
-.hx-starter-flow li:last-child::before{ display:none; }
-.hx-phase-n{ position:absolute; top:0; left:0; width:32px; height:32px; border-radius:50%; display:grid; place-items:center; background:var(--accent-soft); color:var(--accent-press); font-weight:700; font-size:.9rem; }
-.hx-starter-flow li:last-child .hx-phase-n{ background:var(--accent); color:#fff; }
-.hx-phase-name{ color:var(--ink); font-weight:700; line-height:1.25; }
-.hx-phase-note{ color:var(--muted); font-size:.9rem; line-height:1.4; }
-.hx-starter-foot{ display:flex; flex-wrap:wrap; align-items:center; gap:12px 20px; padding-top:24px; border-top:1px solid var(--line); }
-.hx-starter-foot .hx-muted{ font-size:.95rem; }
+.hx-facts{display:grid;grid-template-columns:repeat(4,1fr);margin:64px 0 0;border-top:1px solid var(--line);}
+.hx-facts > div{padding:26px 0 34px;display:flex;flex-direction:column-reverse;gap:2px;}
+.hx-facts > div + div{padding-left:24px;border-left:1px solid var(--line);}
+.hx-facts dd{margin:0;font-family:var(--display);font-weight:700;font-size:clamp(1.7rem,2.8vw,2.3rem);letter-spacing:-0.02em;color:var(--ink);}
+.hx-facts dt{color:var(--muted);font-size:0.93rem;}
 
-/* The page's single orchestrated motion moment: hero load + project switch */
-@media (prefers-reduced-motion: no-preference){
-  .hx-h1-line{ display:inline-block; animation:hx-rise .7s cubic-bezier(.2,.7,.2,1) both; }
-  .hx-h1-line:nth-child(2){ animation-delay:.08s; }
-  .hx-h1-line:nth-child(3){ animation-delay:.16s; }
-  .hx-hero-sub{ animation:hx-fade .6s .3s ease both; }
-  .hx-starter{ animation:hx-rise .7s .4s cubic-bezier(.2,.7,.2,1) both; }
-  .hx-starter-gets li, .hx-starter-flow li{ animation:hx-fade .35s ease both; }
-  .hx-starter-flow li{ animation-delay:calc(var(--i, 0) * 60ms); }
-}
-@keyframes hx-rise{ from{ opacity:0; transform:translateY(18px); } to{ opacity:1; transform:none; } }
-@keyframes hx-fade{ from{ opacity:0; } to{ opacity:1; } }
+/* Sections */
+.hx-section{padding:100px 0;}
+.hx-section-panel{background:var(--mist);border-top:1px solid var(--line);border-bottom:1px solid var(--line);}
+.hx-section-head{margin-bottom:44px;}
+.hx-split{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:56px;align-items:start;}
 
-/* ── Proof strip ── */
-.hx-proof{ border-top:1px solid var(--line); border-bottom:1px solid var(--line); padding:32px 0; }
-.hx-facts{ display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); }
-.hx-facts > div{ display:flex; flex-direction:column-reverse; gap:2px; padding:4px 24px; border-left:1px solid var(--line); }
-.hx-facts > div:first-child{ border-left:0; padding-left:0; }
-.hx-facts dd{ color:var(--ink); font-weight:800; font-size:clamp(1.8rem, 3vw, 2.4rem); letter-spacing:-.04em; line-height:1.1; font-variant-numeric:tabular-nums; }
-.hx-facts dt{ color:var(--muted); font-size:.93rem; }
-.hx-clients-line{ margin-top:24px; padding-top:20px; border-top:1px solid var(--line); color:var(--ink); font-weight:600; font-size:.97rem; }
-.hx-clients-line .hx-muted{ font-weight:400; }
+/* Domain explorer */
+.hx-explorer{display:grid;grid-template-columns:260px minmax(0,1fr);border:1px solid var(--line);border-radius:20px;background:var(--paper);overflow:hidden;}
+.hx-tabs{display:flex;flex-direction:column;border-right:1px solid var(--line);padding:10px;}
+.hx-tab{all:unset;cursor:pointer;padding:11px 14px;border-radius:12px;color:var(--muted);font-weight:500;font-size:0.96rem;}
+.hx-tab:hover{color:var(--ink);}
+.hx-tab[aria-selected="true"]{color:var(--accent-press);background:var(--accent-soft);font-weight:600;}
+.hx-tab:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;}
+.hx-panel{padding:34px 38px;}
+.hx-panel-title{font-family:var(--display);font-weight:700;color:var(--ink);font-size:1.6rem;letter-spacing:-0.02em;margin:0 0 6px;}
+.hx-panel-blurb{color:var(--text);margin:0 0 24px;}
+.hx-panel-note{color:var(--muted);font-size:0.92rem;margin:0 0 10px;}
+.hx-ladder{list-style:none;margin:0 0 28px;padding:0;position:relative;}
+.hx-ladder::before{content:"";position:absolute;left:7px;top:20px;bottom:20px;width:2px;background:var(--line);}
+.hx-rung{position:relative;padding:12px 0 12px 32px;display:grid;grid-template-columns:120px minmax(0,1fr);column-gap:16px;row-gap:2px;}
+.hx-rung::before{content:"";position:absolute;left:1px;top:19px;width:14px;height:14px;border-radius:50%;background:var(--paper);border:3px solid #B9BDB5;}
+.hx-rung:last-child::before{border-color:var(--accent);background:var(--accent);}
+.hx-rung-level{color:var(--muted);font-size:0.9rem;grid-row:span 2;padding-top:2px;}
+.hx-rung-title{font-weight:700;color:var(--ink);}
+.hx-rung-tech{color:var(--muted);font-size:0.9rem;}
 
-/* ── Sections ── */
-.hx-section{ padding:clamp(72px, 9vw, 120px) 0; }
-.hx-section-tight{ padding:clamp(48px, 6vw, 72px) 0; }
-.hx-panel-bg{ background:var(--panel); }
-.hx-section-head{ display:flex; flex-direction:column; gap:16px; margin-bottom:clamp(36px, 5vw, 56px); max-width:760px; }
-.hx-cta-row{ display:flex; flex-wrap:wrap; align-items:center; gap:16px 24px; margin-top:clamp(32px, 4vw, 48px); }
+.hx-steps-title{margin-top:68px;margin-bottom:20px;}
+.hx-steps{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(4,1fr);gap:28px;}
+.hx-steps li{border-top:1px solid #CFD2CC;padding-top:18px;}
+.hx-steps strong{display:block;margin:12px 0 6px;font-size:1.03rem;color:var(--ink);}
+.hx-steps p{margin:0;color:var(--muted);font-size:0.95rem;}
+.hx-step-n{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:var(--ink);color:#fff;font-weight:700;font-size:0.82rem;}
+.hx-cta-row{display:flex;align-items:center;gap:24px;flex-wrap:wrap;margin-top:44px;}
 
-/* Services: sticky intro + list */
-.hx-aside-layout{ display:grid; grid-template-columns:minmax(0, 4fr) minmax(0, 7fr); gap:clamp(32px, 6vw, 96px); align-items:start; }
-.hx-aside{ position:sticky; top:100px; display:flex; flex-direction:column; align-items:flex-start; gap:20px; }
-.hx-services > div{ display:grid; grid-template-columns:minmax(0, 2fr) minmax(0, 3fr); gap:8px 32px; padding:20px 0; border-top:1px solid var(--line); }
-.hx-services > div:last-child{ border-bottom:1px solid var(--line); }
-.hx-services dt{ color:var(--ink); font-weight:700; font-size:1.08rem; letter-spacing:-.01em; }
-.hx-services dd{ color:var(--muted); line-height:1.5; }
-.hx-industries{ margin-top:24px; color:var(--muted); font-size:.97rem; }
+/* ── Motion ──
+   Hero: copy rises in on load, alongside the curve drawing itself.
+   Sections: [data-reveal] elements rise in once as they scroll into view (see useScrollReveal). */
+.hx-hero-copy > *{animation:hxRise .7s cubic-bezier(.2,.7,.2,1) both;}
+.hx-hero-copy > :nth-child(1){animation-delay:.05s;}
+.hx-hero-copy > :nth-child(2){animation-delay:.18s;}
+.hx-hero-copy > :nth-child(3){animation-delay:.3s;}
+.hx-hero-copy > :nth-child(4){animation-delay:.42s;}
+.hx-facts{animation:hxRise .7s cubic-bezier(.2,.7,.2,1) .55s both;}
+@keyframes hxRise{from{opacity:0;transform:translateY(22px);}to{opacity:1;transform:none;}}
 
-/* AI: forest band */
-.hx-forest{ background:var(--forest); color:var(--forest-text); }
-.hx-forest .hx-h2, .hx-forest .hx-h3{ color:#fff; }
-.hx-forest .hx-lead{ color:var(--forest-text); }
-.hx-ai{ display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); border-top:1px solid var(--forest-line); }
-.hx-ai-item{ display:flex; flex-direction:column; gap:10px; padding:32px 40px 32px 0; border-bottom:1px solid var(--forest-line); }
-.hx-ai-item:nth-child(even){ padding:32px 0 32px 40px; border-left:1px solid var(--forest-line); }
-.hx-ai-item p{ max-width:46ch; line-height:1.55; }
-.hx-ai-proof{ margin-top:auto; padding-top:8px; color:#8FE0BC; font-weight:600; font-size:.95rem; }
+/* Uses the separate 'translate' property so hover effects that use 'transform' still work */
+[data-reveal]{opacity:0;}
+[data-reveal].is-in{animation:hxReveal .75s cubic-bezier(.2,.7,.2,1) both;animation-delay:var(--d,0ms);}
+@keyframes hxReveal{from{opacity:0;translate:0 26px;}to{opacity:1;translate:0 0;}}
 
-/* Process: a real sequence, so numbered */
-.hx-process{ display:grid; grid-template-columns:repeat(7, minmax(0, 1fr)); gap:12px; margin-top:28px; }
-.hx-process li{ position:relative; display:flex; flex-direction:column; gap:12px; color:var(--ink); font-weight:600; }
-.hx-process li::after{ content:''; position:absolute; top:17px; left:44px; right:-6px; height:2px; background:var(--line-strong); }
-.hx-process li:last-child::after{ display:none; }
-.hx-step-n{ width:36px; height:36px; flex:none; border-radius:50%; display:grid; place-items:center; border:2px solid var(--accent); color:var(--accent-press); background:var(--paper); font-weight:700; font-size:.92rem; }
+/* Hover lift on cards and buttons */
+.hx-btn{transition:background-color .15s ease,border-color .15s ease,color .15s ease,transform .2s ease,box-shadow .2s ease;}
+.hx-btn:hover{transform:translateY(-1px);}
+.hx-btn-primary:hover{box-shadow:0 8px 20px -8px rgba(11,122,85,.55);}
+.hx-btn:active{transform:translateY(0);}
+.hx-case,.hx-product{transition:transform .25s ease,box-shadow .25s ease,border-color .25s ease;}
+.hx-case:hover,.hx-product:hover{transform:translateY(-3px);box-shadow:0 18px 40px -24px rgba(21,23,26,.28);border-color:#D3D6D0;}
+.hx-chip{transition:border-color .2s ease,transform .2s ease;}
+.hx-chip:hover{border-color:var(--accent);transform:translateY(-2px);}
+.hx-services > div{transition:background-color .2s ease;}
+.hx-services > div dt{transition:color .2s ease;}
+.hx-services > div:hover dt{color:var(--accent-press);}
+.hx-nav-links a{position:relative;}
+.hx-nav-links a::after{content:"";position:absolute;left:0;right:0;bottom:-6px;height:2px;background:var(--accent);transform:scaleX(0);transform-origin:left;transition:transform .25s ease;}
+.hx-nav-links a:hover::after{transform:scaleX(1);}
+
+/* Domain switcher: content slides in, project steps appear one after another */
+.hx-panel{animation:hxPanelIn .35s ease both;}
+@keyframes hxPanelIn{from{opacity:0;transform:translateX(10px);}to{opacity:1;transform:none;}}
+.hx-rung{animation:hxRise .45s cubic-bezier(.2,.7,.2,1) both;animation-delay:calc(var(--i,0) * 110ms + 120ms);}
+.hx-tab{transition:background-color .2s ease,color .2s ease;}
+
+/* Mobile menu */
+.hx-mobile-menu{animation:hxMenu .22s ease both;}
+@keyframes hxMenu{from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:none;}}
+
+/* Client marquee */
+.hx-clients-band{border-top:1px solid var(--line);padding:28px 0 32px;}
+.hx-clients-title{margin:0 0 16px;color:var(--muted);font-size:0.95rem;font-weight:500;}
+.hx-marquee{overflow:hidden;-webkit-mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);}
+.hx-marquee-track{display:flex;width:max-content;animation:hxMarquee var(--hx-marquee-time,40s) linear infinite;}
+.hx-marquee:hover .hx-marquee-track,.hx-marquee:focus-within .hx-marquee-track{animation-play-state:paused;}
+.hx-marquee-list{display:flex;gap:12px;list-style:none;margin:0;padding:0 12px 0 0;}
+@keyframes hxMarquee{from{transform:translateX(0);}to{transform:translateX(-50%);}}
+.hx-chip{display:flex;align-items:center;gap:12px;padding:10px 18px 10px 10px;border:1px solid var(--line);border-radius:999px;background:var(--paper);white-space:nowrap;}
+.hx-chip-mark{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;background:var(--ink);color:#fff;font-family:var(--display);font-weight:700;font-size:1rem;flex-shrink:0;}
+.hx-chip-nda .hx-chip-mark{background:var(--mist);color:var(--muted);border:1px solid var(--line);}
+.hx-chip-text{display:flex;flex-direction:column;line-height:1.2;}
+.hx-chip-name{font-weight:700;color:var(--ink);font-size:0.95rem;}
+.hx-chip-meta{color:var(--muted);font-size:0.82rem;}
+.hx-chip:not(.hx-chip-nda) .hx-chip-meta{color:var(--accent-press);}
+
+/* AI solutions */
+.hx-ai{display:grid;grid-template-columns:repeat(2,1fr);gap:0;border-top:1px solid var(--line);}
+.hx-ai-item{padding:30px 32px 30px 0;border-bottom:1px solid var(--line);}
+.hx-ai-item:nth-child(2n){padding-left:32px;padding-right:0;border-left:1px solid var(--line);}
+.hx-ai-item .hx-muted{margin:0 0 12px;max-width:52ch;}
+.hx-ai-proof{margin:0;font-size:0.92rem;font-weight:600;color:var(--accent-press);}
+.hx-section-tight{padding:56px 0;}
+.hx-section-tight .hx-h3{margin-bottom:20px;}
+.hx-split-even{grid-template-columns:1fr 1fr;gap:24px;}
+.hx-product{border:1px solid var(--line);border-radius:20px;padding:30px;background:var(--paper);}
+.hx-product .hx-muted{margin:0 0 20px;}
+.hx-product .hx-courses{margin:0;}
+
+/* Academy */
+.hx-courses{list-style:none;padding:0;margin:28px 0 32px;display:flex;flex-wrap:wrap;gap:8px;}
+.hx-courses li{border:1px solid var(--line);background:var(--paper);border-radius:999px;padding:6px 14px;font-size:0.9rem;color:var(--text);}
+.hx-aside{border:1px solid var(--line);border-radius:20px;padding:30px;background:var(--mist);}
+.hx-aside .hx-muted{margin:0 0 22px;}
+
+/* Services */
+.hx-services{display:grid;grid-template-columns:repeat(3,1fr);gap:0;margin:0;border-top:1px solid var(--line);}
+.hx-services > div{padding:26px 28px 26px 0;border-bottom:1px solid var(--line);}
+.hx-services > div:not(:nth-child(3n+1)){padding-left:28px;border-left:1px solid var(--line);}
+.hx-services dt{font-weight:700;color:var(--ink);margin-bottom:6px;}
+.hx-services dd{margin:0;color:var(--muted);font-size:0.95rem;}
+.hx-industries{color:var(--text);margin:28px 0 0;}
+.hx-process{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:14px 30px;}
+.hx-process li{display:flex;align-items:center;gap:10px;font-weight:600;color:var(--ink);}
 
 /* Client work */
-.hx-cases{ display:flex; flex-direction:column; gap:20px; }
-.hx-case{ display:grid; grid-template-columns:minmax(0, 8fr) minmax(0, 3fr); gap:clamp(24px, 4vw, 64px); background:#fff; border:1px solid var(--line); border-radius:20px; padding:clamp(24px, 4vw, 44px); }
-.hx-case-name{ color:var(--ink); font-weight:800; font-size:clamp(1.6rem, 2.6vw, 2.1rem); letter-spacing:-.035em; line-height:1.1; margin-bottom:4px; }
-.hx-case-built{ display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:24px; margin-top:28px; }
-.hx-case-built dt{ color:var(--ink); font-weight:700; margin-bottom:4px; }
-.hx-case-built dd{ color:var(--muted); font-size:.95rem; line-height:1.5; }
-.hx-case-stack{ margin-top:24px; color:var(--muted); font-size:.93rem; }
-.hx-case-results{ display:flex; flex-direction:column; justify-content:center; border-left:1px solid var(--line); padding-left:clamp(24px, 3vw, 40px); }
-.hx-case-results > div{ display:flex; flex-direction:column-reverse; padding:12px 0; border-bottom:1px solid var(--line); }
-.hx-case-results > div:last-child{ border-bottom:0; }
-.hx-case-results dd{ color:var(--accent); font-weight:800; font-size:clamp(2rem, 3.4vw, 2.8rem); letter-spacing:-.045em; line-height:1; }
-.hx-case-results dt{ color:var(--muted); font-size:.93rem; margin-top:4px; }
-.hx-nda{ margin-top:28px; color:var(--muted); }
-.hx-nda strong{ color:var(--ink); }
+.hx-case{border:1px solid var(--line);border-radius:20px;padding:34px;margin-bottom:20px;background:var(--paper);}
+.hx-case-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:24px;}
+.hx-badge{font-size:0.82rem;font-weight:600;color:var(--accent-press);background:var(--accent-soft);border-radius:999px;padding:5px 12px;white-space:nowrap;}
+.hx-case-built{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:24px;margin-bottom:20px;}
+.hx-case-built strong{display:block;margin-bottom:4px;color:var(--ink);}
+.hx-case-built p{margin:0;color:var(--muted);font-size:0.94rem;}
+.hx-case-stack{color:var(--muted);font-size:0.94rem;margin:0 0 20px;}
+.hx-case-results{display:flex;flex-wrap:wrap;gap:44px;margin:0;padding-top:22px;border-top:1px solid var(--line);}
+.hx-case-results > div{display:flex;flex-direction:column;}
+.hx-case-results dd{margin:0;font-family:var(--display);font-weight:700;font-size:1.8rem;letter-spacing:-0.02em;color:var(--ink);}
+.hx-case-results dt{color:var(--muted);font-size:0.9rem;}
+.hx-nda{color:var(--muted);margin:28px 0 0;max-width:80ch;}
+.hx-nda strong{color:var(--ink);font-weight:600;}
 
-/* Products */
-.hx-products{ display:grid; grid-template-columns:minmax(0, 1fr) minmax(0, 1fr); border-top:1.5px solid var(--ink); }
-.hx-product{ display:flex; flex-direction:column; align-items:flex-start; gap:14px; padding:32px 48px 0 0; }
-.hx-product + .hx-product{ padding:32px 0 0 48px; border-left:1px solid var(--line); }
-.hx-courses{ display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
-.hx-courses li{ padding:5px 12px; border-radius:999px; background:var(--panel); color:var(--text); font-size:.88rem; font-weight:500; }
+/* Form */
+.hx-form{border:1px solid var(--line);border-radius:20px;padding:30px;background:var(--paper);}
+.hx-form-done .hx-muted{margin:0 0 20px;}
+.hx-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
+.hx-field{display:flex;flex-direction:column;gap:6px;margin-bottom:16px;}
+.hx-form-grid .hx-field{margin-bottom:0;}
+.hx-field > span{font-size:0.9rem;font-weight:600;color:var(--ink);}
+.hx-field em{font-style:normal;color:var(--muted);font-weight:400;}
+.hx-field input,.hx-field select,.hx-field textarea{font:inherit;font-size:0.96rem;color:var(--ink);background:var(--paper);border:1px solid #CFD2CC;border-radius:12px;padding:11px 13px;outline:none;width:100%;}
+.hx-field input,.hx-field select{min-height:46px;}
+.hx-field textarea{resize:vertical;}
+.hx-field input::placeholder,.hx-field textarea::placeholder{color:#9A9EA5;}
+.hx-field input:focus,.hx-field select:focus,.hx-field textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(11,122,85,.15);}
+.hx-contact-alt{margin-top:20px;}
 
-/* Internships: domain explorer */
-.hx-explorer{ display:grid; grid-template-columns:minmax(220px, 3fr) minmax(0, 7fr); background:#fff; border:1px solid var(--line); border-radius:20px; overflow:hidden; }
-.hx-tabs{ display:flex; flex-direction:column; padding:12px; border-right:1px solid var(--line); background:var(--paper); }
-.hx-tab{ text-align:left; padding:12px 14px; border:0; border-radius:10px; background:transparent; color:var(--text); font-weight:500; font-size:.97rem; }
-.hx-tab:hover{ background:var(--panel); color:var(--ink); }
-.hx-tab[aria-selected="true"]{ background:var(--ink); color:#fff; font-weight:600; }
-.hx-panel{ display:flex; flex-direction:column; align-items:flex-start; gap:10px; padding:clamp(24px, 4vw, 44px); }
-.hx-panel-title{ color:var(--ink); font-weight:800; font-size:clamp(1.5rem, 2.4vw, 1.9rem); letter-spacing:-.03em; line-height:1.1; }
-.hx-panel-blurb{ color:var(--text); }
-.hx-panel-note{ margin-top:12px; color:var(--muted); font-size:.93rem; }
-.hx-ladder{ align-self:stretch; display:flex; flex-direction:column; margin-bottom:20px; }
-.hx-rung{ display:grid; grid-template-columns:120px minmax(0, 1fr); gap:2px 20px; padding:14px 0; border-top:1px solid var(--line); }
-.hx-rung:last-child{ border-bottom:1px solid var(--line); }
-.hx-rung-level{ grid-row:span 2; color:var(--accent-press); font-weight:700; font-size:.93rem; }
-.hx-rung-title{ color:var(--ink); font-weight:700; }
-.hx-rung-tech{ color:var(--muted); font-size:.92rem; }
-.hx-steps-title{ margin:clamp(48px, 6vw, 72px) 0 24px; }
-.hx-steps{ display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:32px; }
-.hx-steps li{ display:flex; flex-direction:column; gap:8px; }
-.hx-steps .hx-step-n{ background:var(--panel); margin-bottom:6px; }
-.hx-steps strong{ color:var(--ink); font-weight:700; }
-.hx-steps p{ color:var(--muted); font-size:.95rem; line-height:1.5; }
-
-/* Contact */
-.hx-contact{ display:grid; grid-template-columns:minmax(0, 5fr) minmax(0, 7fr); gap:clamp(32px, 6vw, 96px); align-items:start; }
-.hx-contact > div:first-child{ display:flex; flex-direction:column; gap:20px; }
-.hx-contact-list{ display:flex; flex-direction:column; margin-top:8px; }
-.hx-contact-list > div{ display:grid; grid-template-columns:80px minmax(0, 1fr); gap:16px; padding:14px 0; border-top:1px solid var(--line); }
-.hx-contact-list > div:last-child{ border-bottom:1px solid var(--line); }
-.hx-contact-list dt{ color:var(--muted); font-size:.93rem; }
-.hx-contact-list dd{ color:var(--ink); font-weight:500; }
-.hx-social{ display:flex; gap:8px; }
-.hx-social a{ width:42px; height:42px; display:grid; place-items:center; border-radius:10px; border:1.5px solid var(--line-strong); color:var(--ink); }
-.hx-social a:hover{ border-color:var(--ink); }
-.hx-form{ display:flex; flex-direction:column; gap:16px; background:#fff; border:1px solid var(--line); border-radius:20px; padding:clamp(20px, 3vw, 36px); }
-.hx-form-done{ align-items:flex-start; gap:12px; }
-.hx-form-grid{ display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:16px; }
-.hx-field{ display:flex; flex-direction:column; gap:6px; }
-.hx-field > span{ color:var(--ink); font-weight:600; font-size:.93rem; }
-.hx-field em{ color:var(--muted); font-style:normal; font-weight:400; }
-.hx-field input, .hx-field select, .hx-field textarea{
-  width:100%; min-height:48px; padding:12px 14px; border:1.5px solid var(--line-strong); border-radius:10px;
-  background:var(--paper); color:var(--ink); font:inherit; font-size:1rem;
-}
-.hx-field textarea{ resize:vertical; min-height:128px; line-height:1.5; }
-.hx-field input::placeholder, .hx-field textarea::placeholder{ color:#87928D; }
-.hx-field input:focus, .hx-field select:focus, .hx-field textarea:focus{ outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); background:#fff; }
+/* Social */
+.hx-social{list-style:none;margin:0;padding:0;display:flex;gap:10px;}
+.hx-social a{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:50%;border:1px solid #CFD2CC;color:var(--ink);background:var(--paper);text-decoration:none;transition:border-color .15s ease,color .15s ease,background-color .15s ease;}
+.hx-social a:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-soft);}
+.hx-contact-social{display:flex;align-items:center;gap:14px;margin-top:24px;}
+.hx-footer .hx-social{flex-direction:row;gap:10px;}
+.hx-footer .hx-social a{color:var(--ink);}
 
 /* Footer */
-.hx-footer{ background:var(--forest); color:var(--forest-text); padding:72px 0 32px; }
-.hx-footer .hx-brand-word{ color:#fff; }
-.hx-footer-grid{ display:grid; grid-template-columns:minmax(0, 2fr) repeat(3, minmax(0, 1fr)); gap:40px; }
-.hx-footer-blurb{ margin:16px 0 20px; max-width:34ch; font-size:.95rem; }
-.hx-footer h4{ color:#fff; font-weight:700; font-size:.97rem; margin:0 0 14px; }
-.hx-footer li{ margin-bottom:8px; }
-.hx-footer li a{ font-size:.93rem; color:var(--forest-text); }
-.hx-footer li a:hover{ color:#fff; text-decoration:underline; text-underline-offset:3px; }
-.hx-footer .hx-social a{ color:#fff; border-color:var(--forest-line); }
-.hx-footer .hx-social a:hover{ border-color:#fff; }
-.hx-footer-legal{ margin-top:56px; padding-top:24px; border-top:1px solid var(--forest-line); font-size:.85rem; color:#A9C4B7; }
+.hx-footer{border-top:1px solid var(--line);padding:60px 0 32px;background:var(--paper);}
+.hx-footer-grid{display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr;gap:32px;}
+.hx-footer-blurb{margin:14px 0 12px;max-width:34ch;font-size:0.95rem;}
+.hx-footer h4{font-size:0.95rem;font-weight:700;color:var(--ink);margin:0 0 12px;}
+.hx-footer ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;}
+.hx-footer ul a{text-decoration:none;color:var(--muted);font-size:0.94rem;}
+.hx-footer ul a:hover{color:var(--ink);}
+.hx-footer-legal{margin-top:40px;padding-top:24px;border-top:1px solid var(--line);color:var(--muted);font-size:0.85rem;}
 
-/* ── Responsive ── */
-@media (max-width: 1080px){
-  .hx-nav-links{ display:none; }
-  .hx-nav-actions{ margin-left:auto; }
-  .hx-menu-btn{ display:inline-flex; }
-  .hx-process{ grid-template-columns:repeat(4, minmax(0, 1fr)); row-gap:28px; }
-  .hx-process li:nth-child(4)::after{ display:none; }
-  .hx-case{ grid-template-columns:1fr; }
-  .hx-case-results{ flex-direction:row; border-left:0; padding-left:0; border-top:1px solid var(--line); padding-top:12px; gap:24px; }
-  .hx-case-results > div{ border-bottom:0; flex:1; }
-  .hx-footer-grid{ grid-template-columns:repeat(3, minmax(0, 1fr)); }
-  .hx-footer-grid > div:first-child{ grid-column:1 / -1; }
+/* Responsive */
+@media (max-width: 1100px){
+  .hx-nav-links{display:none;}
+  .hx-menu-btn{display:inline-flex;}
 }
-@media (max-width: 860px){
-  .hx-hero-sub{ grid-template-columns:1fr; }
-  .hx-hero-students{ text-align:left; }
-  .hx-starter-body{ grid-template-columns:1fr; }
-  .hx-facts{ grid-template-columns:repeat(2, minmax(0, 1fr)); row-gap:20px; }
-  .hx-facts > div:nth-child(3){ border-left:0; padding-left:0; }
-  .hx-aside-layout, .hx-contact{ grid-template-columns:1fr; }
-  .hx-aside{ position:static; }
-  .hx-ai{ grid-template-columns:1fr; }
-  .hx-ai-item, .hx-ai-item:nth-child(even){ padding:28px 0; border-left:0; }
-  .hx-case-built{ grid-template-columns:1fr; gap:16px; }
-  .hx-products{ grid-template-columns:1fr; }
-  .hx-product, .hx-product + .hx-product{ padding:32px 0; border-left:0; }
-  .hx-product + .hx-product{ border-top:1px solid var(--line); }
-  .hx-explorer{ grid-template-columns:1fr; }
-  .hx-tabs{ flex-direction:row; overflow-x:auto; border-right:0; border-bottom:1px solid var(--line); gap:4px; scrollbar-width:thin; }
-  .hx-tab{ white-space:nowrap; flex:none; }
-  .hx-steps{ grid-template-columns:repeat(2, minmax(0, 1fr)); }
+@media (max-width: 960px){
+  .hx-menu-btn{display:inline-flex;}
+  .hx-hero-grid{grid-template-columns:1fr;}
+  .hx-hero-visual{max-width:520px;}
+  .hx-split{grid-template-columns:1fr;gap:40px;}
+  .hx-split-even{grid-template-columns:1fr;gap:20px;}
+  .hx-steps{grid-template-columns:1fr 1fr;}
+  .hx-services{grid-template-columns:1fr 1fr;}
+  .hx-services > div{padding:22px 20px 22px 0 !important;border-left:none !important;}
+  .hx-services > div:nth-child(2n){padding-left:20px !important;border-left:1px solid var(--line) !important;}
+  .hx-footer-grid{grid-template-columns:1fr 1fr;}
 }
-@media (max-width: 600px){
-  .hx-root{ font-size:16px; }
-  .hx-hide-sm{ display:none; }
-  .hx-nav-actions .hx-btn-primary{ padding:10px 14px; font-size:.92rem; }
-  .hx-starter{ box-shadow:5px 5px 0 var(--accent-soft); }
-  .hx-starter-flow ol{ grid-template-columns:1fr; gap:0; }
-  .hx-starter-flow li{ padding:6px 0 18px 48px; min-height:56px; }
-  .hx-starter-flow li::before{ top:36px; bottom:0; left:15px; right:auto; width:2px; height:auto; }
-  .hx-starter-foot .hx-btn{ width:100%; }
-  .hx-services > div{ grid-template-columns:1fr; }
-  .hx-process{ grid-template-columns:1fr; gap:0; }
-  .hx-process li{ flex-direction:row; align-items:center; gap:16px; padding-bottom:16px; }
-  .hx-process li::after{ top:40px; bottom:0; left:17px; right:auto; width:2px; height:auto; display:block; }
-  .hx-process li:nth-child(4)::after{ display:block; }
-  .hx-process li:last-child::after{ display:none; }
-  .hx-case-results{ flex-direction:column; gap:0; }
-  .hx-rung{ grid-template-columns:1fr; }
-  .hx-rung-level{ grid-row:auto; }
-  .hx-steps{ grid-template-columns:1fr; gap:24px; }
-  .hx-form-grid{ grid-template-columns:1fr; }
-  .hx-footer-grid{ grid-template-columns:1fr 1fr; }
+@media (max-width: 720px){
+  .hx-root{font-size:16px;}
+  .hx-hide-sm{display:none;}
+  .hx-traj-label{font-size:21px;}
+  .hx-traj-sub{font-size:17px;}
+  .hx-hero{padding-top:44px;}
+  .hx-section{padding:72px 0;}
+  .hx-facts{grid-template-columns:1fr 1fr;}
+  .hx-facts > div:nth-child(3){padding-left:0;border-left:none;}
+  .hx-facts > div:nth-child(n+3){border-top:1px solid var(--line);}
+  .hx-explorer{grid-template-columns:1fr;}
+  .hx-tabs{flex-direction:row;overflow-x:auto;border-right:none;border-bottom:1px solid var(--line);scrollbar-width:none;}
+  .hx-tab{white-space:nowrap;}
+  .hx-panel{padding:24px 20px;}
+  .hx-rung{grid-template-columns:1fr;}
+  .hx-rung-level{grid-row:auto;}
+  .hx-steps{grid-template-columns:1fr;}
+  .hx-services{grid-template-columns:1fr;}
+  .hx-ai{grid-template-columns:1fr;}
+  .hx-ai-item,.hx-ai-item:nth-child(2n){padding:24px 0;border-left:none;}
+  .hx-services > div,.hx-services > div:nth-child(2n){padding:20px 0 !important;border-left:none !important;}
+  .hx-form-grid{grid-template-columns:1fr;}
+  .hx-case{padding:24px 20px;}
+  .hx-footer-grid{grid-template-columns:1fr;}
+}
+@media (max-width: 420px){
+  .hx-nav-actions .hx-btn-primary{padding:9px 14px;font-size:0.88rem;}
+  .hx-brand-word{display:none;}
+}
+@media (prefers-reduced-motion: reduce){
+  .hx-hero-copy > *,.hx-facts,.hx-panel,.hx-rung,.hx-mobile-menu{animation:none !important;}
+  [data-reveal],[data-reveal].is-in{opacity:1 !important;animation:none !important;}
+  .hx-btn:hover,.hx-case:hover,.hx-product:hover,.hx-chip:hover{transform:none;}
+  .hx-marquee{-webkit-mask-image:none;mask-image:none;}
+  .hx-marquee-track{animation:none;width:auto;padding:0 24px;}
+  .hx-marquee-list{flex-wrap:wrap;}
+  .hx-marquee-list[aria-hidden="true"]{display:none;}
+  .hx-chip-repeat{display:none;}
+  .hx-traj-path{animation:none;stroke-dashoffset:0;}
+  .hx-traj-head,.hx-traj-dot,.hx-traj-stop{animation:none;opacity:1;}
+  .hx-btn{transition:none;}
 }
 `;
