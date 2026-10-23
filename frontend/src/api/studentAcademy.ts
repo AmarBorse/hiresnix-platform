@@ -9,6 +9,10 @@ export const studentAcademyApi = {
   saveProgress: (data: { courseId: string; completed: string[]; xp: number; claimedCert?: boolean }) =>
     apiClient.post('/student-academy/progress', data).then(r => r.data),
 
+  // Finished courses with their certificate numbers
+  getCertificates: () =>
+    apiClient.get('/student-academy/certificates').then(r => r.data),
+
   downloadCertificate: (courseId: string): Promise<Blob> =>
     apiClient.get(`/student-academy/certificate/${courseId}`, { responseType: 'blob' }).then(r => r.data as Blob),
 };

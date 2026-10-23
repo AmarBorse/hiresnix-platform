@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
 import { studentAcademyApi } from '../../api/studentAcademy';
+import { speakAI, stopAllSpeech, VOICES } from '../../lib/aiVoice';
 
 // ── Student adapter ───────────────────────────────────────────────
 // Everything account-specific (who is logged in, where progress is saved,
@@ -19,6 +20,7 @@ interface AcademyAdapter {
   getProgress: () => Promise<any>;
   saveProgress: (d: ProgressPayload) => Promise<any>;
   downloadCertificate: (courseId: string) => Promise<Blob>;
+  getCertificates: () => Promise<any>;
   authToken: () => string;
   goHome: () => void;
 }
@@ -36,6 +38,7 @@ function useAcademyAdapter(): AcademyAdapter {
     getProgress: studentAcademyApi.getProgress,
     saveProgress: studentAcademyApi.saveProgress,
     downloadCertificate: studentAcademyApi.downloadCertificate,
+    getCertificates: studentAcademyApi.getCertificates,
     authToken: studentToken,
     goHome: () => {
       if (window.history.length > 1) window.history.back(); else window.location.href = '/student/dashboard';
@@ -988,6 +991,28 @@ function loadProgress(sid: string, cid: string) {
   try { const r = localStorage.getItem(`hx_academy_${sid}_${cid}`); return r ? JSON.parse(r) : null; } catch { return null; }
 }
 
+// ── Certificate download (used by the certificates section, course cards and lesson page) ──
+async function downloadAcademyCertificate(ac: any, sid: string, course: any): Promise<boolean> {
+  const local = loadProgress(sid, course.id);
+  try {
+    // Make sure the server has this device's progress before asking for the certificate
+    if (local?.completed?.length) {
+      await ac.saveProgress({ courseId: course.id, completed: local.completed, xp: local.xp || 0, claimedCert: true }).catch(() => {});
+    }
+    const blob: Blob = await ac.downloadCertificate(course.id);
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `Hiresnix_Academy_${course.title.replace(/[^A-Za-z0-9]+/g, '_')}_Certificate.pdf`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    saveProgress(sid, course.id, { ...(local || {}), claimedCert: true, lastActive: new Date().toISOString() });
+    return true;
+  } catch {
+    alert('Certificate download failed. Make sure every lesson in this course is marked complete, then try again.');
+    return false;
+  }
+}
+
 // ── XP & Levels ───────────────────────────────────────────────────
 const LEVELS = [
   { name:'Beginner', min:0, icon:'🌱' }, { name:'Explorer', min:100, icon:'🔍' },
@@ -1057,6 +1082,17 @@ function Catalog({ onSelect }: { onSelect:(c:any)=>void }) {
   const [hov, setHov] = useState<string|null>(null);
   const ac = useAcademy();
   const sid = ac.sid;
+  const [serverCerts, setServerCerts] = useState<any[]>([]);
+  const [downloading, setDownloading] = useState<string|null>(null);
+  useEffect(() => {
+    ac.getCertificates().then((r: any) => setServerCerts(Array.isArray(r?.data) ? r.data : [])).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const getCert = async (course: any) => {
+    setDownloading(course.id);
+    await downloadAcademyCertificate(ac, sid, course);
+    setDownloading(null);
+  };
   const totalL = COURSES.reduce((a,c) => a + c.modules.reduce((b,m) => b + m.lessons.length,0),0);
 
   const prog = COURSES.reduce((acc,c) => {
@@ -1076,6 +1112,7 @@ function Catalog({ onSelect }: { onSelect:(c:any)=>void }) {
         @keyframes slide-up{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
         @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
         .ccard{transition:all 0.25s!important}.ccard:hover{transform:translateY(-5px)!important}
+              @keyframes acSpin{to{transform:rotate(360deg)}}
       `}</style>
       <div style={{maxWidth:'1200px',margin:'0 auto'}}>
         {/* Back Button */}
@@ -1109,6 +1146,38 @@ function Catalog({ onSelect }: { onSelect:(c:any)=>void }) {
             </div>
           )}
         </div>
+        {/* ── Your certificates ── */}
+        {(() => {
+          const earned = COURSES.filter(c => prog[c.id]?.pct === 100 || serverCerts.some((s:any) => s.courseId === c.id));
+          if (!earned.length) return null;
+          return (
+            <div style={{marginBottom:'36px',padding:'22px',borderRadius:'20px',background:'linear-gradient(135deg,rgba(245,158,11,0.08),rgba(249,115,22,0.04))',border:'1px solid rgba(245,158,11,0.25)'}}>
+              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:'8px',marginBottom:'14px'}}>
+                <h2 style={{margin:0,color:'#fff',fontSize:'18px',fontWeight:800}}>🏆 Your certificates</h2>
+                <span style={{color:'#94a3b8',fontSize:'12px'}}>{earned.length} course{earned.length===1?'':'s'} completed · also listed in My Certificates</span>
+              </div>
+              <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(260px,1fr))',gap:'12px'}}>
+                {earned.map(c => {
+                  const s = serverCerts.find((x:any) => x.courseId === c.id);
+                  return (
+                    <div key={c.id} style={{display:'flex',alignItems:'center',gap:'12px',padding:'12px 14px',borderRadius:'14px',background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.08)'}}>
+                      <span style={{fontSize:'26px'}}>{c.icon}</span>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{color:'#fff',fontWeight:700,fontSize:'14px',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{c.title}</div>
+                        <div style={{color:'#64748b',fontSize:'11px'}}>{s?.certNo ? s.certNo : 'Ready to download'}</div>
+                      </div>
+                      <button onClick={() => getCert(c)} disabled={downloading===c.id}
+                        style={{display:'flex',alignItems:'center',gap:'6px',padding:'8px 12px',borderRadius:'10px',border:'none',background:'linear-gradient(135deg,#f59e0b,#f97316)',color:'#fff',fontSize:'12px',fontWeight:800,cursor:'pointer',opacity:downloading===c.id?0.6:1,whiteSpace:'nowrap'}}>
+                        {downloading===c.id ? <Loader2 size={13} style={{animation:'acSpin 1s linear infinite'}}/> : <Download size={13}/>} {downloading===c.id ? 'Preparing…' : 'Download'}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
+
         <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(300px,1fr))',gap:'18px'}}>
           {COURSES.map((c,i)=>{
             const p = prog[c.id];
@@ -1139,8 +1208,13 @@ function Catalog({ onSelect }: { onSelect:(c:any)=>void }) {
                 )}
                 <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
                   <div>
-                    {p?.cert ? <span style={{fontSize:'12px',fontWeight:700,color:'#f59e0b'}}>🏆 Certified!</span>
-                    : p?.pct===100 ? <span style={{fontSize:'12px',fontWeight:700,color:'#34d399'}}>✅ Complete</span>
+                    {p?.pct===100 ? (
+                      <button onClick={e => { e.stopPropagation(); getCert(c); }} disabled={downloading===c.id}
+                        style={{display:'flex',alignItems:'center',gap:'5px',padding:'6px 10px',borderRadius:'9px',border:'1px solid rgba(245,158,11,0.4)',background:'rgba(245,158,11,0.12)',color:'#f59e0b',fontSize:'12px',fontWeight:800,cursor:'pointer'}}>
+                        {downloading===c.id ? <Loader2 size={12} style={{animation:'acSpin 1s linear infinite'}}/> : <Download size={12}/>} {downloading===c.id ? 'Preparing…' : 'Certificate'}
+                      </button>
+                    )
+                    : p?.cert ? <span style={{fontSize:'12px',fontWeight:700,color:'#f59e0b'}}>🏆 Certified!</span>
                     : <div style={{display:'flex',gap:'2px'}}>{[...Array(5)].map((_,k)=><Star key={k} size={10} fill={c.accent} style={{color:c.accent}}/>)}</div>}
                   </div>
                   <div style={{display:'flex',alignItems:'center',gap:'4px',fontSize:'12px',fontWeight:700,color:c.accent}}>
@@ -1229,9 +1303,13 @@ function LessonPage({ course, onBack }: { course:any; onBack:()=>void }) {
   const startWave = () => { clearInterval(waveRef.current); waveRef.current = setInterval(()=>setWaveBars(Array(16).fill(0).map(()=>Math.random()*28+4)),100); };
   const stopWave = () => { clearInterval(waveRef.current); setWaveBars(Array(16).fill(4)); };
 
-  const speak = useCallback((text:string)=>{
-    if (muted || !window.speechSynthesis) return;
-    window.speechSynthesis.cancel();
+  const speak = useCallback(async (text:string)=>{
+    if (muted) return;
+    stopAllSpeech();
+    // 1) Natural Gemini voice; 2) browser voice if Gemini is unavailable
+    const usedGemini = await speakAI(text, { ...VOICES.teacher, onStart: ()=>{ setSpeaking(true); startWave(); } });
+    if (usedGemini) { setSpeaking(false); stopWave(); return; }
+    if (!window.speechSynthesis) return;
     const u = new SpeechSynthesisUtterance(text.replace(/```[\s\S]*?```/g,' ').replace(/[#*`_]/g,'').slice(0,500));
     u.lang='en-US'; u.rate=0.88; u.pitch=1.05;
     const voices = window.speechSynthesis.getVoices();
@@ -1244,7 +1322,7 @@ function LessonPage({ course, onBack }: { course:any; onBack:()=>void }) {
   },[muted]);
 
   const loadTeacher = useCallback(async()=>{
-    setTeacherLoading(true); setTeacherText(''); window.speechSynthesis?.cancel();
+    setTeacherLoading(true); setTeacherText(''); stopAllSpeech();
     let full = '';
     await groqStream(`You are Alex, an expert AI teacher. Teach "${lesson}" from ${course.title} in Simple English.\n1. Simple definition (1-2 sentences)\n2. Real-world analogy\n3. Key points (3-4 bullets)\n4. Quick tip\nBe conversational. Max 200 words.`,(t)=>{setTeacherText(t);full=t;});
     speak(full); setTeacherLoading(false);
@@ -1352,7 +1430,7 @@ Format: [{"q":"question","opts":["A","B","C","D"],"ans":0,"exp":"why this answer
     const SR=(window as any).SpeechRecognition||(window as any).webkitSpeechRecognition;
     if (!SR){alert('Voice not supported. Use Chrome browser.');return;}
     if (micOn){micRef.current?.abort();setMicOn(false);return;}
-    window.speechSynthesis?.cancel();
+    stopAllSpeech();
     setSpeaking(false);
     stopWave();
     setMicOn(true);
@@ -1380,7 +1458,7 @@ Format: [{"q":"question","opts":["A","B","C","D"],"ans":0,"exp":"why this answer
     setActiveMod(mi); setActiveLesson(li); setTab('video');
     setTeacherText(''); setCodeText(''); setBackward(''); setForward(''); setNotes('');
     setQuizAll([]); setQuizIdx(0); setSelectedAns(null); setQuizScore(0); setQuizDone(false);
-    setCodeOut(''); window.speechSynthesis?.cancel();
+    setCodeOut(''); stopAllSpeech();
   };
 
   const markDone = ()=>{
@@ -1412,8 +1490,8 @@ Format: [{"q":"question","opts":["A","B","C","D"],"ans":0,"exp":"why this answer
   useEffect(()=>{ if ((tab==='backward'||tab==='forward')&&!backward&&!traceLoading) loadTrace(); },[tab]);
   useEffect(()=>{ if (tab==='notes'&&!notes&&!notesLoading) loadNotes(); },[tab]);
   useEffect(()=>{ if (tab==='quiz'&&quizAll.length===0&&!quizLoading) loadQuiz(); },[tab]);
-  useEffect(()=>{ setTeacherText(''); setCodeText(''); setBackward(''); setForward(''); setNotes(''); setQuizAll([]); window.speechSynthesis?.cancel(); },[lesson]);
-  useEffect(()=>()=>{ window.speechSynthesis?.cancel(); clearInterval(waveRef.current); },[]);
+  useEffect(()=>{ setTeacherText(''); setCodeText(''); setBackward(''); setForward(''); setNotes(''); setQuizAll([]); stopAllSpeech(); },[lesson]);
+  useEffect(()=>()=>{ stopAllSpeech(); clearInterval(waveRef.current); },[]);
 
   const isDone=(mi:number,li:number)=>completed.has(`${mi}-${li}`);
   const curQuiz = quizAll[quizIdx];
@@ -1448,6 +1526,12 @@ Format: [{"q":"question","opts":["A","B","C","D"],"ans":0,"exp":"why this answer
           <div style={{background:'rgba(255,255,255,0.06)',borderRadius:'3px',height:'4px',overflow:'hidden'}}>
             <div style={{width:`${progress}%`,height:'100%',background:`linear-gradient(90deg,${ACC},${ACC}99)`,transition:'width 0.6s'}}/>
           </div>
+          {progress === 100 && (
+            <button onClick={()=>setShowCertModal(course.id)}
+              style={{marginTop:'10px',width:'100%',display:'flex',alignItems:'center',justifyContent:'center',gap:'6px',padding:'8px',borderRadius:'10px',border:'none',background:'linear-gradient(135deg,#f59e0b,#f97316)',color:'#fff',fontSize:'12px',fontWeight:800,cursor:'pointer'}}>
+              <Download size={13}/> Get certificate
+            </button>
+          )}
         </div>
         <div style={{flex:1,overflowY:'auto',padding:'6px'}}>
           {course.modules.map((mod:any,mi:number)=>(
@@ -1501,14 +1585,9 @@ Format: [{"q":"question","opts":["A","B","C","D"],"ans":0,"exp":"why this answer
                 <p style={{color:'#64748b',fontSize:'11px',margin:'4px 0 0'}}>{getLevel(xp).icon} {getLevel(xp).name}</p>
               </div>
               <button onClick={()=>{
-                ac.downloadCertificate(course.id)
-                  .then(blob=>{
-                    const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
-                    a.download=`Hiresnix_Academy_${course.title.replace(/\s+/g,'_')}_Certificate.pdf`; a.click();
-                    setTimeout(()=>URL.revokeObjectURL(a.href),5000);
-                  }).catch(()=>alert('Certificate download failed. Make sure every lesson is marked complete, then try again.'));
-                setClaimedCerts(prev=>new Set([...prev,course.id]));
                 saveProgress(sid,course.id,{completed:[...completed],xp,claimedCert:true,lastActive:new Date().toISOString()});
+                downloadAcademyCertificate(ac, sid, course);
+                setClaimedCerts(prev=>new Set([...prev,course.id]));
                 setShowCertModal(null);
               }} style={{width:'100%',padding:'13px',borderRadius:'12px',border:'none',background:'linear-gradient(135deg,#f59e0b,#f97316)',color:'#fff',fontSize:'14px',fontWeight:800,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:'8px',marginBottom:'10px'}}>
                 <Download size={16}/> Download Certificate
@@ -1528,7 +1607,7 @@ Format: [{"q":"question","opts":["A","B","C","D"],"ans":0,"exp":"why this answer
             <div style={{display:'flex',alignItems:'center',gap:'4px',padding:'5px 11px',borderRadius:'8px',background:'rgba(245,158,11,0.1)',border:'1px solid rgba(245,158,11,0.2)'}}>
               <span style={{fontSize:'12px'}}>{getLevel(xp).icon}</span><span style={{color:'#f59e0b',fontSize:'11px',fontWeight:700}}>{xp} XP</span>
             </div>
-            <button onClick={()=>{setMuted(m=>!m);window.speechSynthesis?.cancel();setSpeaking(false);stopWave();}}
+            <button onClick={()=>{setMuted(m=>!m);stopAllSpeech();setSpeaking(false);stopWave();}}
               style={{display:'flex',alignItems:'center',gap:'5px',padding:'6px 11px',borderRadius:'8px',border:'1px solid rgba(255,255,255,0.1)',background:'rgba(255,255,255,0.05)',color:muted?'#334155':ACC,fontSize:'11px',fontWeight:600,cursor:'pointer'}}>
               {muted?<VolumeX size={13}/>:<Volume2 size={13}/>}
             </button>
@@ -1651,7 +1730,7 @@ Format: [{"q":"question","opts":["A","B","C","D"],"ans":0,"exp":"why this answer
                 {speaking && (
                   <button onClick={()=>{
                     if(window.speechSynthesis.paused){window.speechSynthesis.resume();setSpeaking(true);}
-                    else{window.speechSynthesis.pause();window.speechSynthesis.cancel();setSpeaking(false);stopWave();}
+                    else{stopAllSpeech();setSpeaking(false);stopWave();}
                   }} style={{display:'flex',alignItems:'center',gap:'6px',padding:'7px 14px',borderRadius:'9px',border:'1px solid rgba(255,255,255,0.1)',background:'rgba(255,255,255,0.05)',color:'#fff',fontSize:'11px',fontWeight:600,cursor:'pointer'}}>
                     ⏸ Pause
                   </button>

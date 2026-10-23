@@ -33,6 +33,22 @@ function ensureTable() {
 }
 
 const newCertNo = () => `HXAC-S${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
+
+// Give a finished course its permanent certificate number (once), return it
+async function ensureCertNo(userId, courseId, existing) {
+  if (existing) return existing;
+  await sequelize.query(
+    `UPDATE student_academy_progress SET cert_no = :certNo, claimed_cert = true
+     WHERE user_id = :uid AND course_id = :courseId AND cert_no IS NULL`,
+    { replacements: { certNo: newCertNo(), uid: userId, courseId } }
+  );
+  // Re-read in case two requests raced
+  const again = await sequelize.query(
+    'SELECT cert_no FROM student_academy_progress WHERE user_id = :uid AND course_id = :courseId',
+    { replacements: { uid: userId, courseId }, type: sequelize.QueryTypes.SELECT }
+  );
+  return again[0]?.cert_no;
+}
 const studentIdLabel = (userId) => `Hiresnix Student ID: HXS-${String(userId).padStart(6, '0')}`;
 
 // GET /api/student-academy/progress
@@ -84,21 +100,7 @@ const downloadCertificate = asyncHandler(async (req, res) => {
     res.status(403); throw new Error('Finish all lessons in this course to get the certificate');
   }
 
-  let certNo = row.cert_no;
-  if (!certNo) {
-    certNo = newCertNo();
-    await sequelize.query(
-      `UPDATE student_academy_progress SET cert_no = :certNo, claimed_cert = true
-       WHERE user_id = :uid AND course_id = :courseId AND cert_no IS NULL`,
-      { replacements: { certNo, uid: req.user.id, courseId } }
-    );
-    // Re-read in case two downloads raced
-    const again = await sequelize.query(
-      'SELECT cert_no FROM student_academy_progress WHERE user_id = :uid AND course_id = :courseId',
-      { replacements: { uid: req.user.id, courseId }, type: sequelize.QueryTypes.SELECT }
-    );
-    certNo = again[0]?.cert_no || certNo;
-  }
+  const certNo = await ensureCertNo(req.user.id, courseId, row.cert_no);
 
   try {
     await streamAcademyCertificate(res, {
@@ -112,6 +114,28 @@ const downloadCertificate = asyncHandler(async (req, res) => {
     console.error('Student academy cert error:', err);
     if (!res.headersSent) res.status(500).json({ success: false, message: 'Certificate generation failed' });
   }
+});
+
+// GET /api/student-academy/certificates — every finished course, with its certificate number
+const getMyCertificates = asyncHandler(async (req, res) => {
+  await ensureTable();
+  const rows = await sequelize.query(
+    'SELECT course_id, completed, xp, cert_no, last_active FROM student_academy_progress WHERE user_id = :uid ORDER BY last_active DESC',
+    { replacements: { uid: req.user.id }, type: sequelize.QueryTypes.SELECT }
+  );
+  const certificates = [];
+  for (const row of rows) {
+    if (!ACADEMY_COURSES[row.course_id] || !isCourseComplete(row.course_id, row.completed)) continue;
+    const certNo = await ensureCertNo(req.user.id, row.course_id, row.cert_no);
+    certificates.push({
+      courseId: row.course_id,
+      courseName: ACADEMY_COURSES[row.course_id].title,
+      certNo,
+      xp: row.xp || 0,
+      completedAt: row.last_active,
+    });
+  }
+  res.json({ success: true, data: certificates });
 });
 
 // Used by the public verify endpoint
@@ -131,4 +155,4 @@ async function findStudentAcademyCert(certNo) {
   }
 }
 
-module.exports = { getProgress, saveProgress, downloadCertificate, findStudentAcademyCert, studentIdLabel };
+module.exports = { getProgress, saveProgress, downloadCertificate, getMyCertificates, findStudentAcademyCert, studentIdLabel };

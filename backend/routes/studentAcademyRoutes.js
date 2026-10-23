@@ -11,6 +11,7 @@ r.use(protect, authorize('student'));
 
 r.get('/progress',              ctrl.getProgress);
 r.post('/progress',             ctrl.saveProgress);
+r.get('/certificates',          ctrl.getMyCertificates);
 r.get('/certificate/:courseId', ctrl.downloadCertificate);
 
 module.exports = r;
