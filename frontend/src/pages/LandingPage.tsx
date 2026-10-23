@@ -6,7 +6,6 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import client from '../api/client';
 import { HiresnixChatbot } from '../components/HiresnixChatbot';
-import SculptureHero from '../components/ui/liquid-sculpture-hero';
 
 const ENQUIRY_RESPONSE_TIMEOUT_MS = 8000;
 const INTEREST_OPTIONS = ['Software Development', 'AI Solutions', 'SaaS Product', 'Web Development', 'Mobile App', 'UI/UX Design', 'Internship Platform', 'Partnership', 'Other'];
@@ -508,49 +507,24 @@ export function LandingPage() {
 
       <main id="top">
         {/* ── Hero ── */}
-        <section
-          className="hx-hero"
-          style={{ padding: 0 }}
-          // SculptureHero's CTAs are plain <a href>; intercept the hashes it renders
-          // and route them through the page's own smooth-scroll / preset-interest logic
-          // instead of letting the browser jump natively.
-          onClickCapture={e => {
-            const a = (e.target as HTMLElement).closest('a[href]') as HTMLAnchorElement | null;
-            if (!a) return;
-            const href = a.getAttribute('href') || '';
-            if (href === '#contact') { e.preventDefault(); contactFor('Software Development'); }
-            else if (href === '#services') { e.preventDefault(); goTo('services'); }
-            else if (href === '#internships') { e.preventDefault(); goTo('internships'); }
-          }}
-        >
-          <SculptureHero
-            showNav={false}
-            showCredit={false}
-            interactive
-            intro
-            height="92vh"
-            backdropText="hiresnix"
-            eyebrow="AI-powered software development"
-            headline={'Software that\nanswers back.'}
-            headlineAccent="answers back."
-            body="Hiresnix designs, builds and maintains web apps, mobile apps and AI products for startups, businesses and institutions across India, from the first sketch to support after launch."
-            primaryCta={{ label: 'Start a project', href: '#contact' }}
-            secondaryCta={{ label: 'See our services', href: '#services' }}
-            hint="Move across the sculpture"
-            hintTouch="Touch the sculpture"
-            background="#FFFFFF"
-            darkBackground="#15171A"
-            theme="light"
-            themeToggle={false}
-            textColor="#15171A"
-            accentColor="#0B7A55"
-            headingFont="'Bricolage Grotesque', 'Helvetica Neue', Arial, sans-serif"
-            accentFont="'Bricolage Grotesque', 'Helvetica Neue', Arial, sans-serif"
-            bodyFont="inherit"
-          />
-          <p className="hx-wrap hx-hero-login" style={{ marginTop: 20 }}>
-            Looking for an internship? <a href="#internships" onClick={e => { e.preventDefault(); goTo('internships'); }}>Explore internships</a>
-          </p>
+        <section className="hx-hero">
+          <div className="hx-wrap hx-hero-grid">
+            <div className="hx-hero-copy">
+              <h1 className="hx-h1">AI-powered software development for growing businesses.</h1>
+              <p className="hx-lead">
+                Hiresnix designs, builds and maintains web apps, mobile apps and AI products for startups, businesses
+                and institutions across India, from the first sketch to support after launch.
+              </p>
+              <div className="hx-hero-ctas">
+                <button className="hx-btn hx-btn-primary hx-btn-lg" type="button" onClick={() => contactFor('Software Development')}>Start a project</button>
+                <button className="hx-btn hx-btn-ghost hx-btn-lg" type="button" onClick={() => goTo('services')}>See our services</button>
+              </div>
+              <p className="hx-hero-login">
+                Looking for an internship? <a href="#internships" onClick={e => { e.preventDefault(); goTo('internships'); }}>Explore internships</a>
+              </p>
+            </div>
+            <div className="hx-hero-visual"><Trajectory /></div>
+          </div>
           <div className="hx-wrap">
             <dl className="hx-facts">
               <div><dt>Clients served</dt><dd><CountUp value="50+" /></dd></div>
