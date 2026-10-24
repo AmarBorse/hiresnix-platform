@@ -22,6 +22,7 @@ import { LandingPage }      from './pages/LandingPage';
 import { AuthPage }         from './pages/auth/AuthPage';
 import { InstStudentLogin } from './pages/instStudent/InstStudentLogin';
 import CareersPage from './pages/CareersPage';
+import { ServicesPage, AISolutionsPage, WorkPage, ProductsPage, InternshipsPage, ContactPage } from './pages/marketing/MarketingPages';
 
 // ── Lazy load everything else ─────────────────────────────────────
 const InstStudentDashboard    = lazy(() => import('./pages/instStudent/InstStudentDashboard').then(m => ({ default: m.InstStudentDashboard })));
@@ -135,6 +136,14 @@ export default function App() {
           {/* Landing */}
           <Route path="/" element={isAuthenticated && user ? <AuthRedirect /> : <LandingPage />} />
           <Route path="/careers" element={<CareersPage />} />
+
+          {/* Marketing pages: one for each item in the landing page navigation */}
+          <Route path="/services"     element={<ServicesPage />} />
+          <Route path="/ai-solutions" element={<AISolutionsPage />} />
+          <Route path="/work"         element={<WorkPage />} />
+          <Route path="/products"     element={<ProductsPage />} />
+          <Route path="/internships"  element={<InternshipsPage />} />
+          <Route path="/contact"      element={<ContactPage />} />
 
           {/* Legal */}
           <Route path="/about-us"             element={<AboutUs />} />
