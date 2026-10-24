@@ -235,8 +235,8 @@ function SocialLinks() {
 
 // ── Hero scene: an interactive, video-like animation of the Hiresnix arrow ──
 // A light pulse travels up the brand curve, lighting each project stage as it passes.
-// Visitors can pause it, drag the progress bar to scrub through it, and move the
-// pointer to tilt the floating service tags. Respects reduced-motion settings.
+// It pauses while hovered or focused and when off screen, the floating tags tilt with
+// the pointer, and reduced-motion visitors see the finished, still scene.
 const SCENE_PATH = 'M44 404 C 250 400, 420 296, 492 108';
 const SCENE_STOPS = [
   { f: 0.1, label: 'Discovery', sub: 'Goals and scope', dx: -4, dy: -44, anchor: 'start' as const },
@@ -264,14 +264,10 @@ function HeroScene() {
   const glowRef = React.useRef<SVGPathElement>(null);
   const coreRef = React.useRef<SVGPathElement>(null);
   const pulseRef = React.useRef<SVGGElement>(null);
-  const rangeRef = React.useRef<HTMLInputElement>(null);
   const msRef = React.useRef(0);
   const playingRef = React.useRef(true);
   const visibleRef = React.useRef(true);
   const [stops, setStops] = useState<{ x: number; y: number }[] | null>(null);
-  const [playing, setPlaying] = useState(true);
-
-  useEffect(() => { playingRef.current = playing; }, [playing]);
 
   // Positions of the four stages along the curve
   useEffect(() => {
@@ -302,7 +298,6 @@ function HeroScene() {
       li.classList.toggle('is-on', e >= SCENE_STOPS[SCENE_TAGS[i].stage].f - 0.004);
     });
     root.classList.toggle('is-launched', p >= 1);
-    if (rangeRef.current) rangeRef.current.value = String(Math.round((ms / SCENE_CYCLE_MS) * 1000));
   }, []);
 
   // Animation loop
@@ -310,7 +305,7 @@ function HeroScene() {
     if (!stops) return;
     if (prefersReducedMotion()) {
       msRef.current = SCENE_DRAW_MS;
-      setPlaying(false);
+      playingRef.current = false;
       paint(msRef.current);
       return;
     }
@@ -336,12 +331,6 @@ function HeroScene() {
     return () => { cancelAnimationFrame(raf); io?.disconnect(); };
   }, [stops, paint]);
 
-  const onScrub = (e: React.FormEvent<HTMLInputElement>) => {
-    msRef.current = (Number(e.currentTarget.value) / 1000) * SCENE_CYCLE_MS;
-    setPlaying(false);
-    paint(msRef.current);
-  };
-
   // Pointer tilt for the floating tags
   const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     if (prefersReducedMotion() || e.pointerType === 'touch') return;
@@ -352,10 +341,17 @@ function HeroScene() {
   const onPointerLeave = (e: React.PointerEvent<HTMLDivElement>) => {
     e.currentTarget.style.setProperty('--mx', '0');
     e.currentTarget.style.setProperty('--my', '0');
+    setHeld(false);
   };
+  // Hovering or focusing the scene holds the animation still
+  const setHeld = (held: boolean) => { if (!prefersReducedMotion()) playingRef.current = !held; };
 
   return (
-    <div className="hx-scene" ref={rootRef} onPointerMove={onPointerMove} onPointerLeave={onPointerLeave}>
+    <div
+      className="hx-scene" ref={rootRef} tabIndex={0}
+      onPointerMove={onPointerMove} onPointerEnter={e => { if (e.pointerType !== 'touch') setHeld(true); }} onPointerLeave={onPointerLeave}
+      onFocus={() => setHeld(true)} onBlur={() => setHeld(false)}
+    >
       <div className="hx-scene-stage">
         <svg className="hx-scene-svg" viewBox="0 0 560 460" role="img" aria-label="How a project moves: discovery, design, build, launch and support">
           <defs>
@@ -411,20 +407,6 @@ function HeroScene() {
         </ul>
       </div>
 
-      <div className="hx-scene-controls">
-        <button
-          type="button" className="hx-scene-play" onClick={() => setPlaying(p => !p)}
-          aria-label={playing ? 'Pause animation' : 'Play animation'} aria-pressed={!playing}
-        >
-          {playing
-            ? <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><rect x="2" y="1.5" width="3.4" height="11" rx="1" fill="currentColor" /><rect x="8.6" y="1.5" width="3.4" height="11" rx="1" fill="currentColor" /></svg>
-            : <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 1.8 L12 7 L3 12.2 Z" fill="currentColor" /></svg>}
-        </button>
-        <input
-          ref={rangeRef} className="hx-scene-range" type="range" min={0} max={1000} step={1} defaultValue={0}
-          aria-label="Animation progress" onInput={onScrub} onChange={() => {}}
-        />
-      </div>
     </div>
   );
 }
@@ -1301,7 +1283,7 @@ html{scroll-padding-top:88px;}
 .hx-hero-visual{transform:translate3d(0,calc(var(--sy,0) * 0.06px),0);}
 
 /* Hero scene (interactive animation) */
-.hx-scene{--mx:0;--my:0;position:relative;border-radius:26px;overflow:hidden;color:#fff;
+.hx-scene{--mx:0;--my:0;position:relative;outline-offset:4px;border-radius:26px;overflow:hidden;color:#fff;
   background:radial-gradient(120% 90% at 85% 10%, #1B6A4E 0%, #0E3B2C 55%, #0A2E22 100%);
   border:1px solid rgba(255,255,255,.18);
   box-shadow:0 40px 80px -40px rgba(9,46,34,.7), inset 0 1px 0 rgba(255,255,255,.18);}
@@ -1335,15 +1317,6 @@ html{scroll-padding-top:88px;}
 .hx-scene-tags li:nth-child(5) span{animation-delay:-2.2s;}
 .hx-scene-tags li:nth-child(6) span{animation-delay:-3.7s;}
 @keyframes hxBob{0%,100%{transform:translateY(0);}50%{transform:translateY(-6px);}}
-.hx-scene-controls{display:flex;align-items:center;gap:12px;padding:12px 16px;border-top:1px solid rgba(255,255,255,.14);background:rgba(0,0,0,.16);}
-.hx-scene-play{flex:none;width:36px;height:36px;border-radius:50%;border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.08);color:#fff;display:grid;place-items:center;transition:background-color .15s ease;}
-.hx-scene-play:hover{background:rgba(255,255,255,.18);}
-.hx-scene-play:focus-visible,.hx-scene-range:focus-visible{outline-color:#4FD1A0;}
-.hx-scene-range{flex:1;height:24px;margin:0;background:transparent;cursor:pointer;-webkit-appearance:none;appearance:none;accent-color:#4FD1A0;}
-.hx-scene-range::-webkit-slider-runnable-track{height:4px;border-radius:4px;background:rgba(255,255,255,.22);}
-.hx-scene-range::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;margin-top:-5px;border-radius:50%;background:#4FD1A0;border:2px solid #fff;}
-.hx-scene-range::-moz-range-track{height:4px;border-radius:4px;background:rgba(255,255,255,.22);}
-.hx-scene-range::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:#4FD1A0;border:2px solid #fff;}
 
 /* ── Facts (glass strip) ── */
 .hx-facts{display:grid;grid-template-columns:repeat(4,1fr);margin:0;padding:6px 8px;border-radius:22px;background:var(--glass);border:1px solid var(--glass-border);box-shadow:var(--glass-shadow);}
