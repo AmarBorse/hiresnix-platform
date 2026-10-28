@@ -90,6 +90,13 @@ async function prepareInk(src: string, removeWhite: boolean, maxSide = 900): Pro
   const data = ctx.getImageData(0, 0, w, h);
   const px = data.data;
 
+  // An image that already has a transparent background (like stamp.png) is kept as it is
+  if (removeWhite) {
+    for (let i = 3; i < px.length; i += 4) {
+      if (px[i] < 250) { removeWhite = false; break; }
+    }
+  }
+
   let minX = w, minY = h, maxX = -1, maxY = -1;
   for (let i = 0; i < px.length; i += 4) {
     if (removeWhite) {
