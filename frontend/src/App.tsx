@@ -22,7 +22,6 @@ import { LandingPage }      from './pages/LandingPage';
 import { AuthPage }         from './pages/auth/AuthPage';
 import { InstStudentLogin } from './pages/instStudent/InstStudentLogin';
 import CareersPage from './pages/CareersPage';
-import { ServicesPage, AISolutionsPage, WorkPage, ProductsPage, InternshipsPage, ContactPage } from './pages/marketing/MarketingPages';
 
 // ── Lazy load everything else ─────────────────────────────────────
 const InstStudentDashboard    = lazy(() => import('./pages/instStudent/InstStudentDashboard').then(m => ({ default: m.InstStudentDashboard })));
@@ -75,6 +74,7 @@ const AdminSettings     = lazy(() => import('./pages/admin/AdminSettings').then(
 const AdminIPlatform    = lazy(() => import('./pages/admin/AdminIPlatform').then(m => ({ default: m.AdminIPlatform })));
 const AdminEnquiries    = lazy(() => import('./pages/admin/AdminEnquiries').then(m => ({ default: m.AdminEnquiries })));
 const AdminDocuments    = lazy(() => import('./pages/admin/AdminDocuments').then(m => ({ default: m.AdminDocuments })));
+const AdminSignForm     = lazy(() => import('./pages/admin/AdminSignForm').then(m => ({ default: m.AdminSignForm })));
 const AdminInstitutions = lazy(() => import('./pages/admin/AdminInstitutions').then(m => ({ default: m.AdminInstitutions })));
 const AdminLogicBuilder = lazy(() => import('./pages/admin/AdminLogicBuilder').then(m => ({ default: m.AdminLogicBuilder })));
 const ResetPassword    = lazy(() => import('./pages/auth/ResetPassword').then(m => ({ default: m.ResetPassword })));
@@ -136,14 +136,6 @@ export default function App() {
           {/* Landing */}
           <Route path="/" element={isAuthenticated && user ? <AuthRedirect /> : <LandingPage />} />
           <Route path="/careers" element={<CareersPage />} />
-
-          {/* Marketing pages: one for each item in the landing page navigation */}
-          <Route path="/services"     element={<ServicesPage />} />
-          <Route path="/ai-solutions" element={<AISolutionsPage />} />
-          <Route path="/work"         element={<WorkPage />} />
-          <Route path="/products"     element={<ProductsPage />} />
-          <Route path="/internships"  element={<InternshipsPage />} />
-          <Route path="/contact"      element={<ContactPage />} />
 
           {/* Legal */}
           <Route path="/about-us"             element={<AboutUs />} />
@@ -230,6 +222,7 @@ export default function App() {
             <Route path="resources"    element={<AdminResources />} />
             <Route path="certificates" element={<AdminCertificates />} />
             <Route path="documents"    element={<AdminDocuments />} />
+            <Route path="sign-form"    element={<AdminSignForm />} />
             <Route path="enquiries"    element={<AdminEnquiries />} />
             <Route path="analytics"    element={<AdminAnalytics />} />
             <Route path="clients"      element={<AdminClients />} />

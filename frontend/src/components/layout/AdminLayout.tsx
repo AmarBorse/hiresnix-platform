@@ -4,7 +4,7 @@ import { Outlet, Link, useLocation, useNavigate } from 'react-router';
 import {
   LayoutDashboard, Briefcase, FileText, GraduationCap, Building2, Star, FileSpreadsheet,
   BookOpen, Award, BarChart3, Settings, Users, Menu, X, LogOut,
-  ShieldCheck, ShieldHalf, MessageSquare, ChevronRight, FilePen
+  ShieldCheck, ShieldHalf, MessageSquare, ChevronRight, FilePen, Stamp
 } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
 import { PORTAL_STYLES, PORTAL_COLORS } from './PortalTheme';
@@ -23,6 +23,7 @@ const NAV = [
   { to: '/admin/resources',    icon: BookOpen,        label: 'Resources'        },
   { to: '/admin/certificates', icon: Award,           label: 'Certificates'     },
   { to: '/admin/documents',    icon: FilePen,         label: 'Documents',  badge: 'NEW' },
+  { to: '/admin/sign-form',    icon: Stamp,           label: 'Sign Form',  badge: 'NEW' },
   { to: '/admin/enquiries',    icon: MessageSquare,   label: 'Enquiries'        },
   { to: '/admin/analytics',    icon: BarChart3,       label: 'Analytics'        },
   { to: '/admin/clients',      icon: Star,            label: 'Clients'          },
