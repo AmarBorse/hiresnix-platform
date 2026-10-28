@@ -142,10 +142,10 @@ async function imageFileToPdf(file: File): Promise<Uint8Array> {
   if (file.type === 'image/jpeg') {
     embedded = await pdf.embedJpg(await file.arrayBuffer());
   } else {
-    // PNG, WEBP etc. → re-encode as JPEG through a canvas (smaller, always embeddable)
-    const url = URL.createObjectURL(file);
-    try {
-      const img = await loadImage(url);
+    // PNG, WEBP etc. → re-encode as JPEG through a canvas (smaller, always embeddable).
+    // Uses a data: URL because the site's security policy blocks blob: images.
+    {
+      const img = await loadImage(await blobToDataUrl(file));
       const c = document.createElement('canvas');
       c.width = img.naturalWidth; c.height = img.naturalHeight;
       const ctx = c.getContext('2d')!;
@@ -153,8 +153,6 @@ async function imageFileToPdf(file: File): Promise<Uint8Array> {
       ctx.drawImage(img, 0, 0);
       const jpg = await new Promise<Blob>((res, rej) => c.toBlob(b => (b ? res(b) : rej(new Error('Could not convert image'))), 'image/jpeg', 0.9));
       embedded = await pdf.embedJpg(await jpg.arrayBuffer());
-    } finally {
-      URL.revokeObjectURL(url);
     }
   }
   const pageW = 595.28; // A4 width in points
@@ -352,9 +350,12 @@ export function AdminSignForm() {
         }));
         setAssets(loaded);
       } catch (e: any) {
-        setAssetError(e?.response?.status === 403
-          ? 'Only the main admin account can use the company signature and stamp.'
-          : 'Could not load the signature images. Check that the backend is running and try again.');
+        const status = e?.response?.status;
+        setAssetError(
+          status === 403 ? 'Only the main admin account can use the company signature and stamp.'
+          : status === 404 ? 'The server does not have the signature feature yet. Push backend/routes/signAssetsRoutes.js and backend/server.js, wait for Render to finish deploying, then reload this page.'
+          : !e?.response ? 'Could not reach the server. Render may be waking up; wait a minute and reload this page.'
+          : `Could not load the signature images (error ${status}). Reload the page and try again.`);
       } finally {
         setAssetsLoading(false);
       }
@@ -477,16 +478,14 @@ export function AdminSignForm() {
 
   const uploadCustomStamp = async (file: File) => {
     if (!file.type.startsWith('image/')) { toast.error('Choose a PNG or JPG image of the stamp.'); return; }
-    const url = URL.createObjectURL(file);
     try {
-      const prepared = await prepareInk(url, removeWhite);
+      // data: URL, not blob: — the site's security policy (CSP) only allows data: images
+      const prepared = await prepareInk(await blobToDataUrl(file), removeWhite);
       const key = `custom-${uid()}`;
       setAssets(prev => ({ ...prev, [key]: { key, label: file.name, kind: 'stamp', ...prepared } }));
       toast.success('Stamp image added. Click it to place it on the form.');
     } catch (e: any) {
       toast.error(e?.message || 'Could not read this image');
-    } finally {
-      URL.revokeObjectURL(url);
     }
   };
 
