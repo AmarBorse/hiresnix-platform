@@ -157,6 +157,142 @@ async function imageFileToPdf(file: File): Promise<Uint8Array> {
   return pdf.save();
 }
 
+/**
+ * docx-preview places "in front of text" pictures (like a letterhead footer) relative to
+ * their paragraph, even when Word positions them relative to the page. That pushes them
+ * off the page. Re-read those positions from the file and pin the pictures to the page.
+ */
+async function pinPageAnchoredPictures(wordDoc: any, idoc: Document) {
+  try {
+    const xml: string | undefined = await wordDoc?._package?.load('word/document.xml', 'string');
+    if (!xml) return;
+    const WP = 'http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing';
+    const x = new DOMParser().parseFromString(xml, 'application/xml');
+    const read = (a: Element, tag: string) => {
+      const el = a.getElementsByTagNameNS(WP, tag)[0];
+      return { rel: el?.getAttribute('relativeFrom') || '', off: el?.getElementsByTagNameNS(WP, 'posOffset')[0]?.textContent ?? null };
+    };
+    // docx-preview turns only "wrapNone" anchors into 0×0 relative boxes, so match those in order
+    const anchors = Array.from(x.getElementsByTagNameNS(WP, 'anchor'))
+      .filter(a => a.getElementsByTagNameNS(WP, 'wrapNone').length > 0 && a.getAttribute('simplePos') !== '1')
+      .map(a => ({ h: read(a, 'positionH'), v: read(a, 'positionV') }));
+    const boxes = (Array.from(idoc.querySelectorAll('section.docx article *')) as HTMLElement[])
+      .filter(el => el.style.position === 'relative' && el.style.width === '0px' && el.style.height === '0px');
+    if (!anchors.length || boxes.length !== anchors.length) return;
+
+    const emuToPx = (emu: string) => (Number(emu) / 12700) * (96 / 72);
+    boxes.forEach((box, i) => {
+      const sec = box.closest('section.docx') as HTMLElement | null;
+      if (!sec) return;
+      const { h, v } = anchors[i];
+      const cs = getComputedStyle(sec);
+      const secRect = sec.getBoundingClientRect();
+      const r = box.getBoundingClientRect();
+      const pos = (p: { rel: string; off: string | null }, margin: number, current: number) =>
+        p.off !== null && (p.rel === 'page' || p.rel === 'margin') ? emuToPx(p.off) + (p.rel === 'margin' ? margin : 0) : current;
+      const left = pos(h, parseFloat(cs.paddingLeft) || 0, r.left - secRect.left);
+      const top = pos(v, parseFloat(cs.paddingTop) || 0, r.top - secRect.top);
+      sec.appendChild(box);
+      box.style.position = 'absolute';
+      box.style.left = `${left}px`;
+      box.style.top = `${top}px`;
+      box.style.zIndex = '2';
+    });
+  } catch {
+    /* leave the layout as docx-preview made it */
+  }
+}
+
+/**
+ * Turns a Word (.docx) file into a PDF inside the browser.
+ * The document is laid out by docx-preview in a hidden iframe (so the app's own
+ * CSS can't disturb it), each page is captured with html2canvas and placed on a
+ * PDF page of the document's real page size. Word's own saved page breaks are used.
+ */
+async function docxFileToPdf(file: File): Promise<{ bytes: Uint8Array; warnTall: boolean }> {
+  const [{ renderAsync }, { default: html2canvas }] = await Promise.all([
+    import('docx-preview'),
+    import('html2canvas'),
+  ]);
+
+  const iframe = document.createElement('iframe');
+  iframe.setAttribute('aria-hidden', 'true');
+  iframe.style.cssText = 'position:fixed;left:-20000px;top:0;width:1400px;height:2000px;border:0;';
+  document.body.appendChild(iframe);
+
+  try {
+    const idoc = iframe.contentDocument!;
+    idoc.open();
+    idoc.write('<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;padding:0;background:#fff;color:#000;}</style></head><body></body></html>');
+    idoc.close();
+
+    const wordDoc = await renderAsync(await file.arrayBuffer(), idoc.body, idoc.head, {
+      inWrapper: false,
+      ignoreWidth: false,
+      ignoreHeight: false,
+      breakPages: true,
+      ignoreLastRenderedPageBreak: false, // follow where Word itself broke the pages
+      renderHeaders: true,
+      renderFooters: true,
+      renderFootnotes: true,
+      renderEndnotes: true,
+      renderComments: false,
+      renderChanges: false,
+      useBase64URL: true,
+      experimental: true,
+    });
+
+    // Wait for fonts and images inside the iframe before capturing
+    try { await (idoc as any).fonts?.ready; } catch { /* ignore */ }
+    await Promise.all(Array.from(idoc.images).map(img =>
+      img.complete ? Promise.resolve() : new Promise(res => { img.onload = img.onerror = () => res(null); })));
+
+    await pinPageAnchoredPictures(wordDoc, idoc);
+
+    const sections = Array.from(idoc.querySelectorAll('section.docx')) as HTMLElement[];
+    if (!sections.length) throw new Error('empty');
+
+    const pdf = await PDFDocument.create();
+    const ptOf = (v: string, fallback: number) => {
+      const m = /([\d.]+)pt/.exec(v || '');
+      return m ? parseFloat(m[1]) : fallback;
+    };
+    let warnTall = false;
+
+    for (const sec of sections) {
+      const wPt = ptOf(sec.style.width, 595.28);
+      const hPt = ptOf(sec.style.minHeight, 841.89);
+      const rect = sec.getBoundingClientRect();
+      const pagePx = rect.width * (hPt / wPt);
+      // foreignObject mode lets the browser draw the page itself (matches the layout exactly).
+      // Some browsers (Safari) block reading that canvas back; then fall back to html2canvas' own drawing.
+      const capture = (foreignObjectRendering: boolean) =>
+        html2canvas(sec, { scale: 2.5, backgroundColor: '#ffffff', logging: false, useCORS: true, foreignObjectRendering });
+      let canvas = await capture(true);
+      try { canvas.getContext('2d')!.getImageData(0, 0, 1, 1); } catch { canvas = await capture(false); }
+      const pxPerCss = canvas.width / rect.width;
+      const sliceH = Math.round(pagePx * pxPerCss);
+      const slices = Math.max(1, Math.ceil((canvas.height - 2) / sliceH));
+      if (slices > 1) warnTall = true;
+
+      for (let i = 0; i < slices; i++) {
+        const c = document.createElement('canvas');
+        c.width = canvas.width; c.height = sliceH;
+        const ctx = c.getContext('2d')!;
+        ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+        ctx.drawImage(canvas, 0, -i * sliceH);
+        const jpg = await new Promise<Blob>((res, rej) => c.toBlob(b => (b ? res(b) : rej(new Error('capture failed'))), 'image/jpeg', 0.92));
+        const img = await pdf.embedJpg(await jpg.arrayBuffer());
+        const page = pdf.addPage([wPt, hPt]);
+        page.drawImage(img, { x: 0, y: 0, width: wPt, height: hPt });
+      }
+    }
+    return { bytes: await pdf.save(), warnTall };
+  } finally {
+    iframe.remove();
+  }
+}
+
 // ─── Component ──────────────────────────────────────────────────────
 export function AdminSignForm() {
   const [assetList, setAssetList] = useState<AssetInfo[]>([]);
@@ -252,13 +388,20 @@ export function AdminSignForm() {
     if (file.size > MAX_DOC_BYTES) { toast.error('File is larger than 25 MB. Compress it and try again.'); return; }
     const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
     const isImg = file.type.startsWith('image/');
-    if (/\.(docx?|odt)$/i.test(file.name)) { setWordFile(file.name); return; }
-    if (!isPdf && !isImg) { toast.error('Upload a PDF, JPG or PNG file.'); return; }
+    const isDocx = /\.docx$/i.test(file.name);
+    if (/\.(doc|odt)$/i.test(file.name)) { setWordFile(file.name); return; }
+    if (!isPdf && !isImg && !isDocx) { toast.error('Upload a Word (.docx), PDF, JPG or PNG file.'); return; }
     setWordFile(null);
 
     setOpening(true);
     try {
-      const bytes = isPdf ? new Uint8Array(await file.arrayBuffer()) : await imageFileToPdf(file);
+      let bytes: Uint8Array;
+      if (isPdf) bytes = new Uint8Array(await file.arrayBuffer());
+      else if (isDocx) {
+        const res = await docxFileToPdf(file);
+        bytes = res.bytes;
+        if (res.warnTall) toast.message('Some pages ran longer than one sheet and were split. Check the page breaks before signing.');
+      } else bytes = await imageFileToPdf(file);
       // pdf.js takes ownership of the buffer it receives, so give it a copy
       const doc = await pdfjsLib.getDocument({ data: bytes.slice() }).promise;
       const infos: PageInfo[] = [];
@@ -277,7 +420,9 @@ export function AdminSignForm() {
     } catch (e: any) {
       toast.error(e?.name === 'PasswordException'
         ? 'This PDF is password-protected. Ask the college for an unlocked copy.'
-        : 'Could not open this file. Try another PDF or a clear photo of the form.');
+        : isDocx
+          ? 'Could not open this Word file. Save it as PDF in Word (File → Save As → PDF) and upload the PDF.'
+          : 'Could not open this file. Try another PDF or a clear photo of the form.');
     } finally {
       setOpening(false);
     }
@@ -472,17 +617,17 @@ export function AdminSignForm() {
 
       {assetError && (
         <div className="flex items-start gap-3 rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-200">
-          <Lock size={16} className="mt-0.5 flex-shrink-0" /> {assetError}
+          <Lock size={16} className="mt-0.5 shrink-0" /> {assetError}
         </div>
       )}
 
       {wordFile && !pdf && (
         <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-100 space-y-1.5">
           <div className="font-medium text-amber-200 flex items-center justify-between gap-3">
-            <span className="min-w-0 truncate">“{wordFile}” is a Word file. Save it as PDF first, then upload the PDF.</span>
-            <button onClick={() => setWordFile(null)} className="text-amber-300 hover:text-white flex-shrink-0" aria-label="Close"><X size={15} /></button>
+            <span className="min-w-0 truncate">“{wordFile}” is in an old Word or OpenDocument format. Save it as .docx or PDF first, then upload it again.</span>
+            <button onClick={() => setWordFile(null)} className="text-amber-300 hover:text-white shrink-0" aria-label="Close"><X size={15} /></button>
           </div>
-          <div>In Word: File → Save As → choose “PDF” as the type → Save.</div>
+          <div>In Word: File → Save As → choose “Word Document (.docx)” or “PDF” → Save.</div>
           <div>In Google Docs: File → Download → PDF document.</div>
         </div>
       )}
@@ -495,8 +640,8 @@ export function AdminSignForm() {
         >
           {opening ? <Loader2 size={28} className="animate-spin text-emerald-400" /> : <Upload size={28} className="text-emerald-400" />}
           <div className="text-white font-medium">{opening ? 'Opening the form…' : 'Upload the college form'}</div>
-          <div className="text-xs text-slate-400">PDF, or a JPG/PNG photo or scan. Drop it here or click to choose.</div>
-          <input type="file" accept="application/pdf,image/jpeg,image/png,image/webp,.docx,.doc" className="hidden" disabled={opening}
+          <div className="text-xs text-slate-400">Word (.docx), PDF, or a JPG/PNG photo or scan. Drop it here or click to choose.</div>
+          <input type="file" accept=".docx,.doc,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/pdf,image/jpeg,image/png,image/webp" className="hidden" disabled={opening}
             onChange={e => { const f = e.target.files?.[0]; if (f) openFile(f); e.target.value = ''; }} />
         </label>
       ) : (
@@ -505,7 +650,7 @@ export function AdminSignForm() {
           <aside className="space-y-4 lg:sticky lg:top-4 self-start">
             <div className={panelCls}>
               <div className="flex items-center gap-2 text-sm text-white font-medium mb-1 min-w-0">
-                <FileText size={15} className="text-slate-400 flex-shrink-0" />
+                <FileText size={15} className="text-slate-400 shrink-0" />
                 <span className="truncate" title={docName}>{docName}</span>
               </div>
               <div className="text-xs text-slate-500">{pages.length} page{pages.length > 1 ? 's' : ''}</div>
@@ -523,7 +668,7 @@ export function AdminSignForm() {
                   {loadedList.map(a => (
                     <button key={a.key} onClick={() => addImage(a.key)}
                       className="w-full flex items-center gap-3 rounded-lg border border-white/10 bg-white p-2 text-left hover:ring-2 hover:ring-emerald-500/60 transition">
-                      <img src={a.dataUrl} alt="" className="h-10 w-16 object-contain flex-shrink-0" />
+                      <img src={a.dataUrl} alt="" className="h-10 w-16 object-contain shrink-0" />
                       <span className="text-xs text-slate-800 leading-snug">{a.label}</span>
                     </button>
                   ))}
