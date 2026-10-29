@@ -377,9 +377,15 @@ async function docxFileToPdf(file: File): Promise<{ bytes: Uint8Array; paginated
     // Mark page-number spans so their copies on new pages can be found
     pageFields.forEach(f => { f.el.dataset.hxField = f.kind; });
 
-    type Unit = { el: HTMLElement; table?: HTMLTableElement; top: number; bottom: number };
+    type Unit = { el: HTMLElement; table?: HTMLElement; path: HTMLElement[]; top: number; bottom: number };
     type Sheet = Unit[];
-    type SecPlan = { sec: HTMLElement; wPt: number; hPt: number; sheets: Sheet[] | null };
+    type SecPlan = {
+      sec: HTMLElement; wPt: number; hPt: number; pageH: number;
+      mode: 'whole' | 'sheets' | 'slices';
+      sheets: Sheet[]; slices: { pos: number; end: number }[]; padTop: number;
+    };
+    const isTable = (el: Element) => el.tagName === 'TABLE';
+    const rowsOf = (t: HTMLElement) => Array.from(t.querySelectorAll(':scope > tr, :scope > tbody > tr, :scope > thead > tr, :scope > tfoot > tr')) as HTMLElement[];
 
     // ── Pass 1: decide which paragraphs / table rows go on which sheet ──
     const plans: SecPlan[] = [];
@@ -388,60 +394,86 @@ async function docxFileToPdf(file: File): Promise<{ bytes: Uint8Array; paginated
       const hPt = ptOf(sec.style.minHeight, 841.89);
       const rect = sec.getBoundingClientRect();
       const pageH = rect.width * (hPt / wPt);           // one sheet, in CSS px
-      if (rect.height <= pageH * 1.02) { plans.push({ sec, wPt, hPt, sheets: null }); continue; }
+      const cs = getComputedStyle(sec);
+      const padTop = parseFloat(cs.paddingTop) || 0;
+      const padBottom = parseFloat(cs.paddingBottom) || 0;
+      const plan: SecPlan = { sec, wPt, hPt, pageH, mode: 'whole', sheets: [], slices: [], padTop };
+      plans.push(plan);
+      if (rect.height <= pageH * 1.02) continue;
 
       paginated = true;
       const top0 = rect.top;
       const rel = (el: Element) => { const r = el.getBoundingClientRect(); return { top: r.top - top0, bottom: r.bottom - top0 }; };
-      const cs = getComputedStyle(sec);
-      const padTop = parseFloat(cs.paddingTop) || 0;
-      const padBottom = parseFloat(cs.paddingBottom) || 0;
       const article = sec.querySelector(':scope > article') as HTMLElement | null;
-      if (!article) { plans.push({ sec, wPt, hPt, sheets: null }); continue; }
-
-      // Break the body into pieces that must stay whole: paragraphs/blocks and table rows
-      const units: Unit[] = [];
-      for (const child of Array.from(article.children) as HTMLElement[]) {
-        if (child instanceof HTMLTableElement && child.rows.length) {
-          for (const row of Array.from(child.rows)) units.push({ el: row, table: child, ...rel(row) });
-        } else {
-          units.push({ el: child, ...rel(child) });
-        }
-      }
-
       // Leave a little spare room at the bottom: the final drawing can wrap text
       // slightly differently from the on-screen layout.
       const room = pageH - padTop - padBottom - pageH * 0.03;
-      const headH = (t: HTMLTableElement) => {
-        const n = repeatRows.get(t) || 0;
-        if (!n) return 0;
-        const rows = Array.from(t.rows);
+
+      // Break the body into pieces that must stay whole: paragraphs/blocks and table rows.
+      // A block taller than a sheet is opened up so its inner pieces can flow across sheets.
+      const units: Unit[] = [];
+      const collect = (el: HTMLElement, path: HTMLElement[]) => {
+        if (isTable(el)) {
+          const rows = rowsOf(el);
+          if (rows.length) { rows.forEach(row => units.push({ el: row, table: el, path, ...rel(row) })); return; }
+        }
+        const box = rel(el);
+        const kids = Array.from(el.children) as HTMLElement[];
+        // only open up containers of block-level pieces; a paragraph's inline text/pictures stay together
+        const allBlocks = kids.length > 0 && kids.every(k => !getComputedStyle(k).display.startsWith('inline'));
+        if (box.bottom - box.top > room && allBlocks && !['IMG', 'SVG', 'TR', 'P'].includes(el.tagName.toUpperCase())) {
+          kids.forEach(k => collect(k, [...path, el]));
+        } else {
+          units.push({ el, path, ...box });
+        }
+      };
+      if (article) (Array.from(article.children) as HTMLElement[]).forEach(k => collect(k, []));
+
+      const headH = (t: HTMLElement) => {
+        const n = repeatRows.get(t as HTMLTableElement) || 0;
+        const rows = rowsOf(t);
+        if (!n || !rows.length) return 0;
         return rel(rows[Math.min(n, rows.length) - 1]).bottom - rel(rows[0]).top;
       };
-      const sheets: Sheet[] = [];
-      let cur: Sheet = [];
-      let start = 0, extra = 0;
-      for (const u of units) {
-        if (!cur.length) {
-          start = u.top;
-          // a table that began on an earlier sheet gets its heading row(s) repeated here
-          extra = u.table && sheets.some(sh => sh.some(x => x.table === u.table)) ? headH(u.table) : 0;
-        }
-        if (cur.length && u.bottom - start + extra > room) {
-          sheets.push(cur);
-          cur = [];
-          start = u.top;
-          extra = u.table && sheets.some(sh => sh.some(x => x.table === u.table)) ? headH(u.table) : 0;
-        }
-        cur.push(u);
-      }
-      if (cur.length) sheets.push(cur);
-      plans.push({ sec, wPt, hPt, sheets });
-    }
-    const totalPages = plans.reduce((n, pl) => n + (pl.sheets ? pl.sheets.length : 1), 0);
+      const oversized = !article || !units.length || units.some(u => u.bottom - u.top > room);
 
-    // ── Build each sheet as its own page in the frame (header, body part, footer) ──
-    const buildSheet = (sec: HTMLElement, hPt: number, sheet: Sheet, seen: Set<HTMLTableElement>) => {
+      {
+        // Backup plan: cut one drawing of the whole section at the nearest gap between lines
+        const body = article ? rel(article) : { top: padTop, bottom: rect.height - padBottom };
+        const breaks = Array.from(new Set(
+          (Array.from((article || sec).querySelectorAll('*')) as HTMLElement[]).map(el => Math.round(rel(el).bottom * 10) / 10),
+        )).filter(b => b > body.top).sort((a, b) => a - b);
+        let pos = body.top, guard = 0;
+        while (pos < body.bottom - 1 && guard++ < 500) {
+          let end = body.bottom;
+          if (pos + room < body.bottom) {
+            const fits = breaks.filter(b => b > pos + 1 && b <= pos + room);
+            end = fits.length ? fits[fits.length - 1] : pos + room;
+          }
+          plan.slices.push({ pos, end });
+          pos = end;
+        }
+      }
+
+      if (oversized) {
+        // Something can't be split (e.g. one huge picture): use the backup plan so nothing is left out
+        plan.mode = 'slices';
+      } else {
+        plan.mode = 'sheets';
+        let cur: Sheet = [];
+        let start = 0, extra = 0;
+        const begun = (t?: HTMLElement) => !!t && plan.sheets.some(sh => sh.some(x => x.table === t));
+        for (const u of units) {
+          if (cur.length && u.bottom - start + extra > room) { plan.sheets.push(cur); cur = []; }
+          if (!cur.length) { start = u.top; extra = begun(u.table) ? headH(u.table!) : 0; }
+          cur.push(u);
+        }
+        if (cur.length) plan.sheets.push(cur);
+      }
+    }
+
+    // ── Build a sheet as its own page in the frame (header, its part of the body, footer) ──
+    const buildSheet = (sec: HTMLElement, hPt: number, sheet: Sheet, seen: Set<HTMLElement>) => {
       const page = sec.cloneNode(false) as HTMLElement;
       page.style.height = `${hPt}pt`;                   // fixed sheet height: footer sits at the bottom
       const header = sec.querySelector(':scope > header');
@@ -449,35 +481,73 @@ async function docxFileToPdf(file: File): Promise<{ bytes: Uint8Array; paginated
       const article = sec.querySelector(':scope > article') as HTMLElement;
       if (header) page.appendChild(header.cloneNode(true));
       const body = article.cloneNode(false) as HTMLElement;
-      let tableCopy: HTMLTableElement | null = null;
-      let tbodyCopy: HTMLElement | null = null;
-      let lastTable: HTMLTableElement | null = null;
-      for (const u of sheet) {
-        if (u.table) {
-          if (u.table !== lastTable) {
-            tableCopy = u.table.cloneNode(false) as HTMLTableElement;
-            u.table.querySelectorAll(':scope > colgroup, :scope > col').forEach(c => tableCopy!.appendChild(c.cloneNode(true)));
-            tbodyCopy = (u.el.parentElement && u.el.parentElement !== u.table
-              ? u.el.parentElement.cloneNode(false) : tableCopy) as HTMLElement;
-            if (tbodyCopy !== tableCopy) tableCopy.appendChild(tbodyCopy);
-            const n = repeatRows.get(u.table) || 0;
-            if (seen.has(u.table) && n) {
-              Array.from(u.table.rows).slice(0, n).forEach(r => tbodyCopy!.appendChild(r.cloneNode(true)));
-            }
-            body.appendChild(tableCopy);
-            lastTable = u.table;
-            seen.add(u.table);
-          }
-          tbodyCopy!.appendChild(u.el.cloneNode(true));
-        } else {
-          lastTable = null;
-          body.appendChild(u.el.cloneNode(true));
-        }
-      }
       page.appendChild(body);
       if (footer) page.appendChild(footer.cloneNode(true));
+
+      // copies of wrapper elements / tables already made on this sheet
+      const copies = new Map<HTMLElement, HTMLElement>();
+      const holder = (path: HTMLElement[]) => {
+        let parent = body;
+        for (const anc of path) {
+          let c = copies.get(anc);
+          if (!c) { c = anc.cloneNode(false) as HTMLElement; copies.set(anc, c); parent.appendChild(c); }
+          parent = c;
+        }
+        return parent;
+      };
+      for (const u of sheet) {
+        const parent = holder(u.path);
+        if (!u.table) { parent.appendChild(u.el.cloneNode(true)); continue; }
+        let t = copies.get(u.table);
+        if (!t) {
+          t = u.table.cloneNode(false) as HTMLElement;
+          u.table.querySelectorAll(':scope > colgroup, :scope > col').forEach(c => t!.appendChild(c.cloneNode(true)));
+          copies.set(u.table, t);
+          parent.appendChild(t);
+          const n = repeatRows.get(u.table as HTMLTableElement) || 0;
+          if (seen.has(u.table) && n) rowsOf(u.table).slice(0, n).forEach(r => rowHolder(u.table!, t!, r).appendChild(r.cloneNode(true)));
+          seen.add(u.table);
+        }
+        rowHolder(u.table, t, u.el).appendChild(u.el.cloneNode(true));
+      }
       return page;
+
+      // rows live directly in the table or in a tbody/thead: mirror that in the copy
+      function rowHolder(orig: HTMLElement, copy: HTMLElement, row: HTMLElement): HTMLElement {
+        const group = row.parentElement;
+        if (!group || group === orig) return copy;
+        let g = copies.get(group);
+        if (!g) { g = group.cloneNode(false) as HTMLElement; copies.set(group, g); copy.appendChild(g); }
+        return g;
+      }
     };
+
+    // Check every planned sheet really fits (nothing pushed under the footer or cut off);
+    // if one doesn't, use the backup plan for that section rather than lose content.
+    for (const pl of plans) {
+      if (pl.mode !== 'sheets') continue;
+      const trial = new Set<HTMLElement>();
+      let ok = pl.sheets.length > 0;
+      // how far the footer normally sits above the bottom edge of the sheet
+      const origFoot = pl.sec.querySelector(':scope > footer');
+      const footGap = origFoot ? pl.sec.getBoundingClientRect().bottom - origFoot.getBoundingClientRect().bottom : 0;
+      for (const sheet of pl.sheets) {
+        if (!ok) break;
+        const page = buildSheet(pl.sec, pl.hPt, sheet, trial);
+        idoc.body.appendChild(page);
+        const pr = page.getBoundingClientRect();
+        const art = page.querySelector(':scope > article');
+        const foot = page.querySelector(':scope > footer');
+        const artR = art?.getBoundingClientRect();
+        const pushed = foot
+          ? pr.bottom - foot.getBoundingClientRect().bottom < footGap - 2      // footer pushed down by the body
+          : !!artR && artR.bottom > pr.bottom - (parseFloat(getComputedStyle(page).paddingBottom) || 0) + 2;
+        if (!art || !artR || pushed || (sheet.length > 0 && artR.height < 1)) ok = false;
+        page.remove();
+      }
+      if (!ok) pl.mode = 'slices';
+    }
+    const totalPages = plans.reduce((n, pl) => n + (pl.mode === 'sheets' ? pl.sheets.length : pl.mode === 'slices' ? pl.slices.length : 1), 0);
 
     const addCanvasPage = async (c: HTMLCanvasElement, wPt: number, hPt: number) => {
       const jpg = await new Promise<Blob>((res, rej) => c.toBlob(b => (b ? res(b) : rej(new Error('capture failed'))), 'image/jpeg', 0.92));
@@ -485,57 +555,91 @@ async function docxFileToPdf(file: File): Promise<{ bytes: Uint8Array; paginated
       const page = pdf.addPage([wPt, hPt]);
       page.drawImage(img, { x: 0, y: 0, width: wPt, height: hPt });
     };
-    const grabNow = async (el: HTMLElement) => {
+    const grabNow = async (el: HTMLElement, scale = 2.5) => {
       // foreignObject mode lets the browser draw the page itself (matches the layout exactly).
       // Some browsers (Safari) block reading that canvas back; then fall back to html2canvas' own drawing.
       const capture = (foreignObjectRendering: boolean) =>
-        html2canvas(el, { scale: 2.5, backgroundColor: '#ffffff', logging: false, useCORS: true, foreignObjectRendering });
+        html2canvas(el, { scale, backgroundColor: '#ffffff', logging: false, useCORS: true, foreignObjectRendering });
       let c = await capture(true);
       try { c.getContext('2d')!.getImageData(0, 0, 1, 1); } catch { c = await capture(false); }
       return c;
     };
     // Capture works reliably only for a page at the very top of the frame,
     // so show just that one page while it is captured.
-    const grabAlone = async (el: HTMLElement) => {
+    const grabAlone = async (el: HTMLElement, scale = 2.5) => {
       const all = Array.from(idoc.body.children) as HTMLElement[];
       const prev = all.map(x => x.style.display);
       all.forEach(x => { if (x !== el) x.style.display = 'none'; });
-      try { return await grabNow(el); } finally { all.forEach((x, i) => { x.style.display = prev[i]; }); }
+      try { return await grabNow(el, scale); } finally { all.forEach((x, i) => { x.style.display = prev[i]; }); }
     };
-    const toSheetCanvas = (src: HTMLCanvasElement, wPt: number, hPt: number) => {
-      // Normalise to the exact sheet proportions (a short section is padded, never stretched)
+    const blankSheet = (width: number, wPt: number, hPt: number) => {
       const c = document.createElement('canvas');
-      c.width = src.width; c.height = Math.round(src.width * (hPt / wPt));
+      c.width = width; c.height = Math.round(width * (hPt / wPt));
       const ctx = c.getContext('2d')!;
       ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
-      ctx.drawImage(src, 0, 0);
-      return c;
+      return { c, ctx };
     };
+    const setNumbers = (root: HTMLElement, n: number) =>
+      root.querySelectorAll<HTMLElement>('[data-hx-field]').forEach(el => {
+        el.textContent = String(el.dataset.hxField === 'page' ? n : totalPages);
+      });
 
     // ── Pass 2: draw the pages ──
     let pageNo = 0;
-    const seen = new Set<HTMLTableElement>();
+    const seen = new Set<HTMLElement>();
     for (const pl of plans) {
-      if (!pl.sheets) {
+      if (pl.mode === 'whole') {
         pageNo++;
-        pl.sec.querySelectorAll<HTMLElement>('[data-hx-field]').forEach(el => {
-          el.textContent = String(el.dataset.hxField === 'page' ? pageNo : totalPages);
-        });
-        await addCanvasPage(toSheetCanvas(await grabAlone(pl.sec), pl.wPt, pl.hPt), pl.wPt, pl.hPt);
+        setNumbers(pl.sec, pageNo);
+        const src = await grabAlone(pl.sec);
+        const { c, ctx } = blankSheet(src.width, pl.wPt, pl.hPt);
+        ctx.drawImage(src, 0, 0);
+        await addCanvasPage(c, pl.wPt, pl.hPt);
         continue;
       }
-      for (const sheet of pl.sheets) {
-        pageNo++;
-        const page = buildSheet(pl.sec, pl.hPt, sheet, seen);
-        page.querySelectorAll<HTMLElement>('[data-hx-field]').forEach(el => {
-          el.textContent = String(el.dataset.hxField === 'page' ? pageNo : totalPages);
-        });
-        idoc.body.appendChild(page);
-        try {
-          await addCanvasPage(toSheetCanvas(await grabAlone(page), pl.wPt, pl.hPt), pl.wPt, pl.hPt);
-        } finally {
-          page.remove();
+
+      if (pl.mode === 'sheets') {
+        for (const sheet of pl.sheets) {
+          pageNo++;
+          const page = buildSheet(pl.sec, pl.hPt, sheet, seen);
+          setNumbers(page, pageNo);
+          idoc.body.appendChild(page);
+          try {
+            const src = await grabAlone(page);
+            const { c, ctx } = blankSheet(src.width, pl.wPt, pl.hPt);
+            ctx.drawImage(src, 0, 0);
+            await addCanvasPage(c, pl.wPt, pl.hPt);
+          } finally {
+            page.remove();
+          }
         }
+        continue;
+      }
+
+      // 'slices': one drawing of the whole section, cut into sheets
+      const secRect = pl.sec.getBoundingClientRect();
+      const scale = Math.min(2.5, 30000 / secRect.height);
+      const head = pl.sec.querySelector(':scope > header');
+      const foot = pl.sec.querySelector(':scope > footer');
+      const relS = (el: Element) => {
+        const t0 = pl.sec.getBoundingClientRect().top, r = el.getBoundingClientRect();
+        return { top: r.top - t0, bottom: r.bottom - t0 };
+      };
+      const hb = head ? relS(head) : null, fb = foot ? relS(foot) : null;
+      for (const sl of pl.slices) {
+        pageNo++;
+        setNumbers(pl.sec, pageNo);
+        const src = await grabAlone(pl.sec, scale);
+        const k = src.width / secRect.width;
+        const { c, ctx } = blankSheet(src.width, pl.wPt, pl.hPt);
+        const strip = (y0: number, y1: number, y: number) => {
+          const h = Math.round((y1 - y0) * k);
+          if (h > 0) ctx.drawImage(src, 0, Math.round(y0 * k), src.width, h, 0, Math.round(y * k), src.width, h);
+        };
+        if (hb) strip(hb.top, hb.bottom, hb.top);
+        if (fb) strip(fb.top, fb.bottom, pl.pageH - (secRect.height - fb.top));
+        strip(sl.pos, sl.end, pl.padTop);
+        await addCanvasPage(c, pl.wPt, pl.hPt);
       }
     }
     return { bytes: await pdf.save(), paginated };
