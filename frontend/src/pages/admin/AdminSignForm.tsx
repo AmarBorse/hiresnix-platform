@@ -224,7 +224,7 @@ async function pinHeaderFooterPictures(wordDoc: any, idoc: Document) {
     const zip = wordDoc?._package?._zip;
     if (!zip?.file) return;
     const WP = 'http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing';
-    type A = { h: { rel: string; off: string | null; align: string | null }; v: { rel: string; off: string | null; align: string | null }; cx: number; cy: number };
+    type A = { h: { rel: string; off: string | null; align: string | null }; v: { rel: string; off: string | null; align: string | null }; cx: number; cy: number; behind: boolean };
     const partAnchors: { kind: 'header' | 'footer'; list: A[] }[] = [];
     for (const part of zip.file(/^word\/(header|footer)\d*\.xml$/) as any[]) {
       const x = new DOMParser().parseFromString(await part.async('string'), 'application/xml');
@@ -240,7 +240,11 @@ async function pinHeaderFooterPictures(wordDoc: any, idoc: Document) {
         .filter(a => a.getElementsByTagNameNS(WP, 'wrapNone').length > 0)
         .map(a => {
           const ext = a.getElementsByTagNameNS(WP, 'extent')[0];
-          return { h: read(a, 'positionH'), v: read(a, 'positionV'), cx: Number(ext?.getAttribute('cx') || 0), cy: Number(ext?.getAttribute('cy') || 0) };
+          return {
+            h: read(a, 'positionH'), v: read(a, 'positionV'),
+            cx: Number(ext?.getAttribute('cx') || 0), cy: Number(ext?.getAttribute('cy') || 0),
+            behind: a.getAttribute('behindDoc') === '1',
+          };
         });
       if (list.length) partAnchors.push({ kind: /footer/.test(part.name) ? 'footer' : 'header', list });
     }
@@ -293,7 +297,8 @@ async function pinHeaderFooterPictures(wordDoc: any, idoc: Document) {
           box.appendChild(hold);
           hold.style.position = 'absolute';
           hold.style.left = `${left}px`;
-          hold.style.zIndex = '2';
+          // "In front of text" pictures cover the footer text, as in Word; "behind text" ones go under it
+          hold.style.zIndex = a.behind ? '-1' : '2';
           if (kind === 'footer') { hold.style.top = ''; hold.style.bottom = `${pageH - top}px`; }
           else { hold.style.bottom = ''; hold.style.top = `${top}px`; }
         });
@@ -445,6 +450,14 @@ async function docxFileToPdf(file: File): Promise<{ bytes: Uint8Array; paginated
     try { await (idoc as any).fonts?.ready; } catch { /* ignore */ }
     await Promise.all(Array.from(idoc.images).map(img =>
       img.complete ? Promise.resolve() : new Promise(res => { img.onload = img.onerror = () => res(null); })));
+
+    // Word builds a footer upwards from the bottom of the page; docx-preview starts it at the top
+    // of the footer area. Push footer contents down so they sit where Word puts them.
+    idoc.querySelectorAll<HTMLElement>('section.docx > footer').forEach(f => {
+      f.style.display = 'flex';
+      f.style.flexDirection = 'column';
+      f.style.justifyContent = 'flex-end';
+    });
 
     await pinPageAnchoredPictures(wordDoc, idoc);
     await pinHeaderFooterPictures(wordDoc, idoc);
