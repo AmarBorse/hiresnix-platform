@@ -10,7 +10,10 @@ import { PencilLine, Check, X, Loader2, ClipboardList, CalendarDays, ExternalLin
 import client from '../../api/client';
 import { readDailyLogSheet, checkRows, toPayload, downloadDailyLogTemplate, fmtDay, type SheetRow, type Period } from '../../utils/dailyLogSheet';
 
-type Task = { id: string; title?: string; description?: string; url?: string; week?: number; submittedAt?: string; editedAt?: string };
+type Task = {
+  id: string; title?: string; description?: string; url?: string; week?: number; submittedAt?: string; editedAt?: string;
+  workDate?: string; importedAt?: string; importSource?: string; dailyLogId?: string | number;
+};
 type DailyLog = {
   id: string | number; logDate: string; todaysWork?: string; hoursWorked?: number | string;
   learning?: string; challenges?: string; tomorrowPlan?: string; editedAt?: string | null;
@@ -78,11 +81,12 @@ export function EditMySubmissions() {
     try {
       const res = await client.post('/intern-edit/my-import-daily-logs', { sourceName: sheetName, rows: toPayload(checkedSheet) });
       const d = res.data?.data || {};
-      setImportMsg(`${d.imported || 0} logs added${d.skipped?.length ? `, ${d.skipped.length} skipped` : ''}.`);
+      setImportMsg(`${d.imported || 0} logs added${d.skipped?.length ? `, ${d.skipped.length} skipped` : ''}. They also count as tasks; reload the page to see the new task total.`);
       toast.success(res.data?.message || 'Imported');
       setSheetRows([]); setSheetName('');
       const fresh = await client.get('/intern-edit/my-submissions');
       setLogs(fresh.data?.data?.dailyLogs || []);
+      setTasks(fresh.data?.data?.tasks || []);
     } catch (e: any) {
       toast.error(e?.response?.data?.message || 'Import failed');
       if (e?.response?.status === 403) setImportEnabled(false);
@@ -194,11 +198,22 @@ export function EditMySubmissions() {
                       <div className="text-sm font-semibold text-gray-900 break-words">{t.title || 'Untitled task'}</div>
                       <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-gray-500">
                         {t.week ? <span>Week {t.week}</span> : null}
-                        {t.submittedAt ? <span>Submitted {fmtDate(t.submittedAt)}</span> : null}
+                        {t.importedAt
+                          ? <>
+                            {t.workDate ? <span>Work date {fmtDate(t.workDate)}</span> : null}
+                            <span className="text-[11px] font-medium text-sky-700 bg-sky-50 border border-sky-200 rounded-full px-2 py-0.5"
+                              title={t.importSource ? `Imported from ${t.importSource}` : undefined}>
+                              From sheet · added {fmtDate(t.importedAt)}
+                            </span>
+                          </>
+                          : t.submittedAt ? <span>Submitted {fmtDate(t.submittedAt)}</span> : null}
                         {editedTag(t.editedAt)}
                       </div>
                     </div>
-                    {enabled && !isEd && (
+                    {enabled && !isEd && t.dailyLogId != null && (
+                      <span className="text-[11px] text-gray-400 shrink-0">Edit under Daily logs</span>
+                    )}
+                    {enabled && !isEd && t.dailyLogId == null && (
                       <button type="button" onClick={() => startTask(t)}
                         className="inline-flex items-center gap-1 text-sm font-medium text-emerald-700 hover:text-emerald-600 shrink-0">
                         <PencilLine size={14} /> Edit

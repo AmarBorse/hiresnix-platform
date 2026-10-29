@@ -107,11 +107,69 @@ r.put('/setting', protect, authorize('admin'), asyncHandler(async (req, res) => 
   res.json({ success: true, data: await switches() });
 }));
 
+// ── Imported daily logs also count as tasks ───────────────────────
+// Every daily log imported from a sheet gets a matching entry in the enrollment's task list,
+// so "Tasks Submitted" counts it. The task keeps the log's work date and the same "imported"
+// marks (when, from which file), and is removed again if the import is removed.
+const taskIdFor = (logId) => `dl-${logId}`;
+const summaryTitle = (text) => {
+  const firstLine = String(text || '').split(/\r?\n/)[0].trim();
+  return firstLine.length > 90 ? `${firstLine.slice(0, 87)}…` : firstLine || 'Daily work';
+};
+
+const mirrorImportedLogs = async (enrollment) => {
+  await ensureTables();
+  const [logs] = await sequelize.query(
+    `SELECT id, "logDate", "todaysWork", "importedAt", "importSource", "importBatch"
+       FROM ip_daily_logs WHERE "enrollmentId" = :eid AND "importedAt" IS NOT NULL ORDER BY "logDate"`,
+    { replacements: { eid: enrollment.id } },
+  );
+  const tasks = Array.isArray(enrollment.taskLogs) ? [...enrollment.taskLogs] : [];
+  const have = new Set(tasks.filter(t => t.dailyLogId != null).map(t => String(t.dailyLogId)));
+  const liveLogIds = new Set(logs.map(l => String(l.id)));
+  const { start } = await periodOf(enrollment);
+  let changed = false;
+
+  for (const l of logs) {
+    if (have.has(String(l.id))) continue;
+    const workDate = ymd(l.logDate);
+    const week = start && workDate ? Math.max(1, Math.floor((Date.parse(workDate) - Date.parse(start)) / (7 * 86400000)) + 1) : 1;
+    tasks.push({
+      id: taskIdFor(l.id),
+      title: summaryTitle(l.todaysWork),
+      description: l.todaysWork || '',
+      url: '',
+      week,
+      workDate,                       // the day the work was done (from the sheet)
+      submittedAt: l.importedAt,      // when it reached the portal
+      status: 'Submitted',
+      dailyLogId: l.id,
+      importedAt: l.importedAt,
+      importSource: l.importSource,
+      importBatch: l.importBatch,
+    });
+    changed = true;
+  }
+  // Drop task copies whose imported log no longer exists (import removed)
+  const kept = tasks.filter(t => t.dailyLogId == null || !t.importedAt || liveLogIds.has(String(t.dailyLogId)));
+  if (kept.length !== tasks.length) changed = true;
+
+  if (changed) {
+    kept.sort((a, b) => String(a.workDate || a.submittedAt || '').localeCompare(String(b.workDate || b.submittedAt || '')));
+    enrollment.set('taskLogs', kept);
+    enrollment.changed('taskLogs', true);
+    await enrollment.save();
+  }
+  return kept;
+};
+
 // ── The intern's own submissions ──────────────────────────────────
 r.get('/my-submissions', protect, authorize('student'), asyncHandler(async (req, res) => {
   const { enabled, importEnabled } = await switches();
   const enrollment = await getEnrollment(req.user.id);
   if (!enrollment) return res.json({ success: true, data: { enabled, importEnabled, tasks: [], dailyLogs: [], period: null } });
+
+  await mirrorImportedLogs(enrollment).catch(err => console.error('[intern-edit] mirror failed', err.message));
 
   const [dailyLogs] = await sequelize.query(
     `SELECT id, "logDate", "todaysWork", "hoursWorked", learning, challenges, "tomorrowPlan", "editedAt", "editCount",
@@ -190,6 +248,15 @@ r.put('/daily-logs/:id', protect, authorize('student'), requireEditingOn, asyncH
       },
     },
   );
+  // Keep the matching task (for imported logs) in step with the edited text
+  const tasks = Array.isArray(enrollment.taskLogs) ? [...enrollment.taskLogs] : [];
+  const ti = tasks.findIndex(t => String(t.dailyLogId) === String(log.id));
+  if (ti >= 0) {
+    tasks[ti] = { ...tasks[ti], title: summaryTitle(todaysWork), description: todaysWork, editedAt: new Date(), editCount: (tasks[ti].editCount || 0) + 1 };
+    enrollment.set('taskLogs', tasks);
+    enrollment.changed('taskLogs', true);
+    await enrollment.save();
+  }
   res.json({ success: true, data: updated[0], message: 'Daily log updated' });
 }));
 
@@ -277,6 +344,7 @@ const importRows = async ({ enrollment, rows, sourceName, importedBy }) => {
     });
     results.imported = toInsert.length;
     results.batch = batch;
+    await mirrorImportedLogs(enrollment);
   }
   console.log(`[intern-edit] ${importedBy} imported ${results.imported} daily logs for enrollment ${enrollment.id} from "${sourceName}"`);
   return results;
@@ -339,11 +407,20 @@ r.get('/admin/imports/:batch', protect, authorize('admin'), mainAdminOnly, async
 
 r.delete('/admin/imports/:batch', protect, authorize('admin'), mainAdminOnly, asyncHandler(async (req, res) => {
   await ensureTables();
+  const [owners] = await sequelize.query(
+    `SELECT DISTINCT "enrollmentId" FROM ip_daily_logs WHERE "importBatch" = :batch`, { replacements: { batch: req.params.batch } },
+  );
   const [, meta] = await sequelize.query(
     `DELETE FROM ip_daily_logs WHERE "importBatch" = :batch AND "importedAt" IS NOT NULL`,
     { replacements: { batch: req.params.batch } },
   );
   const removed = meta?.rowCount ?? 0;
+  // Remove the matching task copies too
+  const { InternshipEnrollment } = require('../models/internshipPlatform');
+  for (const o of owners) {
+    const enr = await InternshipEnrollment.findByPk(o.enrollmentId);
+    if (enr) await mirrorImportedLogs(enr);
+  }
   console.log(`[intern-edit] ${req.user.email} removed import ${req.params.batch} (${removed} logs)`);
   res.json({ success: true, data: { removed }, message: `${removed} imported logs removed` });
 }));
