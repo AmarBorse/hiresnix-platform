@@ -11,6 +11,7 @@ import {
 import client from '../../api/client';
 import { InternEditToggle } from '../../components/admin/InternEditToggle';
 import { ImportDailyLogs } from '../../components/admin/ImportDailyLogs';
+import { ImportedLogsReview } from '../../components/admin/ImportedLogsReview';
 import * as XLSX from 'xlsx';
 
 // ── CSV Download helper ───────────────────────────────────────────
@@ -277,6 +278,9 @@ export function AdminIPlatform() {
 
       {/* Import daily logs an intern kept in an Excel sheet (marked as imported) */}
       <ImportDailyLogs />
+
+      {/* Every sheet import, to check against your list */}
+      <ImportedLogsReview />
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

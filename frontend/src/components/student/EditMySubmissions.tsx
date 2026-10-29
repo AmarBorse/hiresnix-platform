@@ -1,13 +1,14 @@
 // src/components/student/EditMySubmissions.tsx
-// Shows the intern's submitted tasks and daily logs with an Edit button, only while the
-// admin has editing switched ON. Shows nothing when editing is off.
+// Shows the intern's submitted tasks and daily logs. While the admin's switches are on, the intern
+// can edit them and/or import daily logs they kept in an Excel sheet. Shows nothing when both are off.
 // Usage (any student page):  import { EditMySubmissions } from '../../components/student/EditMySubmissions';
 //                            <EditMySubmissions />
 
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { PencilLine, Check, X, Loader2, ClipboardList, CalendarDays, ExternalLink } from 'lucide-react';
+import { PencilLine, Check, X, Loader2, ClipboardList, CalendarDays, ExternalLink, FileSpreadsheet, Upload, Download, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import client from '../../api/client';
+import { readDailyLogSheet, checkRows, toPayload, downloadDailyLogTemplate, fmtDay, type SheetRow, type Period } from '../../utils/dailyLogSheet';
 
 type Task = { id: string; title?: string; description?: string; url?: string; week?: number; submittedAt?: string; editedAt?: string };
 type DailyLog = {
@@ -28,6 +29,12 @@ const labelCls = 'block text-xs font-semibold text-gray-500 mb-1';
 export function EditMySubmissions() {
   const [loading, setLoading] = useState(true);
   const [enabled, setEnabled] = useState(false);
+  const [importEnabled, setImportEnabled] = useState(false);
+  const [period, setPeriod] = useState<Period>(null);
+  const [sheetName, setSheetName] = useState('');
+  const [sheetRows, setSheetRows] = useState<SheetRow[]>([]);
+  const [importing, setImporting] = useState(false);
+  const [importMsg, setImportMsg] = useState<string | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [logs, setLogs] = useState<DailyLog[]>([]);
   const [tab, setTab] = useState<'tasks' | 'logs'>('tasks');
@@ -40,15 +47,49 @@ export function EditMySubmissions() {
       .then(res => {
         const d = res.data?.data || {};
         setEnabled(!!d.enabled);
+        setImportEnabled(!!d.importEnabled);
+        setPeriod(d.period || null);
         setTasks(d.tasks || []);
         setLogs(d.dailyLogs || []);
-        if (!(d.tasks || []).length && (d.dailyLogs || []).length) setTab('logs');
+        if (!(d.tasks || []).length && ((d.dailyLogs || []).length || d.importEnabled)) setTab('logs');
       })
       .catch(() => setEnabled(false))
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading || !enabled) return null;
+  if (loading || (!enabled && !importEnabled)) return null;
+
+  const checkedSheet = checkRows(sheetRows, period, logs.map(l => String(l.logDate).slice(0, 10)));
+  const readyCount = checkedSheet.filter(r => !r.problem).length;
+
+  const chooseSheet = async (file: File) => {
+    setImportMsg(null);
+    try {
+      setSheetRows(await readDailyLogSheet(file));
+      setSheetName(file.name);
+    } catch (e: any) {
+      toast.error(e?.message || 'Could not read this file');
+    }
+  };
+
+  const importSheet = async () => {
+    if (!readyCount) return;
+    setImporting(true);
+    try {
+      const res = await client.post('/intern-edit/my-import-daily-logs', { sourceName: sheetName, rows: toPayload(checkedSheet) });
+      const d = res.data?.data || {};
+      setImportMsg(`${d.imported || 0} logs added${d.skipped?.length ? `, ${d.skipped.length} skipped` : ''}.`);
+      toast.success(res.data?.message || 'Imported');
+      setSheetRows([]); setSheetName('');
+      const fresh = await client.get('/intern-edit/my-submissions');
+      setLogs(fresh.data?.data?.dailyLogs || []);
+    } catch (e: any) {
+      toast.error(e?.response?.data?.message || 'Import failed');
+      if (e?.response?.status === 403) setImportEnabled(false);
+    } finally {
+      setImporting(false);
+    }
+  };
 
   const startTask = (t: Task) => { setEditing(`task:${t.id}`); setDraft({ title: t.title || '', description: t.description || '', url: t.url || '' }); };
   const startLog = (l: DailyLog) => {
@@ -122,9 +163,14 @@ export function EditMySubmissions() {
     <div className="bg-white rounded-2xl border border-gray-200 p-5 mb-4">
       <div className="flex items-start justify-between gap-3 mb-1">
         <h4 className="font-bold text-gray-900 flex items-center gap-2"><PencilLine size={16} className="text-emerald-600" /> Edit your submissions</h4>
-        <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-0.5 shrink-0">Editing open</span>
+        <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-0.5 shrink-0">
+          {enabled && importEnabled ? 'Editing & import open' : enabled ? 'Editing open' : 'Import open'}
+        </span>
       </div>
-      <p className="text-xs text-gray-500 mb-4">You can correct what you already submitted. Dates stay the same, and edited entries are marked.</p>
+      <p className="text-xs text-gray-500 mb-4">
+        {enabled ? 'You can correct what you already submitted. Dates stay the same, and edited entries are marked. ' : ''}
+        {importEnabled ? 'If you kept your daily log in an Excel sheet, you can add it under Daily logs.' : ''}
+      </p>
 
       <div className="flex gap-2 mb-4">
         {([['tasks', `Tasks (${tasks.length})`, ClipboardList], ['logs', `Daily logs (${logs.length})`, CalendarDays]] as const).map(([key, label, Icon]) => (
@@ -152,7 +198,7 @@ export function EditMySubmissions() {
                         {editedTag(t.editedAt)}
                       </div>
                     </div>
-                    {!isEd && (
+                    {enabled && !isEd && (
                       <button type="button" onClick={() => startTask(t)}
                         className="inline-flex items-center gap-1 text-sm font-medium text-emerald-700 hover:text-emerald-600 shrink-0">
                         <PencilLine size={14} /> Edit
@@ -182,6 +228,61 @@ export function EditMySubmissions() {
           </div>
       )}
 
+      {tab === 'logs' && importEnabled && (
+        <div className="rounded-xl border border-sky-200 bg-sky-50/60 p-3 mb-3">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-start gap-2 min-w-0">
+              <FileSpreadsheet size={16} className="text-sky-700 mt-0.5 shrink-0" />
+              <div className="min-w-0">
+                <div className="text-sm font-semibold text-gray-900">Import from an Excel sheet</div>
+                <p className="text-xs text-gray-600 mt-0.5">
+                  Needs a “Date” and a “Today's Work” column. Imported logs keep their dates and are marked “From sheet”.
+                  {period?.start ? ` Dates must be between ${fmtDay(period.start)} and ${fmtDay(period.end)}.` : ''}
+                </p>
+              </div>
+            </div>
+            <button type="button" onClick={downloadDailyLogTemplate} className="text-xs text-sky-700 hover:text-sky-600 inline-flex items-center gap-1 shrink-0">
+              <Download size={12} /> Template
+            </button>
+          </div>
+          <label className="mt-3 flex items-center justify-center gap-2 rounded-lg border border-dashed border-sky-300 bg-white px-3 py-3 text-sm text-gray-700 cursor-pointer hover:border-sky-500">
+            <Upload size={14} /> {sheetName ? `${sheetName} · choose another` : 'Choose .xlsx, .xls or .csv'}
+            <input type="file" accept=".xlsx,.xls,.csv" className="hidden"
+              onChange={e => { const f = e.target.files?.[0]; if (f) chooseSheet(f); e.target.value = ''; }} />
+          </label>
+          {checkedSheet.length > 0 && (
+            <>
+              <div className="mt-3 rounded-lg border border-gray-200 bg-white overflow-auto max-h-64">
+                <table className="w-full text-xs">
+                  <thead className="bg-gray-50 text-gray-500 sticky top-0">
+                    <tr><th className="text-left px-2 py-1.5">Date</th><th className="text-left px-2 py-1.5">Work</th><th className="text-left px-2 py-1.5">Hrs</th><th className="px-2 py-1.5"></th></tr>
+                  </thead>
+                  <tbody>
+                    {checkedSheet.map(r => (
+                      <tr key={r.line} className={`border-t border-gray-100 ${r.problem ? 'opacity-60' : ''}`}>
+                        <td className="px-2 py-1.5 whitespace-nowrap text-gray-900">{fmtDay(r.logDate)}</td>
+                        <td className="px-2 py-1.5 text-gray-700 max-w-[260px] truncate" title={r.todaysWork}>{r.todaysWork || '—'}</td>
+                        <td className="px-2 py-1.5 text-gray-600">{r.hoursWorked || ''}</td>
+                        <td className="px-2 py-1.5 whitespace-nowrap">
+                          {r.problem
+                            ? <span className="inline-flex items-center gap-1 text-amber-700"><AlertTriangle size={12} /> {r.problem}</span>
+                            : <span className="inline-flex items-center gap-1 text-emerald-700"><CheckCircle2 size={12} /> Ready</span>}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <button type="button" onClick={importSheet} disabled={!readyCount || importing}
+                className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-40">
+                {importing ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />} Add {readyCount} logs
+              </button>
+            </>
+          )}
+          {importMsg && <p className="text-xs text-emerald-700 mt-2">{importMsg}</p>}
+        </div>
+      )}
+
       {tab === 'logs' && (
         logs.length === 0
           ? <p className="text-sm text-gray-400 text-center py-4">You haven't submitted any daily logs yet.</p>
@@ -202,7 +303,7 @@ export function EditMySubmissions() {
                       )}
                       {editedTag(l.editedAt)}
                     </div>
-                    {!isEd && (
+                    {enabled && !isEd && (
                       <button type="button" onClick={() => startLog(l)}
                         className="inline-flex items-center gap-1 text-sm font-medium text-emerald-700 hover:text-emerald-600 shrink-0">
                         <PencilLine size={14} /> Edit

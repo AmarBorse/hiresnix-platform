@@ -8,9 +8,13 @@
 //   PUT  /api/intern-edit/tasks/:taskId        -> edit one submitted task
 //   PUT  /api/intern-edit/daily-logs/:id       -> edit one daily log
 //
-// Admin import of daily logs an intern kept outside the portal (e.g. in an Excel sheet):
-//   GET  /api/intern-edit/admin/enrollments?q=  -> find the intern
+// Daily logs an intern kept outside the portal (e.g. in an Excel sheet):
+//   POST /api/intern-edit/my-import-daily-logs   -> the intern imports their own sheet (second admin switch)
+//   GET  /api/intern-edit/admin/enrollments?q=  -> admin: find an intern
 //   POST /api/intern-edit/admin/import-daily-logs { enrollmentId, sourceName, rows[] }
+//   GET  /api/intern-edit/admin/imports          -> admin: every import, newest first, to check
+//   GET  /api/intern-edit/admin/imports/:batch   -> admin: the rows of one import
+//   DELETE /api/intern-edit/admin/imports/:batch -> admin: remove one import
 // Imported logs keep the dates from the sheet, but are permanently marked as imported
 // (when, by whom, from which file), so nobody mistakes them for logs typed in on the day.
 //
@@ -41,18 +45,22 @@ const ensureTables = () => {
       await sequelize.query(`ALTER TABLE IF EXISTS ip_daily_logs ADD COLUMN IF NOT EXISTS "importedAt" TIMESTAMPTZ`);
       await sequelize.query(`ALTER TABLE IF EXISTS ip_daily_logs ADD COLUMN IF NOT EXISTS "importedBy" TEXT`);
       await sequelize.query(`ALTER TABLE IF EXISTS ip_daily_logs ADD COLUMN IF NOT EXISTS "importSource" TEXT`);
+      await sequelize.query(`ALTER TABLE IF EXISTS ip_daily_logs ADD COLUMN IF NOT EXISTS "importBatch" TEXT`);
     })().catch(err => { ready = null; throw err; });
   }
   return ready;
 };
 
-const SETTING_KEY = 'intern_edit_submissions';
+const KEYS = { enabled: 'intern_edit_submissions', importEnabled: 'intern_import_daily_logs' };
 
-const isEditingOn = async () => {
+const readSwitch = async (key) => {
   await ensureTables();
-  const [rows] = await sequelize.query(`SELECT value FROM app_settings WHERE key = :key`, { replacements: { key: SETTING_KEY } });
+  const [rows] = await sequelize.query(`SELECT value FROM app_settings WHERE key = :key`, { replacements: { key } });
   return rows[0]?.value === true;
 };
+const isEditingOn = () => readSwitch(KEYS.enabled);
+const isImportOn = () => readSwitch(KEYS.importEnabled);
+const switches = async () => ({ enabled: await isEditingOn(), importEnabled: await isImportOn() });
 
 // Short, clean text; undefined means "not sent, keep as is"
 const clean = (v, max) => {
@@ -79,27 +87,31 @@ const requireEditingOn = asyncHandler(async (req, res, next) => {
 
 // ── Setting ───────────────────────────────────────────────────────
 r.get('/setting', protect, asyncHandler(async (req, res) => {
-  res.json({ success: true, data: { enabled: await isEditingOn() } });
+  res.json({ success: true, data: await switches() });
 }));
 
 r.put('/setting', protect, authorize('admin'), asyncHandler(async (req, res) => {
   if (req.user?.role !== 'admin') { res.status(403); throw new Error('Only the main admin can change this'); }
   await ensureTables();
-  const enabled = req.body?.enabled === true;
-  await sequelize.query(
-    `INSERT INTO app_settings (key, value, "updatedAt") VALUES (:key, CAST(:value AS jsonb), NOW())
-     ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, "updatedAt" = NOW()`,
-    { replacements: { key: SETTING_KEY, value: JSON.stringify(enabled) } },
-  );
-  console.log(`[intern-edit] ${req.user.email} turned editing ${enabled ? 'ON' : 'OFF'}`);
-  res.json({ success: true, data: { enabled }, message: enabled ? 'Interns can now edit their submissions' : 'Editing turned off' });
+  const changed = [];
+  for (const name of Object.keys(KEYS)) {
+    if (typeof req.body?.[name] !== 'boolean') continue;
+    await sequelize.query(
+      `INSERT INTO app_settings (key, value, "updatedAt") VALUES (:key, CAST(:value AS jsonb), NOW())
+       ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, "updatedAt" = NOW()`,
+      { replacements: { key: KEYS[name], value: JSON.stringify(req.body[name]) } },
+    );
+    changed.push(`${name}=${req.body[name] ? 'ON' : 'OFF'}`);
+  }
+  if (changed.length) console.log(`[intern-edit] ${req.user.email} set ${changed.join(', ')}`);
+  res.json({ success: true, data: await switches() });
 }));
 
 // ── The intern's own submissions ──────────────────────────────────
 r.get('/my-submissions', protect, authorize('student'), asyncHandler(async (req, res) => {
-  const enabled = await isEditingOn();
+  const { enabled, importEnabled } = await switches();
   const enrollment = await getEnrollment(req.user.id);
-  if (!enrollment) return res.json({ success: true, data: { enabled, tasks: [], dailyLogs: [] } });
+  if (!enrollment) return res.json({ success: true, data: { enabled, importEnabled, tasks: [], dailyLogs: [], period: null } });
 
   const [dailyLogs] = await sequelize.query(
     `SELECT id, "logDate", "todaysWork", "hoursWorked", learning, challenges, "tomorrowPlan", "editedAt", "editCount",
@@ -108,7 +120,7 @@ r.get('/my-submissions', protect, authorize('student'), asyncHandler(async (req,
     { replacements: { eid: enrollment.id, uid: req.user.id } },
   ).catch(() => [[]]);
 
-  res.json({ success: true, data: { enabled, tasks: enrollment.taskLogs || [], dailyLogs } });
+  res.json({ success: true, data: { enabled, importEnabled, tasks: enrollment.taskLogs || [], dailyLogs, period: await periodOf(enrollment) } });
 }));
 
 // ── Edit a submitted task (stored in the enrollment's taskLogs list) ──
@@ -222,26 +234,21 @@ r.get('/admin/enrollments', protect, authorize('admin'), mainAdminOnly, asyncHan
   res.json({ success: true, data: rows });
 }));
 
-r.post('/admin/import-daily-logs', protect, authorize('admin'), mainAdminOnly, asyncHandler(async (req, res) => {
+// Shared by the admin import and the intern's own import
+const importRows = async ({ enrollment, rows, sourceName, importedBy }) => {
   await ensureTables();
-  const { InternshipEnrollment } = require('../models/internshipPlatform');
-  const enrollment = await InternshipEnrollment.findByPk(req.body?.enrollmentId);
-  if (!enrollment) { res.status(404); throw new Error('Enrollment not found'); }
-
-  const rows = Array.isArray(req.body?.rows) ? req.body.rows.slice(0, 400) : [];
-  if (!rows.length) { res.status(400); throw new Error('No rows to import'); }
-  const sourceName = clean(req.body?.sourceName, 200) || 'Excel sheet';
+  rows = Array.isArray(rows) ? rows.slice(0, 400) : [];
+  if (!rows.length) { const e = new Error('No rows to import'); e.status = 400; throw e; }
   const { start, end } = await periodOf(enrollment);
 
   const [existing] = await sequelize.query(
     `SELECT "logDate" FROM ip_daily_logs WHERE "enrollmentId" = :eid`, { replacements: { eid: enrollment.id } },
   );
   const taken = new Set(existing.map(e => ymd(e.logDate)));
-
-  const results = { imported: 0, skipped: [] };
+  const results = { imported: 0, skipped: [], batch: null };
   const toInsert = [];
   rows.forEach((row, i) => {
-    const line = i + 1;
+    const line = Number(row?.line) || i + 1;
     const date = /^\d{4}-\d{2}-\d{2}$/.test(String(row?.logDate || '')) ? String(row.logDate) : null;
     const work = clean(row?.todaysWork, 5000);
     let hours = Number(row?.hoursWorked ?? 0);
@@ -257,20 +264,88 @@ r.post('/admin/import-daily-logs', protect, authorize('admin'), mainAdminOnly, a
   });
 
   if (toInsert.length) {
+    const batch = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
     await sequelize.transaction(async (t) => {
       for (const x of toInsert) {
         await sequelize.query(
           `INSERT INTO ip_daily_logs ("enrollmentId", "userId", "logDate", "todaysWork", "hoursWorked", learning, challenges, "tomorrowPlan",
-                                      "importedAt", "importedBy", "importSource", "createdAt", "updatedAt")
-           VALUES (:eid, :uid, :date, :work, :hours, :learning, :challenges, :tomorrowPlan, NOW(), :by, :src, NOW(), NOW())`,
-          { replacements: { eid: enrollment.id, uid: enrollment.userId, ...x, by: req.user.email || String(req.user.id), src: sourceName }, transaction: t },
+                                      "importedAt", "importedBy", "importSource", "importBatch", "createdAt", "updatedAt")
+           VALUES (:eid, :uid, :date, :work, :hours, :learning, :challenges, :tomorrowPlan, NOW(), :by, :src, :batch, NOW(), NOW())`,
+          { replacements: { eid: enrollment.id, uid: enrollment.userId, ...x, by: importedBy, src: clean(sourceName, 200) || 'Excel sheet', batch }, transaction: t },
         );
       }
     });
     results.imported = toInsert.length;
+    results.batch = batch;
   }
-  console.log(`[intern-edit] ${req.user.email} imported ${results.imported} daily logs for enrollment ${enrollment.id} from "${sourceName}"`);
-  res.json({ success: true, data: results, message: `${results.imported} logs imported, ${results.skipped.length} skipped` });
+  console.log(`[intern-edit] ${importedBy} imported ${results.imported} daily logs for enrollment ${enrollment.id} from "${sourceName}"`);
+  return results;
+};
+
+const sendImport = async (res, args) => {
+  try {
+    const data = await importRows(args);
+    res.json({ success: true, data, message: `${data.imported} logs imported, ${data.skipped.length} skipped` });
+  } catch (e) {
+    res.status(e.status || 500).json({ success: false, message: e.message || 'Import failed' });
+  }
+};
+
+// The intern imports their own sheet (only while the admin's import switch is on)
+r.post('/my-import-daily-logs', protect, authorize('student'), asyncHandler(async (req, res) => {
+  if (!(await isImportOn())) { res.status(403); throw new Error('Importing from a sheet is turned off right now'); }
+  const enrollment = await getEnrollment(req.user.id);
+  if (!enrollment) { res.status(404); throw new Error('No internship enrollment found'); }
+  await sendImport(res, { enrollment, rows: req.body?.rows, sourceName: req.body?.sourceName, importedBy: `student:${req.user.email || req.user.id}` });
+}));
+
+// The admin imports a sheet for an intern
+r.post('/admin/import-daily-logs', protect, authorize('admin'), mainAdminOnly, asyncHandler(async (req, res) => {
+  const { InternshipEnrollment } = require('../models/internshipPlatform');
+  const enrollment = await InternshipEnrollment.findByPk(req.body?.enrollmentId);
+  if (!enrollment) { res.status(404); throw new Error('Enrollment not found'); }
+  await sendImport(res, { enrollment, rows: req.body?.rows, sourceName: req.body?.sourceName, importedBy: `admin:${req.user.email || req.user.id}` });
+}));
+
+// Admin: every import, newest first, so they can be checked against the admin's own list
+r.get('/admin/imports', protect, authorize('admin'), mainAdminOnly, asyncHandler(async (req, res) => {
+  await ensureTables();
+  const q = String(req.query.q || '').trim();
+  const [rows] = await sequelize.query(
+    `SELECT l."importBatch" AS batch, MIN(l."importedAt") AS "importedAt", MIN(l."importedBy") AS "importedBy",
+            MIN(l."importSource") AS "importSource", COUNT(*)::int AS count,
+            MIN(l."logDate") AS "firstDate", MAX(l."logDate") AS "lastDate",
+            e.id AS "enrollmentId", e."studentName", e.email
+       FROM ip_daily_logs l JOIN ip_enrollments e ON e.id = l."enrollmentId"
+      WHERE l."importedAt" IS NOT NULL AND l."importBatch" IS NOT NULL
+        AND (:q = '' OR e."studentName" ILIKE :like OR e.email ILIKE :like)
+      GROUP BY l."importBatch", e.id, e."studentName", e.email
+      ORDER BY MIN(l."importedAt") DESC
+      LIMIT 200`,
+    { replacements: { q, like: `%${q}%` } },
+  );
+  res.json({ success: true, data: rows });
+}));
+
+r.get('/admin/imports/:batch', protect, authorize('admin'), mainAdminOnly, asyncHandler(async (req, res) => {
+  await ensureTables();
+  const [rows] = await sequelize.query(
+    `SELECT id, "logDate", "todaysWork", "hoursWorked", learning, "editedAt"
+       FROM ip_daily_logs WHERE "importBatch" = :batch ORDER BY "logDate"`,
+    { replacements: { batch: req.params.batch } },
+  );
+  res.json({ success: true, data: rows });
+}));
+
+r.delete('/admin/imports/:batch', protect, authorize('admin'), mainAdminOnly, asyncHandler(async (req, res) => {
+  await ensureTables();
+  const [, meta] = await sequelize.query(
+    `DELETE FROM ip_daily_logs WHERE "importBatch" = :batch AND "importedAt" IS NOT NULL`,
+    { replacements: { batch: req.params.batch } },
+  );
+  const removed = meta?.rowCount ?? 0;
+  console.log(`[intern-edit] ${req.user.email} removed import ${req.params.batch} (${removed} logs)`);
+  res.json({ success: true, data: { removed }, message: `${removed} imported logs removed` });
 }));
 
 module.exports = r;
