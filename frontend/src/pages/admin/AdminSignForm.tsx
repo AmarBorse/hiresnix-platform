@@ -213,6 +213,98 @@ async function pinPageAnchoredPictures(wordDoc: any, idoc: Document) {
 }
 
 /**
+ * Same problem for pictures in headers and footers (e.g. a college letterhead strip at the
+ * bottom of every page): Word positions them on the page, docx-preview puts them next to
+ * their paragraph, which lands outside the sheet. Pin them to the sheet: header pictures
+ * measured from the top edge, footer pictures from the bottom edge, so they land correctly
+ * on every sheet.
+ */
+async function pinHeaderFooterPictures(wordDoc: any, idoc: Document) {
+  try {
+    const zip = wordDoc?._package?._zip;
+    if (!zip?.file) return;
+    const WP = 'http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing';
+    type A = { h: { rel: string; off: string | null; align: string | null }; v: { rel: string; off: string | null; align: string | null }; cx: number; cy: number };
+    const partAnchors: { kind: 'header' | 'footer'; list: A[] }[] = [];
+    for (const part of zip.file(/^word\/(header|footer)\d*\.xml$/) as any[]) {
+      const x = new DOMParser().parseFromString(await part.async('string'), 'application/xml');
+      const read = (a: Element, tag: string) => {
+        const el = a.getElementsByTagNameNS(WP, tag)[0];
+        return {
+          rel: el?.getAttribute('relativeFrom') || '',
+          off: el?.getElementsByTagNameNS(WP, 'posOffset')[0]?.textContent ?? null,
+          align: el?.getElementsByTagNameNS(WP, 'align')[0]?.textContent ?? null,
+        };
+      };
+      const list = Array.from(x.getElementsByTagNameNS(WP, 'anchor'))
+        .filter(a => a.getElementsByTagNameNS(WP, 'wrapNone').length > 0)
+        .map(a => {
+          const ext = a.getElementsByTagNameNS(WP, 'extent')[0];
+          return { h: read(a, 'positionH'), v: read(a, 'positionV'), cx: Number(ext?.getAttribute('cx') || 0), cy: Number(ext?.getAttribute('cy') || 0) };
+        });
+      if (list.length) partAnchors.push({ kind: /footer/.test(part.name) ? 'footer' : 'header', list });
+    }
+    if (!partAnchors.length) return;
+
+    const emu = (v: number | string) => (Number(v) / 12700) * (96 / 72);
+    idoc.querySelectorAll('section.docx').forEach(secNode => {
+      const sec = secNode as HTMLElement;
+      const ptOf = (v: string) => { const m = /([\d.]+)pt/.exec(v || ''); return m ? parseFloat(m[1]) * 96 / 72 : 0; };
+      const pageW = ptOf(sec.style.width) || sec.getBoundingClientRect().width;
+      const pageH = ptOf(sec.style.minHeight);
+      if (!pageH) return;
+      const cs = getComputedStyle(sec);
+      const padL = parseFloat(cs.paddingLeft) || 0, padR = parseFloat(cs.paddingRight) || 0;
+      const padT = parseFloat(cs.paddingTop) || 0, padB = parseFloat(cs.paddingBottom) || 0;
+
+      (['header', 'footer'] as const).forEach(kind => {
+        const box = sec.querySelector(`:scope > ${kind}`) as HTMLElement | null;
+        if (!box) return;
+        const holders = (Array.from(box.querySelectorAll('*')) as HTMLElement[])
+          .filter(el => el.style.position === 'relative' && el.style.width === '0px' && el.style.height === '0px');
+        const part = partAnchors.find(pa => pa.kind === kind && pa.list.length === holders.length);
+        if (!part) return;
+        const secR = sec.getBoundingClientRect();
+        holders.forEach((hold, i) => {
+          const a = part.list[i];
+          const w = emu(a.cx), h = emu(a.cy);
+          const r = hold.getBoundingClientRect();
+          // horizontal position on the sheet
+          let left = r.left - secR.left;
+          const hBase = a.h.rel === 'page' ? 0 : (a.h.rel === 'margin' || a.h.rel === 'column') ? padL : null;
+          const hSpan = a.h.rel === 'page' ? pageW : pageW - padL - padR;
+          if (hBase !== null) {
+            if (a.h.off !== null) left = hBase + emu(a.h.off);
+            else if (a.h.align === 'center') left = hBase + (hSpan - w) / 2;
+            else if (a.h.align === 'right' || a.h.align === 'outside') left = hBase + hSpan - w;
+            else if (a.h.align) left = hBase;
+          }
+          // vertical position on the sheet (from its top edge)
+          let top: number | null = null;
+          const vBase = a.v.rel === 'page' ? 0 : a.v.rel === 'margin' ? padT : a.v.rel === 'bottomMargin' ? pageH - padB : a.v.rel === 'topMargin' ? 0 : null;
+          const vSpan = a.v.rel === 'page' ? pageH : a.v.rel === 'margin' ? pageH - padT - padB : a.v.rel === 'bottomMargin' ? padB : a.v.rel === 'topMargin' ? padT : 0;
+          if (vBase !== null) {
+            if (a.v.off !== null) top = vBase + emu(a.v.off);
+            else if (a.v.align === 'center') top = vBase + (vSpan - h) / 2;
+            else if (a.v.align === 'bottom' || a.v.align === 'outside') top = vBase + vSpan - h;
+            else if (a.v.align) top = vBase;
+          }
+          if (top === null) return; // relative to its paragraph: docx-preview already has it right
+          box.appendChild(hold);
+          hold.style.position = 'absolute';
+          hold.style.left = `${left}px`;
+          hold.style.zIndex = '2';
+          if (kind === 'footer') { hold.style.top = ''; hold.style.bottom = `${pageH - top}px`; }
+          else { hold.style.bottom = ''; hold.style.top = `${top}px`; }
+        });
+      });
+    });
+  } catch {
+    /* leave the layout as docx-preview made it */
+  }
+}
+
+/**
  * Finds page-number fields (PAGE / NUMPAGES) in headers and footers. Word stores only the
  * number shown when the file was last saved, so each sheet would otherwise say "Page 1".
  */
@@ -355,6 +447,7 @@ async function docxFileToPdf(file: File): Promise<{ bytes: Uint8Array; paginated
       img.complete ? Promise.resolve() : new Promise(res => { img.onload = img.onerror = () => res(null); })));
 
     await pinPageAnchoredPictures(wordDoc, idoc);
+    await pinHeaderFooterPictures(wordDoc, idoc);
 
     const sections = Array.from(idoc.querySelectorAll('section.docx')) as HTMLElement[];
     if (!sections.length) throw new Error('empty');
@@ -625,7 +718,12 @@ async function docxFileToPdf(file: File): Promise<{ bytes: Uint8Array; paginated
         const t0 = pl.sec.getBoundingClientRect().top, r = el.getBoundingClientRect();
         return { top: r.top - t0, bottom: r.bottom - t0 };
       };
-      const hb = head ? relS(head) : null, fb = foot ? relS(foot) : null;
+      // a header/footer plus any pictures pinned inside it
+      const zone = (el: Element) => {
+        const parts = [el, ...Array.from(el.querySelectorAll('img, svg'))].map(relS);
+        return { top: Math.min(...parts.map(p => p.top)), bottom: Math.max(...parts.map(p => p.bottom)) };
+      };
+      const hb = head ? zone(head) : null, fb = foot ? zone(foot) : null;
       for (const sl of pl.slices) {
         pageNo++;
         setNumbers(pl.sec, pageNo);
