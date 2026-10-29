@@ -11,6 +11,7 @@ import {
 import client from '../../api/client';
 import { instInternshipClient } from '../../api/instStudent';
 import { LogicBuilder } from './LogicBuilder';
+import { EditMySubmissions } from '../../components/student/EditMySubmissions';
 
 // ═══════════════════════════════════════════════════════════════════
 // ── EXISTING IPLATFORM PANEL (UNCHANGED) ──────────────────────────
@@ -392,6 +393,9 @@ function IPlatformPanel() {
 
         </div>
       )}
+
+      {/* Edit already-submitted tasks and daily logs (only shows while the admin allows it) */}
+      {enrollment && <EditMySubmissions />}
 
       {/* ── NEW EXTENDED SECTIONS (added below existing content) ── */}
       {/* Exception Contact — top */}

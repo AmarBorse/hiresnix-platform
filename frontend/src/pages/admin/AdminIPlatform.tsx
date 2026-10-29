@@ -9,6 +9,7 @@ import {
   GraduationCap, Globe, FileText, Video, Link2, RefreshCw
 } from 'lucide-react';
 import client from '../../api/client';
+import { InternEditToggle } from '../../components/admin/InternEditToggle';
 import * as XLSX from 'xlsx';
 
 // ── CSV Download helper ───────────────────────────────────────────
@@ -269,6 +270,9 @@ export function AdminIPlatform() {
           <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
         </button>
       </div>
+
+      {/* Let interns edit the tasks and daily logs they already submitted */}
+      <InternEditToggle />
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

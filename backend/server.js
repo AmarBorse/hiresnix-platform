@@ -93,6 +93,7 @@ app.use('/api/logic-builder', require('./routes/logicBuilderRoutes'));
 app.use('/api/student-academy', require('./routes/studentAcademyRoutes'));
 app.use('/api/tts', require('./routes/ttsRoutes'));
 app.use('/api/sign-assets', require('./routes/signAssetsRoutes'));
+app.use('/api/intern-edit', require('./routes/internEditRoutes'));
 
 app.get('/api/health', (req, res) => res.json({ status: 'OK', db: 'MySQL/PostgreSQL (Sequelize)', timestamp: new Date() }));
 
