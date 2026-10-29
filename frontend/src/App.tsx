@@ -90,6 +90,13 @@ const AboutUs           = lazy(() => import('./pages/legal/AboutUs').then(m => (
 const CompanyInformation= lazy(() => import('./pages/legal/CompanyInformation').then(m => ({ default: m.CompanyInformation })));
 const ContactUs         = lazy(() => import('./pages/legal/ContactUs').then(m => ({ default: m.ContactUs })));
 const VerificationPortal= lazy(() => import('./pages/legal/VerificationPortal').then(m => ({ default: m.VerificationPortal })));
+// Public marketing pages: one page per item in the website's top menu
+const ServicesPage    = lazy(() => import('./pages/marketing/MarketingPages').then(m => ({ default: m.ServicesPage })));
+const AISolutionsPage = lazy(() => import('./pages/marketing/MarketingPages').then(m => ({ default: m.AISolutionsPage })));
+const WorkPage        = lazy(() => import('./pages/marketing/MarketingPages').then(m => ({ default: m.WorkPage })));
+const ProductsPage    = lazy(() => import('./pages/marketing/MarketingPages').then(m => ({ default: m.ProductsPage })));
+const InternshipsPage = lazy(() => import('./pages/marketing/MarketingPages').then(m => ({ default: m.InternshipsPage })));
+const ContactPage     = lazy(() => import('./pages/marketing/MarketingPages').then(m => ({ default: m.ContactPage })));
 const PrivacyPolicy     = lazy(() => import('./pages/legal/policyPages').then(m => ({ default: m.PrivacyPolicy })));
 const TermsAndConditions= lazy(() => import('./pages/legal/policyPages').then(m => ({ default: m.TermsAndConditions })));
 const Disclaimer        = lazy(() => import('./pages/legal/policyPages').then(m => ({ default: m.Disclaimer })));
@@ -136,6 +143,15 @@ export default function App() {
           {/* Landing */}
           <Route path="/" element={isAuthenticated && user ? <AuthRedirect /> : <LandingPage />} />
           <Route path="/careers" element={<CareersPage />} />
+
+          {/* Marketing pages (top menu) */}
+          <Route path="/services"     element={<ServicesPage />} />
+          <Route path="/ai-solutions" element={<AISolutionsPage />} />
+          <Route path="/ai"           element={<AISolutionsPage />} />
+          <Route path="/work"         element={<WorkPage />} />
+          <Route path="/products"     element={<ProductsPage />} />
+          <Route path="/internships"  element={<InternshipsPage />} />
+          <Route path="/contact"      element={<ContactPage />} />
 
           {/* Legal */}
           <Route path="/about-us"             element={<AboutUs />} />
