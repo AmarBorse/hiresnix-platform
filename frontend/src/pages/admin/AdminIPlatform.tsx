@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import client from '../../api/client';
 import { InternEditToggle } from '../../components/admin/InternEditToggle';
+import { ImportDailyLogs } from '../../components/admin/ImportDailyLogs';
 import * as XLSX from 'xlsx';
 
 // ── CSV Download helper ───────────────────────────────────────────
@@ -273,6 +274,9 @@ export function AdminIPlatform() {
 
       {/* Let interns edit the tasks and daily logs they already submitted */}
       <InternEditToggle />
+
+      {/* Import daily logs an intern kept in an Excel sheet (marked as imported) */}
+      <ImportDailyLogs />
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

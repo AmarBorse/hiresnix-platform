@@ -13,6 +13,7 @@ type Task = { id: string; title?: string; description?: string; url?: string; we
 type DailyLog = {
   id: string | number; logDate: string; todaysWork?: string; hoursWorked?: number | string;
   learning?: string; challenges?: string; tomorrowPlan?: string; editedAt?: string | null;
+  importedAt?: string | null; importSource?: string | null;
 };
 
 const fmtDate = (d?: string | null) => {
@@ -193,6 +194,12 @@ export function EditMySubmissions() {
                     <div className="flex flex-wrap items-center gap-2 text-sm">
                       <span className="font-semibold text-gray-900">{fmtDate(l.logDate)}</span>
                       {l.hoursWorked ? <span className="text-xs text-gray-500">{Number(l.hoursWorked)} h</span> : null}
+                      {l.importedAt && (
+                        <span className="text-[11px] font-medium text-sky-700 bg-sky-50 border border-sky-200 rounded-full px-2 py-0.5"
+                          title={l.importSource ? `Imported from ${l.importSource}` : undefined}>
+                          From sheet · added {fmtDate(l.importedAt)}
+                        </span>
+                      )}
                       {editedTag(l.editedAt)}
                     </div>
                     {!isEd && (
