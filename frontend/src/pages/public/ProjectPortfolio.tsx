@@ -1,39 +1,304 @@
 // src/pages/public/ProjectPortfolio.tsx
-import { useEffect, useState } from 'react';
+// Public portfolio at /projects/:username — what a recruiter or college sees.
+// Bento layout: intro, contact, certificate, experience, skills (logo marquee), links, education,
+// then the work. Dark by default with a light theme switch. Motion: one load sequence,
+// rotating skill in the headline, the skills marquee, a cursor glow on tiles, a gentle tilt on
+// project cards and the contact dialog. All motion stops when the visitor prefers reduced motion.
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent, type ReactNode } from 'react';
 import { useParams } from 'react-router-dom';
 
 const API = (import.meta as any).env?.VITE_API_URL || 'https://hirenix-backend.onrender.com/api';
 
-const CARD_BG = [
-  'linear-gradient(135deg,rgba(99,102,241,0.2),rgba(139,92,246,0.08))',
-  'linear-gradient(135deg,rgba(212,175,55,0.15),rgba(245,214,128,0.04))',
-  'linear-gradient(135deg,rgba(34,197,94,0.15),rgba(16,185,129,0.04))',
-  'linear-gradient(135deg,rgba(239,68,68,0.15),rgba(248,113,113,0.04))',
-  'linear-gradient(135deg,rgba(14,165,233,0.15),rgba(56,189,248,0.04))',
-];
-
-const EMOJIS: Record<string,string> = {
-  'e-commerce':'🛒','shop':'🛒','ai':'🤖','ml':'🧠','chat':'💬',
-  'dashboard':'📊','analytics':'📈','mobile':'📱','stock':'📈',
-  'web':'🌐','portfolio':'💼','blog':'📝','game':'🎮',
-  'auth':'🔐','api':'⚡','cloud':'☁️','social':'👥',
-};
-const getEmoji = (t: string) => {
-  const l = t.toLowerCase();
-  for (const [k,v] of Object.entries(EMOJIS)) if (l.includes(k)) return v;
-  return '🚀';
-};
-
-const formatDate = (d: string) => {
+/* ── helpers ─────────────────────────────────────────────────────── */
+const monthYear = (d?: string) => {
   if (!d) return '';
-  return new Date(d).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' });
+  const x = new Date(d);
+  return isNaN(x.getTime()) ? '' : x.toLocaleDateString('en-IN', { month: 'short', year: 'numeric' });
+};
+const host = (url: string) => { try { return new URL(url).hostname.replace(/^www\./, ''); } catch { return url; } };
+const toList = (v: any): string[] =>
+  !v ? [] : (Array.isArray(v) ? v : String(v).split(',')).map((s: any) => String(s).trim()).filter(Boolean);
+
+// Skill name → Simple Icons slug (logos load from cdn.simpleicons.org; unknown skills show a letter)
+const ICONS: Record<string, string> = {
+  python: 'python', javascript: 'javascript', js: 'javascript', typescript: 'typescript', ts: 'typescript',
+  react: 'react', 'react.js': 'react', reactjs: 'react', 'next.js': 'nextdotjs', nextjs: 'nextdotjs', next: 'nextdotjs',
+  'node.js': 'nodedotjs', nodejs: 'nodedotjs', node: 'nodedotjs', express: 'express', 'express.js': 'express',
+  mongodb: 'mongodb', mysql: 'mysql', postgresql: 'postgresql', postgres: 'postgresql', sqlite: 'sqlite', redis: 'redis',
+  html: 'html5', html5: 'html5', css: 'css', css3: 'css', sass: 'sass', tailwind: 'tailwindcss', 'tailwind css': 'tailwindcss', tailwindcss: 'tailwindcss',
+  bootstrap: 'bootstrap', redux: 'redux', vue: 'vuedotjs', 'vue.js': 'vuedotjs', angular: 'angular', svelte: 'svelte',
+  pandas: 'pandas', numpy: 'numpy', 'scikit-learn': 'scikitlearn', sklearn: 'scikitlearn', scikitlearn: 'scikitlearn',
+  tensorflow: 'tensorflow', pytorch: 'pytorch', keras: 'keras', opencv: 'opencv', jupyter: 'jupyter', streamlit: 'streamlit',
+  plotly: 'plotly', django: 'django', flask: 'flask', fastapi: 'fastapi',
+  java: 'openjdk', c: 'c', 'c++': 'cplusplus', cpp: 'cplusplus', 'c#': 'dotnet', php: 'php', laravel: 'laravel', go: 'go', golang: 'go',
+  rust: 'rust', kotlin: 'kotlin', swift: 'swift', dart: 'dart', flutter: 'flutter', android: 'android',
+  git: 'git', github: 'github', gitlab: 'gitlab', docker: 'docker', kubernetes: 'kubernetes', linux: 'linux', ubuntu: 'ubuntu',
+  firebase: 'firebase', supabase: 'supabase', vercel: 'vercel', netlify: 'netlify', render: 'render', postman: 'postman',
+  figma: 'figma', canva: 'canva', wordpress: 'wordpress', graphql: 'graphql', prisma: 'prisma',
+  npm: 'npm', vite: 'vite', webpack: 'webpack', jest: 'jest', 'three.js': 'threedotjs',
+};
+const iconFor = (s: string) => ICONS[s.toLowerCase()] || ICONS[s.toLowerCase().replace(/\s+/g, '')] || null;
+
+const reduceMotion = () => typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+
+/* ── styles ──────────────────────────────────────────────────────── */
+const CSS = `
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Geist:wght@400;500;600&display=swap');
+.pf{
+  --display:'Bricolage Grotesque','Segoe UI',system-ui,sans-serif;
+  --text:'Geist','Segoe UI',system-ui,-apple-system,sans-serif;
+  --bg:#070b09; --tile:#0e1512; --tile-2:#121b17; --ink:#eef4f0; --muted:#9fb0a6; --faint:#62736a;
+  --line:#1d2a24; --line-2:#2a3a33; --green:#3fd394; --green-2:#1fa870; --glow:rgba(63,211,148,.16);
+  position:relative; z-index:1; isolation:isolate; min-height:100vh;
+  background:var(--bg); color:var(--ink); font-family:var(--text); -webkit-font-smoothing:antialiased; overflow-x:hidden;
+}
+.pf[data-theme="light"]{
+  --bg:#f4f7f5; --tile:#ffffff; --tile-2:#f7faf8; --ink:#10201a; --muted:#56675e; --faint:#8a988f;
+  --line:#e1e8e4; --line-2:#cfdad4; --green:#0e7a53; --green-2:#0a5c3e; --glow:rgba(14,122,83,.10);
+}
+.pf *{box-sizing:border-box}
+.pf :where(a){color:inherit}
+.pf :focus-visible{outline:2px solid var(--green); outline-offset:3px; border-radius:8px}
+.pf-wrap{max-width:1180px; margin:0 auto; padding:0 24px}
+
+/* faint grid behind the top of the page */
+.pf::before{content:''; position:fixed; inset:0; z-index:-1; pointer-events:none;
+  background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+  background-size:56px 56px; -webkit-mask-image:radial-gradient(ellipse at 50% 0%,#000 0%,transparent 70%); mask-image:radial-gradient(ellipse at 50% 0%,#000 0%,transparent 70%); opacity:.55}
+
+/* top bar */
+.pf-top{position:sticky; top:0; z-index:20; backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+  background:color-mix(in srgb,var(--bg) 78%,transparent); border-bottom:1px solid var(--line)}
+.pf-top .pf-wrap{display:flex; align-items:center; justify-content:space-between; height:64px; gap:12px}
+.pf-brand{display:inline-flex; align-items:center; gap:9px; text-decoration:none; font-family:var(--display); font-weight:800; font-size:17px}
+.pf-brand i{width:28px; height:28px; border-radius:8px; background:var(--green); color:var(--bg); display:grid; place-items:center; font-style:normal; font-size:14px}
+.pf-top-right{display:flex; align-items:center; gap:8px}
+.pf-icon-btn{width:38px; height:38px; border-radius:10px; border:1px solid var(--line-2); background:var(--tile); color:var(--ink); display:grid; place-items:center; cursor:pointer}
+.pf-icon-btn:hover{border-color:var(--green)}
+.pf-pill{display:inline-flex; align-items:center; gap:8px; height:38px; padding:0 14px; border-radius:10px; font-size:14px; font-weight:600;
+  border:1px solid var(--line-2); background:var(--tile); color:var(--ink); text-decoration:none; cursor:pointer; font-family:var(--text)}
+.pf-pill:hover{border-color:var(--green)}
+.pf .pf-pill-main{background:var(--green); border-color:var(--green); color:var(--bg)}
+.pf .pf-pill-main:hover{background:var(--green-2); border-color:var(--green-2)}
+
+/* hero headline */
+.pf-hero{padding:72px 0 40px}
+.pf-status{display:inline-flex; align-items:center; gap:10px; font-size:14px; color:var(--muted); margin-bottom:22px}
+.pf-dot{width:9px; height:9px; border-radius:50%; background:var(--green); animation:pf-pulse 2.2s infinite}
+@keyframes pf-pulse{0%{box-shadow:0 0 0 0 rgba(63,211,148,.55)}70%{box-shadow:0 0 0 10px rgba(63,211,148,0)}100%{box-shadow:0 0 0 0 rgba(63,211,148,0)}}
+.pf-h1{font-family:var(--display); font-weight:800; letter-spacing:-.04em; line-height:.92; margin:0; font-size:clamp(46px,9vw,118px)}
+.pf-h1-line2{display:flex; flex-wrap:wrap; align-items:baseline; gap:0 .28em; color:var(--muted)}
+.pf-rot{position:relative; display:inline-grid; color:var(--green); min-width:2ch}
+.pf-rot span{grid-area:1/1; white-space:nowrap}
+.pf-rot .in{animation:pf-word-in .55s cubic-bezier(.2,.8,.2,1) both}
+.pf-rot .out{animation:pf-word-out .45s cubic-bezier(.4,0,.6,1) both}
+@keyframes pf-word-in{from{opacity:0; transform:translateY(.45em); filter:blur(6px)}to{opacity:1; transform:none; filter:none}}
+@keyframes pf-word-out{from{opacity:1; transform:none}to{opacity:0; transform:translateY(-.45em); filter:blur(6px)}}
+.pf-sub{max-width:58ch; font-size:18px; line-height:1.6; color:var(--muted); margin:26px 0 0}
+
+/* bento */
+.pf-bento{display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); gap:14px; padding-bottom:64px}
+.pf-tile{position:relative; grid-column:span 4; background:var(--tile); border:1px solid var(--line); border-radius:22px; padding:24px; overflow:hidden; --mx:50%; --my:50%}
+.pf-tile::before{content:''; position:absolute; inset:0; pointer-events:none; opacity:0; transition:opacity .3s;
+  background:radial-gradient(420px circle at var(--mx) var(--my),var(--glow),transparent 60%)}
+.pf-tile:hover::before{opacity:1}
+.pf-tile h2{font-family:var(--display); font-weight:700; font-size:20px; letter-spacing:-.02em; margin:0 0 14px}
+.pf-tile p{margin:0}
+.pf-span-4{grid-column:span 4} .pf-span-6{grid-column:span 6} .pf-span-8{grid-column:span 8} .pf-span-12{grid-column:span 12}
+@media (max-width:960px){ .pf-tile.pf-span-4,.pf-tile.pf-span-6,.pf-tile.pf-span-8{grid-column:span 6} .pf-tile.pf-span-8{grid-column:span 12} }
+@media (max-width:640px){ .pf-bento{grid-template-columns:1fr} .pf-bento .pf-tile{grid-column:auto} .pf-hero{padding:44px 0 28px} }
+
+/* load sequence */
+.pf-seq{opacity:0; transform:translateY(14px) scale(.985); animation:pf-rise .7s cubic-bezier(.2,.75,.2,1) forwards; animation-delay:calc(var(--i,0) * 70ms + 120ms)}
+@keyframes pf-rise{to{opacity:1; transform:none}}
+
+/* intro tile */
+.pf-intro{display:grid; grid-template-columns:auto 1fr; gap:22px; align-items:center}
+@media (max-width:640px){ .pf-intro{grid-template-columns:1fr} .pf-ticket-body{padding-right:96px} .pf-ticket::after{right:98px} .pf .pf-verify{width:72px; height:72px; right:14px} }
+.pf-photo,.pf-initials{width:104px; height:104px; border-radius:26px; object-fit:cover; display:block}
+.pf-initials{display:grid; place-items:center; background:linear-gradient(135deg,var(--green),var(--green-2)); color:var(--bg); font-family:var(--display); font-weight:800; font-size:38px}
+.pf-intro-name{font-family:var(--display); font-weight:800; font-size:30px; letter-spacing:-.03em; margin:0 0 4px !important}
+.pf-intro-role{color:var(--green); font-weight:600; margin:0 0 10px !important}
+.pf-facts{display:flex; flex-wrap:wrap; gap:6px 16px; color:var(--muted); font-size:14px}
+.pf-intro-actions{display:flex; flex-wrap:wrap; gap:8px; margin-top:18px}
+
+/* contact tile */
+.pf-mail{display:block; font-family:var(--display); font-weight:700; font-size:clamp(18px,2.1vw,24px); letter-spacing:-.02em; word-break:break-all; text-decoration:none; margin:6px 0 16px}
+.pf-mail:hover{color:var(--green)}
+.pf-mini{font-size:14px; color:var(--muted)}
+
+/* certificate ticket */
+.pf-tile.pf-ticket{background:linear-gradient(135deg,#1a8f5f,#0b4a33); color:#fff; border-color:transparent}
+.pf[data-theme="light"] .pf-tile.pf-ticket{background:linear-gradient(135deg,#0e7a53,#0a5c3e)}
+.pf-ticket::after{content:''; position:absolute; top:0; bottom:0; right:118px; border-left:2px dashed rgba(255,255,255,.3)}
+.pf-ticket h2{color:#fff}
+.pf-ticket-body{padding-right:120px}
+.pf-ticket p{color:rgba(255,255,255,.85); font-size:14px; line-height:1.55}
+.pf-ticket b{color:#fff; letter-spacing:.03em}
+.pf .pf-verify{position:absolute; right:18px; top:50%; transform:translateY(-50%); z-index:1; display:grid; place-items:center; width:84px; height:84px; border-radius:50%;
+  background:#fff; color:#0a5c3e; font-weight:700; font-size:13px; text-decoration:none; text-align:center; line-height:1.15; transition:transform .25s}
+.pf .pf-verify:hover{transform:translateY(-50%) rotate(-8deg) scale(1.05)}
+
+/* experience */
+.pf-exp-row{display:flex; gap:14px; align-items:flex-start}
+.pf-logo{width:44px; height:44px; flex:none; border-radius:12px; background:var(--green); color:var(--bg); display:grid; place-items:center; font-family:var(--display); font-weight:800}
+.pf-exp-row h3{margin:0 0 3px; font-size:16px; font-weight:600}
+.pf-exp-row p{color:var(--muted); font-size:14px}
+.pf-chip{display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:600; padding:4px 10px; border-radius:999px; border:1px solid var(--line-2); color:var(--muted); margin-top:10px}
+.pf-chip-on{color:var(--green); border-color:color-mix(in srgb,var(--green) 40%,transparent); background:color-mix(in srgb,var(--green) 10%,transparent)}
+
+/* skills marquee */
+.pf-marquee{position:relative; overflow:hidden; margin:0 -24px; display:grid; gap:6px;
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 10%,#000 90%,transparent); mask-image:linear-gradient(90deg,transparent,#000 10%,#000 90%,transparent)}
+.pf-track{display:flex; gap:10px; width:max-content; padding:4px 0; animation:pf-slide var(--dur,32s) linear infinite}
+.pf-track.rev{animation-direction:reverse}
+.pf-marquee:hover .pf-track{animation-play-state:paused}
+.pf-skills-tile{display:flex; flex-direction:column}
+.pf-skills-tile .pf-marquee{flex:1; align-content:center}
+@keyframes pf-slide{to{transform:translateX(-50%)}}
+.pf-skill{display:inline-flex; align-items:center; gap:9px; height:44px; padding:0 16px; border-radius:12px; border:1px solid var(--line-2); background:var(--tile-2); font-size:14px; font-weight:500; white-space:nowrap}
+.pf-skill img{width:20px; height:20px; display:block}
+.pf-skill-letter{width:20px; height:20px; border-radius:6px; display:grid; place-items:center; font-size:11px; font-weight:700; background:var(--line-2); color:var(--ink)}
+
+/* links tile */
+.pf-links{display:grid; gap:8px}
+.pf-link{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:12px 14px; border-radius:12px; border:1px solid var(--line); background:var(--tile-2); text-decoration:none; font-weight:500; font-size:15px}
+.pf-link:hover{border-color:var(--green)}
+.pf-link svg{transition:transform .2s; color:var(--muted)}
+.pf-link:hover svg{transform:translate(2px,-2px); color:var(--green)}
+
+/* education */
+.pf-edu{display:grid; gap:14px}
+.pf-edu h3{margin:0 0 2px; font-size:16px; font-weight:600}
+.pf-edu p{color:var(--muted); font-size:14px}
+
+/* work */
+.pf-work-head{display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin:8px 0 20px}
+.pf-h2{font-family:var(--display); font-weight:800; font-size:clamp(34px,5vw,56px); letter-spacing:-.035em; margin:0}
+.pf-count{color:var(--faint); font-size:15px}
+.pf-work{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; padding-bottom:72px; perspective:1200px}
+@media (max-width:760px){ .pf-work{grid-template-columns:1fr} }
+.pf-card{position:relative; border-radius:22px; border:1px solid var(--line); background:var(--tile); overflow:hidden; transform-style:preserve-3d; transition:transform .25s ease, border-color .25s}
+.pf-card:hover{border-color:var(--line-2)}
+.pf-card-media{aspect-ratio:16/9; position:relative; overflow:hidden; background:var(--tile-2)}
+.pf-card-media img{width:100%; height:100%; object-fit:cover; display:block; transition:transform .6s cubic-bezier(.2,.7,.2,1)}
+.pf-card:hover .pf-card-media img{transform:scale(1.04)}
+.pf-art{position:absolute; inset:0; display:grid; place-items:center; font-family:var(--display); font-weight:800; font-size:96px; letter-spacing:-.05em; color:var(--green);
+  background:radial-gradient(circle at 30% 20%,color-mix(in srgb,var(--green) 22%,transparent),transparent 55%),
+             repeating-linear-gradient(135deg,var(--tile-2) 0 14px,var(--tile) 14px 28px)}
+.pf-badges{position:absolute; top:14px; left:14px; display:flex; gap:6px}
+.pf-badge{font-size:12px; font-weight:700; padding:5px 10px; border-radius:999px; background:color-mix(in srgb,var(--bg) 70%,transparent); backdrop-filter:blur(8px); border:1px solid var(--line-2)}
+.pf-badge-live{color:var(--green)}
+.pf-card-body{padding:20px 22px 22px}
+.pf-card-body h3{font-family:var(--display); font-weight:700; font-size:22px; letter-spacing:-.02em; margin:0 0 8px}
+.pf-card-body p{color:var(--muted); font-size:15px; line-height:1.6; margin:0 0 14px}
+.pf-stack{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:16px}
+.pf-stack span{font-size:12px; padding:4px 9px; border-radius:7px; border:1px solid var(--line); color:var(--muted)}
+.pf-card-links{display:flex; flex-wrap:wrap; gap:8px}
+.pf-empty-work{grid-column:1/-1; border:1px dashed var(--line-2); border-radius:22px; padding:36px; text-align:center; color:var(--muted)}
+
+/* closing call to action */
+.pf-cta{border-top:1px solid var(--line); padding:80px 0}
+.pf-cta h2{font-family:var(--display); font-weight:800; letter-spacing:-.04em; line-height:.95; font-size:clamp(40px,7.5vw,96px); margin:0 0 26px; max-width:14ch}
+.pf-foot{border-top:1px solid var(--line); padding:22px 0; color:var(--faint); font-size:14px}
+.pf-foot .pf-wrap{display:flex; flex-wrap:wrap; justify-content:space-between; gap:10px}
+.pf-foot a{color:var(--green); font-weight:600; text-decoration:none}
+
+/* contact dialog */
+.pf-modal{position:fixed; inset:0; z-index:50; display:grid; place-items:center; padding:20px; background:rgba(0,0,0,.55); backdrop-filter:blur(6px); animation:pf-fade .2s ease both}
+.pf-dialog{width:min(440px,100%); background:var(--tile); border:1px solid var(--line-2); border-radius:24px; padding:26px; animation:pf-pop .32s cubic-bezier(.2,.9,.25,1.15) both}
+@keyframes pf-fade{from{opacity:0}to{opacity:1}}
+@keyframes pf-pop{from{opacity:0; transform:translateY(12px) scale(.96)}to{opacity:1; transform:none}}
+.pf-dialog-head{display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px}
+.pf-dialog h2{font-family:var(--display); font-weight:800; font-size:26px; letter-spacing:-.03em; margin:0}
+.pf-dialog .pf-mini{margin:0 0 18px}
+.pf-opt{display:flex; align-items:center; gap:14px; width:100%; padding:14px; border-radius:14px; border:1px solid var(--line); background:var(--tile-2); color:var(--ink); text-decoration:none; text-align:left; cursor:pointer; font:inherit; margin-bottom:8px}
+.pf-opt:hover{border-color:var(--green)}
+.pf-opt-ic{width:40px; height:40px; flex:none; border-radius:11px; display:grid; place-items:center; background:color-mix(in srgb,var(--green) 14%,transparent); color:var(--green)}
+.pf-opt b{display:block; font-weight:600; font-size:15px}
+.pf-opt small{display:block; color:var(--muted); font-size:13px; margin-top:2px; word-break:break-all}
+
+.pf-center{min-height:100vh; display:grid; place-items:center; text-align:center; padding:24px}
+.pf-spin{width:34px; height:34px; border-radius:50%; border:3px solid var(--line-2); border-top-color:var(--green); animation:pf-spin .8s linear infinite}
+@keyframes pf-spin{to{transform:rotate(360deg)}}
+
+@media (prefers-reduced-motion: reduce){
+  .pf *, .pf *::before, .pf *::after{animation:none !important; transition:none !important}
+  .pf .pf-seq{opacity:1; transform:none}
+}
+`;
+
+/* ── small icons ─────────────────────────────────────────────────── */
+const svg = (d: ReactNode) => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{d}</svg>
+);
+const Arrow = () => svg(<path d="M7 17 17 7M8 7h9v9" />);
+const Sun = () => svg(<><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></>);
+const Moon = () => svg(<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />);
+const Mail = () => svg(<><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3 7 9 6 9-6" /></>);
+const Chat = () => svg(<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z" />);
+const FileIc = () => svg(<><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" /><path d="M14 3v5h5M9 13h6M9 17h6" /></>);
+const CopyIc = () => svg(<><rect x="9" y="9" width="12" height="12" rx="2" /><path d="M5 15V5a2 2 0 0 1 2-2h10" /></>);
+const Close = () => svg(<path d="M6 6l12 12M18 6 6 18" />);
+
+/* ── pieces ──────────────────────────────────────────────────────── */
+function RotatingWord({ words }: { words: string[] }) {
+  const [state, setState] = useState<{ i: number; prev: number | null }>({ i: 0, prev: null });
+  useEffect(() => {
+    if (words.length < 2 || reduceMotion()) return;
+    const t = setInterval(() => setState(s => ({ i: (s.i + 1) % words.length, prev: s.i })), 2400);
+    return () => clearInterval(t);
+  }, [words.length]);
+  const { i, prev } = state;
+  return (
+    <span className="pf-rot">
+      {prev !== null && prev !== i && <span key={`o${prev}-${i}`} className="out" aria-hidden="true">{words[prev]}</span>}
+      <span key={`i${i}`} className="in">{words[i] || ''}</span>
+    </span>
+  );
+}
+
+function SkillChip({ name, iconColor }: { name: string; iconColor: string }) {
+  const slug = iconFor(name);
+  const [failed, setFailed] = useState(false);
+  return (
+    <span className="pf-skill">
+      {slug && !failed
+        ? <img src={`https://cdn.simpleicons.org/${slug}/${iconColor}`} alt="" loading="lazy" onError={() => setFailed(true)} />
+        : <span className="pf-skill-letter" aria-hidden="true">{name.charAt(0).toUpperCase()}</span>}
+      {name}
+    </span>
+  );
+}
+
+// Cursor glow on bento tiles
+const glow = (e: MouseEvent<HTMLElement>) => {
+  const r = e.currentTarget.getBoundingClientRect();
+  e.currentTarget.style.setProperty('--mx', `${e.clientX - r.left}px`);
+  e.currentTarget.style.setProperty('--my', `${e.clientY - r.top}px`);
 };
 
+// Gentle 3D tilt on project cards (mouse only)
+const tilt = (e: MouseEvent<HTMLElement>) => {
+  if (reduceMotion() || !window.matchMedia?.('(pointer:fine)').matches) return;
+  const el = e.currentTarget, r = el.getBoundingClientRect();
+  const x = (e.clientX - r.left) / r.width - 0.5, y = (e.clientY - r.top) / r.height - 0.5;
+  el.style.transform = `rotateX(${(-y * 5).toFixed(2)}deg) rotateY(${(x * 6).toFixed(2)}deg) translateY(-3px)`;
+};
+const untilt = (e: MouseEvent<HTMLElement>) => { e.currentTarget.style.transform = ''; };
+
+/* ── page ────────────────────────────────────────────────────────── */
 export function ProjectPortfolio() {
   const { username } = useParams<{ username: string }>();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    try { return localStorage.getItem('hx-portfolio-theme') === 'light' ? 'light' : 'dark'; } catch { return 'dark'; }
+  });
+  const [contactOpen, setContactOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const closeRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     fetch(`${API}/projects/u/${username}`)
@@ -43,324 +308,298 @@ export function ProjectPortfolio() {
       .finally(() => setLoading(false));
   }, [username]);
 
-  if (loading) return (
-    <div style={{background:'#030508',minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center'}}>
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-      <div style={{width:40,height:40,borderRadius:'50%',border:'2px solid #6366f1',borderTopColor:'transparent',animation:'spin 0.8s linear infinite'}} />
-    </div>
+  useEffect(() => { try { localStorage.setItem('hx-portfolio-theme', theme); } catch { /* private mode */ } }, [theme]);
+
+  useEffect(() => {
+    if (!data?.user?.name) return;
+    document.title = `${data.user.name} · ${data.student?.domain || 'Developer'} · Portfolio`;
+  }, [data]);
+
+  useEffect(() => {
+    if (!contactOpen) return;
+    closeRef.current?.focus();
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setContactOpen(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [contactOpen]);
+
+  const derived = useMemo(() => {
+    if (!data) return null;
+    const { user, student = {}, projects = [], enrollment, certificate } = data;
+    const name: string = user?.name || username || '';
+    const skills = toList(student.skills);
+    const role: string = student.domain || (enrollment?.domain_name ? `${enrollment.domain_name} intern` : 'Developer');
+    const ordered = [...projects].sort((a: any, b: any) =>
+      (Number(!!b.featured) - Number(!!a.featured)) || (Number(b.status === 'live') - Number(a.status === 'live')));
+    const stackWords = Array.from(new Set<string>(projects.flatMap((p: any) => toList(p.techStack))));
+    const words = (skills.length ? skills : stackWords).slice(0, 6);
+    return {
+      user, student, enrollment, certificate, name, skills, role, ordered,
+      firstName: name.split(' ')[0],
+      initials: name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase(),
+      words,
+      education: Array.isArray(student.education) ? student.education : [],
+      phone: student.phone ? String(student.phone).replace(/\D/g, '').slice(-10) : '',
+    };
+  }, [data, username]);
+
+  const shell = (body: ReactNode) => (
+    <div className="pf" data-theme={theme}><style>{CSS}</style>{body}</div>
   );
 
-  if (notFound || !data) return (
-    <div style={{background:'#030508',minHeight:'100vh',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',fontFamily:'Inter,sans-serif'}}>
-      <div style={{fontSize:64,marginBottom:16}}>🔍</div>
-      <h1 style={{color:'#fff',fontSize:24,fontWeight:800,marginBottom:8}}>Portfolio not found</h1>
-      <p style={{color:'rgba(255,255,255,0.4)',marginBottom:24}}>No portfolio found for <strong style={{color:'#a5b4fc'}}>@{username}</strong></p>
-      <a href="/" style={{padding:'12px 28px',borderRadius:12,background:'linear-gradient(135deg,#6366f1,#8b5cf6)',color:'#fff',textDecoration:'none',fontWeight:700,fontSize:14}}>Go to Hiresnix</a>
-    </div>
+  if (loading) return shell(<div className="pf-center"><div className="pf-spin" role="status" aria-label="Loading portfolio" /></div>);
+  if (notFound || !derived) return shell(
+    <div className="pf-center">
+      <div>
+        <h1 className="pf-h1" style={{ fontSize: 'clamp(40px,7vw,72px)' }}>No portfolio here</h1>
+        <p className="pf-sub" style={{ margin: '18px auto 26px' }}>There's no Hiresnix portfolio for @{username}. Check the link, or make your own.</p>
+        <a className="pf-pill pf-pill-main" href="/auth">Make your portfolio</a>
+      </div>
+    </div>,
   );
 
-  const { user, student, projects, enrollment, certificate } = data;
-  const initials = user.name.split(' ').map((n:string)=>n[0]).join('').slice(0,2).toUpperCase();
-  const liveProjects = projects.filter((p:any)=>p.status==='live').length;
-  const skills = student.skills ? (Array.isArray(student.skills) ? student.skills : student.skills.split(',')).map((s:string)=>s.trim()).filter(Boolean) : [];
-  const firstName = user.name.split(' ')[0];
-  const education = student.education ? (Array.isArray(student.education) ? student.education : []) : [];
+  const { user, student, enrollment, certificate, name, skills, role, ordered, firstName, initials, words, education, phone } = derived;
+  const iconColor = theme === 'dark' ? 'e8efe9' : '1a2a22';
+  const half = Math.ceil(skills.length / 2);
+  const rowA = skills.length > 5 ? skills.slice(0, half) : skills;
+  const rowB = skills.length > 5 ? skills.slice(half) : [];
+  const study = [student.department, student.college].filter(Boolean).join(', ');
+  const internshipWhen = enrollment
+    ? [monthYear(enrollment.startDate), enrollment.completedAt ? monthYear(enrollment.completedAt) : 'now'].filter(Boolean).join(' – ')
+    : '';
+  const links = [
+    student.githubUrl && { label: 'GitHub', href: student.githubUrl },
+    student.linkedinUrl && { label: 'LinkedIn', href: student.linkedinUrl },
+    phone && { label: 'WhatsApp', href: `https://wa.me/91${phone}` },
+    student.resumeUrl && { label: 'Résumé', href: student.resumeUrl },
+  ].filter(Boolean) as { label: string; href: string }[];
 
-  // Internship duration label
-  const getInternshipDuration = () => {
-    if (!enrollment) return null;
-    const start = enrollment.startDate ? formatDate(enrollment.startDate) : null;
-    const end = enrollment.completedAt ? formatDate(enrollment.completedAt) : 'Present';
-    if (!start) return enrollment.status;
-    return `${start} – ${end}`;
+  const copyEmail = async () => {
+    try { await navigator.clipboard.writeText(user.email); setCopied(true); setTimeout(() => setCopied(false), 1800); } catch { /* not allowed */ }
   };
 
-  return (
-    <div style={{background:'#030508',minHeight:'100vh',color:'#fff',fontFamily:'Inter,sans-serif',overflowX:'hidden'}}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
-        *{box-sizing:border-box;margin:0;padding:0}
-        @keyframes spin{to{transform:rotate(360deg)}}
-        @keyframes marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
-        .pcard{transition:all 0.3s!important}
-        .pcard:hover{transform:translateY(-4px)!important;border-color:rgba(99,102,241,0.5)!important;box-shadow:0 20px 40px rgba(0,0,0,0.5),0 0 30px rgba(99,102,241,0.1)!important}
-        .spill:hover{background:rgba(99,102,241,0.2)!important;color:#a5b4fc!important}
-        .sec-card{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.07);border-radius:20px;padding:28px;position:relative;overflow:hidden}
-        .sec-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(99,102,241,0.6),rgba(212,175,55,0.4),transparent)}
-      `}</style>
+  let order = 3; // position in the load sequence (0–2 are the headline)
+  const tile = (span: string, extra = ''): { className: string; style: CSSProperties; onMouseMove: typeof glow } =>
+    ({ className: `pf-tile pf-seq ${span} ${extra}`.trim(), style: { ['--i' as any]: order++ }, onMouseMove: glow });
 
-      {/* Blobs */}
-      <div style={{position:'fixed',top:-300,left:-200,width:700,height:700,borderRadius:'50%',background:'radial-gradient(circle,rgba(99,102,241,0.12) 0%,transparent 70%)',pointerEvents:'none',zIndex:0}} />
-      <div style={{position:'fixed',bottom:-200,right:-100,width:500,height:500,borderRadius:'50%',background:'radial-gradient(circle,rgba(212,175,55,0.08) 0%,transparent 70%)',pointerEvents:'none',zIndex:0}} />
-
-      {/* Nav */}
-      <nav style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'18px 40px',borderBottom:'1px solid rgba(255,255,255,0.05)',position:'sticky',top:0,background:'rgba(3,5,8,0.9)',backdropFilter:'blur(20px)',zIndex:100}}>
-        <a href="/" style={{display:'flex',alignItems:'center',gap:10,textDecoration:'none'}}>
-          <div style={{width:32,height:32,borderRadius:10,background:'linear-gradient(135deg,#6366f1,#d4af37)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:14,fontWeight:900,color:'#fff'}}>H</div>
-          <span style={{fontSize:15,fontWeight:800,color:'#fff',letterSpacing:-0.5}}>Hiresnix</span>
-        </a>
-        <a href="/auth" style={{fontSize:12,padding:'8px 18px',borderRadius:8,border:'1px solid rgba(255,255,255,0.08)',background:'rgba(255,255,255,0.04)',color:'rgba(255,255,255,0.5)',textDecoration:'none',fontWeight:600}}>Create yours →</a>
-      </nav>
-
-      {/* Hero */}
-      <div style={{padding:'80px 40px 60px',position:'relative',zIndex:1,textAlign:'center',maxWidth:900,margin:'0 auto'}}>
-        {/* Profile Photo */}
-        <div style={{display:'flex',justifyContent:'center',marginBottom:24}}>
-          <div style={{position:'relative'}}>
-            {student.profilePic ? (
-              <img src={student.profilePic} alt={user.name} style={{width:100,height:100,borderRadius:'50%',objectFit:'cover',border:'3px solid rgba(99,102,241,0.5)',boxShadow:'0 0 40px rgba(99,102,241,0.3)'}} />
-            ) : (
-              <div style={{width:100,height:100,borderRadius:'50%',background:'linear-gradient(135deg,#6366f1,#8b5cf6)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:36,fontWeight:900,border:'3px solid rgba(99,102,241,0.5)',boxShadow:'0 0 40px rgba(99,102,241,0.3)'}}>{initials}</div>
-            )}
-            <div style={{position:'absolute',bottom:4,right:4,width:16,height:16,borderRadius:'50%',background:'#22c55e',border:'3px solid #030508',boxShadow:'0 0 8px rgba(34,197,94,0.8)'}} />
+  return shell(
+    <>
+      <header className="pf-top">
+        <div className="pf-wrap">
+          <a className="pf-brand" href="/" aria-label="Hiresnix home"><i aria-hidden="true">H</i>Hiresnix</a>
+          <div className="pf-top-right">
+            <button type="button" className="pf-icon-btn" onClick={() => setTheme(t => (t === 'dark' ? 'light' : 'dark'))}
+              aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}>
+              {theme === 'dark' ? <Sun /> : <Moon />}
+            </button>
+            <button type="button" className="pf-pill pf-pill-main" onClick={() => setContactOpen(true)}>Get in touch</button>
           </div>
         </div>
+      </header>
 
-        <div style={{display:'inline-flex',alignItems:'center',gap:8,fontSize:12,padding:'6px 16px',borderRadius:20,border:'1px solid rgba(212,175,55,0.3)',background:'rgba(212,175,55,0.08)',color:'#d4af37',fontWeight:700,marginBottom:16,letterSpacing:'0.5px'}}>
-          <div style={{width:6,height:6,borderRadius:'50%',background:'#22c55e',boxShadow:'0 0 8px rgba(34,197,94,0.8)'}} />
-          Available for opportunities
-        </div>
-        <div style={{fontSize:'clamp(40px,7vw,72px)',fontWeight:900,letterSpacing:-3,lineHeight:1,marginBottom:12,background:'linear-gradient(135deg,#fff 40%,rgba(255,255,255,0.7))',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>{user.name}</div>
-        <div style={{fontSize:'clamp(18px,2.5vw,24px)',fontWeight:800,letterSpacing:-1,marginBottom:12}}>
-          <span style={{background:'linear-gradient(135deg,#6366f1,#d4af37)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>{student.domain || 'Developer'}</span>
-        </div>
-        {student.college && <div style={{fontSize:13,color:'rgba(255,255,255,0.4)',marginBottom:4}}>🎓 {student.college}{student.department ? ` · ${student.department}` : ''}{student.year ? ` · Year ${student.year}` : ''}</div>}
-        {student.location && <div style={{fontSize:13,color:'rgba(255,255,255,0.35)',marginBottom:16}}>📍 {student.location}</div>}
-        {student.bio && <div style={{fontSize:14,color:'rgba(255,255,255,0.45)',lineHeight:1.7,maxWidth:520,margin:'0 auto 24px'}}>{student.bio}</div>}
+      <main className="pf-wrap">
+        {/* Headline */}
+        <section className="pf-hero">
+          <div className="pf-status pf-seq" style={{ ['--i' as any]: 0 }}><span className="pf-dot" aria-hidden="true" />Open to internships and roles</div>
+          <h1 className="pf-h1 pf-seq" style={{ ['--i' as any]: 1 }}>
+            Hi, I'm {firstName}.
+            {words.length
+              ? <span className="pf-h1-line2">I work with <RotatingWord words={words} /></span>
+              : <span className="pf-h1-line2">{/^[aeiou]/i.test(role) ? "I'm an" : "I'm a"} <span className="pf-rot">{role.toLowerCase()}</span></span>}
+          </h1>
+          {student.bio && <p className="pf-sub pf-seq" style={{ ['--i' as any]: 2 }}>{student.bio}</p>}
+        </section>
 
-        {/* Action Buttons */}
-        <div style={{display:'flex',gap:10,justifyContent:'center',flexWrap:'wrap',marginBottom:32}}>
-          <a href={`mailto:${user.email}`} style={{padding:'12px 24px',borderRadius:12,background:'linear-gradient(135deg,#6366f1,#8b5cf6)',color:'#fff',fontSize:13,fontWeight:700,textDecoration:'none',boxShadow:'0 4px 20px rgba(99,102,241,0.4)'}}>✉ Get in Touch</a>
-          {student.githubUrl && <a href={student.githubUrl} target="_blank" rel="noopener noreferrer" style={{padding:'12px 22px',borderRadius:12,background:'rgba(255,255,255,0.04)',color:'rgba(255,255,255,0.7)',fontSize:13,fontWeight:600,textDecoration:'none',border:'1px solid rgba(255,255,255,0.1)'}}>⌥ GitHub</a>}
-          {student.linkedinUrl && <a href={student.linkedinUrl} target="_blank" rel="noopener noreferrer" style={{padding:'12px 22px',borderRadius:12,background:'rgba(10,102,194,0.15)',color:'#60a5fa',fontSize:13,fontWeight:600,textDecoration:'none',border:'1px solid rgba(10,102,194,0.3)'}}>in LinkedIn</a>}
-          {student.resumeUrl && <a href={student.resumeUrl} target="_blank" rel="noopener noreferrer" style={{padding:'12px 22px',borderRadius:12,background:'rgba(212,175,55,0.1)',color:'#d4af37',fontSize:13,fontWeight:700,textDecoration:'none',border:'1px solid rgba(212,175,55,0.3)'}}>📄 Resume</a>}
-        </div>
-
-        {/* Stats */}
-        <div style={{display:'flex',gap:32,justifyContent:'center',flexWrap:'wrap'}}>
-          <div style={{textAlign:'center'}}>
-            <div style={{fontSize:28,fontWeight:900,letterSpacing:-1,background:'linear-gradient(135deg,#d4af37,#f5d680)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>{projects.length}</div>
-            <div style={{fontSize:12,color:'rgba(255,255,255,0.3)',marginTop:2}}>Projects</div>
-          </div>
-          <div style={{textAlign:'center'}}>
-            <div style={{fontSize:28,fontWeight:900,color:'#22c55e',textShadow:'0 0 20px rgba(34,197,94,0.6)'}}>{liveProjects}</div>
-            <div style={{fontSize:12,color:'rgba(255,255,255,0.3)',marginTop:2}}>Live</div>
-          </div>
-          {skills.length > 0 && (
-            <div style={{textAlign:'center'}}>
-              <div style={{fontSize:28,fontWeight:900,color:'#a5b4fc'}}>{skills.length}</div>
-              <div style={{fontSize:12,color:'rgba(255,255,255,0.3)',marginTop:2}}>Skills</div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Skills Marquee */}
-      {skills.length > 0 && (
-        <div style={{padding:'20px 0',borderTop:'1px solid rgba(255,255,255,0.05)',borderBottom:'1px solid rgba(255,255,255,0.05)',overflow:'hidden',position:'relative',zIndex:1}}>
-          <div style={{display:'flex',animation:'marquee 20s linear infinite',width:'max-content'}}>
-            {[...skills,...skills,...skills,...skills].map((s:string,i:number)=>(
-              <span key={i} style={{display:'inline-flex',alignItems:'center',gap:10,padding:'0 28px',fontSize:13,fontWeight:600,color:'rgba(255,255,255,0.3)',whiteSpace:'nowrap'}}>
-                {s} <span style={{width:4,height:4,borderRadius:'50%',background:'rgba(99,102,241,0.6)',display:'inline-block'}} />
-              </span>
-            ))}
-          </div>
-          <div style={{position:'absolute',top:0,bottom:0,left:0,width:100,background:'linear-gradient(90deg,#030508,transparent)',zIndex:2}} />
-          <div style={{position:'absolute',top:0,bottom:0,right:0,width:100,background:'linear-gradient(-90deg,#030508,transparent)',zIndex:2}} />
-        </div>
-      )}
-
-      <div style={{padding:'32px 40px 0',position:'relative',zIndex:1,maxWidth:980,margin:'0 auto',display:'flex',flexDirection:'column',gap:24}}>
-
-        {/* Profile Card */}
-        <div className="sec-card">
-          <div style={{display:'flex',gap:24,alignItems:'flex-start',flexWrap:'wrap'}}>
-            <div style={{position:'relative',flexShrink:0}}>
-              {student.profilePic ? (
-                <img src={student.profilePic} alt={user.name} style={{width:72,height:72,borderRadius:20,objectFit:'cover',boxShadow:'0 0 30px rgba(99,102,241,0.4)'}} />
-              ) : (
-                <div style={{width:72,height:72,borderRadius:20,background:'linear-gradient(135deg,#6366f1,#8b5cf6)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:26,fontWeight:900,boxShadow:'0 0 30px rgba(99,102,241,0.4)'}}>{initials}</div>
-              )}
-              <div style={{position:'absolute',bottom:4,right:4,width:14,height:14,borderRadius:'50%',background:'#22c55e',border:'3px solid #030508',boxShadow:'0 0 8px rgba(34,197,94,0.8)'}} />
-            </div>
-            <div style={{flex:1,minWidth:180}}>
-              <div style={{fontSize:22,fontWeight:900,letterSpacing:-0.5,marginBottom:3}}>{user.name}</div>
-              <div style={{fontSize:13,color:'rgba(255,255,255,0.4)',marginBottom:8}}>{student.domain || 'Developer'}{student.location ? ` · ${student.location}` : ''}</div>
-              <div style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:12}}>
-                <span style={{fontSize:10,padding:'4px 10px',borderRadius:20,fontWeight:700,background:'rgba(212,175,55,0.15)',color:'#d4af37',border:'1px solid rgba(212,175,55,0.3)'}}>✦ Hiresnix Verified</span>
-                {enrollment && <span style={{fontSize:10,padding:'4px 10px',borderRadius:20,fontWeight:700,background:'rgba(99,102,241,0.15)',color:'#a5b4fc',border:'1px solid rgba(99,102,241,0.3)'}}>🏢 Hiresnix Intern</span>}
-                <span style={{fontSize:10,padding:'4px 10px',borderRadius:20,fontWeight:700,background:'rgba(34,197,94,0.12)',color:'#4ade80',border:'1px solid rgba(34,197,94,0.25)'}}>● Open to work</span>
-              </div>
-              <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
-                {student.githubUrl && <a href={student.githubUrl} target="_blank" rel="noopener noreferrer" style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:12,padding:'6px 12px',borderRadius:8,border:'1px solid rgba(255,255,255,0.08)',background:'rgba(255,255,255,0.04)',color:'rgba(255,255,255,0.6)',textDecoration:'none',fontWeight:600}}>⌥ GitHub</a>}
-                {student.linkedinUrl && <a href={student.linkedinUrl} target="_blank" rel="noopener noreferrer" style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:12,padding:'6px 12px',borderRadius:8,border:'1px solid rgba(255,255,255,0.08)',background:'rgba(255,255,255,0.04)',color:'rgba(255,255,255,0.6)',textDecoration:'none',fontWeight:600}}>in LinkedIn</a>}
-                {student.phone && <a href={`https://wa.me/91${student.phone.replace(/\D/g,'')}`} target="_blank" rel="noopener noreferrer" style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:12,padding:'6px 12px',borderRadius:8,border:'1px solid rgba(37,211,102,0.3)',background:'rgba(37,211,102,0.08)',color:'#25d366',textDecoration:'none',fontWeight:700}}>📱 WhatsApp</a>}
-                {student.resumeUrl && <a href={student.resumeUrl} target="_blank" rel="noopener noreferrer" style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:12,padding:'6px 12px',borderRadius:8,border:'1px solid rgba(212,175,55,0.3)',background:'rgba(212,175,55,0.08)',color:'#d4af37',textDecoration:'none',fontWeight:700}}>📄 Resume</a>}
-                <a href={`mailto:${user.email}`} style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:12,padding:'6px 12px',borderRadius:8,border:'1px solid rgba(99,102,241,0.4)',background:'rgba(99,102,241,0.1)',color:'#a5b4fc',textDecoration:'none',fontWeight:700}}>✉ Contact</a>
+        {/* Bento */}
+        <section className="pf-bento" aria-label={`About ${name}`}>
+          <div {...tile('pf-span-8')}>
+            <div className="pf-intro">
+              {student.profilePic
+                ? <img className="pf-photo" src={student.profilePic} alt={name} />
+                : <div className="pf-initials" aria-hidden="true">{initials}</div>}
+              <div>
+                <p className="pf-intro-name">{name}</p>
+                <p className="pf-intro-role">{role}</p>
+                <div className="pf-facts">
+                  {study && <span>{study}{student.year ? `, year ${student.year}` : ''}</span>}
+                  {student.location && <span>{student.location}</span>}
+                </div>
+                <div className="pf-intro-actions">
+                  <button type="button" className="pf-pill pf-pill-main" onClick={() => setContactOpen(true)}>Get in touch</button>
+                  {student.resumeUrl && <a className="pf-pill" href={student.resumeUrl} target="_blank" rel="noopener noreferrer">Download CV</a>}
+                </div>
               </div>
             </div>
           </div>
-          {skills.length > 0 && (
-            <div style={{marginTop:20,paddingTop:18,borderTop:'1px solid rgba(255,255,255,0.05)'}}>
-              <div style={{fontSize:10,fontWeight:700,color:'rgba(255,255,255,0.2)',textTransform:'uppercase',letterSpacing:'2px',marginBottom:10}}>Tech Stack</div>
-              {skills.slice(0,15).map((s:string)=>(
-                <span key={s} className="spill" style={{display:'inline-block',padding:'5px 12px',borderRadius:7,fontSize:12,fontWeight:600,background:'rgba(99,102,241,0.08)',color:'rgba(165,180,252,0.7)',border:'1px solid rgba(99,102,241,0.12)',margin:'3px 3px 3px 0',cursor:'default',transition:'all 0.2s'}}>{s}</span>
-              ))}
+
+          <div {...tile('pf-span-4')}>
+            <h2>Say hello</h2>
+            <a className="pf-mail" href={`mailto:${user.email}`}>{user.email}</a>
+            <button type="button" className="pf-pill" onClick={copyEmail}><CopyIc /> {copied ? 'Copied' : 'Copy email'}</button>
+          </div>
+
+          {certificate && (
+            <div {...tile('pf-span-6', 'pf-ticket')}>
+              <div className="pf-ticket-body">
+                <h2>Internship completion certificate</h2>
+                <p>Issued by Hiresnix{certificate.domain_name ? ` for ${certificate.domain_name}` : ''}{certificate.issuedAt ? `, ${monthYear(certificate.issuedAt)}` : ''}.</p>
+                <p style={{ marginTop: 10 }}>Certificate ID <b>{certificate.certificateNo}</b></p>
+              </div>
+              <a className="pf-verify" href={`https://hiresnix.co.in/verify/${certificate.certificateNo}`} target="_blank" rel="noopener noreferrer">Verify<br />it</a>
             </div>
           )}
-        </div>
 
-        {/* Experience — Hiresnix Internship */}
-        {enrollment && (
-          <div className="sec-card">
-            <div style={{fontSize:13,fontWeight:700,color:'rgba(255,255,255,0.25)',textTransform:'uppercase',letterSpacing:'2px',marginBottom:16}}>Experience</div>
-            <div style={{display:'flex',gap:16,alignItems:'flex-start'}}>
-              <div style={{width:44,height:44,borderRadius:12,background:'linear-gradient(135deg,#6366f1,#d4af37)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:18,fontWeight:900,flexShrink:0}}>H</div>
-              <div style={{flex:1}}>
-                <div style={{fontSize:15,fontWeight:700,marginBottom:2}}>{enrollment.domain_name || 'Technology'} Intern</div>
-                <div style={{fontSize:13,color:'rgba(255,255,255,0.5)',marginBottom:4}}>Hiresnix · Remote</div>
-                <div style={{fontSize:12,color:'rgba(255,255,255,0.3)',marginBottom:8}}>{getInternshipDuration()}</div>
-                <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
-                  <span style={{fontSize:10,padding:'3px 10px',borderRadius:20,background:'rgba(212,175,55,0.12)',color:'#d4af37',border:'1px solid rgba(212,175,55,0.25)',fontWeight:600}}>✦ Hiresnix Verified</span>
-                  <span style={{fontSize:10,padding:'3px 10px',borderRadius:20,background:enrollment.status==='Completed'?'rgba(34,197,94,0.12)':'rgba(99,102,241,0.12)',color:enrollment.status==='Completed'?'#4ade80':'#a5b4fc',border:`1px solid ${enrollment.status==='Completed'?'rgba(34,197,94,0.25)':'rgba(99,102,241,0.25)'}`,fontWeight:600}}>
-                    {enrollment.status === 'Completed' ? '✓ Completed' : '⏳ Active'}
+          {enrollment && (
+            <div {...tile(certificate ? 'pf-span-6' : 'pf-span-12')}>
+              <h2>Experience</h2>
+              <div className="pf-exp-row">
+                <div className="pf-logo" aria-hidden="true">H</div>
+                <div>
+                  <h3>{enrollment.domain_name || 'Technology'} intern</h3>
+                  <p>Hiresnix, remote{internshipWhen ? `, ${internshipWhen}` : ''}</p>
+                  <span className={`pf-chip ${enrollment.status === 'Completed' ? 'pf-chip-on' : ''}`}>
+                    {enrollment.status === 'Completed' ? 'Completed' : 'In progress'}
                   </span>
                 </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Certificate */}
-        {certificate && (
-          <div className="sec-card" style={{background:'linear-gradient(135deg,rgba(212,175,55,0.06),rgba(99,102,241,0.04))'}}>
-            <div style={{fontSize:13,fontWeight:700,color:'rgba(255,255,255,0.25)',textTransform:'uppercase',letterSpacing:'2px',marginBottom:16}}>Certifications</div>
-            <div style={{display:'flex',gap:16,alignItems:'center',justifyContent:'space-between',flexWrap:'wrap'}}>
-              <div style={{display:'flex',gap:14,alignItems:'center'}}>
-                <div style={{fontSize:36}}>🏆</div>
-                <div>
-                  <div style={{fontSize:15,fontWeight:700,marginBottom:2}}>Internship Completion Certificate</div>
-                  <div style={{fontSize:13,color:'rgba(255,255,255,0.4)',marginBottom:4}}>Hiresnix · {certificate.domain_name}</div>
-                  {certificate.issuedAt && <div style={{fontSize:12,color:'rgba(255,255,255,0.3)'}}>Issued {formatDate(certificate.issuedAt)}</div>}
-                  <div style={{fontSize:11,color:'rgba(212,175,55,0.7)',marginTop:4,fontWeight:600}}>ID: {certificate.certificateNo}</div>
+          {skills.length > 0 && (
+            <div {...tile(links.length ? 'pf-span-8' : 'pf-span-12', 'pf-skills-tile')}>
+              <h2>Skills and tools</h2>
+              <div className="pf-marquee">
+                <div className="pf-track" style={{ ['--dur' as any]: `${Math.max(18, rowA.length * 5)}s` }}>
+                  {[...rowA, ...rowA, ...rowA, ...rowA].map((k, i) => <SkillChip key={`a${i}`} name={k} iconColor={iconColor} />)}
                 </div>
-              </div>
-              <a href={`https://hiresnix.co.in/verify/${certificate.certificateNo}`} target="_blank" rel="noopener noreferrer"
-                style={{padding:'10px 20px',borderRadius:10,background:'rgba(212,175,55,0.15)',color:'#d4af37',border:'1px solid rgba(212,175,55,0.3)',fontSize:12,fontWeight:700,textDecoration:'none'}}>
-                ✦ Verify Certificate
-              </a>
-            </div>
-          </div>
-        )}
-
-        {/* Education */}
-        {(education.length > 0 || student.college) && (
-          <div className="sec-card">
-            <div style={{fontSize:13,fontWeight:700,color:'rgba(255,255,255,0.25)',textTransform:'uppercase',letterSpacing:'2px',marginBottom:16}}>Education</div>
-            {education.length > 0 ? education.map((edu: any, i: number) => (
-              <div key={i} style={{display:'flex',gap:14,alignItems:'flex-start',paddingBottom:i < education.length-1 ? 16 : 0,borderBottom:i < education.length-1 ? '1px solid rgba(255,255,255,0.05)' : 'none',marginBottom:i < education.length-1 ? 16 : 0}}>
-                <div style={{width:44,height:44,borderRadius:12,background:'rgba(99,102,241,0.15)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:20,flexShrink:0}}>🎓</div>
-                <div>
-                  <div style={{fontSize:15,fontWeight:700,marginBottom:2}}>{edu.degree || edu.course}</div>
-                  <div style={{fontSize:13,color:'rgba(255,255,255,0.5)',marginBottom:2}}>{edu.institution || edu.college}</div>
-                  {edu.year && <div style={{fontSize:12,color:'rgba(255,255,255,0.3)'}}>{edu.year}</div>}
-                </div>
-              </div>
-            )) : (
-              <div style={{display:'flex',gap:14,alignItems:'flex-start'}}>
-                <div style={{width:44,height:44,borderRadius:12,background:'rgba(99,102,241,0.15)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:20,flexShrink:0}}>🎓</div>
-                <div>
-                  <div style={{fontSize:15,fontWeight:700,marginBottom:2}}>{student.department || 'Engineering'}</div>
-                  <div style={{fontSize:13,color:'rgba(255,255,255,0.5)',marginBottom:2}}>{student.college || 'College'}</div>
-                  {student.year && <div style={{fontSize:12,color:'rgba(255,255,255,0.3)'}}>Year {student.year}</div>}
-                  {student.cgpa && <div style={{fontSize:12,color:'rgba(255,255,255,0.3)'}}>CGPA: {student.cgpa}</div>}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Skills detailed */}
-        {skills.length > 0 && (
-          <div className="sec-card">
-            <div style={{fontSize:13,fontWeight:700,color:'rgba(255,255,255,0.25)',textTransform:'uppercase',letterSpacing:'2px',marginBottom:16}}>Skills & Technologies</div>
-            <div style={{display:'flex',flexWrap:'wrap',gap:8}}>
-              {skills.map((s:string) => (
-                <span key={s} className="spill" style={{padding:'8px 16px',borderRadius:10,fontSize:13,fontWeight:600,background:'rgba(99,102,241,0.08)',color:'rgba(165,180,252,0.8)',border:'1px solid rgba(99,102,241,0.15)',cursor:'default',transition:'all 0.2s'}}>{s}</span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Projects */}
-        <div>
-          <div style={{display:'flex',alignItems:'center',gap:16,marginBottom:20}}>
-            <div style={{fontSize:18,fontWeight:800,letterSpacing:-0.5}}>Projects</div>
-            <div style={{flex:1,height:1,background:'linear-gradient(90deg,rgba(99,102,241,0.4),transparent)'}} />
-            <div style={{fontSize:12,color:'rgba(255,255,255,0.25)',fontWeight:600}}>{projects.length} total</div>
-          </div>
-          {projects.length === 0 ? (
-            <div style={{textAlign:'center',padding:'60px 20px',color:'rgba(255,255,255,0.3)',background:'rgba(255,255,255,0.02)',borderRadius:20,border:'1px solid rgba(255,255,255,0.05)'}}>
-              <div style={{fontSize:48,marginBottom:12}}>🚀</div>
-              <p>No projects yet</p>
-            </div>
-          ) : (
-            <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(260px,1fr))',gap:16}}>
-              {projects.map((p:any,i:number)=>(
-                <div key={p.id} className="pcard" style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:20,overflow:'hidden',cursor:'pointer',position:'relative',transition:'all 0.3s'}}>
-                  {p.imageUrl ? (
-                    <img src={p.imageUrl} alt={p.title} style={{width:'100%',height:130,objectFit:'cover'}} />
-                  ) : (
-                    <div style={{height:130,display:'flex',alignItems:'center',justifyContent:'center',fontSize:44,background:CARD_BG[i%CARD_BG.length],position:'relative'}}>
-                      {getEmoji(p.title)}
-                      {p.featured && <div style={{position:'absolute',top:10,right:10,fontSize:10,padding:'3px 10px',borderRadius:20,background:'rgba(212,175,55,0.2)',color:'#d4af37',border:'1px solid rgba(212,175,55,0.4)',fontWeight:700}}>✦ Featured</div>}
-                    </div>
-                  )}
-                  <div style={{padding:16}}>
-                    <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:8,marginBottom:6}}>
-                      <div style={{fontSize:14,fontWeight:700,letterSpacing:-0.3,lineHeight:1.3}}>{p.title}</div>
-                      {p.status==='live'
-                        ? <span style={{fontSize:10,padding:'3px 8px',borderRadius:6,background:'rgba(34,197,94,0.12)',color:'#4ade80',border:'1px solid rgba(34,197,94,0.2)',fontWeight:700,whiteSpace:'nowrap'}}>● Live</span>
-                        : <span style={{fontSize:10,padding:'3px 8px',borderRadius:6,background:'rgba(99,102,241,0.12)',color:'#a5b4fc',border:'1px solid rgba(99,102,241,0.2)',fontWeight:700}}>✓ Done</span>
-                      }
-                    </div>
-                    <div style={{fontSize:12,color:'rgba(255,255,255,0.4)',lineHeight:1.6,marginBottom:12}}>{p.description.slice(0,100)}{p.description.length>100?'...':''}</div>
-                    <div style={{display:'flex',flexWrap:'wrap',gap:4,marginBottom:14}}>
-                      {p.techStack.slice(0,4).map((t:string)=>(
-                        <span key={t} style={{fontSize:11,padding:'3px 8px',borderRadius:6,background:'rgba(255,255,255,0.04)',color:'rgba(255,255,255,0.35)',border:'1px solid rgba(255,255,255,0.06)'}}>{t}</span>
-                      ))}
-                      {p.techStack.length>4 && <span style={{fontSize:11,padding:'3px 8px',borderRadius:6,background:'rgba(255,255,255,0.04)',color:'rgba(255,255,255,0.3)'}}>+{p.techStack.length-4}</span>}
-                    </div>
-                    <div style={{display:'flex',gap:8}}>
-                      {p.liveUrl && <a href={p.liveUrl} target="_blank" rel="noopener noreferrer" style={{flex:1,padding:9,borderRadius:10,background:'linear-gradient(135deg,#6366f1,#8b5cf6)',color:'#fff',fontSize:12,fontWeight:700,textAlign:'center',textDecoration:'none',boxShadow:'0 4px 15px rgba(99,102,241,0.3)'}}>↗ Live Demo</a>}
-                      {p.githubUrl && <a href={p.githubUrl} target="_blank" rel="noopener noreferrer" style={{padding:'9px 14px',borderRadius:10,background:'rgba(255,255,255,0.04)',color:'rgba(255,255,255,0.5)',fontSize:12,fontWeight:600,textDecoration:'none',border:'1px solid rgba(255,255,255,0.07)'}}>⌥ Code</a>}
-                      {!p.liveUrl && !p.githubUrl && <div style={{flex:1,padding:9,borderRadius:10,background:'rgba(255,255,255,0.04)',color:'rgba(255,255,255,0.25)',fontSize:12,textAlign:'center',border:'1px solid rgba(255,255,255,0.05)'}}>No links</div>}
-                    </div>
+                {rowB.length > 0 && (
+                  <div className="pf-track rev" style={{ ['--dur' as any]: `${Math.max(18, rowB.length * 5)}s` }}>
+                    {[...rowB, ...rowB, ...rowB, ...rowB].map((k, i) => <SkillChip key={`b${i}`} name={k} iconColor={iconColor} />)}
                   </div>
-                </div>
-              ))}
+                )}
+              </div>
             </div>
           )}
-        </div>
-      </div>
 
-      {/* CTA */}
-      <div style={{margin:'32px 40px 0',maxWidth:980,marginLeft:'auto',marginRight:'auto',background:'linear-gradient(135deg,rgba(212,175,55,0.06),rgba(99,102,241,0.06))',border:'1px solid rgba(212,175,55,0.15)',borderRadius:20,padding:'28px 32px',display:'flex',alignItems:'center',justifyContent:'space-between',gap:20,flexWrap:'wrap',position:'relative',overflow:'hidden',zIndex:1}}>
-        <div style={{position:'absolute',top:0,left:0,right:0,height:1,background:'linear-gradient(90deg,transparent,rgba(212,175,55,0.6),rgba(99,102,241,0.5),transparent)'}} />
-        <div>
-          <h3 style={{fontSize:18,fontWeight:800,letterSpacing:-0.5,marginBottom:4,background:'linear-gradient(135deg,#fff,#d4af37)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>Interested in hiring {firstName}?</h3>
-          <p style={{fontSize:13,color:'rgba(255,255,255,0.4)'}}>Connect directly — let's build something great together</p>
-        </div>
-        <div style={{display:'flex',gap:10,flexWrap:'wrap'}}>
-          <a href={`mailto:${user.email}`} style={{padding:'11px 22px',borderRadius:12,background:'linear-gradient(135deg,#6366f1,#8b5cf6)',color:'#fff',fontSize:13,fontWeight:700,textDecoration:'none',boxShadow:'0 4px 15px rgba(99,102,241,0.3)'}}>✉ Get in Touch</a>
-          {student.resumeUrl && <a href={student.resumeUrl} target="_blank" rel="noopener noreferrer" style={{padding:'11px 22px',borderRadius:12,background:'rgba(212,175,55,0.1)',color:'#d4af37',border:'1px solid rgba(212,175,55,0.3)',fontSize:13,fontWeight:700,textDecoration:'none'}}>📄 View Resume</a>}
-        </div>
-      </div>
+          {links.length > 0 && (
+            <div {...tile('pf-span-4')}>
+              <h2>Find me on</h2>
+              <div className="pf-links">
+                {links.map(l => (
+                  <a key={l.label} className="pf-link" href={l.href} target="_blank" rel="noopener noreferrer">{l.label} <Arrow /></a>
+                ))}
+              </div>
+            </div>
+          )}
 
-      {/* Footer */}
-      <div style={{textAlign:'center',padding:'32px 40px',fontSize:12,color:'rgba(255,255,255,0.15)',position:'relative',zIndex:1,marginTop:40}}>
-        Powered by <a href="/" style={{color:'rgba(99,102,241,0.5)',textDecoration:'none',fontWeight:600}}>Hiresnix</a> · Build your portfolio free
-      </div>
-    </div>
+          {(education.length > 0 || student.college) && (
+            <div {...tile('pf-span-12')}>
+              <h2>Education</h2>
+              <div className="pf-edu">
+                {education.length > 0 ? education.map((e: any, i: number) => (
+                  <div key={i}>
+                    <h3>{e.degree || e.course || 'Degree'}</h3>
+                    <p>{[e.institution || e.college, e.year].filter(Boolean).join(', ')}</p>
+                  </div>
+                )) : (
+                  <div>
+                    <h3>{student.department || 'Engineering'}</h3>
+                    <p>{[student.college, student.year ? `year ${student.year}` : '', student.cgpa ? `CGPA ${student.cgpa}` : ''].filter(Boolean).join(', ')}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </section>
+
+        {/* Work */}
+        <section aria-labelledby="pf-work">
+          <div className="pf-work-head">
+            <h2 className="pf-h2" id="pf-work">Selected work</h2>
+            {ordered.length > 0 && <span className="pf-count">{ordered.length} project{ordered.length > 1 ? 's' : ''}</span>}
+          </div>
+          <div className="pf-work">
+            {ordered.length === 0 && <div className="pf-empty-work">{firstName}'s projects will show here once they're added.</div>}
+            {ordered.map((p: any) => {
+              const stack = toList(p.techStack);
+              return (
+                <article key={p.id} className="pf-card" onMouseMove={tilt} onMouseLeave={untilt}>
+                  <div className="pf-card-media">
+                    {p.imageUrl
+                      ? <img src={p.imageUrl} alt="" loading="lazy" />
+                      : <div className="pf-art" aria-hidden="true">{String(p.title || '?').trim().slice(0, 2)}</div>}
+                    {(p.status === 'live' || p.featured) && (
+                      <div className="pf-badges">
+                        {p.status === 'live' && <span className="pf-badge pf-badge-live">● Live</span>}
+                        {p.featured && <span className="pf-badge">Featured</span>}
+                      </div>
+                    )}
+                  </div>
+                  <div className="pf-card-body">
+                    <h3>{p.title}</h3>
+                    {p.description && <p>{p.description}</p>}
+                    {stack.length > 0 && <div className="pf-stack">{stack.map(t => <span key={t}>{t}</span>)}</div>}
+                    {(p.liveUrl || p.githubUrl) && (
+                      <div className="pf-card-links">
+                        {p.liveUrl && <a className="pf-pill pf-pill-main" href={p.liveUrl} target="_blank" rel="noopener noreferrer" title={host(p.liveUrl)}>View live <Arrow /></a>}
+                        {p.githubUrl && <a className="pf-pill" href={p.githubUrl} target="_blank" rel="noopener noreferrer">Source code</a>}
+                      </div>
+                    )}
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        </section>
+      </main>
+
+      {/* Closing */}
+      <section className="pf-cta">
+        <div className="pf-wrap">
+          <h2>Have a role or project for {firstName}?</h2>
+          <button type="button" className="pf-pill pf-pill-main" style={{ height: 48, padding: '0 22px', fontSize: 15 }} onClick={() => setContactOpen(true)}>Get in touch</button>
+        </div>
+      </section>
+
+      <footer className="pf-foot">
+        <div className="pf-wrap">
+          <span>Portfolio made on Hiresnix</span>
+          <a href="/auth">Make yours, it's free</a>
+        </div>
+      </footer>
+
+      {/* Contact dialog */}
+      {contactOpen && (
+        <div className="pf-modal" onClick={() => setContactOpen(false)}>
+          <div className="pf-dialog" role="dialog" aria-modal="true" aria-labelledby="pf-contact-title" onClick={e => e.stopPropagation()}>
+            <div className="pf-dialog-head">
+              <h2 id="pf-contact-title">Get in touch</h2>
+              <button ref={closeRef} type="button" className="pf-icon-btn" onClick={() => setContactOpen(false)} aria-label="Close"><Close /></button>
+            </div>
+            <p className="pf-mini">Pick how you'd like to reach {firstName}.</p>
+            <a className="pf-opt" href={`mailto:${user.email}`}>
+              <span className="pf-opt-ic"><Mail /></span>
+              <span><b>Email</b><small>{user.email}</small></span>
+            </a>
+            <button type="button" className="pf-opt" onClick={copyEmail}>
+              <span className="pf-opt-ic"><CopyIc /></span>
+              <span><b>{copied ? 'Email copied' : 'Copy email address'}</b><small>Paste it into any mail app</small></span>
+            </button>
+            {phone && (
+              <a className="pf-opt" href={`https://wa.me/91${phone}`} target="_blank" rel="noopener noreferrer">
+                <span className="pf-opt-ic"><Chat /></span>
+                <span><b>WhatsApp</b><small>Send a message</small></span>
+              </a>
+            )}
+            {student.resumeUrl && (
+              <a className="pf-opt" href={student.resumeUrl} target="_blank" rel="noopener noreferrer">
+                <span className="pf-opt-ic"><FileIc /></span>
+                <span><b>Download CV</b><small>Opens in a new tab</small></span>
+              </a>
+            )}
+          </div>
+        </div>
+      )}
+    </>,
   );
 }
