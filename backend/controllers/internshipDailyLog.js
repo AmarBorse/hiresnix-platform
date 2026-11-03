@@ -102,14 +102,30 @@ const cp = require('../utils/certPayments');
 const PAYMENT_CUTOFF = new Date('2026-08-06T18:29:59.000Z'); // Aug 6 2026, 11:59 PM IST
 const isLegacyEnrollment = (enrollment) => new Date(enrollment.createdAt) < PAYMENT_CUTOFF;
 
+// Fee switch + LinkedIn share rule (see utils/certGate.js)
+const gate = require('../utils/certGate');
+const stateFor = (userId, enrollment) => gate.unlockState(userId, !!enrollment && (cp.isPaid(enrollment) || isLegacyEnrollment(enrollment)));
+const statePayload = (st, enrollment) => ({
+  paid: st.unlocked, unlocked: st.unlocked, isLegacy: !!enrollment && isLegacyEnrollment(enrollment),
+  feeRequired: st.feeRequired, feePaid: st.feePaid, linkedinRequired: st.linkedinRequired,
+  linkedinDone: st.linkedinDone, linkedinStatus: st.linkedinStatus, linkedinNote: st.linkedinNote,
+});
+
 // POST /iplatform/cert-payment-order
 const createCertPaymentOrder = asyncHandler(async (req, res) => {
+  const enr0 = await cp.getCompletedEnrollment(req.user.id);
+  const st0 = await stateFor(req.user.id, enr0);
+  if (!st0.feeRequired) {
+    if (st0.unlocked) return res.json({ success: true, alreadyPaid: true, message: 'Certificates are free right now' });
+    return res.status(400).json({ success: false, needLinkedin: true, message: 'Certificates are free right now. Share your offer letter on LinkedIn to unlock them.' });
+  }
   const rz = cp.getRazorpay();
   if (!rz) { res.status(503); throw new Error('Payment service not configured'); }
   const enrollment = await cp.getCompletedEnrollment(req.user.id);
   if (!enrollment) { res.status(400); throw new Error('Complete your internship before unlocking certificates'); }
   if (cp.isPaid(enrollment) || isLegacyEnrollment(enrollment)) {
-    return res.json({ success: true, alreadyPaid: true, message: 'Certificates are already unlocked' });
+    if (st0.unlocked) return res.json({ success: true, alreadyPaid: true, message: 'Certificates are already unlocked' });
+    return res.status(400).json({ success: false, needLinkedin: true, message: 'Payment is done. Share your offer letter on LinkedIn to unlock your certificates.' });
   }
   const order = await rz.client.orders.create({
     amount: cp.CERT_AMOUNT,
@@ -136,15 +152,16 @@ const verifyCertPayment = asyncHandler(async (req, res) => {
   const enrollment = await cp.getCompletedEnrollment(req.user.id);
   if (!enrollment) { res.status(400); throw new Error('No completed internship found'); }
   await cp.markPaid(enrollment, { paymentId: razorpay_payment_id, orderId: razorpay_order_id, method: 'checkout' });
-  res.json({ success: true, paid: true, message: 'Payment verified. Certificates unlocked!' });
+  const st = await stateFor(req.user.id, enrollment);
+  res.json({ success: true, ...statePayload(st, enrollment), message: st.unlocked ? 'Payment verified. Certificates unlocked!' : 'Payment verified. Share your offer letter on LinkedIn to unlock your certificates.' });
 });
 
 // GET /iplatform/cert-payment-status
 const checkCertPaymentStatus = asyncHandler(async (req, res) => {
   const enrollment = await cp.getCompletedEnrollment(req.user.id);
-  if (!enrollment) return res.json({ success: true, paid: false, isLegacy: false });
-  const isLegacy = isLegacyEnrollment(enrollment);
-  res.json({ success: true, paid: cp.isPaid(enrollment) || isLegacy, isLegacy });
+  const st = await stateFor(req.user.id, enrollment);
+  if (!enrollment) return res.json({ success: true, ...statePayload(st, null), paid: false, unlocked: false });
+  res.json({ success: true, ...statePayload(st, enrollment) });
 });
 
 // POST /iplatform/cert-payment-sync  — "Already paid? Check payment status"
@@ -152,7 +169,9 @@ const checkCertPaymentStatus = asyncHandler(async (req, res) => {
 const syncCertPayment = asyncHandler(async (req, res) => {
   const enrollment = await cp.getCompletedEnrollment(req.user.id);
   if (!enrollment) return res.json({ success: true, paid: false, message: 'No completed internship found' });
-  if (cp.isPaid(enrollment) || isLegacyEnrollment(enrollment)) return res.json({ success: true, paid: true });
+  const st0 = await stateFor(req.user.id, enrollment);
+  // Nothing to ask Razorpay when the fee is off or already settled
+  if (!st0.feeRequired || st0.feePaid) return res.json({ success: true, ...statePayload(st0, enrollment) });
 
   const deepScan = req.body?.deep === true;
   const found = await cp.findPaymentForUser(req.user.id, enrollment, { deepScan });
@@ -161,7 +180,8 @@ const syncCertPayment = asyncHandler(async (req, res) => {
     return res.json({ success: true, paid: false, message: 'We could not find a completed payment yet. If money was debited, it can take a few minutes to confirm.' });
   }
   await cp.markPaid(enrollment, { paymentId: found.payment.id, orderId: found.orderId, method: found.via });
-  res.json({ success: true, paid: true, message: 'Payment confirmed. Certificates unlocked!' });
+  const st = await stateFor(req.user.id, enrollment);
+  res.json({ success: true, ...statePayload(st, enrollment), message: st.unlocked ? 'Payment confirmed. Certificates unlocked!' : 'Payment confirmed. Share your offer letter on LinkedIn to unlock your certificates.' });
 });
 
 // ── ADMIN ────────────────────────────────────────────────────────────

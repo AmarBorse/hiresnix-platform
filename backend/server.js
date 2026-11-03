@@ -56,6 +56,8 @@ app.options('*', cors(corsOptions));
 // Razorpay webhook needs the raw body for signature checks: mount before express.json()
 app.post('/api/payments/razorpay-webhook', express.raw({ type: 'application/json', limit: '1mb' }),
   require('./controllers/internshipDailyLog').razorpayWebhook);
+// Certificate unlock (LinkedIn proof screenshots): its own 4 MB body limit, so mount before express.json()
+app.use('/api/cert-unlock', require('./routes/certUnlockRoutes'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 if (process.env.NODE_ENV === 'development') app.use(morgan('dev'));

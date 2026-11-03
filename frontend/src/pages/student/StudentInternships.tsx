@@ -12,6 +12,7 @@ import client from '../../api/client';
 import { instInternshipClient } from '../../api/instStudent';
 import { LogicBuilder } from './LogicBuilder';
 import { EditMySubmissions } from '../../components/student/EditMySubmissions';
+import { LinkedInSharePrompt } from '../../components/student/LinkedInSharePrompt';
 
 // ═══════════════════════════════════════════════════════════════════
 // ── EXISTING IPLATFORM PANEL (UNCHANGED) ──────────────────────────
@@ -31,6 +32,9 @@ function IPlatformPanel() {
   const [resources, setResources] = useState<any[]>([]);
   const [certPaid, setCertPaid] = useState<boolean | null>(null);
   const [paymentLoading, setPaymentLoading] = useState(false);
+  // Certificate unlock rules: fee switch + LinkedIn share (backend/utils/certGate.js)
+  const [certState, setCertState] = useState<any>(null);
+  const [showShare, setShowShare] = useState(false);
 
   const load = async () => {
     const token = localStorage.getItem('hirenix_token') || localStorage.getItem('hx_student_token');
@@ -75,12 +79,13 @@ function IPlatformPanel() {
       // Check payment status
       try {
         const ps = await client.get('/iplatform/cert-payment-status');
-        let isPaid = !!ps.data?.paid;
-        // Paid but the checkout callback was lost (e.g. UPI app switch)? Confirm with Razorpay.
-        if (!isPaid && ps.data?.isLegacy === false) {
-          try { isPaid = !!(await client.post('/iplatform/cert-payment-sync', {})).data?.paid; } catch {}
+        let st = ps.data || {};
+        // Fee is on but the checkout callback was lost (e.g. UPI app switch)? Confirm with Razorpay.
+        if (!st.paid && st.feeRequired && !st.feePaid && st.isLegacy === false) {
+          try { const sy = (await client.post('/iplatform/cert-payment-sync', {})).data; if (sy) st = { ...st, ...sy }; } catch {}
         }
-        setCertPaid(isPaid);
+        setCertState(st);
+        setCertPaid(!!st.paid);
       } catch { setCertPaid(false); }
     } catch {}
     finally { setLoading(false); }
@@ -173,8 +178,15 @@ function IPlatformPanel() {
   };
 
   const downloadDoc = async (type: string, enrollId: number | string, name: string) => {
-    if (type === 'offer-letter') { triggerDownload(type, enrollId, name); return; }
+    if (type === 'offer-letter') {
+      await triggerDownload(type, enrollId, name);
+      // Right after the offer letter: ask them to share it on LinkedIn
+      if (certState?.linkedinRequired && !certState?.linkedinDone) setTimeout(() => setShowShare(true), 700);
+      return;
+    }
     if (certPaid) { triggerDownload(type, enrollId, name); return; }
+    if (certState?.linkedinRequired && !certState?.linkedinDone) { setShowShare(true); return; }
+    if (certState && !certState.feeRequired) { toast.error('Certificates are not ready yet. Refresh the page and try again.'); return; }
     setPaymentLoading(true);
     try {
       const res = await client.post('/iplatform/cert-payment-order');
@@ -348,7 +360,35 @@ function IPlatformPanel() {
                   : <span>📄</span>}
                 Download Offer Letter
               </button>
-              <p className="text-xs text-amber-600 mt-2 font-semibold">⚠️ Post your Offer Letter on LinkedIn within 48 hours and tag Hiresnix!</p>
+              {certState?.linkedinRequired && !certState?.linkedinDone ? (
+                <div className="mt-3 rounded-xl border border-sky-200 bg-sky-50 p-3">
+                  <p className="text-sm font-semibold text-sky-900">Share your offer letter on LinkedIn and tag Hiresnix</p>
+                  <p className="text-xs text-sky-800 mt-0.5">
+                    {certState?.linkedinStatus === 'rejected'
+                      ? `Your earlier submission needs a fix: ${certState?.linkedinNote || 'please check and submit again'}.`
+                      : 'Post it, add the internship to your LinkedIn Experience, and send us the link. This is needed to unlock your certificates.'}
+                  </p>
+                  <button type="button" onClick={() => setShowShare(true)}
+                    className="mt-2 inline-flex items-center gap-2 rounded-lg bg-[#0a66c2] px-3 py-2 text-sm font-semibold text-white hover:bg-[#004182]">
+                    Share on LinkedIn
+                  </button>
+                </div>
+              ) : certState?.linkedinRequired && certState?.linkedinDone ? (
+                <p className="text-xs text-emerald-700 mt-2 font-semibold">✓ LinkedIn step done. Thanks for sharing!</p>
+              ) : (
+                <p className="text-xs text-amber-600 mt-2 font-semibold">⚠️ Post your Offer Letter on LinkedIn within 48 hours and tag Hiresnix!</p>
+              )}
+              <p className="text-xs text-gray-600 mt-2">
+                📝 <b>Fill your daily log every day.</b> It's your proof of work for your college, and it's what we look at when we pick interns for real Hiresnix projects.
+              </p>
+              <LinkedInSharePrompt
+                open={showShare}
+                onClose={() => setShowShare(false)}
+                onDone={() => load()}
+                domain={enrollment.domain?.name || app?.domain?.name}
+                startDate={enrollment.startDate}
+                rejectedNote={certState?.linkedinStatus === 'rejected' ? certState?.linkedinNote : undefined}
+              />
             </div>
           )}
 
@@ -2620,7 +2660,7 @@ function AssignedProject({ enrollment }: { enrollment: any }) {
       <div className="flex items-start justify-between mb-3">
         <div>
           <h5 className="font-bold text-gray-900 dark:text-gray-100 text-base">{title}</h5>
-          <span className="inline-block mt-1 text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 font-semibold">Optional — Make it youself without using AI.</span>
+          <span className="inline-block mt-1 text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 font-semibold">Optional — Submission Not Mandatory</span>
         </div>
       </div>
 
@@ -2871,22 +2911,26 @@ function CertificatePaymentSection({ enrollment }: { enrollment: any }) {
   const [isLegacy, setIsLegacy] = useState(false);
   const [processingPayment, setProcessingPayment] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [rules, setRules] = useState<any>(null);       // fee switch + LinkedIn step
+  const [showShare, setShowShare] = useState(false);
+  const [reload, setReload] = useState(0);
 
   useEffect(() => {
     if (enrollment.status !== 'Completed') return;
     client.get('/iplatform/cert-payment-status')
       .then(async r => {
-        let isPaid = !!r.data?.paid;
-        setIsLegacy(r.data?.isLegacy || false);
-        // Paid but the checkout callback was lost (e.g. UPI app switch)? Confirm with Razorpay.
-        if (!isPaid && !r.data?.isLegacy) {
-          try { isPaid = !!(await client.post('/iplatform/cert-payment-sync', {})).data?.paid; } catch {}
+        let st = r.data || {};
+        setIsLegacy(st.isLegacy || false);
+        // Fee is on but the checkout callback was lost (e.g. UPI app switch)? Confirm with Razorpay.
+        if (!st.paid && st.feeRequired && !st.feePaid && !st.isLegacy) {
+          try { const sy = (await client.post('/iplatform/cert-payment-sync', {})).data; if (sy) st = { ...st, ...sy }; } catch {}
         }
-        setPaid(isPaid);
+        setRules(st);
+        setPaid(!!st.paid);
       })
       .catch(() => {})
       .finally(() => setChecking(false));
-  }, [enrollment.status]);
+  }, [enrollment.status, reload]);
 
   if (enrollment.status !== 'Completed') return null;
   if (checking) return (
@@ -2960,11 +3004,24 @@ function CertificatePaymentSection({ enrollment }: { enrollment: any }) {
     } finally { setSyncing(false); }
   };
 
+  const needLinkedin = !!rules?.linkedinRequired && !rules?.linkedinDone;
+  const sharePrompt = (
+    <LinkedInSharePrompt
+      open={showShare}
+      onClose={() => setShowShare(false)}
+      onDone={() => setReload(n => n + 1)}
+      domain={enrollment.domain?.name}
+      startDate={enrollment.startDate}
+      rejectedNote={rules?.linkedinStatus === 'rejected' ? rules?.linkedinNote : undefined}
+    />
+  );
+
   return sectionCard('Internship Certificates', <Award size={17} className="text-yellow-500" />,
     <div>
-      {(paid || isLegacy) ? (
+      {sharePrompt}
+      {paid ? (
         <div>
-          {isLegacy && (
+          {isLegacy && rules?.feeRequired && (
             <div className="mb-3 p-3 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
               <p className="text-xs text-blue-800 dark:text-blue-300 flex items-center gap-1.5">
                 <Unlock size={13} /> Your certificates are free as an existing student. No payment required!
@@ -3004,6 +3061,27 @@ function CertificatePaymentSection({ enrollment }: { enrollment: any }) {
               </button>
             ))}
           </div>
+        </div>
+      ) : needLinkedin ? (
+        <div>
+          <div className="flex items-center gap-3 p-4 rounded-xl bg-sky-50 border border-sky-200 mb-4">
+            <Lock size={20} className="text-sky-700 flex-shrink-0" />
+            <div>
+              <p className="font-semibold text-sky-900 text-sm">Certificates ready. One step left.</p>
+              <p className="text-xs text-sky-800 mt-0.5">
+                {rules?.linkedinStatus === 'rejected'
+                  ? `Your LinkedIn submission needs a fix: ${rules?.linkedinNote || 'please check and submit again'}.`
+                  : 'Share your offer letter on LinkedIn, tag Hiresnix and add the internship to your Experience. Then your Completion Certificate, Completion Letter and LOR unlock.'}
+              </p>
+            </div>
+          </div>
+          <button onClick={() => setShowShare(true)}
+            className="w-full flex items-center justify-center gap-2 bg-[#0a66c2] hover:bg-[#004182] text-white font-bold py-3 rounded-xl text-sm transition">
+            <Unlock size={15} /> Share on LinkedIn to unlock
+          </button>
+          {rules?.feeRequired && !rules?.feePaid && (
+            <p className="text-xs text-gray-500 text-center mt-2">After this, the ₹100 certificate fee is the last step.</p>
+          )}
         </div>
       ) : (
         <div>

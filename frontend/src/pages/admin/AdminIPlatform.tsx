@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import client from '../../api/client';
 import { InternEditToggle } from '../../components/admin/InternEditToggle';
+import { CertUnlockAdmin } from '../../components/admin/CertUnlockAdmin';
 import { ImportDailyLogs } from '../../components/admin/ImportDailyLogs';
 import { ImportedLogsReview } from '../../components/admin/ImportedLogsReview';
 import * as XLSX from 'xlsx';
@@ -272,6 +273,9 @@ export function AdminIPlatform() {
           <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
         </button>
       </div>
+
+      {/* What interns must do to unlock certificates: fee switch + LinkedIn share */}
+      <CertUnlockAdmin />
 
       {/* Let interns edit the tasks and daily logs they already submitted */}
       <InternEditToggle />
