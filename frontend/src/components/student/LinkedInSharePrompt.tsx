@@ -5,6 +5,7 @@
 // the LinkedIn part of the certificate rules (see backend/utils/certGate.js).
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { toast } from 'sonner';
 import { X, Copy, Check, ExternalLink, Upload, Loader2, Linkedin, NotebookPen, Image as ImageIcon } from 'lucide-react';
 import client from '../../api/client';
@@ -19,6 +20,23 @@ type Props = {
   startDate?: string;        // internship start, for the Experience entry
   rejectedNote?: string;     // admin's reason if an earlier proof was not valid
 };
+
+/**
+ * Students often copy the link while logged out, which gives a LinkedIn login link
+ * (…/login/?session_redirect=<the real post link>). Pull the real post link out of it.
+ */
+export function cleanLinkedinLink(raw: string): string {
+  let url = raw.trim();
+  for (let i = 0; i < 3; i++) {
+    try {
+      const u = new URL(url);
+      const inner = u.searchParams.get('session_redirect') || u.searchParams.get('redirect') || u.searchParams.get('url');
+      if (inner && /linkedin\.com|lnkd\.in/i.test(inner)) { url = decodeURIComponent(inner); continue; }
+    } catch { /* not a URL */ }
+    break;
+  }
+  return url.replace(/[?#].*$/, '');
+}
 
 const hashtag = (s?: string) => (s || '').replace(/[^A-Za-z0-9]+/g, ' ').trim().split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('');
 
@@ -90,7 +108,7 @@ export function LinkedInSharePrompt({ open, onClose, onDone, domain, startDate, 
     if (!shot) { toast.error('Add a screenshot of your Experience section'); return; }
     setSaving(true);
     try {
-      const res = await client.post('/cert-unlock/linkedin', { postUrl: postUrl.trim(), screenshot: shot });
+      const res = await client.post('/cert-unlock/linkedin', { postUrl: cleanLinkedinLink(postUrl), screenshot: shot });
       toast.success(res.data?.message || 'Done!');
       onDone?.();
       onClose();
@@ -105,8 +123,9 @@ export function LinkedInSharePrompt({ open, onClose, onDone, domain, startDate, 
   const num = 'w-7 h-7 rounded-full bg-emerald-600 text-white text-sm font-bold flex items-center justify-center shrink-0';
   const btn = 'inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition disabled:opacity-50';
 
-  return (
-    <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-0 sm:p-4" onClick={onClose}>
+  // Rendered into <body> so no parent card (with transforms or overflow) can trap or cover it
+  return createPortal(
+    <div className="fixed inset-0 z-[1000] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-0 sm:p-4" onClick={onClose}>
       <div role="dialog" aria-modal="true" aria-labelledby="li-share-title"
         className="w-full sm:max-w-xl max-h-[92vh] overflow-y-auto bg-gray-50 rounded-t-3xl sm:rounded-3xl shadow-2xl"
         onClick={e => e.stopPropagation()}>
@@ -176,6 +195,8 @@ export function LinkedInSharePrompt({ open, onClose, onDone, domain, startDate, 
             <div className="flex items-center gap-3 mb-3"><span className={num}>3</span><h3 className="font-semibold text-gray-900">Show us it's done</h3></div>
             <label className="block text-xs font-semibold text-gray-600 mb-1" htmlFor="li-post-url">Link to your post</label>
             <input id="li-post-url" value={postUrl} onChange={e => setPostUrl(e.target.value)} inputMode="url"
+              onBlur={() => postUrl && setPostUrl(cleanLinkedinLink(postUrl))}
+              onPaste={e => { const t = e.clipboardData.getData('text'); if (t) { e.preventDefault(); setPostUrl(cleanLinkedinLink(t)); } }}
               placeholder="https://www.linkedin.com/posts/…"
               className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500" />
             <p className="text-[11px] text-gray-500 mt-1">On your post, tap ⋯ (or Share) → Copy link to post.</p>
@@ -209,7 +230,8 @@ export function LinkedInSharePrompt({ open, onClose, onDone, domain, startDate, 
           </p>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

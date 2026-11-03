@@ -65,7 +65,17 @@ r.get('/my', protect, authorize('student'), asyncHandler(async (req, res) => {
 
 r.post('/linkedin', protect, authorize('student'), asyncHandler(async (req, res) => {
   await gate.ensureTables();
-  const postUrl = String(req.body?.postUrl || '').trim().replace(/[?#].*$/, '').slice(0, 600); // drop tracking bits
+  // A link copied while logged out is a login link with the real post inside (session_redirect=...)
+  let postUrl = String(req.body?.postUrl || '').trim();
+  for (let i = 0; i < 3; i++) {
+    try {
+      const u = new URL(postUrl);
+      const inner = u.searchParams.get('session_redirect') || u.searchParams.get('redirect') || u.searchParams.get('url');
+      if (inner && /linkedin\.com|lnkd\.in/i.test(inner)) { postUrl = decodeURIComponent(inner); continue; }
+    } catch { /* not a URL */ }
+    break;
+  }
+  postUrl = postUrl.replace(/[?#].*$/, '').slice(0, 600); // drop tracking bits
   const screenshot = String(req.body?.screenshot || '');
   if (!LINKEDIN_POST.test(postUrl)) {
     res.status(400);
