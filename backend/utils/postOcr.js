@@ -1,7 +1,8 @@
 // utils/postOcr.js
 // Reads the text in an intern's LinkedIn post screenshot (Tesseract OCR, runs on our server,
 // nothing is sent anywhere) and checks, in this order:
-//   1. the post's profile name (top of the post) has the intern's first name   e.g. "Raj"
+//   1. the post's profile name (top of the post) has at least one word of the intern's name
+//      e.g. "Raj" or "Mahajan" for Raj Mahajan
 //   2. the offer letter in the post has the intern's full name                 e.g. "Raj Mahajan"
 //   3. the role (e.g. "Data Science") and "Hiresnix" are there
 //   4. no other intern's offer letter ID (HSH-INT-YYYY-XXXX) is shown
@@ -84,13 +85,12 @@ const authorFromLines = (lines) => {
 const checkPost = ({ text, name, role, offerId }) => {
   const lines = String(text || '').split(/\r?\n/).map(l => l.trim()).filter(Boolean);
   const nameParts = words(name).filter(w => w.length >= 2);
-  const firstName = nameParts[0] || '';
   const roleParts = words(role).filter(w => w.length >= 3 && !['and', 'the', 'intern', 'internship'].includes(w));
 
   // 1. profile name at the top of the post
   const authorName = authorFromLines(lines);
   const authorBag = new Set(words(authorName));
-  const author = !!firstName && hasWord(authorBag, firstName);
+  const author = nameParts.some(w => hasWord(authorBag, w)); // any one word of their name is enough
 
   // 2. name on the offer letter (lines from "offer letter" on; else everything below the header)
   const letterAt = lines.findIndex((l, i) => i > 0 && /offer\s*letter/i.test(l));
@@ -116,7 +116,7 @@ const checkPost = ({ text, name, role, offerId }) => {
   let problem = '';
   if (foreignId) problem = `This screenshot shows someone else's offer letter (${foreignId}). Upload a screenshot of your own post.`;
   else if (!authorName) problem = 'Take the screenshot from the very top of your post, so your LinkedIn profile name is visible above the post.';
-  else if (!author) problem = `Name mismatch: the post is by "${authorName}", but this account is for ${name}. Share the post from your own LinkedIn profile (your profile name must have "${firstName.charAt(0).toUpperCase() + firstName.slice(1)}").`;
+  else if (!author) problem = `Name mismatch: the post is by "${authorName}", but this account is for ${name}. Share the post from your own LinkedIn profile (your profile name must have ${nameParts.map(w => `"${w.charAt(0).toUpperCase() + w.slice(1)}"`).join(' or ')}).`;
   else if (!letter) problem = `Name mismatch: the offer letter in the screenshot doesn't show your name (${name}). Attach your own offer letter to the post and make sure the name is visible in the screenshot.`;
   else if (!found.role) problem = `Your role (${role}) isn't visible in the screenshot. Make sure the offer letter details show in the screenshot.`;
   else if (!found.hiresnix) problem = '"Hiresnix" isn\'t visible in the screenshot. Tag Hiresnix in the post and include the offer letter.';
