@@ -64,12 +64,34 @@ async function compress(file: File): Promise<string> {
   return c.toDataURL('image/jpeg', 0.9);
 }
 
+/** A real example of a good screenshot (public/linkedin-example.jpg), with the three checks marked. */
+function ExampleScreenshot({ role }: { role: string }) {
+  const dot = (n: number) => (
+    <span className="w-5 h-5 rounded-full bg-emerald-600 text-white text-[11px] font-bold flex items-center justify-center shrink-0">{n}</span>
+  );
+  return (
+    <div className="rounded-xl border border-gray-200 bg-gray-50 p-3">
+      <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_170px] items-start">
+        <img src="/linkedin-example.jpg" alt="Example (made-up student): a LinkedIn post with the profile name at the top and the Hiresnix offer letter showing the name and role"
+          className="w-full max-w-[320px] mx-auto rounded-xl border border-gray-300 shadow-sm" loading="lazy" />
+        <ol className="text-[12px] text-gray-700 space-y-2">
+          <li className="flex gap-2">{dot(1)}<span><b>Your profile name</b> at the top of the post</span></li>
+          <li className="flex gap-2">{dot(2)}<span><b>Your name</b> on the offer letter</span></li>
+          <li className="flex gap-2">{dot(3)}<span><b>Your role</b> ({role})</span></li>
+          <li className="text-[11px] text-gray-500 pt-1">Take it on your phone from the top of the post, without cropping. Don't zoom out so far that the letter text is unreadable.</li>
+        </ol>
+      </div>
+    </div>
+  );
+}
+
 export function LinkedInSharePrompt({ open, onClose, onDone, domain, rejectedNote }: Props) {
   const [copied, setCopied] = useState(false);
   const [postUrl, setPostUrl] = useState('');
   const [shot, setShot] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
+  const [showExample, setShowExample] = useState(true);
   const closeRef = useRef<HTMLButtonElement>(null);
 
   const postText = useMemo(() => [
@@ -192,6 +214,10 @@ export function LinkedInSharePrompt({ open, onClose, onDone, domain, rejectedNot
               Open your post and take one screenshot <b>from the very top</b>: your <b>LinkedIn profile name</b> above the post, and the
               offer letter showing <b>your name</b> and <b>{domain ? `${domain} Intern` : 'your role'}</b>. We check both names automatically.
             </p>
+            <button type="button" onClick={() => setShowExample(v => !v)} className="text-xs font-semibold text-emerald-700 hover:underline mb-2">
+              {showExample ? 'Hide example' : 'See an example screenshot'}
+            </button>
+            {showExample && <div className="mb-3"><ExampleScreenshot role={domain ? `${domain} Intern` : 'Your Role Intern'} /></div>}
             <label className="flex items-center gap-3 rounded-xl border border-dashed border-gray-300 bg-white px-3 py-3 cursor-pointer hover:border-emerald-500">
               {shot
                 ? <img src={shot} alt="Your screenshot" className="w-14 h-14 rounded-lg object-cover border border-gray-200" />
