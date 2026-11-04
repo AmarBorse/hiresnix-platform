@@ -1053,7 +1053,7 @@ function Catalog({ onSelect }: { onSelect:(c:any)=>void }) {
         </div>
         <div style={{textAlign:'center',marginBottom:'48px',animation:'slide-up 0.5s ease'}}>
           <div style={{display:'inline-flex',alignItems:'center',gap:'8px',padding:'5px 16px',borderRadius:'20px',background:'rgba(99,102,241,0.12)',border:'1px solid rgba(99,102,241,0.25)',marginBottom:'20px'}}>
-            <Sparkles size={13} style={{color:'#818cf8'}}/><span style={{color:'#818cf8',fontSize:'12px',fontWeight:700}}>100% Free · AI-Powered · Groq</span>
+            <Sparkles size={13} style={{color:'#818cf8'}}/><span style={{color:'#818cf8',fontSize:'12px',fontWeight:700}}>AI-Powered Courses</span>
           </div>
           <h1 style={{fontSize:'48px',fontWeight:900,color:'#fff',margin:'0 0 12px',letterSpacing:'-0.03em',lineHeight:1.05}}>
             🎓 Hiresnix<br/><span style={{background:'linear-gradient(135deg,#6366f1,#ec4899,#f59e0b)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>AI Academy</span>
