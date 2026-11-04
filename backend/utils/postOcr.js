@@ -52,7 +52,11 @@ const editDistance = (a, b) => {
   return dp[a.length][b.length];
 };
 
-const hasWord = (bag, target) => bag.has(target) || (target.length >= 5 && [...bag].some(w => editDistance(w, target) <= 1));
+// A word counts as found if it's there exactly, has one wrong letter (longer words), or lost its
+// first/last letter (OCR often drops the first letter of big bold text, e.g. "Amar" -> "mar")
+const hasWord = (bag, target) => bag.has(target) || [...bag].some(w =>
+  (target.length >= 5 && editDistance(w, target) <= 1) ||
+  (target.length >= 4 && w.length === target.length - 1 && w.length >= 3 && (target.startsWith(w) || target.endsWith(w))));
 
 // Offer IDs are HSH-INT-YYYY-XXXX with XXXX in hex; OCR often turns 0 into O, 1 into I, etc.
 const fixHex = (s) => s.toUpperCase().replace(/O/g, '0').replace(/[IL]/g, '1').replace(/S/g, '5').replace(/Z/g, '2').replace(/G/g, '6').replace(/T/g, '7');
@@ -87,10 +91,16 @@ const checkPost = ({ text, name, role, offerId }) => {
   const nameParts = words(name).filter(w => w.length >= 2);
   const roleParts = words(role).filter(w => w.length >= 3 && !['and', 'the', 'intern', 'internship'].includes(w));
 
-  // 1. profile name at the top of the post
-  const authorName = authorFromLines(lines);
-  const authorBag = new Set(words(authorName));
-  const author = nameParts.some(w => hasWord(authorBag, w)); // any one word of their name is enough
+  // 1. profile name at the top of the post. The profile photo can add a junk first line, and
+  //    big bold names sometimes lose a letter, so look through the top few lines (above the
+  //    offer letter) for any one word of their name.
+  const letterIdx = lines.findIndex((l, i) => i > 0 && /offer\s*letter/i.test(l));
+  const headerLines = lines.slice(0, Math.min(letterIdx > 0 ? letterIdx : 6, 6));
+  const headerLine = headerLines.find(l => nameParts.some(w => hasWord(new Set(words(l)), w)));
+  const author = !!headerLine;
+  const authorName = headerLine
+    ? (authorFromLines([headerLine]) || headerLine.replace(/[^A-Za-z .'-]+/g, ' ').replace(/\s+/g, ' ').trim())
+    : authorFromLines(lines);
 
   // 2. name on the offer letter (lines from "offer letter" on; else everything below the header)
   const letterAt = lines.findIndex((l, i) => i > 0 && /offer\s*letter/i.test(l));
@@ -115,8 +125,8 @@ const checkPost = ({ text, name, role, offerId }) => {
 
   let problem = '';
   if (foreignId) problem = `This screenshot shows someone else's offer letter (${foreignId}). Upload a screenshot of your own post.`;
-  else if (!authorName) problem = 'Take the screenshot from the very top of your post, so your LinkedIn profile name is visible above the post.';
-  else if (!author) problem = `Name mismatch: the post is by "${authorName}", but this account is for ${name}. Share the post from your own LinkedIn profile (your profile name must have ${nameParts.map(w => `"${w.charAt(0).toUpperCase() + w.slice(1)}"`).join(' or ')}).`;
+  else if (!author && authorName) problem = `Name mismatch: the post is by "${authorName}", but this account is for ${name}. Share the post from your own LinkedIn profile (your profile name must have ${nameParts.map(w => `"${w.charAt(0).toUpperCase() + w.slice(1)}"`).join(' or ')}).`;
+  else if (!author) problem = `We couldn't see your LinkedIn profile name (${name}) at the top of the post. Take the screenshot from the very top of your own post, so your name shows above the post.`;
   else if (!letter) problem = `Name mismatch: the offer letter in the screenshot doesn't show your name (${name}). Attach your own offer letter to the post and make sure the name is visible in the screenshot.`;
   else if (!found.role) problem = `Your role (${role}) isn't visible in the screenshot. Make sure the offer letter details show in the screenshot.`;
   else if (!found.hiresnix) problem = '"Hiresnix" isn\'t visible in the screenshot. Tag Hiresnix in the post and include the offer letter.';
