@@ -188,7 +188,10 @@ export function LinkedInSharePrompt({ open, onClose, onDone, domain, rejectedNot
             <p className="text-[11px] text-gray-500 mt-1">On your post, tap ⋯ (or Share) → Copy link to post.</p>
 
             <label className="block text-xs font-semibold text-gray-600 mb-1 mt-3">Screenshot of your post</label>
-            <p className="text-[11px] text-gray-500 mb-1.5">Open your post and take a screenshot where the offer letter with <b>your name</b> and <b>{domain ? `${domain} Intern` : 'your role'}</b> is clearly visible. We check it automatically.</p>
+            <p className="text-[11px] text-gray-500 mb-1.5">
+              Open your post and take one screenshot <b>from the very top</b>: your <b>LinkedIn profile name</b> above the post, and the
+              offer letter showing <b>your name</b> and <b>{domain ? `${domain} Intern` : 'your role'}</b>. We check both names automatically.
+            </p>
             <label className="flex items-center gap-3 rounded-xl border border-dashed border-gray-300 bg-white px-3 py-3 cursor-pointer hover:border-emerald-500">
               {shot
                 ? <img src={shot} alt="Your screenshot" className="w-14 h-14 rounded-lg object-cover border border-gray-200" />

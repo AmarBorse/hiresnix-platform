@@ -116,9 +116,8 @@ r.post('/linkedin', protect, authorize('student'), asyncHandler(async (req, res)
   try {
     text = await ocr.readText(screenshot);
     match = ocr.checkPost({ text, name: who?.name || req.user.name || '', role: who?.role || '', offerId: who?.offerId || '' });
-    if (match.ok) { status = 'submitted'; note = 'Checked automatically'; }
-    else if (match.foreignId) note = `The offer letter in the screenshot (${match.foreignId}) isn't yours`;
-    else note = `Couldn't find ${match.missing.join(', ')} in the screenshot`;
+    if (match.ok) { status = 'submitted'; note = `Checked automatically (profile: ${match.authorName})`; }
+    else note = match.problem;
   } catch (err) {
     console.error('[cert-unlock] screenshot check failed:', err.message);
     note = "The screenshot couldn't be read automatically";
@@ -134,15 +133,13 @@ r.post('/linkedin', protect, authorize('student'), asyncHandler(async (req, res)
   );
 
   if (status === 'submitted') {
-    return res.json({ success: true, accepted: true, message: 'Checked! Your name and role match. Certificates unlocked.' });
+    return res.json({ success: true, accepted: true, message: 'Checked! Your profile name and offer letter match. Certificates unlocked.' });
   }
   res.status(422).json({
     success: false, accepted: false, found: match?.found || null,
-    message: match?.foreignId
-      ? "This screenshot shows someone else's offer letter. Upload a screenshot of your own post."
-      : match
-        ? `We couldn't find ${match.missing.join(', ')} in your screenshot. Upload a clearer screenshot of your post where your offer letter (with your name and role) is visible. Our team can also check it for you.`
-        : "We couldn't read your screenshot right now. Our team will check it, or you can try a clearer screenshot.",
+    message: match
+      ? `${match.problem} Our team can also check it for you.`
+      : "We couldn't read your screenshot right now. Our team will check it, or you can try a clearer screenshot.",
   });
 }));
 
