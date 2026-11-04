@@ -2662,7 +2662,7 @@ function AssignedProject({ enrollment }: { enrollment: any }) {
       <div className="flex items-start justify-between mb-3">
         <div>
           <h5 className="font-bold text-gray-900 dark:text-gray-100 text-base">{title}</h5>
-          <span className="inline-block mt-1 text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 font-semibold">Optional — Submission Not Mandatory</span>
+          <span className="inline-block mt-1 text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 font-semibold">Optional — Try building project by your own whithout using ai </span>
         </div>
       </div>
 
