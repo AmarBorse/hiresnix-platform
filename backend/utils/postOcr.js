@@ -24,13 +24,36 @@ const getWorker = () => {
   return workerPromise;
 };
 
-/** OCR a data: URL image. One job at a time; gives up after 45 seconds. */
+/**
+ * Phone screenshots show the offer letter in tiny print (~7 px letters), too small to read.
+ * Enlarge to about 2000 px wide (2–3×), grey, slightly sharpened: the small text then reads well.
+ */
+const prepare = async (buffer) => {
+  try {
+    const sharp = require('sharp');
+    const img = sharp(buffer, { failOn: 'none' }).rotate();
+    const meta = await img.metadata();
+    const width = meta.width || 1000;
+    const factor = Math.min(3, Math.max(1, 2000 / width));
+    return await img
+      .resize({ width: Math.round(width * factor), kernel: 'lanczos3' })
+      .grayscale()
+      .sharpen({ sigma: 1 })
+      .png()
+      .toBuffer();
+  } catch {
+    return buffer; // without sharp, read the image as it is
+  }
+};
+
+/** OCR a data: URL image. One job at a time; gives up after 60 seconds. */
 const readText = (dataUrl) => {
   const job = queue.then(async () => {
     const base64 = String(dataUrl).split(',')[1] || '';
     const worker = await getWorker();
-    const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error('Reading the screenshot took too long')), 45000));
-    const { data } = await Promise.race([worker.recognize(Buffer.from(base64, 'base64')), timeout]);
+    const image = await prepare(Buffer.from(base64, 'base64'));
+    const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error('Reading the screenshot took too long')), 60000));
+    const { data } = await Promise.race([worker.recognize(image), timeout]);
     return String(data?.text || '');
   });
   queue = job.catch(() => {}); // keep the queue going after a failure
@@ -105,7 +128,11 @@ const checkPost = ({ text, name, role, offerId }) => {
   // 2. name on the offer letter (lines from "offer letter" on; else everything below the header)
   const letterAt = lines.findIndex((l, i) => i > 0 && /offer\s*letter/i.test(l));
   const letterBag = new Set(words(lines.slice(letterAt > 0 ? letterAt : 3).join(' ')));
-  const letter = nameParts.length > 0 && nameParts.every(w => hasWord(letterBag, w));
+  const letter = nameParts.length > 0 && (
+    nameParts.every(w => hasWord(letterBag, w)) ||
+    // long names: first + last name is enough (a small middle name is often misread)
+    (nameParts.length >= 3 && hasWord(letterBag, nameParts[0]) && hasWord(letterBag, nameParts[nameParts.length - 1]))
+  );
 
   const bag = new Set(words(text));
   const found = {
