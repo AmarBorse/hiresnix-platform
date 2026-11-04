@@ -25,8 +25,9 @@ const mainAdminOnly = (req, res, next) => {
   next();
 };
 
-// A LinkedIn post link: linkedin.com/posts/..., /feed/update/urn:li:..., or lnkd.in short links
-const LINKEDIN_POST = /^https:\/\/((www|[a-z]{2})\.)?linkedin\.com\/(posts\/[^\s]+|feed\/update\/urn:li:(activity|share|ugcPost):\d+[^\s]*|pulse\/[^\s]+)$|^https:\/\/lnkd\.in\/[A-Za-z0-9_-]+$/i;
+// A LinkedIn post link: linkedin.com/posts/..., /feed/update/urn:li:..., /pulse/..., or the short
+// links the LinkedIn app gives when you share (lnkd.in/xxxx or lnkd.in/p/xxxx)
+const LINKEDIN_POST = /^https:\/\/((www|[a-z]{2})\.)?linkedin\.com\/(posts\/[^\s]+|feed\/update\/urn:li:(activity|share|ugcPost):\d+[^\s]*|pulse\/[^\s]+)$|^https:\/\/lnkd\.in\/([a-z]\/)?[A-Za-z0-9_-]{4,}$/i;
 
 // ── Settings ─────────────────────────────────────────────────────
 r.get('/settings', protect, asyncHandler(async (req, res) => {
@@ -76,10 +77,11 @@ r.post('/linkedin', protect, authorize('student'), asyncHandler(async (req, res)
     break;
   }
   postUrl = postUrl.replace(/[?#].*$/, '').slice(0, 600); // drop tracking bits
+  postUrl = postUrl.replace(/^http:\/\//i, 'https://').replace(/\/+$/, ''); // http → https, no trailing slash
   const screenshot = String(req.body?.screenshot || '');
   if (!LINKEDIN_POST.test(postUrl)) {
     res.status(400);
-    throw new Error('Paste the link of your LinkedIn post (it starts with https://www.linkedin.com/posts/ or https://www.linkedin.com/feed/update/)');
+    throw new Error('Paste the link of your LinkedIn post. It looks like https://lnkd.in/… or https://www.linkedin.com/posts/…');
   }
   if (!/^data:image\/(png|jpe?g|webp);base64,[A-Za-z0-9+/=]+$/.test(screenshot)) {
     res.status(400); throw new Error('Add a screenshot of the Experience section on your LinkedIn profile');

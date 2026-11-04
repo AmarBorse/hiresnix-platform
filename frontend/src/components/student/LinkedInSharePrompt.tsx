@@ -197,7 +197,7 @@ export function LinkedInSharePrompt({ open, onClose, onDone, domain, startDate, 
             <input id="li-post-url" value={postUrl} onChange={e => setPostUrl(e.target.value)} inputMode="url"
               onBlur={() => postUrl && setPostUrl(cleanLinkedinLink(postUrl))}
               onPaste={e => { const t = e.clipboardData.getData('text'); if (t) { e.preventDefault(); setPostUrl(cleanLinkedinLink(t)); } }}
-              placeholder="https://www.linkedin.com/posts/…"
+              placeholder="https://lnkd.in/… or https://www.linkedin.com/posts/…"
               className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500" />
             <p className="text-[11px] text-gray-500 mt-1">On your post, tap ⋯ (or Share) → Copy link to post.</p>
 
