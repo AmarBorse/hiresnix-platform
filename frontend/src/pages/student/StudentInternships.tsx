@@ -12,7 +12,7 @@ import client from '../../api/client';
 import { instInternshipClient } from '../../api/instStudent';
 import { LogicBuilder } from './LogicBuilder';
 import { EditMySubmissions } from '../../components/student/EditMySubmissions';
-import { LinkedInSharePrompt } from '../../components/student/LinkedInSharePrompt';
+import { LinkedInSharePrompt, CERT_UNLOCK_EVENT } from '../../components/student/LinkedInSharePrompt';
 
 // ═══════════════════════════════════════════════════════════════════
 // ── EXISTING IPLATFORM PANEL (UNCHANGED) ──────────────────────────
@@ -92,6 +92,12 @@ function IPlatformPanel() {
   };
 
   useEffect(() => { load(); }, []);
+  // A LinkedIn submission anywhere on the page: refresh the unlock state here too
+  useEffect(() => {
+    const refresh = () => { load(); };
+    window.addEventListener(CERT_UNLOCK_EVENT, refresh);
+    return () => window.removeEventListener(CERT_UNLOCK_EVENT, refresh);
+  }, []);
 
   const handleApply = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -2662,7 +2668,7 @@ function AssignedProject({ enrollment }: { enrollment: any }) {
       <div className="flex items-start justify-between mb-3">
         <div>
           <h5 className="font-bold text-gray-900 dark:text-gray-100 text-base">{title}</h5>
-          <span className="inline-block mt-1 text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 font-semibold">Optional — Try building project by your own whithout using ai </span>
+          <span className="inline-block mt-1 text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 font-semibold">Optional — Submission Not Mandatory</span>
         </div>
       </div>
 
@@ -2933,6 +2939,11 @@ function CertificatePaymentSection({ enrollment }: { enrollment: any }) {
       .catch(() => {})
       .finally(() => setChecking(false));
   }, [enrollment.status, reload]);
+  useEffect(() => {
+    const refresh = () => setReload(n => n + 1);
+    window.addEventListener(CERT_UNLOCK_EVENT, refresh);
+    return () => window.removeEventListener(CERT_UNLOCK_EVENT, refresh);
+  }, []);
 
   if (enrollment.status !== 'Completed') return null;
   if (checking) return (

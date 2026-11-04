@@ -12,6 +12,10 @@ import client from '../../api/client';
 
 const HIRESNIX_LINKEDIN = 'https://www.linkedin.com/company/hiresnix';
 
+/** Fired after a submission so every certificate box on the page refreshes at once. */
+export const CERT_UNLOCK_EVENT = 'hx:cert-unlock-changed';
+const announce = () => { try { window.dispatchEvent(new Event(CERT_UNLOCK_EVENT)); } catch { /* old browser */ } };
+
 type Props = {
   open: boolean;
   onClose: () => void;
@@ -42,7 +46,11 @@ export function cleanLinkedinLink(raw: string): string {
 
 const hashtag = (s?: string) => (s || '').replace(/[^A-Za-z0-9]+/g, ' ').trim().split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('');
 
-/** Shrinks a screenshot to a sensible size before upload (keeps it readable). */
+/**
+ * Gets the screenshot ready for the automatic check. Phone screenshots shared through WhatsApp
+ * are often only ~600 px wide, which makes the offer letter text too small to read, so small
+ * images are enlarged to about 1800 px wide (and very large ones shrunk).
+ */
 async function compress(file: File): Promise<string> {
   const dataUrl = await new Promise<string>((res, rej) => {
     const r = new FileReader();
@@ -56,11 +64,15 @@ async function compress(file: File): Promise<string> {
     i.onerror = () => rej(new Error('Could not read this image'));
     i.src = dataUrl;
   });
-  const scale = Math.min(1, 2000 / Math.max(img.naturalWidth, img.naturalHeight / 2));
+  const w0 = img.naturalWidth, h0 = img.naturalHeight;
+  let scale = w0 < 1600 ? 1800 / w0 : Math.min(1, 2000 / w0);
+  scale = Math.min(scale, 3, 6000 / h0, Math.sqrt(9_000_000 / (w0 * h0))); // keep within sane limits
   const c = document.createElement('canvas');
-  c.width = Math.round(img.naturalWidth * scale);
-  c.height = Math.round(img.naturalHeight * scale);
+  c.width = Math.round(w0 * scale);
+  c.height = Math.round(h0 * scale);
   const ctx = c.getContext('2d')!;
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
   ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
   ctx.drawImage(img, 0, 0, c.width, c.height);
   return c.toDataURL('image/jpeg', 0.9);
@@ -135,13 +147,14 @@ export function LinkedInSharePrompt({ open, onClose, onDone, domain, rejectedNot
     try {
       const res = await client.post('/cert-unlock/linkedin', { postUrl: cleanLinkedinLink(postUrl), screenshot: shot });
       toast.success(res.data?.message || 'Done!');
+      announce();
       onDone?.();
       onClose();
     } catch (e: any) {
       const msg = e?.response?.data?.message || 'Could not submit. Try again.';
       setProblem(msg);
       toast.error(msg);
-      if (e?.response?.status === 422) onDone?.(); // saved for our team to check; refresh the page state
+      if (e?.response?.status === 422) { announce(); onDone?.(); } // saved for our team to check; refresh the page state
     } finally {
       setSaving(false);
     }
