@@ -72,6 +72,8 @@ r.post('/linkedin', protect, authorize('student'), asyncHandler(async (req, res)
   await gate.ensureTables();
   // A link copied while logged out is a login link with the real post inside (session_redirect=...)
   let postUrl = String(req.body?.postUrl || '').trim();
+  // "lnkd.in/p/xxxx" or "www.linkedin.com/posts/…" pasted without https://
+  if (postUrl && !/^[a-z]+:\/\//i.test(postUrl)) postUrl = `https://${postUrl.replace(/^\/+/, '')}`;
   for (let i = 0; i < 3; i++) {
     try {
       const u = new URL(postUrl);

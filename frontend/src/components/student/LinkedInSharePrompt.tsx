@@ -27,6 +27,8 @@ type Props = {
  */
 export function cleanLinkedinLink(raw: string): string {
   let url = raw.trim();
+  // "lnkd.in/p/xxxx" or "www.linkedin.com/posts/…" pasted without https://
+  if (url && !/^[a-z]+:\/\//i.test(url)) url = `https://${url.replace(/^\/+/, '')}`;
   for (let i = 0; i < 3; i++) {
     try {
       const u = new URL(url);
