@@ -1,5 +1,8 @@
 // utils/certGate.js
 // Decides whether an intern's certificates are unlocked.
+// LinkedIn proof statuses: 'submitted' = accepted (unlocks), 'review' = the screenshot check
+// didn't find everything (stays locked until the admin accepts or the intern uploads a better
+// one), 'rejected' = admin marked it not valid.
 //
 //   Fee      — ₹100 payment. Off for now; the admin switch turns it on, and it also turns
 //              on by itself from FEE_AUTO_ON_DATE (2 Feb 2028) unless the admin changes that date.
@@ -33,12 +36,14 @@ const ensureTables = () => {
           "enrollmentId" BIGINT,
           "postUrl"      TEXT NOT NULL,
           screenshot     TEXT,
-          status         TEXT NOT NULL DEFAULT 'submitted',   -- submitted | rejected
+          status         TEXT NOT NULL DEFAULT 'submitted',   -- submitted | review | rejected
           note           TEXT,
           "submittedAt"  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
           "reviewedAt"   TIMESTAMPTZ,
           "reviewedBy"   TEXT
         )`);
+      await sequelize.query(`ALTER TABLE cert_linkedin_proofs ADD COLUMN IF NOT EXISTS "ocrText" TEXT`);
+      await sequelize.query(`ALTER TABLE cert_linkedin_proofs ADD COLUMN IF NOT EXISTS "ocrMatch" JSONB`);
     })().catch(err => { ready = null; throw err; });
   }
   return ready;
@@ -90,14 +95,14 @@ const getLinkedinProof = async (userId) => {
 const unlockState = async (userId, paidOrLegacy) => {
   const s = await getSettings();
   const proof = s.linkedinRequired ? await getLinkedinProof(userId) : null;
-  const linkedinDone = !!proof && proof.status !== 'rejected';
+  const linkedinDone = !!proof && proof.status === 'submitted';
   const feeOk = !s.feeRequired || !!paidOrLegacy;
   const linkedinOk = !s.linkedinRequired || linkedinDone;
   return {
     unlocked: feeOk && linkedinOk,
     feeRequired: s.feeRequired, feePaid: !!paidOrLegacy, feeOk,
     linkedinRequired: s.linkedinRequired, linkedinDone, linkedinOk,
-    linkedinStatus: proof?.status || null, linkedinNote: proof?.status === 'rejected' ? proof.note || '' : '',
+    linkedinStatus: proof?.status || null, linkedinNote: proof && proof.status !== 'submitted' ? proof.note || '' : '',
   };
 };
 

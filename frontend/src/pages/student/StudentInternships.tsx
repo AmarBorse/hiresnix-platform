@@ -366,7 +366,9 @@ function IPlatformPanel() {
                   <p className="text-xs text-sky-800 mt-0.5">
                     {certState?.linkedinStatus === 'rejected'
                       ? `Your earlier submission needs a fix: ${certState?.linkedinNote || 'please check and submit again'}.`
-                      : 'Post it, add the internship to your LinkedIn Experience, and send us the link. This is needed to unlock your certificates.'}
+                      : certState?.linkedinStatus === 'review'
+                        ? `We're checking your screenshot (${certState?.linkedinNote || 'it needs a closer look'}). You can also upload a clearer one.`
+                        : 'Post it, then send us the post link and a screenshot of the post. This is needed to unlock your certificates.'}
                   </p>
                   <button type="button" onClick={() => setShowShare(true)}
                     className="mt-2 inline-flex items-center gap-2 rounded-lg bg-[#0a66c2] px-3 py-2 text-sm font-semibold text-white hover:bg-[#004182]">
@@ -387,7 +389,7 @@ function IPlatformPanel() {
                 onDone={() => load()}
                 domain={enrollment.domain?.name || app?.domain?.name}
                 startDate={enrollment.startDate}
-                rejectedNote={certState?.linkedinStatus === 'rejected' ? certState?.linkedinNote : undefined}
+                rejectedNote={['rejected', 'review'].includes(certState?.linkedinStatus) ? certState?.linkedinNote : undefined}
               />
             </div>
           )}
@@ -3012,7 +3014,7 @@ function CertificatePaymentSection({ enrollment }: { enrollment: any }) {
       onDone={() => setReload(n => n + 1)}
       domain={enrollment.domain?.name}
       startDate={enrollment.startDate}
-      rejectedNote={rules?.linkedinStatus === 'rejected' ? rules?.linkedinNote : undefined}
+      rejectedNote={['rejected', 'review'].includes(rules?.linkedinStatus) ? rules?.linkedinNote : undefined}
     />
   );
 
@@ -3071,7 +3073,9 @@ function CertificatePaymentSection({ enrollment }: { enrollment: any }) {
               <p className="text-xs text-sky-800 mt-0.5">
                 {rules?.linkedinStatus === 'rejected'
                   ? `Your LinkedIn submission needs a fix: ${rules?.linkedinNote || 'please check and submit again'}.`
-                  : 'Share your offer letter on LinkedIn, tag Hiresnix and add the internship to your Experience. Then your Completion Certificate, Completion Letter and LOR unlock.'}
+                  : rules?.linkedinStatus === 'review'
+                    ? `We're checking your screenshot (${rules?.linkedinNote || 'it needs a closer look'}). You can also upload a clearer one.`
+                    : 'Share your offer letter on LinkedIn and tag Hiresnix, then send us the post link and a screenshot. Your Completion Certificate, Completion Letter and LOR unlock as soon as it checks out.'}
               </p>
             </div>
           </div>

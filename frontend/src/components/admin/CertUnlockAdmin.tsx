@@ -12,7 +12,7 @@ import { IndianRupee, Linkedin, Loader2, Search, ExternalLink, Image as ImageIco
 import client from '../../api/client';
 
 type Settings = { feeSwitch: boolean; feeAutoOn: string; feeRequired: boolean; linkedinRequired: boolean };
-type Proof = { userId: string; name?: string; email?: string; postUrl: string; status: 'submitted' | 'rejected'; note?: string; submittedAt: string; reviewedBy?: string };
+type Proof = { userId: string; name?: string; email?: string; postUrl: string; status: 'submitted' | 'review' | 'rejected'; note?: string; submittedAt: string; reviewedBy?: string; ocrMatch?: { found?: { name?: boolean; role?: boolean; hiresnix?: boolean; offerId?: boolean | null } } | null };
 
 const card = 'rounded-xl border border-white/10 bg-[#111827]';
 const fmt = (d: string) => new Date(d).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
@@ -35,9 +35,9 @@ export function CertUnlockAdmin() {
 
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState('');
-  const [filter, setFilter] = useState<'' | 'submitted' | 'rejected'>('');
+  const [filter, setFilter] = useState<'' | 'submitted' | 'review' | 'rejected'>('');
   const [list, setList] = useState<Proof[]>([]);
-  const [counts, setCounts] = useState<{ total: number; rejected: number } | null>(null);
+  const [counts, setCounts] = useState<{ total: number; rejected: number; review?: number } | null>(null);
   const [loading, setLoading] = useState(false);
   const [shot, setShot] = useState<{ name: string; src: string } | null>(null);
   const [rejecting, setRejecting] = useState<Proof | null>(null);
@@ -79,7 +79,7 @@ export function CertUnlockAdmin() {
     try {
       const r = await client.put(`/cert-unlock/admin/linkedin/${p.userId}`, { status, note });
       toast.success(r.data.message);
-      setList(l => l.map(x => (x.userId === p.userId ? { ...x, status, note } : x)));
+      setList(l => l.map(x => (x.userId === p.userId ? { ...x, status, note: status === 'submitted' ? 'Accepted by admin' : note } : x)));
       setRejecting(null); setReason('');
     } catch (e: any) { toast.error(e?.response?.data?.message || 'Could not update'); }
   };
@@ -124,8 +124,8 @@ export function CertUnlockAdmin() {
           <div className="flex-1 min-w-0">
             <div className="text-sm font-semibold text-white">LinkedIn share needed for certificates</div>
             <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-              Interns share their offer letter on LinkedIn, tag Hiresnix, add the internship to Experience, and submit the post link
-              with a screenshot. They see this right after downloading the offer letter.
+              Interns share their offer letter on LinkedIn, tag Hiresnix, and submit the post link with a screenshot of the post.
+              The screenshot is read automatically: if it shows their name and role, certificates unlock at once.
             </p>
           </div>
           <Switch label="LinkedIn share needed" on={!!s?.linkedinRequired} busy={!s || busy === 'li'}
@@ -138,8 +138,8 @@ export function CertUnlockAdmin() {
         <button type="button" onClick={() => setOpen(o => !o)} className="w-full flex items-start gap-4 text-left">
           <div className="w-9 h-9 rounded-lg bg-[#0a66c2]/20 text-sky-400 flex items-center justify-center shrink-0"><CheckCircle2 size={17} /></div>
           <div className="flex-1 min-w-0">
-            <div className="text-sm font-semibold text-white">LinkedIn submissions {counts ? <span className="text-slate-400 font-normal">· {counts.total}{counts.rejected ? `, ${counts.rejected} not valid` : ''}</span> : null}</div>
-            <p className="text-xs text-slate-400 mt-1">Open a few posts now and then. If one is fake or Hiresnix isn't tagged, mark it not valid and that intern's certificates lock again.</p>
+            <div className="text-sm font-semibold text-white">LinkedIn submissions {counts ? <span className="text-slate-400 font-normal">· {counts.total}{counts.review ? `, ${counts.review} to check` : ''}{counts.rejected ? `, ${counts.rejected} not valid` : ''}</span> : null}</div>
+            <p className="text-xs text-slate-400 mt-1">“To check” means the screenshot didn't clearly show the name or role. Look at it and accept, or mark not valid. Open a few accepted posts now and then too.</p>
           </div>
           <span className="text-xs text-emerald-400 font-medium shrink-0 mt-1">{open ? 'Close' : 'Open'}</span>
         </button>
@@ -152,10 +152,10 @@ export function CertUnlockAdmin() {
                 <input value={q} onChange={e => setQ(e.target.value)} placeholder="Filter by name or email"
                   className="w-full bg-[#0f172a] border border-white/10 rounded-lg pl-9 pr-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500" />
               </div>
-              {(['', 'submitted', 'rejected'] as const).map(f => (
+              {(['', 'review', 'submitted', 'rejected'] as const).map(f => (
                 <button key={f || 'all'} type="button" onClick={() => setFilter(f)}
                   className={`px-3 py-2 rounded-lg text-xs font-semibold border ${filter === f ? 'border-emerald-500 text-white bg-emerald-500/10' : 'border-white/10 text-slate-400'}`}>
-                  {f === '' ? 'All' : f === 'submitted' ? 'Accepted' : 'Not valid'}
+                  {f === '' ? 'All' : f === 'review' ? 'To check' : f === 'submitted' ? 'Accepted' : 'Not valid'}
                 </button>
               ))}
               <button type="button" onClick={load} className="px-3 rounded-lg border border-white/10 text-slate-300" aria-label="Refresh"><RefreshCw size={14} className={loading ? 'animate-spin' : ''} /></button>
@@ -175,15 +175,16 @@ export function CertUnlockAdmin() {
                         <div className="text-[11px] text-slate-500 mt-0.5">
                           Submitted {fmt(p.submittedAt)}
                           {p.status === 'rejected' && <span className="text-red-400"> · Not valid: {p.note}</span>}
+                          {p.status === 'review' && <span className="text-amber-400"> · To check: {p.note}</span>}
+                          {p.status === 'submitted' && p.note && <span className="text-emerald-400"> · {p.note}</span>}
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
                         <button type="button" onClick={() => viewShot(p)} className="text-xs text-slate-300 hover:text-white inline-flex items-center gap-1 px-2 py-1 rounded border border-white/10">
                           <ImageIcon size={12} /> Screenshot
                         </button>
-                        {p.status === 'rejected'
-                          ? <button type="button" onClick={() => mark(p, 'submitted')} className="text-xs text-emerald-400 px-2 py-1 rounded border border-emerald-500/30">Accept</button>
-                          : <button type="button" onClick={() => { setRejecting(p); setReason(''); }} className="text-xs text-red-400 px-2 py-1 rounded border border-red-500/30 inline-flex items-center gap-1"><Ban size={12} /> Not valid</button>}
+                        {p.status !== 'submitted' && <button type="button" onClick={() => mark(p, 'submitted')} className="text-xs text-emerald-400 px-2 py-1 rounded border border-emerald-500/30">Accept</button>}
+                        {p.status !== 'rejected' && <button type="button" onClick={() => { setRejecting(p); setReason(''); }} className="text-xs text-red-400 px-2 py-1 rounded border border-red-500/30 inline-flex items-center gap-1"><Ban size={12} /> Not valid</button>}
                       </div>
                     </div>
                   ))}

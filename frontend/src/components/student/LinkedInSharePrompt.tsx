@@ -1,13 +1,13 @@
 // src/components/student/LinkedInSharePrompt.tsx
 // Shown after the intern downloads their offer letter, and when they try to open locked
-// certificates. Three steps: share the offer letter on LinkedIn (tagging Hiresnix), add the
-// internship to Experience, then paste the post link and a screenshot. Submitting unlocks
-// the LinkedIn part of the certificate rules (see backend/utils/certGate.js).
+// certificates. Two steps: share the offer letter on LinkedIn (tagging Hiresnix), then paste
+// the post link and a screenshot of the post. The server reads the screenshot and unlocks the
+// certificates when it shows the intern's name and role (see backend/utils/postOcr.js).
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { toast } from 'sonner';
-import { X, Copy, Check, ExternalLink, Upload, Loader2, Linkedin, NotebookPen, Image as ImageIcon } from 'lucide-react';
+import { X, Copy, Check, Upload, Loader2, Linkedin, NotebookPen, Image as ImageIcon, AlertTriangle } from 'lucide-react';
 import client from '../../api/client';
 
 const HIRESNIX_LINKEDIN = 'https://www.linkedin.com/company/hiresnix';
@@ -17,7 +17,7 @@ type Props = {
   onClose: () => void;
   onDone?: () => void;
   domain?: string;           // e.g. "Data Science"
-  startDate?: string;        // internship start, for the Experience entry
+  startDate?: string;        // kept for older callers; not used any more
   rejectedNote?: string;     // admin's reason if an earlier proof was not valid
 };
 
@@ -54,24 +54,24 @@ async function compress(file: File): Promise<string> {
     i.onerror = () => rej(new Error('Could not read this image'));
     i.src = dataUrl;
   });
-  const scale = Math.min(1, 1400 / img.naturalWidth);
+  const scale = Math.min(1, 2000 / Math.max(img.naturalWidth, img.naturalHeight / 2));
   const c = document.createElement('canvas');
   c.width = Math.round(img.naturalWidth * scale);
   c.height = Math.round(img.naturalHeight * scale);
   const ctx = c.getContext('2d')!;
   ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
   ctx.drawImage(img, 0, 0, c.width, c.height);
-  return c.toDataURL('image/jpeg', 0.82);
+  return c.toDataURL('image/jpeg', 0.9);
 }
 
-export function LinkedInSharePrompt({ open, onClose, onDone, domain, startDate, rejectedNote }: Props) {
+export function LinkedInSharePrompt({ open, onClose, onDone, domain, rejectedNote }: Props) {
   const [copied, setCopied] = useState(false);
   const [postUrl, setPostUrl] = useState('');
   const [shot, setShot] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [problem, setProblem] = useState<string | null>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
 
-  const role = domain ? `${domain} Intern` : 'Intern';
   const postText = useMemo(() => [
     `I'm happy to share that I've been selected for the ${domain ? `${domain} ` : ''}Internship at Hiresnix! 🎉`,
     '',
@@ -105,15 +105,19 @@ export function LinkedInSharePrompt({ open, onClose, onDone, domain, startDate, 
 
   const submit = async () => {
     if (!postUrl.trim()) { toast.error('Paste the link of your LinkedIn post'); return; }
-    if (!shot) { toast.error('Add a screenshot of your Experience section'); return; }
+    if (!shot) { toast.error('Add a screenshot of your LinkedIn post'); return; }
     setSaving(true);
+    setProblem(null);
     try {
       const res = await client.post('/cert-unlock/linkedin', { postUrl: cleanLinkedinLink(postUrl), screenshot: shot });
       toast.success(res.data?.message || 'Done!');
       onDone?.();
       onClose();
     } catch (e: any) {
-      toast.error(e?.response?.data?.message || 'Could not submit. Try again.');
+      const msg = e?.response?.data?.message || 'Could not submit. Try again.';
+      setProblem(msg);
+      toast.error(msg);
+      if (e?.response?.status === 422) onDone?.(); // saved for our team to check; refresh the page state
     } finally {
       setSaving(false);
     }
@@ -165,34 +169,16 @@ export function LinkedInSharePrompt({ open, onClose, onDone, domain, startDate, 
                 className={`${btn} bg-[#0a66c2] text-white hover:bg-[#004182]`}>
                 <Linkedin size={15} /> Open LinkedIn to post
               </a>
-            </div>
-          </div>
-
-          {/* Step 2: experience */}
-          <div className={step}>
-            <div className="flex items-center gap-3 mb-3"><span className={num}>2</span><h3 className="font-semibold text-gray-900">Add it to your Experience</h3></div>
-            <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-sm">
-              <dt className="text-gray-500">Title</dt><dd className="text-gray-900 font-medium">{role}</dd>
-              <dt className="text-gray-500">Employment type</dt><dd className="text-gray-900 font-medium">Internship</dd>
-              <dt className="text-gray-500">Company</dt><dd className="text-gray-900 font-medium">Hiresnix</dd>
-              <dt className="text-gray-500">Location type</dt><dd className="text-gray-900 font-medium">Remote</dd>
-              {startDate && <><dt className="text-gray-500">Start date</dt><dd className="text-gray-900 font-medium">{new Date(startDate).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}</dd></>}
-            </dl>
-            <div className="flex flex-wrap gap-2 mt-3">
-              <a href="https://www.linkedin.com/in/me/details/experience/" target="_blank" rel="noopener noreferrer"
-                className={`${btn} border border-gray-200 bg-white text-gray-800 hover:bg-gray-50`}>
-                Open my Experience <ExternalLink size={14} />
-              </a>
               <a href={HIRESNIX_LINKEDIN} target="_blank" rel="noopener noreferrer"
                 className={`${btn} border border-gray-200 bg-white text-gray-800 hover:bg-gray-50`}>
-                Follow Hiresnix <ExternalLink size={14} />
+                Follow Hiresnix
               </a>
             </div>
           </div>
 
-          {/* Step 3: proof */}
+          {/* Step 2: proof */}
           <div className={step}>
-            <div className="flex items-center gap-3 mb-3"><span className={num}>3</span><h3 className="font-semibold text-gray-900">Show us it's done</h3></div>
+            <div className="flex items-center gap-3 mb-3"><span className={num}>2</span><h3 className="font-semibold text-gray-900">Show us it's done</h3></div>
             <label className="block text-xs font-semibold text-gray-600 mb-1" htmlFor="li-post-url">Link to your post</label>
             <input id="li-post-url" value={postUrl} onChange={e => setPostUrl(e.target.value)} inputMode="url"
               onBlur={() => postUrl && setPostUrl(cleanLinkedinLink(postUrl))}
@@ -201,7 +187,8 @@ export function LinkedInSharePrompt({ open, onClose, onDone, domain, startDate, 
               className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500" />
             <p className="text-[11px] text-gray-500 mt-1">On your post, tap ⋯ (or Share) → Copy link to post.</p>
 
-            <label className="block text-xs font-semibold text-gray-600 mb-1 mt-3">Screenshot of your Experience section</label>
+            <label className="block text-xs font-semibold text-gray-600 mb-1 mt-3">Screenshot of your post</label>
+            <p className="text-[11px] text-gray-500 mb-1.5">Open your post and take a screenshot where the offer letter with <b>your name</b> and <b>{domain ? `${domain} Intern` : 'your role'}</b> is clearly visible. We check it automatically.</p>
             <label className="flex items-center gap-3 rounded-xl border border-dashed border-gray-300 bg-white px-3 py-3 cursor-pointer hover:border-emerald-500">
               {shot
                 ? <img src={shot} alt="Your screenshot" className="w-14 h-14 rounded-lg object-cover border border-gray-200" />
@@ -211,9 +198,14 @@ export function LinkedInSharePrompt({ open, onClose, onDone, domain, startDate, 
                 onChange={e => { chooseShot(e.target.files?.[0]); e.target.value = ''; }} />
             </label>
 
+            {problem && (
+              <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 flex gap-2">
+                <AlertTriangle size={16} className="shrink-0 mt-0.5" /> <span>{problem}</span>
+              </div>
+            )}
             <button type="button" onClick={submit} disabled={saving}
               className={`${btn} w-full mt-4 bg-emerald-600 text-white hover:bg-emerald-500 py-3`}>
-              {saving ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />} Submit and unlock
+              {saving ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />} {saving ? 'Checking your screenshot…' : 'Submit and unlock'}
             </button>
           </div>
 
