@@ -7,7 +7,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { toast } from 'sonner';
-import { X, Copy, Check, Upload, Loader2, Linkedin, NotebookPen, Image as ImageIcon, AlertTriangle } from 'lucide-react';
+import { X, Copy, Check, Upload, Loader2, Linkedin, NotebookPen, Image as ImageIcon, AlertTriangle, PlayCircle } from 'lucide-react';
 import client from '../../api/client';
 
 const HIRESNIX_LINKEDIN = 'https://www.linkedin.com/company/hiresnix';
@@ -86,7 +86,7 @@ function ExampleScreenshot({ role }: { role: string }) {
   return (
     <div className="rounded-xl border border-gray-200 bg-gray-50 p-3">
       <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_170px] items-start">
-        <img src="/linkedin-example.jpg" alt="Example (made-up student): a LinkedIn post with the profile name at the top and the Hiresnix offer letter showing the name and role"
+        <img src="/linkedin-example.jpeg" alt="Example (made-up student): a LinkedIn post with the profile name at the top and the Hiresnix offer letter showing the name and role"
           className="w-full max-w-[320px] mx-auto rounded-xl border border-gray-300 shadow-sm" loading="lazy" />
         <ol className="text-[12px] text-gray-700 space-y-2">
           <li className="flex gap-2">{dot(1)}<span><b>Your profile name</b> at the top of the post</span></li>
@@ -106,6 +106,7 @@ export function LinkedInSharePrompt({ open, onClose, onDone, domain, rejectedNot
   const [saving, setSaving] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   const [showExample, setShowExample] = useState(true);
+  const [showVideo, setShowVideo] = useState(false);
   const closeRef = useRef<HTMLButtonElement>(null);
 
   const postText = useMemo(() => [
@@ -188,6 +189,26 @@ export function LinkedInSharePrompt({ open, onClose, onDone, domain, rejectedNot
               <b>Your earlier submission needs a fix:</b> {rejectedNote}
             </div>
           )}
+
+          {/* How-to video (public/how-to-unlock.mp4, 30 seconds, made-up student) */}
+          <div className="rounded-2xl border border-emerald-200 bg-white p-3">
+            <button type="button" onClick={() => setShowVideo(v => !v)}
+              className="w-full flex items-center gap-3 text-left">
+              <span className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0"><PlayCircle size={20} /></span>
+              <span className="flex-1">
+                <span className="block text-sm font-semibold text-gray-900">Watch how to unlock (30 sec)</span>
+                <span className="block text-xs text-gray-500">All the steps, from posting to downloading your certificates</span>
+              </span>
+              <span className="text-xs font-semibold text-emerald-700">{showVideo ? 'Hide' : 'Play'}</span>
+            </button>
+            {showVideo && (
+              <video className="mt-3 w-full max-w-[300px] mx-auto block rounded-xl border border-gray-200 bg-black"
+                poster="/how-to-unlock-poster.jpg" controls autoPlay muted playsInline preload="metadata">
+                <source src="/how-to-unlock.webm" type="video/webm" />
+                <source src="/how-to-unlock.mp4" type="video/mp4" />
+              </video>
+            )}
+          </div>
 
           {/* Step 1: post */}
           <div className={step}>
