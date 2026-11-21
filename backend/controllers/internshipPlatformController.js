@@ -936,8 +936,8 @@ const downloadCompletionLetter = asyncHandler(async (req, res) => {
   doc.y += 14;
   LD.heading(doc, f, 'Yours sincerely,', 11);
   const sigY = Math.max(doc.y + 78, 560);
-  // Single signatory: Founder & CEO, in the left-hand position
-  LD.signature(doc, f, { x: LD.L, y: sigY, name: 'Mr.A S Borse', title: `Founder & CEO, ${COMPANY.name}`, image: letterSignature('signature-ceo.png', 'ceo.png') });
+  // Single signatory: Program Director, in the left-hand position
+  LD.signature(doc, f, { x: LD.L, y: sigY, name: 'Mr.Jayesh Badgujar', title: 'Program Director', image: letterSignature('signature-director.png', 'Director.png') });
 
   LD.footer(doc, f);
   LD.watermark(doc, f, 'CONFIDENTIAL');
