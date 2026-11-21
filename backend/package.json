@@ -25,7 +25,7 @@
     "morgan": "^1.10.0",
     "multer": "^1.4.5-lts.1",
     "mysql2": "^3.10.1",
-    "nodemailer": "^8.0.9",
+    "nodemailer": "^10.6.1",
     "pdf-parse": "^1.1.1",
     "pdfkit": "^0.18.0",
     "pg": "^8.21.0",
@@ -34,6 +34,12 @@
     "razorpay": "^2.9.2",
     "sequelize": "^6.32.1",
     "tesseract.js": "^5.1.1"
+  },
+  "overrides": {
+  "qs": "^6.17.1"
+  },
+  "engines": {
+  "node": ">=20"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
