@@ -20,6 +20,13 @@ const {
 } = require('../models/internshipPlatform');
 const bcrypt = require('bcryptjs');
 const { drawOfferLetter } = require('../utils/offerLetterDesign');
+const { drawInternshipCertificate } = require('../utils/certificateDesign');
+const LD = require('../utils/letterDesign');
+// Trimmed, transparent signature if present (assets/), else the original (signatures/)
+const letterSignature = (trimmed, original) => {
+  const p = path.join(__dirname, '..', 'assets', trimmed);
+  return fs.existsSync(p) ? p : getSignaturePath(original);
+};
 
 // ────────────────────────────────────────────────────────────────────
 // DOMAINS
@@ -833,57 +840,6 @@ const downloadCertificate = asyncHandler(async (req, res) => {
     await cert.update({ issuedAt: issueDateObj }).catch(() => {});
   }
 
-  const doc = new PDFDocument({ size: 'A4', layout: 'landscape', margin: 0 });
-  res.setHeader('Content-Type', 'application/pdf');
-  res.setHeader('Content-Disposition', `attachment; filename="certificate-${safeStudentName}.pdf"`);
-  doc.pipe(res);
-
-  const W = doc.page.width;
-  const H = doc.page.height;
-
-  // Accent border
-  doc.rect(20, 20, W - 40, H - 40).lineWidth(3).stroke(COMPANY.colors.accent);
-  doc.rect(26, 26, W - 52, H - 52).lineWidth(1).stroke(COMPANY.colors.accent);
-
-  // Header background
-  doc.rect(20, 20, W - 40, 90).fill('#0f172a');
-
-  // Company name
-  doc.fillColor('#ffffff').fontSize(22).font('Helvetica-Bold')
-     .text(COMPANY.name, 50, 35);
-  doc.fillColor('#94a3b8').fontSize(9).font('Helvetica')
-     .text(COMPANY.tagline, 50, 62);
-  doc.fillColor(COMPANY.colors.highlight).fontSize(11).font('Helvetica-Bold')
-     .text('CERTIFICATE OF COMPLETION', 0, 52, { align: 'right', width: W - 50 });
-
-  // Accent diamond decorations
-  doc.fillColor(COMPANY.colors.accent);
-  const drawDiamond = (x, y, size) => {
-    doc.moveTo(x, y - size).lineTo(x + size, y).lineTo(x, y + size).lineTo(x - size, y).fill();
-  };
-  drawDiamond(35, 70, 6);
-  drawDiamond(W - 35, 70, 6);
-
-  // Title
-  doc.fillColor('#0f172a').fontSize(36).font('Helvetica-Bold')
-     .text('Certificate of Completion', 0, 135, { align: 'center' });
-
-  // Divider
-  doc.rect(W / 2 - 100, 185, 200, 2).fill(COMPANY.colors.accent);
-
-  // Body
-  doc.fillColor('#475569').fontSize(13).font('Helvetica')
-     .text('This is to certify that', 0, 205, { align: 'center' });
-
-  doc.fillColor('#0f172a').fontSize(28).font('Helvetica-Bold')
-     .text(safeStudentName, 0, 230, { align: 'center' });
-
-  doc.fillColor('#475569').fontSize(13).font('Helvetica')
-     .text('has successfully completed the internship program in', 0, 275, { align: 'center' });
-
-  doc.fillColor(COMPANY.colors.primary).fontSize(20).font('Helvetica-Bold')
-     .text(enrollment.domain?.name || 'Technology', 0, 300, { align: 'center' });
-
   // Calculate duration from startDate → completedAt
   let duration = enrollment.domain?.duration || '8 Weeks';
   const startD = enrollment.startDate ? new Date(enrollment.startDate) : null;
@@ -895,44 +851,41 @@ const downloadCertificate = asyncHandler(async (req, res) => {
     months = Math.max(1, months);
     duration = `${months} Month${months === 1 ? '' : 's'}`;
   }
-  doc.fillColor('#475569').fontSize(12).font('Helvetica')
-     .text(`Duration: ${duration}`, 0, 328, { align: 'center' });
-
-  doc.fillColor('#475569').fontSize(12).font('Helvetica')
-     .text(`at ${COMPANY.name} | Issued on ${issueDate}`, 0, 348, { align: 'center' });
-
-  if (cert?.certificateNo) {
-    doc.fillColor('#94a3b8').fontSize(9).font('Helvetica')
-       .text(`Certificate No: ${cert.certificateNo}`, 0, 372, { align: 'center' });
-  }
 
   // QR Code for Verification
+  const certId = cert?.certificateNo || `CERT-${enrollment.id}`;
+  let qrBuffer = null;
   try {
-    const certId = cert?.certificateNo || `CERT-${enrollment.id}`;
     const verifyUrl = `${getFrontendUrl()}/verify/${encodeURIComponent(certId)}`;
-    const qrBuffer = await QRCode.toBuffer(verifyUrl, { errorCorrectionLevel: 'H', margin: 1 });
-    const qrSize = 75;
-    const qrX = (W / 2) - (qrSize / 2);
-    const qrY = H - 168;
-    doc.roundedRect(qrX - 9, qrY - 9, qrSize + 18, qrSize + 34, 6)
-      .fillAndStroke('#ffffff', '#d4af37');
-    doc.image(qrBuffer, qrX, qrY, { width: qrSize, align: 'center'});
-    doc.fillColor('#1e293b').fontSize(7).font('Helvetica-Bold')
-       .text('Scan to Verify', qrX, qrY + qrSize + 4, { width: qrSize, align: 'center' });
-    doc.fillColor('#64748b').fontSize(5.5).font('Helvetica')
-       .text(certId, qrX - 4, qrY + qrSize + 15, { width: qrSize + 8, align: 'center' });
+    qrBuffer = await QRCode.toBuffer(verifyUrl, { errorCorrectionLevel: 'H', margin: 1 });
   } catch (err) {
     console.error('Failed to generate QR Code:', err.message);
   }
 
-  // Signature lines
-  signatureLine(doc, 'Mr.Jayesh Badgujar', 'Program Director', (W / 2) - 260, H - 125, getSignaturePath('Director.png'), 1.6);
-  signatureLine(doc, 'Mr.A S Borse', `Founder & CEO, ${COMPANY.name}`, (W / 2) + 100, H - 125, getSignaturePath('ceo.png'), 1.6);
+  const doc = new PDFDocument({ size: 'A4', layout: 'landscape', margin: 0 });
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename="certificate-${safeStudentName}.pdf"`);
+  doc.pipe(res);
 
-  // Footer
-  doc.rect(20, H - 60, W - 40, 40).fill('#0f172a');
-  doc.fillColor('#94a3b8').fontSize(8)
-     .text(`${COMPANY.email}  |  ${COMPANY.website}  |  ${COMPANY.address}`, 0, H - 47, { align: 'center' });
+  // Layout and styling live in utils/certificateDesign.js
+  const signatureFile = (trimmed, original) => {
+    const p = path.join(__dirname, '..', 'assets', trimmed);
+    return fs.existsSync(p) ? p : getSignaturePath(original);
+  };
+  drawInternshipCertificate(doc, {
+    studentName: safeStudentName,
+    domainName: enrollment.domain?.name || 'Technology',
+    duration,
+    issueDate,
+    companyName: COMPANY.name,
+    certNo: cert?.certificateNo || '',
+    qrLabel: certId,
+  }, {
+    qrBuffer,
+    directorSignature: signatureFile('signature-director.png', 'Director.png'),
+    ceoSignature: signatureFile('signature-ceo.png', 'ceo.png'),
+    contactLine: `${COMPANY.email}  |  ${COMPANY.website}  |  ${COMPANY.address}`,
+  });
 
   doc.end();
 });
@@ -955,8 +908,6 @@ const downloadCompletionLetter = asyncHandler(async (req, res) => {
   res.setHeader('Content-Disposition', `attachment; filename="completion-letter-${safeStudentName}.pdf"`);
   doc.pipe(res);
 
-  pdfHeader(doc, 'INTERNSHIP COMPLETION LETTER');
-
   // Safe date parsing to prevent PDFKit from crashing if a DB date is empty/invalid
   const parseDate = (val) => {
     const d = new Date(val);
@@ -967,42 +918,29 @@ const downloadCompletionLetter = asyncHandler(async (req, res) => {
   const startDate = parseDate(enrollment.startDate || enrollment.createdAt)
     .toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
 
-  doc.moveDown(1);
-  doc.fillColor('#475569').fontSize(11).font('Helvetica').text(`Date: ${date}`, 40);
-  doc.moveDown(0.5);
-  doc.fillColor('#1e293b').fontSize(14).font('Helvetica-Bold').text('To Whomsoever It May Concern,', 40);
-  doc.moveDown(1);
-
-  doc.fillColor('#334155').fontSize(11).font('Helvetica').text(
+  // Layout and styling live in utils/letterDesign.js
+  const f = LD.letterPage(doc, { big: 'INTERNSHIP', small: 'COMPLETION LETTER', meta: [`Date: ${date}`] });
+  LD.heading(doc, f, 'To Whomsoever It May Concern,');
+  doc.y += 14;
+  LD.para(doc, f,
     `This is to certify that ${safeStudentName} has successfully completed the Internship Program in ` +
-    `${enrollment.domain?.name || 'Technology'} at ${COMPANY.name}.`,
-    40, doc.y, { width: 515, align: 'justify' }
-  );
-  doc.moveDown(1);
-  doc.text(
+    `${enrollment.domain?.name || 'Technology'} at ${COMPANY.name}.`);
+  LD.para(doc, f,
     `The internship commenced on ${startDate} and was completed on ${date}. ` +
     `During this period, the intern demonstrated commitment to learning, ` +
-    `completed all assigned tasks and projects, and adhered to organizational guidelines.`,
-    40, doc.y, { width: 515, align: 'justify' }
-  );
-  doc.moveDown(1);
+    `completed all assigned tasks and projects, and adhered to organizational guidelines.`);
   if (enrollment.adminRemark) {
-    doc.text(enrollment.adminRemark, 40, doc.y, { width: 515, align: 'justify' });
-    doc.moveDown(1);
+    LD.para(doc, f, enrollment.adminRemark);
   }
-  doc.text(
-    `We wish ${safeStudentName} all the best in their future endeavors.`,
-    40, doc.y, { width: 515, align: 'justify' }
-  );
-  doc.moveDown(2);
-  doc.fillColor('#1e293b').fontSize(11).font('Helvetica-Bold').text('Yours sincerely,', 40);
-  doc.moveDown(2.5); // Give a bit more space for the signatures
-  const sigY = doc.y + 30; // room for the larger CEO signature image above the line
+  LD.para(doc, f, `We wish ${safeStudentName} all the best in their future endeavors.`);
+  doc.y += 14;
+  LD.heading(doc, f, 'Yours sincerely,', 11);
+  const sigY = Math.max(doc.y + 78, 560);
   // Single signatory: Founder & CEO, in the left-hand position
-  signatureLine(doc, 'Mr.A S Borse' , `Founder & CEO, ${COMPANY.name}`, 40, sigY, getSignaturePath('ceo.png'), 1.6);
+  LD.signature(doc, f, { x: LD.L, y: sigY, name: 'Mr.A S Borse', title: `Founder & CEO, ${COMPANY.name}`, image: letterSignature('signature-ceo.png', 'ceo.png') });
 
-  pdfFooter(doc);
-  drawWatermark(doc, 'CONFIDENTIAL');
+  LD.footer(doc, f);
+  LD.watermark(doc, f, 'CONFIDENTIAL');
   doc.end();
 });
 
@@ -1032,69 +970,42 @@ const downloadLOR = asyncHandler(async (req, res) => {
   res.setHeader('Content-Disposition', `attachment; filename="lor-${safeStudentName}.pdf"`);
   doc.pipe(res);
 
-  pdfHeader(doc, 'LETTER OF RECOMMENDATION');
-
   const date = fmtLongDate(await internshipIssueDate(enrollment));
   const performance = enrollment.lorPerformance || 'Excellent';
   const highlights = enrollment.lorHighlights || 'demonstrated a strong foundation in their domain, actively participated in assigned projects, and showed commendable dedication throughout the internship. Their ability to adapt, learn quickly, and deliver results made them a valuable contributor to the team';
 
-  doc.moveDown(1);
-  doc.fillColor('#475569').fontSize(10).font('Helvetica').text(`Date: ${date}`, 40);
-  doc.fillColor('#64748b').fontSize(9).font('Helvetica').text(`LOR ID: ${lor_id}`, 40);
-  doc.moveDown(0.5);
-  doc.fillColor('#1e293b').fontSize(14).font('Helvetica-Bold').text('To Whomsoever It May Concern,', 40);
-  doc.moveDown(0.5);
-  doc.fillColor('#1e293b').fontSize(13).font('Helvetica-Bold')
-     .text(`Re: Letter of Recommendation for ${safeStudentName}`, 40);
-  doc.moveDown(1);
-
-  doc.fillColor('#334155').fontSize(11).font('Helvetica').text(
+  // Layout and styling live in utils/letterDesign.js
+  const f = LD.letterPage(doc, { big: 'LETTER', small: 'OF RECOMMENDATION', meta: [`Date: ${date}`, `LOR ID: ${lor_id}`] });
+  LD.heading(doc, f, 'To Whomsoever It May Concern,');
+  doc.y += 6;
+  LD.heading(doc, f, `Re: Letter of Recommendation for ${safeStudentName}`, 11.5);
+  doc.y += 12;
+  LD.para(doc, f,
     `I am pleased to write this letter of recommendation for ${safeStudentName}, ` +
-    `who completed an internship in ${enrollment.domain?.name || 'Technology'} at ${COMPANY.name}.`,
-    40, doc.y, { width: 515, align: 'justify' }
-  );
-  doc.moveDown(1);
-  doc.text(
+    `who completed an internship in ${enrollment.domain?.name || 'Technology'} at ${COMPANY.name}.`);
+  LD.para(doc, f,
     `During the internship, ${safeStudentName} showed ${performance.toLowerCase()} performance and ` +
-    `${highlights}. Their dedication, technical aptitude, and eagerness to learn were commendable.`,
-    40, doc.y, { width: 515, align: 'justify' }
-  );
-  doc.moveDown(1);
-  doc.text(
+    `${highlights}. Their dedication, technical aptitude, and eagerness to learn were commendable.`);
+  LD.para(doc, f,
     `I strongly recommend ${safeStudentName} for any professional opportunity or academic program. ` +
-    `They would be a valuable addition to any team or institution.`,
-    40, doc.y, { width: 515, align: 'justify' }
-  );
-  doc.moveDown(1);
-  doc.text(
-    `Please feel free to contact us at ${COMPANY.email} for any further information.`,
-    40, doc.y, { width: 515, align: 'justify' }
-  );
-  doc.moveDown(2);
-  doc.fillColor('#1e293b').fontSize(11).font('Helvetica-Bold').text('Sincerely,', 40);
-  doc.moveDown(2.5);
-  const sigY = doc.y;
+    `They would be a valuable addition to any team or institution.`);
+  LD.para(doc, f, `Please feel free to contact us at ${COMPANY.email} for any further information.`);
+  doc.y += 8;
+  LD.heading(doc, f, 'Sincerely,', 11);
+  const sigY = Math.max(doc.y + 70, 600);
   const W = doc.page.width;
-  signatureLine(doc, 'Mr.Jayesh Badgujar', 'Program Director', 40, sigY, getSignaturePath('Director.png'), 1.6);
-  signatureLine(doc, 'Mr.A S Borse', `Founder & CEO, ${COMPANY.name}`, W - 200, sigY, getSignaturePath('ceo.png'), 1.6);
+  LD.signature(doc, f, { x: LD.L, y: sigY, name: 'Mr.Jayesh Badgujar', title: 'Program Director', image: letterSignature('signature-director.png', 'Director.png') });
+  LD.signature(doc, f, { x: W - LD.L - 170, y: sigY, name: 'Mr.A S Borse', title: `Founder & CEO, ${COMPANY.name}`, image: letterSignature('signature-ceo.png', 'ceo.png') });
 
   // QR Code — bottom center
   try {
     const lorVerifyUrl = `https://www.hiresnix.co.in/verification/recommendation-letter/${lor_id}`;
     const qrBuf = await QRCode.toBuffer(lorVerifyUrl, { errorCorrectionLevel: 'M', margin: 1, width: 100 });
-    const qrSize = 65;
-    const qrX = W / 2 - qrSize / 2;
-    const qrY = sigY + 85;
-    doc.roundedRect(qrX - 5, qrY - 5, qrSize + 10, qrSize + 24, 4)
-       .fillAndStroke('#ffffff', '#1e3a8a');
-    doc.image(qrBuf, qrX, qrY, { width: qrSize });
-    doc.fillColor('#1e293b').fontSize(6.5).font('Helvetica-Bold')
-       .text('Scan to Verify', qrX - 3, qrY + qrSize + 3, { width: qrSize + 6, align: 'center' });
-    doc.fillColor('#64748b').fontSize(5).font('Helvetica')
-       .text(lor_id, qrX - 3, qrY + qrSize + 13, { width: qrSize + 6, align: 'center' });
+    // Below the signatures; on a very full page, in the free space just above them
+    LD.qr(doc, f, qrBuf, lor_id, W / 2 - 33, sigY + 72 <= 672 ? sigY + 72 : sigY - 98, 66);
   } catch(e) {}
 
-  pdfFooter(doc);
+  LD.footer(doc, f);
   doc.end();
 });
 
