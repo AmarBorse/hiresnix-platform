@@ -19,6 +19,7 @@ const {
   InternshipResource, InternshipCertificate,
 } = require('../models/internshipPlatform');
 const bcrypt = require('bcryptjs');
+const { drawOfferLetter } = require('../utils/offerLetterDesign');
 
 // ────────────────────────────────────────────────────────────────────
 // DOMAINS
@@ -1188,235 +1189,24 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
   res.setHeader('Content-Disposition', `attachment; filename="offer-letter-${fileCandidateName}.pdf"`);
   doc.pipe(res);
 
-  const dateStr = formatDateOnly(stableOfferDate);
-  const bullet = String.fromCharCode(8226);
-  const left = 40;
-  const bodyWidth = 515;
-  const pageBottom = doc.page.height - 44;
-  const legalEntity = 'SR PATIL INFRASTRUCTURE PRIVATE LIMITED';
-  const cin = 'U42909MH2024PTC429260';
-  const verificationEmail = 'hr@hiresnix.co.in';
-  const cardRadius = 5;
-  const cardBorder = '#e2e8f0';
-  const cardFill = '#f8fafc';
-  const cardPadding = 14;
-  const sectionAccent = { width: 4, height: 14, gap: 12 };
-  const paragraphGap = 0.55;
-  const sectionGap = 0.65;
-
-  const drawOfferFrame = (pageNo) => {
-    doc.rect(0, 0, doc.page.width, doc.page.height).fill('#ffffff');
-    doc.rect(20, 20, doc.page.width - 40, doc.page.height - 40).lineWidth(1.2).stroke(COMPANY.colors.accent);
-    doc.rect(26, 26, doc.page.width - 52, doc.page.height - 52).lineWidth(0.35).stroke('#cbd5e1');
-    doc.rect(20, pageBottom, doc.page.width - 40, 18).fill('#0f172a');
-    doc.fillColor('#94a3b8').fontSize(7).font('Helvetica-Bold')
-      .text('Hiresnix', 0, pageBottom + 3, { width: doc.page.width, align: 'center' });
-    doc.fillColor('#94a3b8').fontSize(6.5).font('Helvetica')
-      .text(`Operated by ${legalEntity}`, 0, pageBottom + 11, { width: doc.page.width, align: 'center' });
-  };
-
-  const drawSimpleHeader = (title, withTagline = false) => {
-    doc.rect(20, 20, doc.page.width - 40, 88).fill('#0f172a');
-    doc.rect(20, 106, doc.page.width - 40, 3).fill(COMPANY.colors.accent);
-    doc.fillColor('#ffffff').fontSize(25).font('Helvetica-Bold')
-      .text('HIRESNIX', left, 42);
-    if (withTagline) {
-      doc.fillColor('#cbd5e1').fontSize(10).font('Helvetica')
-        .text('Empowering Future Professionals', left, 72);
-    }
-    doc.fillColor('#93c5fd').fontSize(14).font('Helvetica-Bold')
-      .text(title, left, 56, { align: 'right', width: bodyWidth });
-    doc.y = 136;
-  };
-
-  const sectionTitle = (title) => {
-    doc.moveDown(0.35);
-    const titleY = doc.y;
-    doc.rect(left, titleY + 2, sectionAccent.width, sectionAccent.height).fill(COMPANY.colors.accent);
-    doc.fillColor('#0f172a').fontSize(11).font('Helvetica-Bold')
-      .text(title, left + sectionAccent.gap, titleY, { width: bodyWidth - sectionAccent.gap, lineGap: 1 });
-    doc.moveDown(0.35);
-  };
-
-  const paragraph = (text, options = {}) => {
-    doc.fillColor('#334155').fontSize(options.size || 10).font(options.bold ? 'Helvetica-Bold' : 'Helvetica')
-      .text(text, left, doc.y, { width: bodyWidth, align: options.align || 'justify', lineGap: options.lineGap ?? 2 });
-  };
-
-  const bulletList = (items) => {
-    items.forEach(item => {
-      doc.fillColor('#334155').fontSize(10).font('Helvetica')
-        .text(`${bullet} ${item}`, left + 20, doc.y, { width: bodyWidth - 20, lineGap: 2 });
-    });
-  };
-
-  const detailRow = (label, value, x, y, width) => {
-    doc.fillColor('#64748b').fontSize(7).font('Helvetica-Bold')
-      .text(label.toUpperCase(), x, y, { width });
-    doc.fillColor('#0f172a').fontSize(8.5).font('Helvetica-Bold')
-      .text(value, x, y + 10, { width, height: 24 });
-  };
-
-  drawOfferFrame(1);
-  drawSimpleHeader('INTERNSHIP OFFER LETTER', true);
-
-  const offerMetaY = doc.y;
-  doc.roundedRect(left, offerMetaY, bodyWidth, 42, cardRadius).fill(cardFill).stroke(cardBorder);
-  detailRow('Offer Letter ID', stableOfferId, left + cardPadding, offerMetaY + 9, 250);
-  detailRow('Date', dateStr, left + 330, offerMetaY + 9, 160);
-  doc.y = offerMetaY + 58;
-
-  doc.fillColor('#1e293b').fontSize(10).font('Helvetica').text('To,', left);
-  doc.font('Helvetica-Bold').text(safeCandidateName, left);
-
-  doc.moveDown(0.8);
-  doc.font('Helvetica-Bold')
-    .text(`Subject: Internship Offer Letter - ${domainName} Intern - Hiresnix`, left, doc.y, { width: bodyWidth });
-
-  doc.moveDown(0.8);
-  doc.font('Helvetica').text(`Dear ${safeCandidateName},`, left);
-  doc.moveDown(0.45);
-  doc.font('Helvetica-Bold').text('Congratulations!', left);
-  doc.moveDown(0.45);
-  paragraph(`We are pleased to offer you the position of ${domainName} Intern at Hiresnix.`);
-
-  doc.moveDown(paragraphGap);
-  paragraph('Your internship details are as follows:', { align: 'left' });
-  sectionTitle('INTERNSHIP DETAILS');
-  const detailY = doc.y;
-  const cellW = (bodyWidth - 28) / 3;
-  const cellH = 38;
-  doc.roundedRect(left, detailY, bodyWidth, 118, cardRadius).fill(cardFill).stroke(cardBorder);
-  [1, 2].forEach(index => {
-    const x = left + cardPadding + (cellW * index);
-    doc.moveTo(x, detailY + 10).lineTo(x, detailY + 108).lineWidth(0.35).stroke('#cbd5e1');
+  // Layout and styling live in utils/offerLetterDesign.js
+  await drawOfferLetter(doc, {
+    candidateName: safeCandidateName,
+    domainName,
+    offerId: stableOfferId,
+    dateStr: formatDateOnly(stableOfferDate),
+    startStr: joinDateStr,
+    endStr: endDateStr,
+    durationLabel: internshipDuration,
+    mode: internshipMode,
+    stipendText,
+    legalEntity: 'SR PATIL INFRASTRUCTURE PRIVATE LIMITED',
+    cin: 'U42909MH2024PTC429260',
+  }, {
+    QRCode,
+    drawSeal: drawOfferSeal,
+    signaturePath: getSignaturePath('Director.png'),
   });
-  [1, 2].forEach(index => {
-    const y = detailY + (cellH * index);
-    doc.moveTo(left + cardPadding, y).lineTo(left + bodyWidth - cardPadding, y).lineWidth(0.35).stroke('#cbd5e1');
-  });
-  [
-    ['Position', `${domainName} Intern`],
-    ['Department', domainName],
-    ['Start Date', joinDateStr],
-    ['End Date', endDateStr],
-    ['Duration', internshipDuration],
-    ['Mode of Internship', internshipMode],
-    ['Working Hours', 'Flexible (Maximum 20 Hours per Week)'],
-    ['Reporting Manager', 'Assigned Mentor / Project Lead'],
-    ['Compensation', stipendText],
-  ].forEach(([label, value], index) => {
-    const col = index % 3;
-    const row = Math.floor(index / 3);
-    detailRow(label, value, left + cardPadding + (cellW * col) + 8, detailY + 8 + (cellH * row), cellW - 18);
-  });
-  doc.y = detailY + 134;
-
-  paragraph('Hiresnix is a technology and business services company delivering recruitment, software development, artificial intelligence (AI), digital transformation, and consulting solutions to organizations. To support innovation and workforce development, the company offers structured internship opportunities that enable candidates to contribute to live business projects while gaining practical industry experience.');
-
-  doc.moveDown(sectionGap);
-  paragraph('During the internship, you will have the opportunity to:', { align: 'left' });
-  doc.moveDown(0.25);
-  bulletList([
-    'Work on real-world projects',
-    'Gain hands-on industry experience',
-    'Learn through practical assignments',
-    'Receive mentorship and guidance',
-    'Build professional and technical skills',
-    'Enhance problem-solving and communication abilities',
-  ]);
-
-  doc.moveDown(sectionGap);
-  paragraph('Outstanding interns may be considered for future opportunities based on company requirements and performance evaluation.');
-  doc.moveDown(sectionGap);
-  paragraph('We look forward to supporting your professional growth and learning journey through Hiresnix.');
-
-  doc.addPage({ size: 'A4', margin: 0 });
-  drawOfferFrame(2);
-  drawSimpleHeader('INTERNSHIP TERMS & ACKNOWLEDGEMENT');
-
-  doc.roundedRect(left, doc.y, bodyWidth, 64, cardRadius).fill(cardFill).stroke(cardBorder);
-  doc.y += cardPadding;
-  paragraph('Upon successful completion of the internship and satisfactory performance evaluation, interns may be eligible to receive:');
-  doc.moveDown(0.3);
-  bulletList([
-    'Internship Completion Certificate',
-    'Internship Completion Letter',
-    'Letter of Recommendation (subject to company evaluation)',
-  ]);
-  doc.y += 12;
-
-  doc.moveDown(0.8);
-  sectionTitle('Intern Responsibilities');
-  bulletList([
-    'Maintain professional conduct throughout the internship',
-    'Complete assigned tasks within agreed timelines',
-    'Participate actively in assigned projects',
-    'Follow company communication and work guidelines',
-  ]);
-
-  doc.moveDown(0.8);
-  sectionTitle('Internship Guidelines');
-  bulletList([
-    'Maintain regular communication with mentors',
-    'Submit assigned work within specified timelines',
-    'Follow ethical and professional work practices',
-    'Respect project confidentiality and company resources',
-  ]);
-
-  doc.moveDown(0.55);
-  sectionTitle('CONFIDENTIALITY');
-  paragraph('The intern shall maintain the confidentiality of all company information, project materials, intellectual property, and confidential business information accessed during the internship.', { size: 9, lineGap: 1 });
-
-  doc.moveDown(0.5);
-  sectionTitle('Acceptance');
-  paragraph('Please confirm your acceptance of this internship offer by replying to the official email or communication shared by Hiresnix.', { align: 'left' });
-
-  doc.moveDown(0.35);
-  paragraph('For verification or queries:', { align: 'left' });
-  doc.moveDown(0.2);
-  doc.fillColor('#334155').fontSize(10).font('Helvetica-Bold').text(verificationEmail, left);
-
-  const signBlockY = 625;
-  doc.moveTo(left, signBlockY).lineTo(left + bodyWidth, signBlockY).lineWidth(0.8).stroke('#cbd5e1');
-  doc.fillColor('#1e293b').fontSize(10).font('Helvetica-Bold').text('Regards,', left, signBlockY + 14);
-
-  const sigY = signBlockY + 32;
-  const founderTextY = sigY + 34;
-  const pageW = doc.page.width;
-
-  // ── LEFT: Signature + Contact info ───────────────────────────
-  try { doc.image(getSignaturePath('Director.png'), left, sigY, { fit: [115, 35] }); } catch (err) {}
-  doc.fillColor('#1e293b').fontSize(11).font('Helvetica-Bold')
-    .text('Mr.Jayesh Badgujar', left, founderTextY, { width: 220, lineGap: 0 });
-  doc.fillColor('#334155').fontSize(8.8).font('Helvetica')
-    .text('Program Director \u2013 Hiresnix', left, founderTextY + 12, { width: 220, lineGap: 0 })
-    .text('For', left, founderTextY + 26, { width: 220, lineGap: 0 })
-    .text(legalEntity, left, founderTextY + 36, { width: 220, lineGap: 0 })
-    .text('CIN:', left, founderTextY + 49, { width: 220, lineGap: 0 })
-    .text(cin, left, founderTextY + 59, { width: 220, lineGap: 0 })
-    .text('support@hiresnix.co.in', left, founderTextY + 74, { width: 220, lineGap: 0 })
-    .text('www.hiresnix.co.in', left, founderTextY + 84, { width: 220, lineGap: 0 })
-    .text('Shirpur, Maharashtra, India', left, founderTextY + 94, { width: 220, lineGap: 0 });
-
-  // ── CENTER: Seal ──────────────────────────────────────────────
-  drawOfferSeal(doc, pageW / 2, sigY + 45);
-
-  // ── RIGHT: QR Code ────────────────────────────────────────────
-  try {
-    const offerVerifyUrl = `https://www.hiresnix.co.in/verification/offer-letter/${stableOfferId}`;
-    const qrBuf2 = await QRCode.toBuffer(offerVerifyUrl, { errorCorrectionLevel: 'H', margin: 1, width: 120 });
-    const qrSize2 = 70;
-    const qrX2 = pageW - left - qrSize2;
-    const qrY2 = founderTextY - 5;
-    doc.roundedRect(qrX2 - 4, qrY2 - 4, qrSize2 + 8, qrSize2 + 24, 4)
-       .fillAndStroke('#ffffff', '#1e3a8a');
-    doc.image(qrBuf2, qrX2, qrY2, { width: qrSize2 });
-    doc.fillColor('#1e293b').fontSize(6).font('Helvetica-Bold')
-       .text('Scan to Verify', qrX2 - 3, qrY2 + qrSize2 + 3, { width: qrSize2 + 6, align: 'center' });
-    doc.fillColor('#64748b').fontSize(5).font('Helvetica')
-       .text(stableOfferId, qrX2 - 3, qrY2 + qrSize2 + 12, { width: qrSize2 + 6, align: 'center' });
-  } catch(e) {}
 
   doc.end();
   return;
